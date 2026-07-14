@@ -18,8 +18,8 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && authUser && businessUser) {
-      router.replace(isProfileComplete(userDetails) ? getDefaultPathForRole(businessUser.role) : '/onboarding');
+    if (!loading && authUser && businessUser && userDetails) {
+      router.replace(isProfileComplete(userDetails) ? getDefaultPathForRole(userDetails.role) : '/onboarding');
     }
   }, [authUser, businessUser, userDetails, loading, router]);
 
