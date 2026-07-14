@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { canAccessPath, getDefaultPathForRole, isNavItemAllowed, navSections, roleLabels } from '@/lib/auth/permissions';
@@ -38,6 +38,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { authUser, businessProfile, businessUser, userDetails, loading, error } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
   const profileComplete = isProfileComplete(userDetails);
   const role = userDetails?.role;
 
@@ -64,6 +65,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       router.replace(getDefaultPathForRole(role));
     }
   }, [businessUser, loading, pathname, profileComplete, role, router]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   const signOut = async () => {
     await getSupabaseClient().auth.signOut();
@@ -111,40 +116,93 @@ export function AppShell({ children }: { children: ReactNode }) {
     .filter((section) => section.items.length > 0);
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar neo-sidebar">
-        <div className="brand">DallmayrERP</div>
-        <div className="brand-subtitle">Role-based operations platform</div>
-        <div className="user-chip">
-          <span>{displayProfileName(businessProfile)}</span>
-          <strong>{roleLabels[userDetails.role]}</strong>
-          {!profileComplete ? <em>Profile setup required</em> : null}
-        </div>
-        {visibleSections.map((section) => (
-          <div className="nav-section" key={section.heading}>
-            <div className="nav-heading">{section.heading}</div>
-            {section.items.map((item) => (
-              <Link
-                key={item.href}
-                className={`nav-link ${pathname === item.href ? 'active' : ''}`}
-                href={item.href}
-              >
-                {item.label}
-              </Link>
+    <div className={`app-shell top-shell ${menuOpen ? 'mobile-menu-open' : ''}`}>
+      <header className="topbar">
+        <div className="topbar-main">
+          <Link className="topbar-brand" href={getDefaultPathForRole(userDetails.role)}>
+            <span className="brand">DallmayrERP</span>
+            <span className="brand-subtitle">Role-based operations platform</span>
+          </Link>
+
+          <nav aria-label="Primary navigation" className="desktop-nav">
+            {visibleSections.map((section) => (
+              <div className="topnav-section" key={section.heading}>
+                <span className="nav-heading">{section.heading}</span>
+                <div className="topnav-links">
+                  {section.items.map((item) => (
+                    <Link
+                      key={item.href}
+                      className={`nav-link ${pathname === item.href ? 'active' : ''}`}
+                      href={item.href}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
             ))}
+          </nav>
+
+          <div className="topbar-user">
+            <div className="user-chip">
+              <span>{displayProfileName(businessProfile)}</span>
+              <strong>{roleLabels[userDetails.role]}</strong>
+              {!profileComplete ? <em>Profile setup required</em> : null}
+            </div>
+            <button className="button secondary sign-out" onClick={signOut} type="button">
+              Sign out
+            </button>
           </div>
-        ))}
-        <button className="button secondary sign-out" onClick={signOut} type="button">
-          Sign out
-        </button>
-      </aside>
-      <main className="main">
+
+          <button
+            aria-controls="mobile-navigation"
+            aria-expanded={menuOpen}
+            aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            className="hamburger-button"
+            onClick={() => setMenuOpen((current) => !current)}
+            type="button"
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
+
+        <div className="mobile-nav-panel" hidden={!menuOpen} id="mobile-navigation">
+          <div className="user-chip mobile-user-chip">
+            <span>{displayProfileName(businessProfile)}</span>
+            <strong>{roleLabels[userDetails.role]}</strong>
+            {!profileComplete ? <em>Profile setup required</em> : null}
+          </div>
+          <nav aria-label="Mobile navigation">
+            {visibleSections.map((section) => (
+              <div className="nav-section" key={section.heading}>
+                <div className="nav-heading">{section.heading}</div>
+                {section.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    className={`nav-link ${pathname === item.href ? 'active' : ''}`}
+                    href={item.href}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            ))}
+          </nav>
+          <button className="button secondary sign-out" onClick={signOut} type="button">
+            Sign out
+          </button>
+        </div>
+      </header>
+
+      <main className="main top-main">
         {!allowedPath ? (
           <div className="neo-card access-denied">
             <div className="badge danger">Access blocked</div>
             <h1>This page is not assigned to your role.</h1>
             <p>
-              Your current role is <strong>{roleLabels[userDetails.role]}</strong>. Use the navigation on the left to open your assigned pages.
+              Your current role is <strong>{roleLabels[userDetails.role]}</strong>. Use the navigation menu to open your assigned pages.
             </p>
             <Link className="button" href={getDefaultPathForRole(userDetails.role)}>Go to my workspace</Link>
           </div>
