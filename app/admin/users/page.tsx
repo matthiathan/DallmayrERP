@@ -3,8 +3,8 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import type { Branch, BusinessRole, BusinessUser, Department } from '@/types/dallmayrerp';
-import { displayUserName } from '@/types/dallmayrerp';
+import type { Branch, BusinessRole, BusinessUser, Department, UserDetails } from '@/types/dallmayrerp';
+import { isProfileComplete } from '@/types/dallmayrerp';
 
 const roles: BusinessRole[] = ['admin', 'operations', 'sales', 'finance', 'marketing', 'executive', 'warehouse_staff', 'technician', 'road_technician'];
 const departments: Department[] = ['administration', 'operations', 'sales', 'finance', 'marketing', 'executive', 'warehouse', 'technical', 'field_service'];
@@ -12,11 +12,7 @@ const branches: Branch[] = ['jhb', 'cpt', 'kzn', 'national'];
 
 const emptyForm = {
   employee_code: '',
-  first_name: '',
-  last_name: '',
   email: '',
-  phone_number: '',
-  birthday: '',
   role: 'operations' as BusinessRole,
   department: 'operations' as Department,
   branch: 'jhb' as Branch,
@@ -24,8 +20,14 @@ const emptyForm = {
   employment_status: 'active' as const,
 };
 
+type UserInviteRow = BusinessUser & { details: UserDetails | null };
+
+function nameFromDetails(row: UserInviteRow) {
+  return row.details?.full_name?.trim() || row.email;
+}
+
 export default function UsersPage() {
-  const [users, setUsers] = useState<BusinessUser[]>([]);
+  const [users, setUsers] = useState<UserInviteRow[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -35,16 +37,26 @@ export default function UsersPage() {
   async function loadUsers() {
     setLoading(true);
     setError(null);
-    const { data, error: loadError } = await getSupabaseClient()
-      .from('users')
-      .select('*')
-      .order('created_at', { ascending: false });
 
-    if (loadError) {
-      setError(loadError.message);
-    } else {
-      setUsers((data ?? []) as BusinessUser[]);
+    const client = getSupabaseClient();
+    const [{ data: accessRows, error: accessError }, { data: detailsRows, error: detailsError }] = await Promise.all([
+      client.from('users').select('*').order('created_at', { ascending: false }),
+      client.from('user_details').select('*'),
+    ]);
+
+    if (accessError || detailsError) {
+      setError(accessError?.message || detailsError?.message || 'Could not load users.');
+      setLoading(false);
+      return;
     }
+
+    const detailsByUserId = new Map((detailsRows ?? []).map((details) => [details.user_id, details as UserDetails]));
+    const rows = (accessRows ?? []).map((user) => ({
+      ...(user as BusinessUser),
+      details: detailsByUserId.get(user.id) ?? null,
+    }));
+
+    setUsers(rows);
     setLoading(false);
   }
 
@@ -64,14 +76,10 @@ export default function UsersPage() {
       department: form.department,
       branch: form.branch,
       employee_code: form.employee_code.trim() || null,
-      first_name: form.first_name.trim() || null,
-      last_name: form.last_name.trim() || null,
-      phone_number: form.phone_number.trim() || null,
-      birthday: form.birthday || null,
       job_title: form.job_title.trim() || null,
       employment_status: form.employment_status,
-      onboarding_required: !(form.first_name.trim() && form.last_name.trim() && form.phone_number.trim()),
-      profile_completed_at: form.first_name.trim() && form.last_name.trim() && form.phone_number.trim() ? new Date().toISOString() : null,
+      onboarding_required: true,
+      profile_completed_at: null,
     };
 
     const { error: upsertError } = await getSupabaseClient()
@@ -85,7 +93,7 @@ export default function UsersPage() {
       return;
     }
 
-    setSuccess('User invite saved. Create or invite the matching Supabase Auth account using the same email, then the user will complete missing personal details on first login.');
+    setSuccess('User invite saved. The employee can now use First login → Activate account with the same email, then complete their profile.');
     setForm(emptyForm);
     await loadUsers();
   }
@@ -96,7 +104,7 @@ export default function UsersPage() {
         <div>
           <div className="badge">Admin only</div>
           <h1>Users & Role Invites</h1>
-          <p>Create controlled business profiles. Users complete their personal details on first login only.</p>
+          <p>Create access records using email, role, department and branch. Employees complete personal details in user_details on first login.</p>
         </div>
       </div>
 
@@ -104,8 +112,8 @@ export default function UsersPage() {
       {success ? <div className="success" style={{ marginBottom: 18 }}>{success}</div> : null}
 
       <div className="card" style={{ marginBottom: 20 }}>
-        <h2>Create user invite</h2>
-        <p>Admin controls role, department and branch. First name, last name, phone and birthday can be left blank for the employee to complete during onboarding.</p>
+        <h2>Create access invite</h2>
+        <p>Admin controls only access fields. Personal profile fields are completed by the user after first login and stored in public.user_details.</p>
         <form className="form-grid" onSubmit={createUserInvite}>
           <label>
             Employee code
@@ -137,22 +145,6 @@ export default function UsersPage() {
             Job title
             <input value={form.job_title} onChange={(e) => setForm({ ...form, job_title: e.target.value })} />
           </label>
-          <label>
-            First name optional
-            <input value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} />
-          </label>
-          <label>
-            Last name optional
-            <input value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} />
-          </label>
-          <label>
-            Phone optional
-            <input value={form.phone_number} onChange={(e) => setForm({ ...form, phone_number: e.target.value })} />
-          </label>
-          <label>
-            Birthday optional
-            <input type="date" value={form.birthday} onChange={(e) => setForm({ ...form, birthday: e.target.value })} />
-          </label>
           <div style={{ alignSelf: 'end' }}>
             <button className="button pulse-button" type="submit" disabled={saving}>{saving ? 'Saving invite...' : 'Save invite'}</button>
           </div>
@@ -163,14 +155,14 @@ export default function UsersPage() {
         <table>
           <thead>
             <tr>
-              <th>Name</th>
+              <th>Name / email</th>
               <th>Email</th>
               <th>Phone</th>
               <th>Birthday</th>
               <th>Role</th>
               <th>Department</th>
               <th>Branch</th>
-              <th>Onboarding</th>
+              <th>Profile</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -178,20 +170,23 @@ export default function UsersPage() {
             {loading ? (
               <tr><td colSpan={9}>Loading users...</td></tr>
             ) : users.length === 0 ? (
-              <tr><td colSpan={9}>No business users yet.</td></tr>
-            ) : users.map((user) => (
-              <tr key={user.id}>
-                <td>{displayUserName(user)}</td>
-                <td>{user.email}</td>
-                <td>{user.phone_number || '-'}</td>
-                <td>{user.birthday || '-'}</td>
-                <td>{user.role}</td>
-                <td>{user.department}</td>
-                <td>{user.branch || '-'}</td>
-                <td>{user.onboarding_required ? 'Required' : 'Complete'}</td>
-                <td>{user.employment_status}</td>
-              </tr>
-            ))}
+              <tr><td colSpan={9}>No access invites yet.</td></tr>
+            ) : users.map((user) => {
+              const complete = isProfileComplete(user.details);
+              return (
+                <tr key={user.id}>
+                  <td>{nameFromDetails(user)}</td>
+                  <td>{user.email}</td>
+                  <td>{user.details?.phone_number || '-'}</td>
+                  <td>{user.details?.birthday || '-'}</td>
+                  <td>{user.role}</td>
+                  <td>{user.department}</td>
+                  <td>{user.branch || '-'}</td>
+                  <td>{complete ? 'Complete' : 'First login required'}</td>
+                  <td>{user.employment_status}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
