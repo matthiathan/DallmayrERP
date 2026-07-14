@@ -1,0 +1,232 @@
+.top-shell {
+  display: block;
+  min-height: 100vh;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid rgba(255, 220, 140, 0.22);
+  background:
+    linear-gradient(90deg, rgba(255, 220, 140, 0.09), transparent 18%),
+    linear-gradient(180deg, #2b1c0e 0%, #120b06 64%, #070403 100%);
+  box-shadow:
+    0 12px 34px rgba(0, 0, 0, 0.48),
+    inset 0 -3px 9px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 230, 166, 0.13);
+}
+
+.topbar-main {
+  display: grid;
+  grid-template-columns: minmax(190px, auto) minmax(0, 1fr) auto auto;
+  gap: 18px;
+  align-items: center;
+  width: 100%;
+  padding: 14px 22px;
+}
+
+.topbar-brand {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.topbar-brand .brand,
+.topbar-brand .brand-subtitle {
+  margin: 0;
+}
+
+.desktop-nav {
+  display: flex;
+  gap: 14px;
+  align-items: stretch;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 2px 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.topnav-section {
+  display: grid;
+  gap: 7px;
+  min-width: max-content;
+}
+
+.topnav-links {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.topbar .nav-heading {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.topbar .nav-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.topbar-user {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.topbar-user .user-chip {
+  min-width: 170px;
+  max-width: 260px;
+  margin: 0;
+  padding: 10px 12px;
+}
+
+.topbar-user .user-chip span,
+.mobile-user-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-user .sign-out {
+  width: auto;
+  min-width: 92px;
+  margin: 0;
+}
+
+.hamburger-button {
+  display: none;
+  width: 48px;
+  height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid rgba(255, 221, 148, 0.24);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #3a2917, #171006 60%, #090503);
+  box-shadow:
+    0 7px 0 #080402,
+    0 14px 22px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 235, 180, 0.13);
+  cursor: pointer;
+}
+
+.hamburger-button span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--gold-2);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+}
+
+.mobile-nav-panel {
+  display: none;
+}
+
+.top-main {
+  padding-top: 28px;
+}
+
+@media (max-width: 1180px) {
+  .topbar-main {
+    grid-template-columns: minmax(170px, auto) minmax(0, 1fr) auto;
+  }
+
+  .topbar-user .user-chip {
+    display: none;
+  }
+}
+
+@media (max-width: 980px) {
+  .topbar {
+    position: sticky;
+  }
+
+  .topbar-main {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: max(12px, env(safe-area-inset-top)) 14px 12px;
+  }
+
+  .desktop-nav,
+  .topbar-user {
+    display: none;
+  }
+
+  .hamburger-button {
+    display: inline-flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+  }
+
+  .mobile-nav-panel {
+    display: grid;
+    gap: 14px;
+    max-height: calc(100dvh - 76px);
+    overflow-y: auto;
+    padding: 0 14px 16px;
+    border-top: 1px solid rgba(255, 220, 140, 0.14);
+    background:
+      linear-gradient(180deg, rgba(255, 220, 140, 0.06), transparent 20%),
+      linear-gradient(180deg, #211408, #080402);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobile-nav-panel[hidden] {
+    display: none;
+  }
+
+  .mobile-user-chip {
+    margin: 14px 0 4px;
+  }
+
+  .mobile-nav-panel .nav-section {
+    margin-bottom: 2px;
+  }
+
+  .mobile-nav-panel .nav-link {
+    display: flex;
+    width: 100%;
+    min-height: 48px;
+    margin: 0 0 8px;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .mobile-nav-panel .sign-out {
+    margin-top: 4px;
+  }
+
+  .top-main {
+    padding-top: 18px;
+  }
+}
+
+@media (max-width: 420px) {
+  .topbar-main {
+    padding-inline: 10px;
+  }
+
+  .topbar-brand .brand {
+    font-size: 20px;
+  }
+
+  .topbar-brand .brand-subtitle {
+    display: none;
+  }
+
+  .mobile-nav-panel {
+    padding-inline: 10px;
+  }
+}
