@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import './globals.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 
@@ -6,7 +7,7 @@ export const metadata = {
   description: 'Dallmayr South Africa internal operations ERP',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
