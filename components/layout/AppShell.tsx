@@ -22,7 +22,7 @@ function StatusScreen({
   loading?: boolean;
 }) {
   return (
-    <main className="main auth-state-page">
+    <main aria-busy={loading} className="main auth-state-page" role={loading ? 'status' : 'main'}>
       <div className="neo-card auth-state-card">
         <div className="orb" />
         {loading ? <HamsterLoader label={title} /> : null}
@@ -32,6 +32,10 @@ function StatusScreen({
       </div>
     </main>
   );
+}
+
+function isActivePath(pathname: string, href: string) {
+  return pathname === href || (href !== '/' && pathname.startsWith(`${href}/`));
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -69,6 +73,24 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setMenuOpen(false);
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [menuOpen]);
 
   const signOut = async () => {
     await getSupabaseClient().auth.signOut();
@@ -117,6 +139,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className={`app-shell top-shell ${menuOpen ? 'mobile-menu-open' : ''}`}>
+      <a className="skip-link" href="#main-content">Skip to main content</a>
+
+      {menuOpen ? <button aria-label="Close navigation menu" className="mobile-nav-backdrop" onClick={() => setMenuOpen(false)} type="button" /> : null}
+
       <header className="topbar">
         <div className="topbar-main">
           <Link className="topbar-brand" href={getDefaultPathForRole(userDetails.role)}>
@@ -129,15 +155,19 @@ export function AppShell({ children }: { children: ReactNode }) {
               <div className="topnav-section" key={section.heading}>
                 <span className="nav-heading">{section.heading}</span>
                 <div className="topnav-links">
-                  {section.items.map((item) => (
-                    <Link
-                      key={item.href}
-                      className={`nav-link ${pathname === item.href ? 'active' : ''}`}
-                      href={item.href}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
+                  {section.items.map((item) => {
+                    const active = isActivePath(pathname, item.href);
+                    return (
+                      <Link
+                        aria-current={active ? 'page' : undefined}
+                        key={item.href}
+                        className={`nav-link ${active ? 'active' : ''}`}
+                        href={item.href}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -168,7 +198,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
         </div>
 
-        <div className="mobile-nav-panel" hidden={!menuOpen} id="mobile-navigation">
+        <div aria-modal="true" className="mobile-nav-panel" hidden={!menuOpen} id="mobile-navigation" role="dialog">
           <div className="user-chip mobile-user-chip">
             <span>{displayProfileName(businessProfile)}</span>
             <strong>{roleLabels[userDetails.role]}</strong>
@@ -178,15 +208,19 @@ export function AppShell({ children }: { children: ReactNode }) {
             {visibleSections.map((section) => (
               <div className="nav-section" key={section.heading}>
                 <div className="nav-heading">{section.heading}</div>
-                {section.items.map((item) => (
-                  <Link
-                    key={item.href}
-                    className={`nav-link ${pathname === item.href ? 'active' : ''}`}
-                    href={item.href}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+                {section.items.map((item) => {
+                  const active = isActivePath(pathname, item.href);
+                  return (
+                    <Link
+                      aria-current={active ? 'page' : undefined}
+                      key={item.href}
+                      className={`nav-link ${active ? 'active' : ''}`}
+                      href={item.href}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
               </div>
             ))}
           </nav>
@@ -196,9 +230,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="main top-main">
+      <main className="main top-main" id="main-content" tabIndex={-1}>
         {!allowedPath ? (
-          <div className="neo-card access-denied">
+          <div className="neo-card access-denied" role="alert">
             <div className="badge danger">Access blocked</div>
             <h1>This page is not assigned to your role.</h1>
             <p>
