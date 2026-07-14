@@ -27,6 +27,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { authUser, businessProfile, businessUser, userDetails, loading, error } = useAuth();
   const profileComplete = isProfileComplete(userDetails);
+  const role = userDetails?.role;
 
   useEffect(() => {
     if (!loading && !authUser) {
@@ -35,7 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [authUser, loading, router]);
 
   useEffect(() => {
-    if (loading || !businessUser) return;
+    if (loading || !businessUser || !role) return;
 
     if (!profileComplete && pathname !== '/onboarding') {
       router.replace('/onboarding');
@@ -43,14 +44,14 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
 
     if (profileComplete && pathname === '/onboarding') {
-      router.replace(getDefaultPathForRole(businessUser.role));
+      router.replace(getDefaultPathForRole(role));
       return;
     }
 
-    if (pathname === '/' && businessUser.role !== 'admin') {
-      router.replace(getDefaultPathForRole(businessUser.role));
+    if (pathname === '/' && role !== 'admin') {
+      router.replace(getDefaultPathForRole(role));
     }
-  }, [businessUser, loading, pathname, profileComplete, router]);
+  }, [businessUser, loading, pathname, profileComplete, role, router]);
 
   const signOut = async () => {
     await getSupabaseClient().auth.signOut();
@@ -79,11 +80,21 @@ export function AppShell({ children }: { children: ReactNode }) {
     );
   }
 
-  const allowedPath = canAccessPath(businessUser.role, pathname);
+  if (!userDetails) {
+    return (
+      <StatusScreen
+        title="Role assignment pending"
+        message="Your email exists in public.users, but no corresponding user_details record was found. Ask an administrator to assign your role and branch."
+        action={<button className="button secondary" onClick={signOut} type="button">Sign out</button>}
+      />
+    );
+  }
+
+  const allowedPath = canAccessPath(userDetails.role, pathname);
   const visibleSections = navSections
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => isNavItemAllowed(businessUser.role, item)),
+      items: section.items.filter((item) => isNavItemAllowed(userDetails.role, item)),
     }))
     .filter((section) => section.items.length > 0);
 
@@ -94,7 +105,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="brand-subtitle">Role-based operations platform</div>
         <div className="user-chip">
           <span>{displayProfileName(businessProfile)}</span>
-          <strong>{roleLabels[businessUser.role]}</strong>
+          <strong>{roleLabels[userDetails.role]}</strong>
           {!profileComplete ? <em>Profile setup required</em> : null}
         </div>
         {visibleSections.map((section) => (
@@ -121,9 +132,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="badge danger">Access blocked</div>
             <h1>This page is not assigned to your role.</h1>
             <p>
-              Your current role is <strong>{roleLabels[businessUser.role]}</strong>. Use the navigation on the left to open your assigned pages.
+              Your current role is <strong>{roleLabels[userDetails.role]}</strong>. Use the navigation on the left to open your assigned pages.
             </p>
-            <Link className="button" href={getDefaultPathForRole(businessUser.role)}>Go to my workspace</Link>
+            <Link className="button" href={getDefaultPathForRole(userDetails.role)}>Go to my workspace</Link>
           </div>
         ) : (
           children
