@@ -26,8 +26,8 @@ export interface BusinessUser {
   id: string;
   auth_user_id: string | null;
   employee_code: string | null;
-  first_name: string;
-  last_name: string;
+  first_name: string | null;
+  last_name: string | null;
   full_name: string | null;
   email: string;
   phone_number: string | null;
@@ -40,6 +40,9 @@ export interface BusinessUser {
   employment_status: 'active' | 'inactive' | 'on_leave' | 'terminated';
   start_date: string | null;
   end_date: string | null;
+  onboarding_required: boolean;
+  profile_completed_at: string | null;
+  last_login_at: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -67,4 +70,12 @@ export interface KpiCardData {
   label: string;
   value: number | string;
   helper?: string;
+}
+
+export function displayUserName(user: Pick<BusinessUser, 'first_name' | 'last_name' | 'full_name' | 'email'>) {
+  const fromFullName = user.full_name?.trim();
+  if (fromFullName) return fromFullName;
+
+  const joined = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
+  return joined || user.email;
 }
