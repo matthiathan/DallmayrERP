@@ -1,6 +1,6 @@
 'use client';
 
-import { ChangeEvent, useRef, useState } from 'react';
+import { ChangeEvent, useState } from 'react';
 
 type BarcodeDetectorConstructor = new (options?: { formats?: string[] }) => {
   detect: (source: HTMLImageElement | ImageBitmap | Blob) => Promise<Array<{ rawValue: string }>>;
@@ -22,13 +22,13 @@ export function BarcodeCapture({
   onChange: (value: string) => void;
 }) {
   const [message, setMessage] = useState('Camera scan uses BarcodeDetector when available. Manual entry is always available.');
-  const imageRef = useRef<HTMLImageElement | null>(null);
 
   async function readBarcodeFromFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!window.BarcodeDetector) {
+    const Detector = window.BarcodeDetector;
+    if (!Detector) {
       setMessage('This browser does not support native barcode detection. Type or paste the barcode manually.');
       return;
     }
@@ -37,12 +37,10 @@ export function BarcodeCapture({
     const image = new Image();
     image.src = imageUrl;
     image.onload = async () => {
-      imageRef.current = image;
       try {
-        const detector = new window.BarcodeDetector?.({
+        const detector = new Detector({
           formats: ['code_128', 'code_39', 'ean_13', 'ean_8', 'qr_code', 'upc_a', 'upc_e'],
         });
-        if (!detector) throw new Error('Barcode detector unavailable.');
         const results = await detector.detect(image);
         const rawValue = results[0]?.rawValue;
         if (rawValue) {
