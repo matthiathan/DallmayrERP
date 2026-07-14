@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { AppShell } from '@/components/layout/AppShell';
+import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Branch, BusinessRole, BusinessUser, UserDetails } from '@/types/dallmayrerp';
 import { displayDetailsName, isProfileComplete } from '@/types/dallmayrerp';
@@ -186,7 +187,13 @@ export default function UsersPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9}>Loading users...</td></tr>
+              <tr>
+                <td colSpan={9}>
+                  <div className="table-loader">
+                    <HamsterLoader label="Loading users" />
+                  </div>
+                </td>
+              </tr>
             ) : users.length === 0 ? (
               <tr><td colSpan={9}>No access invites yet.</td></tr>
             ) : users.map((user) => {
