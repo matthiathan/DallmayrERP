@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { canAccessPath, getDefaultPathForRole, isNavItemAllowed, navSections, roleLabels } from '@/lib/auth/permissions';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { displayUserName } from '@/types/dallmayrerp';
 
 function StatusScreen({ title, message, action }: { title: string; message: string; action?: ReactNode }) {
   return (
@@ -33,7 +34,19 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [authUser, loading, router]);
 
   useEffect(() => {
-    if (!loading && businessUser && pathname === '/' && businessUser.role !== 'admin') {
+    if (loading || !businessUser) return;
+
+    if (businessUser.onboarding_required && pathname !== '/onboarding') {
+      router.replace('/onboarding');
+      return;
+    }
+
+    if (!businessUser.onboarding_required && pathname === '/onboarding') {
+      router.replace(getDefaultPathForRole(businessUser.role));
+      return;
+    }
+
+    if (pathname === '/' && businessUser.role !== 'admin') {
       router.replace(getDefaultPathForRole(businessUser.role));
     }
   }, [businessUser, loading, pathname, router]);
@@ -59,7 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     return (
       <StatusScreen
         title="Access pending"
-        message="Your login exists in Supabase Auth, but no matching active business profile was found in public.users. Ask an administrator to add your staff record with the same email address."
+        message="Your login exists in Supabase Auth, but no matching business profile was found in public.users. Ask an administrator to invite your email address first."
         action={<button className="button secondary" onClick={signOut} type="button">Sign out</button>}
       />
     );
@@ -79,8 +92,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="brand">DallmayrERP</div>
         <div className="brand-subtitle">Role-based operations platform</div>
         <div className="user-chip">
-          <span>{businessUser.full_name || `${businessUser.first_name} ${businessUser.last_name}`}</span>
+          <span>{displayUserName(businessUser)}</span>
           <strong>{roleLabels[businessUser.role]}</strong>
+          {businessUser.onboarding_required ? <em>Profile setup required</em> : null}
         </div>
         {visibleSections.map((section) => (
           <div className="nav-section" key={section.heading}>
