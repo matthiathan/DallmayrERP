@@ -43,6 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { authUser, businessProfile, businessUser, userDetails, loading, error } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [openDesktopSection, setOpenDesktopSection] = useState<string | null>(null);
   const profileComplete = isProfileComplete(userDetails);
   const role = userDetails?.role;
 
@@ -72,6 +73,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setMenuOpen(false);
+    setOpenDesktopSection(null);
   }, [pathname]);
 
   useEffect(() => {
@@ -154,8 +156,20 @@ export function AppShell({ children }: { children: ReactNode }) {
           <nav aria-label="Primary navigation" className="desktop-nav">
             {visibleSections.map((section) => {
               const sectionActive = section.items.some((item) => isActivePath(pathname, item.href));
+              const sectionOpen = openDesktopSection === section.heading;
               return (
-                <details className={`topnav-section topnav-dropdown ${sectionActive ? 'has-active' : ''}`} key={section.heading}>
+                <details
+                  className={`topnav-section topnav-dropdown ${sectionActive ? 'has-active' : ''}`}
+                  key={section.heading}
+                  onToggle={(event) => {
+                    const isOpen = event.currentTarget.open;
+                    setOpenDesktopSection((current) => {
+                      if (isOpen) return section.heading;
+                      return current === section.heading ? null : current;
+                    });
+                  }}
+                  open={sectionOpen}
+                >
                   <summary className="topnav-trigger">
                     <span>{section.heading}</span>
                     <span aria-hidden="true" className="dropdown-chevron">▾</span>
