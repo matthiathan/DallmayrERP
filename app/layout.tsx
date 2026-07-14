@@ -3,6 +3,7 @@ import type { Viewport } from 'next';
 import './globals.css';
 import './hamster-loader.css';
 import './feature-widgets.css';
+import './navigation.css';
 import './mobile.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 
