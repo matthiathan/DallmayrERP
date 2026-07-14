@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
+import { ExecutiveReportingPanel } from '@/components/features/ExecutiveReportingPanel';
 import { KpiCard } from '@/components/ui/KpiCard';
+import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { countRawContracts, countRawCustomers, countRawServiceCalls, safeCountRows } from '@/lib/data/counts';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
@@ -49,15 +51,16 @@ export default function DashboardPage() {
 
   return (
     <AppShell>
-      <div className="page-header">
+      <div className="page-header hero-panel">
         <div>
+          <div className="badge">Admin command centre</div>
           <h1>DallmayrERP Dashboard</h1>
-          <p>Live overview from the DallmayrERP Supabase database.</p>
+          <p>Live overview from Supabase plus operational reporting for branch and department accountability.</p>
         </div>
       </div>
       {error ? <div className="error">{error}</div> : null}
-      {loading ? <p>Loading dashboard...</p> : null}
-      <div className="grid grid-3">
+      {loading ? <HamsterLoader label="Loading dashboard" /> : null}
+      <div className="grid grid-3" style={{ marginBottom: 20 }}>
         <KpiCard label="Customers" value={data.customers} helper="JHB, CPT and KZN customer master rows" />
         <KpiCard label="Contracts" value={data.contracts} helper="All branch contract agreement rows" />
         <KpiCard label="Machines / Assets" value={data.assets} helper="Fixed assets imported into Supabase" />
@@ -65,6 +68,7 @@ export default function DashboardPage() {
         <KpiCard label="Stock Items" value={data.stockItems} helper="Warehouse product records" />
         <KpiCard label="Business Users" value={data.users} helper="Staff records in public.users" />
       </div>
+      <ExecutiveReportingPanel />
     </AppShell>
   );
 }
