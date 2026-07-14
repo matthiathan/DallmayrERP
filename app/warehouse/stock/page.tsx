@@ -2,6 +2,9 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
+import { DocumentHub } from '@/components/features/DocumentHub';
+import { StockScannerPanel } from '@/components/features/StockScannerPanel';
+import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { StockItem } from '@/types/dallmayrerp';
 
@@ -90,10 +93,11 @@ export default function WarehouseStockPage() {
 
   return (
     <AppShell>
-      <div className="page-header">
+      <div className="page-header hero-panel">
         <div>
+          <div className="badge">Warehouse</div>
           <h1>Warehouse Stock</h1>
-          <p>Add shipment stock, maintain barcodes and prepare inventory for deliveries.</p>
+          <p>Add shipment stock, scan barcodes, share warehouse documentation and prepare inventory for deliveries.</p>
         </div>
       </div>
 
@@ -106,22 +110,25 @@ export default function WarehouseStockPage() {
         <div className="card"><div className="nav-heading">Loose items</div><div className="kpi-value">{items.reduce((sum, item) => sum + item.item_quantity, 0)}</div></div>
       </div>
 
-      <div className="card" style={{ marginBottom: 20 }}>
-        <h2>Add or update stock</h2>
-        <form className="form-grid" onSubmit={addStock}>
-          <label>Stock name<input required value={form.stock_name} onChange={(e) => setForm({ ...form, stock_name: e.target.value })} /></label>
-          <label>Item barcode<input required value={form.item_barcode} onChange={(e) => setForm({ ...form, item_barcode: e.target.value })} /></label>
-          <label>Box barcode<input value={form.box_barcode} onChange={(e) => setForm({ ...form, box_barcode: e.target.value })} /></label>
-          <label>Item quantity<input type="number" min="0" value={form.item_quantity} onChange={(e) => setForm({ ...form, item_quantity: Number(e.target.value) })} /></label>
-          <label>Box quantity<input type="number" min="0" value={form.box_quantity} onChange={(e) => setForm({ ...form, box_quantity: Number(e.target.value) })} /></label>
-          <label>Items per box<input type="number" min="1" value={form.items_per_box} onChange={(e) => setForm({ ...form, items_per_box: Number(e.target.value) })} /></label>
-          <label>Category<input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} /></label>
-          <label>Supplier<input value={form.supplier_name} onChange={(e) => setForm({ ...form, supplier_name: e.target.value })} /></label>
-          <label>Warehouse location<input value={form.warehouse_location} onChange={(e) => setForm({ ...form, warehouse_location: e.target.value })} /></label>
-          <label>Reorder level<input type="number" min="0" value={form.reorder_level} onChange={(e) => setForm({ ...form, reorder_level: Number(e.target.value) })} /></label>
-          <label>Notes<input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></label>
-          <div style={{ alignSelf: 'end' }}><button className="button" disabled={saving}>{saving ? 'Saving...' : 'Save stock'}</button></div>
-        </form>
+      <div className="grid grid-2" style={{ marginBottom: 20 }}>
+        <StockScannerPanel />
+        <div className="card">
+          <h2>Add or update stock manually</h2>
+          <form className="form-grid" onSubmit={addStock}>
+            <label>Stock name<input required value={form.stock_name} onChange={(e) => setForm({ ...form, stock_name: e.target.value })} /></label>
+            <label>Item barcode<input required value={form.item_barcode} onChange={(e) => setForm({ ...form, item_barcode: e.target.value })} /></label>
+            <label>Box barcode<input value={form.box_barcode} onChange={(e) => setForm({ ...form, box_barcode: e.target.value })} /></label>
+            <label>Item quantity<input type="number" min="0" value={form.item_quantity} onChange={(e) => setForm({ ...form, item_quantity: Number(e.target.value) })} /></label>
+            <label>Box quantity<input type="number" min="0" value={form.box_quantity} onChange={(e) => setForm({ ...form, box_quantity: Number(e.target.value) })} /></label>
+            <label>Items per box<input type="number" min="1" value={form.items_per_box} onChange={(e) => setForm({ ...form, items_per_box: Number(e.target.value) })} /></label>
+            <label>Category<input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} /></label>
+            <label>Supplier<input value={form.supplier_name} onChange={(e) => setForm({ ...form, supplier_name: e.target.value })} /></label>
+            <label>Warehouse location<input value={form.warehouse_location} onChange={(e) => setForm({ ...form, warehouse_location: e.target.value })} /></label>
+            <label>Reorder level<input type="number" min="0" value={form.reorder_level} onChange={(e) => setForm({ ...form, reorder_level: Number(e.target.value) })} /></label>
+            <label>Notes<input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></label>
+            <div style={{ alignSelf: 'end' }}><button className="button" disabled={saving}>{saving ? 'Saving...' : 'Save stock'}</button></div>
+          </form>
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: 20 }}>
@@ -131,11 +138,11 @@ export default function WarehouseStockPage() {
         </div>
       </div>
 
-      <div className="table-wrap">
+      <div className="table-wrap" style={{ marginBottom: 20 }}>
         <table>
           <thead><tr><th>Stock name</th><th>Item barcode</th><th>Box barcode</th><th>Items</th><th>Boxes</th><th>Items / box</th><th>Location</th><th>Reorder</th></tr></thead>
           <tbody>
-            {loading ? <tr><td colSpan={8}>Loading stock...</td></tr> : items.length === 0 ? <tr><td colSpan={8}>No stock items yet.</td></tr> : items.map((item) => (
+            {loading ? <tr><td colSpan={8}><HamsterLoader label="Loading stock" /></td></tr> : items.length === 0 ? <tr><td colSpan={8}>No stock items yet.</td></tr> : items.map((item) => (
               <tr key={item.id}>
                 <td>{item.stock_name}</td>
                 <td>{item.item_barcode}</td>
@@ -150,6 +157,8 @@ export default function WarehouseStockPage() {
           </tbody>
         </table>
       </div>
+
+      <DocumentHub department="warehouse" branch="all" />
     </AppShell>
   );
 }
