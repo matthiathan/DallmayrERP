@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { BusinessUser } from '@/types/dallmayrerp';
@@ -50,7 +51,7 @@ async function loadBusinessProfile(authUser: User | null): Promise<BusinessUser 
   return (byEmail.data ?? null) as BusinessUser | null;
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [businessUser, setBusinessUser] = useState<BusinessUser | null>(null);
   const [loading, setLoading] = useState(true);
