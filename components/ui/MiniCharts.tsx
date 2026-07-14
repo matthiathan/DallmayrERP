@@ -12,7 +12,7 @@ function safeMax(data: ChartPoint[]) {
 export function BarChart({ title, data }: { title: string; data: ChartPoint[] }) {
   const max = safeMax(data);
   return (
-    <div className="neo-card chart-card">
+    <div className="neo-card chart-card spatial-card">
       <h3>{title}</h3>
       <div className="bar-chart" aria-label={title}>
         {data.map((item) => (
@@ -38,7 +38,7 @@ export function DonutChart({ title, data }: { title: string; data: ChartPoint[] 
   }).join(', ');
 
   return (
-    <div className="neo-card chart-card">
+    <div className="neo-card chart-card spatial-card">
       <h3>{title}</h3>
       <div className="donut-wrap">
         <div className="donut" style={{ background: `conic-gradient(${stops}, rgba(255,255,255,0.08) 0)` }}>
@@ -56,9 +56,9 @@ export function DonutChart({ title, data }: { title: string; data: ChartPoint[] 
 
 export function StatStrip({ data }: { data: ChartPoint[] }) {
   return (
-    <div className="grid grid-3" style={{ marginBottom: 20 }}>
+    <div className="grid grid-3 spatial-kpi-grid" style={{ marginBottom: 20 }}>
       {data.map((item) => (
-        <div className="card" key={item.label}>
+        <div className="card spatial-card" key={item.label}>
           <div className="nav-heading">{item.label}</div>
           <div className="kpi-value">{item.value.toLocaleString()}</div>
         </div>
