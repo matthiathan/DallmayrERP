@@ -35,7 +35,7 @@ export interface UserDetails {
 
 export interface BusinessProfile {
   user: BusinessUser;
-  details: UserDetails;
+  details: UserDetails | null;
 }
 
 export interface StockItem {
@@ -75,11 +75,6 @@ export function isProfileComplete(details: UserDetails | null) {
 
 export function displayProfileName(profile: BusinessProfile | null) {
   if (!profile) return 'Unknown user';
-  const joined = [profile.details.first_name, profile.details.last_name].filter(Boolean).join(' ').trim();
+  const joined = [profile.details?.first_name, profile.details?.last_name].filter(Boolean).join(' ').trim();
   return joined || profile.user.email;
-}
-
-export function displayDetailsName(details: UserDetails | null, fallbackEmail: string) {
-  const joined = [details?.first_name, details?.last_name].filter(Boolean).join(' ').trim();
-  return joined || fallbackEmail;
 }
