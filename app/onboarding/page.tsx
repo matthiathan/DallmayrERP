@@ -9,21 +9,24 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { businessUser, refreshProfile } = useAuth();
+  const { businessUser, userDetails, refreshProfile } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [birthday, setBirthday] = useState('');
+  const [emergencyContactName, setEmergencyContactName] = useState('');
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!businessUser) return;
-    setFirstName(businessUser.first_name ?? '');
-    setLastName(businessUser.last_name ?? '');
-    setPhoneNumber(businessUser.phone_number ?? '');
-    setBirthday(businessUser.birthday ?? '');
-  }, [businessUser]);
+    setFirstName(userDetails?.first_name ?? '');
+    setLastName(userDetails?.last_name ?? '');
+    setPhoneNumber(userDetails?.phone_number ?? '');
+    setBirthday(userDetails?.birthday ?? '');
+    setEmergencyContactName(userDetails?.emergency_contact_name ?? '');
+    setEmergencyContactPhone(userDetails?.emergency_contact_phone ?? '');
+  }, [userDetails]);
 
   async function completeProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -41,26 +44,35 @@ export default function OnboardingPage() {
     setSaving(true);
     setError(null);
 
-    const { error: updateError } = await getSupabaseClient()
-      .from('users')
-      .update({
-        first_name: cleanFirstName,
-        last_name: cleanLastName,
-        phone_number: cleanPhone,
-        birthday: birthday || null,
-        onboarding_required: false,
-        profile_completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', businessUser.id);
+    const now = new Date().toISOString();
+    const payload = {
+      user_id: businessUser.id,
+      first_name: cleanFirstName,
+      last_name: cleanLastName,
+      phone_number: cleanPhone,
+      birthday: birthday || null,
+      emergency_contact_name: emergencyContactName.trim() || null,
+      emergency_contact_phone: emergencyContactPhone.trim() || null,
+      profile_completed_at: now,
+      updated_at: now,
+    };
 
-    setSaving(false);
+    const { error: detailsError } = await getSupabaseClient()
+      .from('user_details')
+      .upsert(payload, { onConflict: 'user_id' });
 
-    if (updateError) {
-      setError(updateError.message);
+    if (detailsError) {
+      setSaving(false);
+      setError(detailsError.message);
       return;
     }
 
+    await getSupabaseClient()
+      .from('users')
+      .update({ onboarding_required: false, profile_completed_at: now, updated_at: now })
+      .eq('id', businessUser.id);
+
+    setSaving(false);
     await refreshProfile();
     router.replace(getDefaultPathForRole(businessUser.role));
   }
@@ -88,7 +100,7 @@ export default function OnboardingPage() {
             <span className="feature-pill">Branch: {businessUser?.branch ?? 'not assigned'}</span>
             <span className="feature-pill">Email: {businessUser?.email}</span>
           </div>
-          <p>These fields are controlled by admin and cannot be changed here.</p>
+          <p>These access fields are controlled by admin and cannot be changed on this page.</p>
         </div>
 
         <div className="neo-card">
@@ -109,6 +121,14 @@ export default function OnboardingPage() {
             <label>
               Birthday
               <input type="date" value={birthday} onChange={(event) => setBirthday(event.target.value)} />
+            </label>
+            <label>
+              Emergency contact name
+              <input value={emergencyContactName} onChange={(event) => setEmergencyContactName(event.target.value)} />
+            </label>
+            <label>
+              Emergency contact phone
+              <input value={emergencyContactPhone} onChange={(event) => setEmergencyContactPhone(event.target.value)} />
             </label>
             <button className="button pulse-button" type="submit" disabled={saving}>
               {saving ? 'Saving profile...' : 'Complete profile'}
