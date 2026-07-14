@@ -1,55 +1,87 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { canAccessPath, getDefaultPathForRole, isNavItemAllowed, navSections, roleLabels } from '@/lib/auth/permissions';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
-const nav = [
-  {
-    heading: 'Operations',
-    items: [
-      { href: '/', label: 'Dashboard' },
-      { href: '/admin/users', label: 'Users' },
-      { href: '/warehouse/stock', label: 'Warehouse Stock' },
-    ],
-  },
-  {
-    heading: 'Marketing',
-    items: [
-      { href: '/marketing', label: 'Marketing Dashboard' },
-      { href: '/marketing/segments', label: 'Segments' },
-      { href: '/marketing/campaigns', label: 'Campaigns' },
-      { href: '/marketing/contract-renewals', label: 'Contract Renewals' },
-      { href: '/marketing/reports', label: 'Marketing Reports' },
-    ],
-  },
-  {
-    heading: 'Executive',
-    items: [
-      { href: '/executive', label: 'Executive Overview' },
-      { href: '/executive/branches', label: 'Branch Performance' },
-      { href: '/executive/contracts', label: 'Contract Risk' },
-      { href: '/executive/service', label: 'Service Performance' },
-      { href: '/executive/warehouse', label: 'Warehouse Risk' },
-      { href: '/executive/reports', label: 'Executive Reports' },
-    ],
-  },
-];
+function StatusScreen({ title, message, action }: { title: string; message: string; action?: React.ReactNode }) {
+  return (
+    <main className="main auth-state-page">
+      <div className="neo-card auth-state-card">
+        <div className="orb" />
+        <h1>{title}</h1>
+        <p>{message}</p>
+        {action ? <div className="action-row">{action}</div> : null}
+      </div>
+    </main>
+  );
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { authUser, businessUser, loading, error } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !authUser) {
+      router.replace('/login');
+    }
+  }, [authUser, loading, router]);
+
+  useEffect(() => {
+    if (!loading && businessUser && pathname === '/' && businessUser.role !== 'admin') {
+      router.replace(getDefaultPathForRole(businessUser.role));
+    }
+  }, [businessUser, loading, pathname, router]);
 
   const signOut = async () => {
     await getSupabaseClient().auth.signOut();
     window.location.href = '/login';
   };
 
+  if (loading) {
+    return <StatusScreen title="Loading secure workspace" message="Checking your Supabase session and business role." />;
+  }
+
+  if (!authUser) {
+    return <StatusScreen title="Redirecting to sign in" message="You need to sign in before opening DallmayrERP." />;
+  }
+
+  if (error) {
+    return <StatusScreen title="Profile check failed" message={error} />;
+  }
+
+  if (!businessUser) {
+    return (
+      <StatusScreen
+        title="Access pending"
+        message="Your login exists in Supabase Auth, but no matching active business profile was found in public.users. Ask an administrator to add your staff record with the same email address."
+        action={<button className="button secondary" onClick={signOut} type="button">Sign out</button>}
+      />
+    );
+  }
+
+  const allowedPath = canAccessPath(businessUser.role, pathname);
+  const visibleSections = navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => isNavItemAllowed(businessUser.role, item)),
+    }))
+    .filter((section) => section.items.length > 0);
+
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      <aside className="sidebar neo-sidebar">
         <div className="brand">DallmayrERP</div>
-        <div className="brand-subtitle">Operations, marketing and executive control</div>
-        {nav.map((section) => (
+        <div className="brand-subtitle">Role-based operations platform</div>
+        <div className="user-chip">
+          <span>{businessUser.full_name || `${businessUser.first_name} ${businessUser.last_name}`}</span>
+          <strong>{roleLabels[businessUser.role]}</strong>
+        </div>
+        {visibleSections.map((section) => (
           <div className="nav-section" key={section.heading}>
             <div className="nav-heading">{section.heading}</div>
             {section.items.map((item) => (
@@ -63,11 +95,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ))}
           </div>
         ))}
-        <button className="button secondary" onClick={signOut} type="button">
+        <button className="button secondary sign-out" onClick={signOut} type="button">
           Sign out
         </button>
       </aside>
-      <main className="main">{children}</main>
+      <main className="main">
+        {!allowedPath ? (
+          <div className="neo-card access-denied">
+            <div className="badge danger">Access blocked</div>
+            <h1>This page is not assigned to your role.</h1>
+            <p>
+              Your current role is <strong>{roleLabels[businessUser.role]}</strong>. Use the navigation on the left to open your assigned pages.
+            </p>
+            <Link className="button" href={getDefaultPathForRole(businessUser.role)}>Go to my workspace</Link>
+          </div>
+        ) : (
+          children
+        )}
+      </main>
     </div>
   );
 }
