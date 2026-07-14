@@ -206,6 +206,46 @@ canvas {
     transform: scale(0.9);
     transform-origin: center;
   }
+
+  .chart-card {
+    min-height: auto;
+    overflow: hidden;
+  }
+
+  .bar-row {
+    grid-template-columns: 72px 1fr 56px;
+    gap: 8px;
+  }
+
+  .bar-row span,
+  .bar-row strong,
+  .chart-legend {
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+
+  .donut-wrap {
+    grid-template-columns: 1fr;
+    place-items: center;
+    text-align: center;
+  }
+
+  .donut {
+    width: min(150px, 60vw);
+    height: min(150px, 60vw);
+  }
+
+  .scanner-box {
+    padding: 12px;
+  }
+
+  .scanner-box p {
+    font-size: 13px;
+  }
+
+  .scanner-box input[type='file'] {
+    width: 100%;
+  }
 }
 
 @media (max-width: 640px) {
@@ -275,6 +315,24 @@ canvas {
   .success {
     font-size: 14px;
   }
+
+  .bar-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .bar-track {
+    height: 20px;
+  }
+
+  .chart-legend {
+    width: 100%;
+    text-align: left;
+  }
+
+  .donut::after {
+    inset: 28px;
+  }
 }
 
 @media (max-width: 420px) {
@@ -294,5 +352,9 @@ canvas {
 
   table {
     min-width: 580px;
+  }
+
+  .hamster-loader {
+    transform: scale(0.82);
   }
 }
