@@ -160,7 +160,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <span>{section.heading}</span>
                     <span aria-hidden="true" className="dropdown-chevron">▾</span>
                   </summary>
-                  <div className="topnav-menu" role="list">
+                  <div className="topnav-menu">
                     {section.items.map((item) => {
                       const active = isActivePath(pathname, item.href);
                       return (
@@ -169,7 +169,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                           key={item.href}
                           className={`nav-link ${active ? 'active' : ''}`}
                           href={item.href}
-                          role="listitem"
                         >
                           {item.label}
                         </Link>
