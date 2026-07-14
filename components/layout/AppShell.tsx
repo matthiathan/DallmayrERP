@@ -129,6 +129,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     );
   }
 
+  const homePath = getDefaultPathForRole(userDetails.role);
   const allowedPath = canAccessPath(userDetails.role, pathname);
   const visibleSections = navSections
     .map((section) => ({
@@ -145,32 +146,39 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <header className="topbar">
         <div className="topbar-main">
-          <Link className="topbar-brand" href={getDefaultPathForRole(userDetails.role)}>
+          <Link className="topbar-brand" href={homePath}>
             <span className="brand">DallmayrERP</span>
             <span className="brand-subtitle">Role-based operations platform</span>
           </Link>
 
           <nav aria-label="Primary navigation" className="desktop-nav">
-            {visibleSections.map((section) => (
-              <div className="topnav-section" key={section.heading}>
-                <span className="nav-heading">{section.heading}</span>
-                <div className="topnav-links">
-                  {section.items.map((item) => {
-                    const active = isActivePath(pathname, item.href);
-                    return (
-                      <Link
-                        aria-current={active ? 'page' : undefined}
-                        key={item.href}
-                        className={`nav-link ${active ? 'active' : ''}`}
-                        href={item.href}
-                      >
-                        {item.label}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+            {visibleSections.map((section) => {
+              const sectionActive = section.items.some((item) => isActivePath(pathname, item.href));
+              return (
+                <details className={`topnav-section topnav-dropdown ${sectionActive ? 'has-active' : ''}`} key={section.heading}>
+                  <summary className="topnav-trigger">
+                    <span>{section.heading}</span>
+                    <span aria-hidden="true" className="dropdown-chevron">▾</span>
+                  </summary>
+                  <div className="topnav-menu" role="list">
+                    {section.items.map((item) => {
+                      const active = isActivePath(pathname, item.href);
+                      return (
+                        <Link
+                          aria-current={active ? 'page' : undefined}
+                          key={item.href}
+                          className={`nav-link ${active ? 'active' : ''}`}
+                          href={item.href}
+                          role="listitem"
+                        >
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </details>
+              );
+            })}
           </nav>
 
           <div className="topbar-user">
@@ -187,7 +195,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button
             aria-controls="mobile-navigation"
             aria-expanded={menuOpen}
-            aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-label={menuOpen ? 'Close quick navigation menu' : 'Open quick navigation menu'}
             className="hamburger-button"
             onClick={() => setMenuOpen((current) => !current)}
             type="button"
@@ -204,6 +212,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             <strong>{roleLabels[userDetails.role]}</strong>
             {!profileComplete ? <em>Profile setup required</em> : null}
           </div>
+          <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} className="mobile-primary-link" href={homePath}>
+            My workspace
+          </Link>
           <nav aria-label="Mobile navigation">
             {visibleSections.map((section) => (
               <div className="nav-section" key={section.heading}>
@@ -238,7 +249,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <p>
               Your current role is <strong>{roleLabels[userDetails.role]}</strong>. Use the navigation menu to open your assigned pages.
             </p>
-            <Link className="button" href={getDefaultPathForRole(userDetails.role)}>Go to my workspace</Link>
+            <Link className="button" href={homePath}>Go to my workspace</Link>
           </div>
         ) : (
           children
