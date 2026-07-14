@@ -5,63 +5,148 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { getDefaultPathForRole } from '@/lib/auth/permissions';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { isProfileComplete } from '@/types/dallmayrerp';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { authUser, businessUser, loading } = useAuth();
+  const { authUser, businessUser, userDetails, loading } = useAuth();
+  const [mode, setMode] = useState<'login' | 'activate'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!loading && authUser && businessUser) {
-      router.replace(businessUser.onboarding_required ? '/onboarding' : getDefaultPathForRole(businessUser.role));
+      router.replace(isProfileComplete(userDetails) ? getDefaultPathForRole(businessUser.role) : '/onboarding');
     }
-  }, [authUser, businessUser, loading, router]);
+  }, [authUser, businessUser, userDetails, loading, router]);
 
   async function login(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setSuccess(null);
     setSubmitting(true);
 
     const client = getSupabaseClient();
+    const cleanEmail = email.trim().toLowerCase();
     const { error: loginError } = await client.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
+      email: cleanEmail,
       password,
     });
 
     setSubmitting(false);
 
     if (loginError) {
-      setError('Login failed. Check that this user exists in Supabase Auth and that the password is correct.');
+      setError('Login failed. Check that your account is activated and that the password is correct.');
       return;
     }
 
     router.replace('/');
   }
 
+  async function activate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setSuccess(null);
+    setSubmitting(true);
+
+    const client = getSupabaseClient();
+    const cleanEmail = email.trim().toLowerCase();
+
+    const { data: invite, error: inviteError } = await client
+      .from('users')
+      .select('id,email,employment_status')
+      .eq('email', cleanEmail)
+      .maybeSingle();
+
+    if (inviteError) {
+      setSubmitting(false);
+      setError(inviteError.message);
+      return;
+    }
+
+    if (!invite) {
+      setSubmitting(false);
+      setError('Your email has not been invited yet. Ask an admin to add your email in Users & Roles first.');
+      return;
+    }
+
+    if (invite.employment_status !== 'active') {
+      setSubmitting(false);
+      setError('Your invite exists, but it is not active. Ask an admin to activate your user record.');
+      return;
+    }
+
+    const { error: signUpError } = await client.auth.signUp({
+      email: cleanEmail,
+      password,
+    });
+
+    if (signUpError) {
+      setSubmitting(false);
+      setError(signUpError.message);
+      return;
+    }
+
+    const { error: loginError } = await client.auth.signInWithPassword({
+      email: cleanEmail,
+      password,
+    });
+
+    setSubmitting(false);
+
+    if (loginError) {
+      setSuccess('Account activation started. Check your email if Supabase requires confirmation, then sign in.');
+      setMode('login');
+      return;
+    }
+
+    router.replace('/onboarding');
+  }
+
+  const isActivate = mode === 'activate';
+
   return (
     <main className="login-page">
       <div className="login-card neo-card">
         <div className="orb" />
         <div className="badge">Secure ERP</div>
-        <h1>DallmayrERP Sign In</h1>
-        <p>Use your Supabase Auth account. New users complete their personal profile once before their role workspace unlocks.</p>
+        <h1>{isActivate ? 'Activate your DallmayrERP account' : 'DallmayrERP Sign In'}</h1>
+        <p>
+          {isActivate
+            ? 'Use the email your admin invited. Create a password, then complete your profile on first login.'
+            : 'Use your Supabase Auth account. New users complete their personal profile once before their role workspace unlocks.'}
+        </p>
         {error ? <div className="error">{error}</div> : null}
-        <form onSubmit={login} className="grid" style={{ marginTop: 20 }}>
+        {success ? <div className="success">{success}</div> : null}
+        <form onSubmit={isActivate ? activate : login} className="grid" style={{ marginTop: 20 }}>
           <label>
             Email
             <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required />
           </label>
           <label>
             Password
-            <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" required />
+            <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" minLength={6} required />
           </label>
           <button className="button pulse-button" disabled={submitting} type="submit">
-            {submitting ? 'Signing in...' : 'Sign in'}
+            {submitting ? 'Please wait...' : isActivate ? 'Activate account' : 'Sign in'}
           </button>
         </form>
+        <div className="action-row">
+          <button
+            className="button secondary"
+            type="button"
+            onClick={() => {
+              setMode(isActivate ? 'login' : 'activate');
+              setError(null);
+              setSuccess(null);
+            }}
+          >
+            {isActivate ? 'I already have an account' : 'First login? Activate account'}
+          </button>
+        </div>
       </div>
     </main>
   );
