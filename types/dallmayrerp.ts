@@ -73,8 +73,12 @@ export function isProfileComplete(details: UserDetails | null) {
   );
 }
 
+export function displayDetailsName(details: UserDetails | null, fallbackEmail: string) {
+  const joined = [details?.first_name, details?.last_name].filter(Boolean).join(' ').trim();
+  return joined || fallbackEmail;
+}
+
 export function displayProfileName(profile: BusinessProfile | null) {
   if (!profile) return 'Unknown user';
-  const joined = [profile.details?.first_name, profile.details?.last_name].filter(Boolean).join(' ').trim();
-  return joined || profile.user.email;
+  return displayDetailsName(profile.details, profile.user.email);
 }
