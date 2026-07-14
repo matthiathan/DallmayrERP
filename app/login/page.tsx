@@ -16,7 +16,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!loading && authUser && businessUser) {
-      router.replace(getDefaultPathForRole(businessUser.role));
+      router.replace(businessUser.onboarding_required ? '/onboarding' : getDefaultPathForRole(businessUser.role));
     }
   }, [authUser, businessUser, loading, router]);
 
@@ -25,7 +25,8 @@ export default function LoginPage() {
     setError(null);
     setSubmitting(true);
 
-    const { error: loginError } = await getSupabaseClient().auth.signInWithPassword({
+    const client = getSupabaseClient();
+    const { error: loginError } = await client.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
     });
@@ -46,7 +47,7 @@ export default function LoginPage() {
         <div className="orb" />
         <div className="badge">Secure ERP</div>
         <h1>DallmayrERP Sign In</h1>
-        <p>Use your Supabase Auth account. Your ERP pages are assigned from your business role in public.users.</p>
+        <p>Use your Supabase Auth account. New users complete their personal profile once before their role workspace unlocks.</p>
         {error ? <div className="error">{error}</div> : null}
         <form onSubmit={login} className="grid" style={{ marginTop: 20 }}>
           <label>
