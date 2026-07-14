@@ -55,30 +55,6 @@ export default function LoginPage() {
     const client = getSupabaseClient();
     const cleanEmail = email.trim().toLowerCase();
 
-    const { data: invite, error: inviteError } = await client
-      .from('users')
-      .select('id,email,employment_status')
-      .eq('email', cleanEmail)
-      .maybeSingle();
-
-    if (inviteError) {
-      setSubmitting(false);
-      setError(inviteError.message);
-      return;
-    }
-
-    if (!invite) {
-      setSubmitting(false);
-      setError('Your email has not been invited yet. Ask an admin to add your email in Users & Roles first.');
-      return;
-    }
-
-    if (invite.employment_status !== 'active') {
-      setSubmitting(false);
-      setError('Your invite exists, but it is not active. Ask an admin to activate your user record.');
-      return;
-    }
-
     const { error: signUpError } = await client.auth.signUp({
       email: cleanEmail,
       password,
@@ -98,12 +74,12 @@ export default function LoginPage() {
     setSubmitting(false);
 
     if (loginError) {
-      setSuccess('Account activation started. Check your email if Supabase requires confirmation, then sign in.');
+      setSuccess('Account activation started. Check your email if Supabase requires confirmation, then sign in. Your email must still be invited by admin before ERP access unlocks.');
       setMode('login');
       return;
     }
 
-    router.replace('/onboarding');
+    router.replace('/');
   }
 
   const isActivate = mode === 'activate';
@@ -116,7 +92,7 @@ export default function LoginPage() {
         <h1>{isActivate ? 'Activate your DallmayrERP account' : 'DallmayrERP Sign In'}</h1>
         <p>
           {isActivate
-            ? 'Use the email your admin invited. Create a password, then complete your profile on first login.'
+            ? 'Create your Supabase login account. ERP access only unlocks when admin has invited the same email in Users & Roles.'
             : 'Use your Supabase Auth account. New users complete their personal profile once before their role workspace unlocks.'}
         </p>
         {error ? <div className="error">{error}</div> : null}
