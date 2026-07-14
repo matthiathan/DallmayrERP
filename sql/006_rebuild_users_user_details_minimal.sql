@@ -1,27 +1,20 @@
 -- Rebuild DallmayrERP staff model
 -- users = authentication-linked email identity only
 -- user_details = staff profile, role and branch
+-- This archives old tables instead of dropping them, then recreates fresh tables.
 
-create temp table if not exists staff_rebuild_backup as
-select
-  lower(trim(u.email)) as email,
-  nullif(trim(coalesce(d.first_name, u.first_name, '')), '') as first_name,
-  nullif(trim(coalesce(d.last_name, u.last_name, '')), '') as last_name,
-  nullif(trim(coalesce(d.phone_number, u.phone_number, '')), '') as phone_number,
-  coalesce(d.birthday, u.birthday) as birthday,
-  coalesce(d.role, u.role, 'operations') as role,
-  coalesce(d.branch, u.branch, 'national') as branch,
-  d.emergency_contact_name,
-  d.emergency_contact_phone
-from public.users u
-left join public.user_details d on d.user_id = u.id
-where nullif(trim(u.email), '') is not null;
+do $$
+begin
+  if to_regclass('public.user_details') is not null and to_regclass('public.user_details_legacy_20260714') is null then
+    alter table public.user_details rename to user_details_legacy_20260714;
+  end if;
 
--- Drop the current staff tables and dependent foreign keys/policies.
-drop table if exists public.user_details cascade;
-drop table if exists public.users cascade;
+  if to_regclass('public.users') is not null and to_regclass('public.users_legacy_20260714') is null then
+    alter table public.users rename to users_legacy_20260714;
+  end if;
+end $$;
 
-create table public.users (
+create table if not exists public.users (
   id uuid primary key default gen_random_uuid(),
   email text not null unique,
   created_at timestamptz not null default now(),
@@ -30,7 +23,7 @@ create table public.users (
   constraint users_email_format_check check (email ~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$')
 );
 
-create table public.user_details (
+create table if not exists public.user_details (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null unique references public.users(id) on delete cascade,
   first_name text,
@@ -45,14 +38,14 @@ create table public.user_details (
   updated_at timestamptz not null default now()
 );
 
-create index user_details_user_id_idx on public.user_details(user_id);
-create index user_details_role_idx on public.user_details(role);
-create index user_details_branch_idx on public.user_details(branch);
+create index if not exists user_details_user_id_idx on public.user_details(user_id);
+create index if not exists user_details_role_idx on public.user_details(role);
+create index if not exists user_details_branch_idx on public.user_details(branch);
 
 insert into public.users (email)
-select distinct email
-from staff_rebuild_backup
-where email is not null
+select distinct lower(trim(email))
+from public.users_legacy_20260714
+where nullif(trim(email), '') is not null
 on conflict (email) do nothing;
 
 insert into public.user_details (
@@ -67,17 +60,19 @@ insert into public.user_details (
   emergency_contact_phone
 )
 select
-  u.id,
-  b.first_name,
-  b.last_name,
-  b.phone_number,
-  b.birthday,
-  case when b.role in ('admin', 'operations', 'sales', 'finance', 'marketing', 'executive', 'warehouse_staff', 'technician', 'road_technician') then b.role else 'operations' end,
-  case when b.branch in ('jhb', 'cpt', 'kzn', 'national') then b.branch else 'national' end,
-  b.emergency_contact_name,
-  b.emergency_contact_phone
-from staff_rebuild_backup b
-join public.users u on u.email = b.email
+  new_u.id,
+  nullif(trim(coalesce(old_d.first_name, old_u.first_name, '')), ''),
+  nullif(trim(coalesce(old_d.last_name, old_u.last_name, '')), ''),
+  nullif(trim(coalesce(old_d.phone_number, old_u.phone_number, '')), ''),
+  coalesce(old_d.birthday, old_u.birthday),
+  case when old_u.role in ('admin', 'operations', 'sales', 'finance', 'marketing', 'executive', 'warehouse_staff', 'technician', 'road_technician') then old_u.role else 'operations' end,
+  case when old_u.branch in ('jhb', 'cpt', 'kzn', 'national') then old_u.branch else 'national' end,
+  old_d.emergency_contact_name,
+  old_d.emergency_contact_phone
+from public.users_legacy_20260714 old_u
+join public.users new_u on new_u.email = lower(trim(old_u.email))
+left join public.user_details_legacy_20260714 old_d on old_d.user_id = old_u.id
+where nullif(trim(old_u.email), '') is not null
 on conflict (user_id) do update set
   first_name = excluded.first_name,
   last_name = excluded.last_name,
@@ -123,6 +118,13 @@ revoke all on function public.current_app_user_id() from public;
 revoke all on function public.current_app_role() from public;
 grant execute on function public.current_app_user_id() to authenticated;
 grant execute on function public.current_app_role() to authenticated;
+
+drop policy if exists users_select_own_or_admin on public.users;
+drop policy if exists users_insert_admin on public.users;
+drop policy if exists users_update_admin on public.users;
+drop policy if exists user_details_select_own_or_admin on public.user_details;
+drop policy if exists user_details_insert_own_or_admin on public.user_details;
+drop policy if exists user_details_update_own_or_admin on public.user_details;
 
 create policy users_select_own_or_admin
 on public.users
