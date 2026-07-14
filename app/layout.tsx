@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import './globals.css';
+import './hamster-loader.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 
 export const metadata = {
