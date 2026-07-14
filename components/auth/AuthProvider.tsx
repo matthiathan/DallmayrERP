@@ -4,11 +4,13 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import type { BusinessUser } from '@/types/dallmayrerp';
+import type { BusinessProfile, BusinessUser, UserDetails } from '@/types/dallmayrerp';
 
 type AuthContextValue = {
   authUser: User | null;
   businessUser: BusinessUser | null;
+  userDetails: UserDetails | null;
+  businessProfile: BusinessProfile | null;
   loading: boolean;
   error: string | null;
   refreshProfile: () => Promise<void>;
@@ -23,7 +25,18 @@ async function stampLastLogin(profile: BusinessUser) {
     .eq('id', profile.id);
 }
 
-async function loadBusinessProfile(authUser: User | null, markLogin = false): Promise<BusinessUser | null> {
+async function loadDetails(userId: string): Promise<UserDetails | null> {
+  const { data, error } = await getSupabaseClient()
+    .from('user_details')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data ?? null) as UserDetails | null;
+}
+
+async function loadBusinessProfile(authUser: User | null, markLogin = false): Promise<BusinessProfile | null> {
   if (!authUser) return null;
 
   const client = getSupabaseClient();
@@ -38,35 +51,35 @@ async function loadBusinessProfile(authUser: User | null, markLogin = false): Pr
     throw byAuth.error;
   }
 
-  if (byAuth.data) {
-    const profile = byAuth.data as BusinessUser;
-    if (markLogin) await stampLastLogin(profile);
-    return profile;
+  let userRecord = byAuth.data as BusinessUser | null;
+
+  if (!userRecord) {
+    const email = authUser.email?.trim().toLowerCase();
+    if (!email) return null;
+
+    const byEmail = await client
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (byEmail.error) {
+      throw byEmail.error;
+    }
+
+    userRecord = byEmail.data as BusinessUser | null;
   }
 
-  const email = authUser.email?.trim().toLowerCase();
-  if (!email) return null;
+  if (!userRecord) return null;
 
-  const byEmail = await client
-    .from('users')
-    .select('*')
-    .eq('email', email)
-    .maybeSingle();
-
-  if (byEmail.error) {
-    throw byEmail.error;
-  }
-
-  if (!byEmail.data) return null;
-
-  const profile = byEmail.data as BusinessUser;
-  if (markLogin) await stampLastLogin(profile);
-  return profile;
+  const details = await loadDetails(userRecord.id);
+  if (markLogin) await stampLastLogin(userRecord);
+  return { user: userRecord, details };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authUser, setAuthUser] = useState<User | null>(null);
-  const [businessUser, setBusinessUser] = useState<BusinessUser | null>(null);
+  const [businessProfile, setBusinessProfile] = useState<BusinessProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (sessionError) {
       setAuthUser(null);
-      setBusinessUser(null);
+      setBusinessProfile(null);
       setError(sessionError.message);
       return;
     }
@@ -85,13 +98,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthUser(currentUser);
 
     if (!currentUser) {
-      setBusinessUser(null);
+      setBusinessProfile(null);
       setError(null);
       return;
     }
 
     const profile = await loadBusinessProfile(currentUser);
-    setBusinessUser(profile);
+    setBusinessProfile(profile);
     setError(null);
   }
 
@@ -120,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const profile = await loadBusinessProfile(session?.user ?? null, event === 'SIGNED_IN');
         if (mounted) {
-          setBusinessUser(profile);
+          setBusinessProfile(profile);
           setError(null);
         }
       } catch (err) {
@@ -138,9 +151,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const businessUser = businessProfile?.user ?? null;
+  const userDetails = businessProfile?.details ?? null;
+
   const value = useMemo(
-    () => ({ authUser, businessUser, loading, error, refreshProfile }),
-    [authUser, businessUser, loading, error],
+    () => ({ authUser, businessUser, userDetails, businessProfile, loading, error, refreshProfile }),
+    [authUser, businessUser, userDetails, businessProfile, loading, error],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
