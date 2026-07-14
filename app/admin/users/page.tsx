@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { AppShell } from '@/components/layout/AppShell';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Branch, BusinessRole, BusinessUser, UserDetails } from '@/types/dallmayrerp';
@@ -18,10 +19,12 @@ const emptyForm = {
 type UserInviteRow = BusinessUser & { details: UserDetails | null };
 
 export default function UsersPage() {
+  const { businessUser } = useAuth();
   const [users, setUsers] = useState<UserInviteRow[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -97,13 +100,43 @@ export default function UsersPage() {
     await loadUsers();
   }
 
+  async function deleteUser(user: UserInviteRow) {
+    setError(null);
+    setSuccess(null);
+
+    if (businessUser?.id === user.id) {
+      setError('You cannot delete your own active admin access while signed in. Ask another admin to remove your user if required.');
+      return;
+    }
+
+    const label = displayDetailsName(user.details, user.email);
+    const confirmed = window.confirm(`Delete ${label}? This removes the ERP access invite and the linked user details. It does not remove the Supabase Auth login account.`);
+    if (!confirmed) return;
+
+    setDeletingId(user.id);
+    const { error: deleteError } = await getSupabaseClient()
+      .from('users')
+      .delete()
+      .eq('id', user.id);
+
+    setDeletingId(null);
+
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+
+    setSuccess(`Deleted ${label} from DallmayrERP access.`);
+    await loadUsers();
+  }
+
   return (
     <AppShell>
       <div className="page-header hero-panel">
         <div>
           <div className="badge">Admin only</div>
           <h1>Users & Role Invites</h1>
-          <p>Create a user with email only, then assign their role and branch in user_details. Employees fill in the remaining details on first login.</p>
+          <p>Create a user with email only, assign their role and branch, or remove access for users who should no longer use DallmayrERP.</p>
         </div>
       </div>
 
@@ -148,15 +181,17 @@ export default function UsersPage() {
               <th>Branch</th>
               <th>Emergency Contact</th>
               <th>Profile</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8}>Loading users...</td></tr>
+              <tr><td colSpan={9}>Loading users...</td></tr>
             ) : users.length === 0 ? (
-              <tr><td colSpan={8}>No access invites yet.</td></tr>
+              <tr><td colSpan={9}>No access invites yet.</td></tr>
             ) : users.map((user) => {
               const complete = isProfileComplete(user.details);
+              const isSelf = businessUser?.id === user.id;
               return (
                 <tr key={user.id}>
                   <td>{displayDetailsName(user.details, user.email)}</td>
@@ -167,6 +202,17 @@ export default function UsersPage() {
                   <td>{user.details?.branch || '-'}</td>
                   <td>{user.details?.emergency_contact_name || '-'}</td>
                   <td>{complete ? 'Complete' : 'First login required'}</td>
+                  <td>
+                    <button
+                      className="button secondary"
+                      disabled={deletingId === user.id || isSelf}
+                      onClick={() => deleteUser(user)}
+                      style={{ color: isSelf ? undefined : '#fecaca' }}
+                      type="button"
+                    >
+                      {deletingId === user.id ? 'Deleting...' : isSelf ? 'Current user' : 'Delete'}
+                    </button>
+                  </td>
                 </tr>
               );
             })}
