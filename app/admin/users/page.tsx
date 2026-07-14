@@ -3,28 +3,19 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import type { Branch, BusinessRole, BusinessUser, Department, UserDetails } from '@/types/dallmayrerp';
-import { isProfileComplete } from '@/types/dallmayrerp';
+import type { Branch, BusinessRole, BusinessUser, UserDetails } from '@/types/dallmayrerp';
+import { displayDetailsName, isProfileComplete } from '@/types/dallmayrerp';
 
 const roles: BusinessRole[] = ['admin', 'operations', 'sales', 'finance', 'marketing', 'executive', 'warehouse_staff', 'technician', 'road_technician'];
-const departments: Department[] = ['administration', 'operations', 'sales', 'finance', 'marketing', 'executive', 'warehouse', 'technical', 'field_service'];
 const branches: Branch[] = ['jhb', 'cpt', 'kzn', 'national'];
 
 const emptyForm = {
-  employee_code: '',
   email: '',
   role: 'operations' as BusinessRole,
-  department: 'operations' as Department,
   branch: 'jhb' as Branch,
-  job_title: '',
-  employment_status: 'active' as const,
 };
 
 type UserInviteRow = BusinessUser & { details: UserDetails | null };
-
-function nameFromDetails(row: UserInviteRow) {
-  return row.details?.full_name?.trim() || row.email;
-}
 
 export default function UsersPage() {
   const [users, setUsers] = useState<UserInviteRow[]>([]);
@@ -70,30 +61,38 @@ export default function UsersPage() {
     setError(null);
     setSuccess(null);
 
-    const payload = {
-      email: form.email.trim().toLowerCase(),
-      role: form.role,
-      department: form.department,
-      branch: form.branch,
-      employee_code: form.employee_code.trim() || null,
-      job_title: form.job_title.trim() || null,
-      employment_status: form.employment_status,
-      onboarding_required: true,
-      profile_completed_at: null,
-    };
+    const client = getSupabaseClient();
+    const cleanEmail = form.email.trim().toLowerCase();
 
-    const { error: upsertError } = await getSupabaseClient()
+    const { data: userRow, error: userError } = await client
       .from('users')
-      .upsert(payload, { onConflict: 'email' });
+      .upsert({ email: cleanEmail }, { onConflict: 'email' })
+      .select('*')
+      .single();
 
-    setSaving(false);
-
-    if (upsertError) {
-      setError(upsertError.message);
+    if (userError || !userRow) {
+      setSaving(false);
+      setError(userError?.message || 'Could not save user invite.');
       return;
     }
 
-    setSuccess('User invite saved. The employee can now use First login → Activate account with the same email, then complete their profile.');
+    const { error: detailsError } = await client
+      .from('user_details')
+      .upsert({
+        user_id: userRow.id,
+        role: form.role,
+        branch: form.branch,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+
+    setSaving(false);
+
+    if (detailsError) {
+      setError(detailsError.message);
+      return;
+    }
+
+    setSuccess('User invite saved. The employee can now use First login → Activate account with the same email, then complete their personal profile.');
     setForm(emptyForm);
     await loadUsers();
   }
@@ -104,7 +103,7 @@ export default function UsersPage() {
         <div>
           <div className="badge">Admin only</div>
           <h1>Users & Role Invites</h1>
-          <p>Create access records using email, role, department and branch. Employees complete personal details in user_details on first login.</p>
+          <p>Create a user with email only, then assign their role and branch in user_details. Employees fill in the remaining details on first login.</p>
         </div>
       </div>
 
@@ -113,12 +112,8 @@ export default function UsersPage() {
 
       <div className="card" style={{ marginBottom: 20 }}>
         <h2>Create access invite</h2>
-        <p>Admin controls only access fields. Personal profile fields are completed by the user after first login and stored in public.user_details.</p>
+        <p>Admin controls email, role and branch. First name, last name, phone number, birthday and emergency contact are completed by the user.</p>
         <form className="form-grid" onSubmit={createUserInvite}>
-          <label>
-            Employee code
-            <input value={form.employee_code} onChange={(e) => setForm({ ...form, employee_code: e.target.value })} />
-          </label>
           <label>
             Email
             <input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
@@ -130,20 +125,10 @@ export default function UsersPage() {
             </select>
           </label>
           <label>
-            Department
-            <select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value as Department })}>
-              {departments.map((department) => <option key={department}>{department}</option>)}
-            </select>
-          </label>
-          <label>
             Branch
             <select value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value as Branch })}>
               {branches.map((branch) => <option key={branch}>{branch}</option>)}
             </select>
-          </label>
-          <label>
-            Job title
-            <input value={form.job_title} onChange={(e) => setForm({ ...form, job_title: e.target.value })} />
           </label>
           <div style={{ alignSelf: 'end' }}>
             <button className="button pulse-button" type="submit" disabled={saving}>{saving ? 'Saving invite...' : 'Save invite'}</button>
@@ -160,30 +145,28 @@ export default function UsersPage() {
               <th>Phone</th>
               <th>Birthday</th>
               <th>Role</th>
-              <th>Department</th>
               <th>Branch</th>
+              <th>Emergency Contact</th>
               <th>Profile</th>
-              <th>Status</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9}>Loading users...</td></tr>
+              <tr><td colSpan={8}>Loading users...</td></tr>
             ) : users.length === 0 ? (
-              <tr><td colSpan={9}>No access invites yet.</td></tr>
+              <tr><td colSpan={8}>No access invites yet.</td></tr>
             ) : users.map((user) => {
               const complete = isProfileComplete(user.details);
               return (
                 <tr key={user.id}>
-                  <td>{nameFromDetails(user)}</td>
+                  <td>{displayDetailsName(user.details, user.email)}</td>
                   <td>{user.email}</td>
                   <td>{user.details?.phone_number || '-'}</td>
                   <td>{user.details?.birthday || '-'}</td>
-                  <td>{user.role}</td>
-                  <td>{user.department}</td>
-                  <td>{user.branch || '-'}</td>
+                  <td>{user.details?.role || '-'}</td>
+                  <td>{user.details?.branch || '-'}</td>
+                  <td>{user.details?.emergency_contact_name || '-'}</td>
                   <td>{complete ? 'Complete' : 'First login required'}</td>
-                  <td>{user.employment_status}</td>
                 </tr>
               );
             })}
