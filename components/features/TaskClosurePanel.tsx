@@ -1,0 +1,121 @@
+'use client';
+
+import { FormEvent, useState } from 'react';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { BarcodeCapture } from '@/components/ui/BarcodeCapture';
+import { getSupabaseClient } from '@/lib/supabase/client';
+import type { Branch } from '@/types/dallmayrerp';
+
+type TaskType = 'technician' | 'road_technician' | 'service_call' | 'preventive_service';
+
+type Outcome = 'completed' | 'follow_up_required' | 'parts_required' | 'customer_unavailable';
+
+const outcomes: Outcome[] = ['completed', 'follow_up_required', 'parts_required', 'customer_unavailable'];
+
+export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskType; defaultBranch?: Branch }) {
+  const { businessUser, userDetails } = useAuth();
+  const [branch, setBranch] = useState<Branch>(defaultBranch ?? userDetails?.branch ?? 'jhb');
+  const [machineBarcode, setMachineBarcode] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [siteAddress, setSiteAddress] = useState('');
+  const [outcome, setOutcome] = useState<Outcome>('completed');
+  const [notes, setNotes] = useState('');
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  async function closeTask(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!businessUser) return;
+
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    const client = getSupabaseClient();
+    let photoPath: string | null = null;
+
+    if (photo) {
+      const safeName = photo.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      photoPath = `${taskType}/${businessUser.id}/${Date.now()}-${safeName}`;
+      const { error: uploadError } = await client.storage.from('dallmayrerp-task-photos').upload(photoPath, photo, { upsert: false });
+      if (uploadError) {
+        setSaving(false);
+        setError(uploadError.message);
+        return;
+      }
+    }
+
+    const { data: closure, error: closureError } = await client
+      .from('task_closures')
+      .insert({
+        task_type: taskType,
+        branch,
+        machine_barcode: machineBarcode.trim(),
+        customer_name: customerName.trim() || null,
+        site_address: siteAddress.trim() || null,
+        outcome,
+        notes: notes.trim() || null,
+        photo_bucket: photoPath ? 'dallmayrerp-task-photos' : null,
+        photo_path: photoPath,
+        closed_by: businessUser.id,
+      })
+      .select('*')
+      .single();
+
+    if (closureError) {
+      setSaving(false);
+      setError(closureError.message);
+      return;
+    }
+
+    await client.from('stock_scan_events').insert({
+      barcode: machineBarcode.trim(),
+      scan_type: 'task_close',
+      branch,
+      quantity: 1,
+      related_task_closure_id: closure.id,
+      scanned_by: businessUser.id,
+      notes: `Task closure outcome: ${outcome}`,
+    });
+
+    setSaving(false);
+    setMachineBarcode('');
+    setCustomerName('');
+    setSiteAddress('');
+    setOutcome('completed');
+    setNotes('');
+    setPhoto(null);
+    setSuccess('Task closed and machine scan recorded.');
+  }
+
+  return (
+    <div className="neo-card">
+      <h2>Close task with machine scan and photo</h2>
+      <p>Scan the machine barcode, capture proof/photo evidence, and close the job from mobile or desktop.</p>
+      {error ? <div className="error">{error}</div> : null}
+      {success ? <div className="success">{success}</div> : null}
+      <form className="grid" onSubmit={closeTask}>
+        <div className="form-grid">
+          <label>Branch
+            <select value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>
+              <option value="jhb">jhb</option><option value="cpt">cpt</option><option value="kzn">kzn</option><option value="national">national</option>
+            </select>
+          </label>
+          <label>Customer name<input value={customerName} onChange={(event) => setCustomerName(event.target.value)} /></label>
+          <label>Outcome
+            <select value={outcome} onChange={(event) => setOutcome(event.target.value as Outcome)}>
+              {outcomes.map((item) => <option key={item}>{item}</option>)}
+            </select>
+          </label>
+        </div>
+        <BarcodeCapture label="Machine barcode" value={machineBarcode} onChange={setMachineBarcode} />
+        <label>Site address<input value={siteAddress} onChange={(event) => setSiteAddress(event.target.value)} /></label>
+        <label>Closure notes<textarea value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
+        <label>Closure photo<input accept="image/*" capture="environment" type="file" onChange={(event) => setPhoto(event.target.files?.[0] ?? null)} /></label>
+        <button className="button pulse-button" disabled={saving || !machineBarcode.trim()} type="submit">{saving ? 'Closing task...' : 'Close task'}</button>
+      </form>
+    </div>
+  );
+}
