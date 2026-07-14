@@ -88,8 +88,8 @@ export function isNavItemAllowed(role: BusinessRole, item: NavItem) {
 }
 
 export function canAccessPath(role: BusinessRole, pathname: string) {
+  if (pathname === '/login' || pathname === '/onboarding') return true;
   if (role === 'admin') return true;
-  if (pathname === '/login') return true;
   if (pathname === '/') return false;
 
   return navSections.some((section) =>
