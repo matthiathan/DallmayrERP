@@ -30,51 +30,44 @@ export default function OnboardingPage() {
 
   async function completeProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!businessUser) return;
+    if (!businessUser || !userDetails) return;
 
     const cleanFirstName = firstName.trim();
     const cleanLastName = lastName.trim();
     const cleanPhone = phoneNumber.trim();
+    const cleanEmergencyName = emergencyContactName.trim();
+    const cleanEmergencyPhone = emergencyContactPhone.trim();
 
-    if (!cleanFirstName || !cleanLastName || !cleanPhone) {
-      setError('First name, last name and phone number are required.');
+    if (!cleanFirstName || !cleanLastName || !cleanPhone || !birthday || !cleanEmergencyName || !cleanEmergencyPhone) {
+      setError('All personal details are required before the role workspace can unlock.');
       return;
     }
 
     setSaving(true);
     setError(null);
 
-    const now = new Date().toISOString();
-    const payload = {
-      user_id: businessUser.id,
-      first_name: cleanFirstName,
-      last_name: cleanLastName,
-      phone_number: cleanPhone,
-      birthday: birthday || null,
-      emergency_contact_name: emergencyContactName.trim() || null,
-      emergency_contact_phone: emergencyContactPhone.trim() || null,
-      profile_completed_at: now,
-      updated_at: now,
-    };
-
     const { error: detailsError } = await getSupabaseClient()
       .from('user_details')
-      .upsert(payload, { onConflict: 'user_id' });
+      .update({
+        first_name: cleanFirstName,
+        last_name: cleanLastName,
+        phone_number: cleanPhone,
+        birthday,
+        emergency_contact_name: cleanEmergencyName,
+        emergency_contact_phone: cleanEmergencyPhone,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', businessUser.id);
+
+    setSaving(false);
 
     if (detailsError) {
-      setSaving(false);
       setError(detailsError.message);
       return;
     }
 
-    await getSupabaseClient()
-      .from('users')
-      .update({ onboarding_required: false, profile_completed_at: now, updated_at: now })
-      .eq('id', businessUser.id);
-
-    setSaving(false);
     await refreshProfile();
-    router.replace(getDefaultPathForRole(businessUser.role));
+    router.replace(getDefaultPathForRole(userDetails.role));
   }
 
   return (
@@ -84,7 +77,7 @@ export default function OnboardingPage() {
           <div className="badge">First login setup</div>
           <h1>Complete your DallmayrERP profile</h1>
           <p>
-            Your administrator has already assigned your role, department and branch. Complete your personal details once to unlock your assigned workspace.
+            Your administrator has already assigned your role and branch. Complete your personal details once to unlock your assigned workspace.
           </p>
         </div>
       </div>
@@ -95,12 +88,11 @@ export default function OnboardingPage() {
         <div className="neo-card">
           <h2>Your assigned access</h2>
           <div className="feature-list">
-            <span className="feature-pill">Role: {businessUser?.role}</span>
-            <span className="feature-pill">Department: {businessUser?.department}</span>
-            <span className="feature-pill">Branch: {businessUser?.branch ?? 'not assigned'}</span>
+            <span className="feature-pill">Role: {userDetails?.role}</span>
+            <span className="feature-pill">Branch: {userDetails?.branch}</span>
             <span className="feature-pill">Email: {businessUser?.email}</span>
           </div>
-          <p>These access fields are controlled by admin and cannot be changed on this page.</p>
+          <p>Role and branch are controlled by admin and cannot be changed on this page.</p>
         </div>
 
         <div className="neo-card">
@@ -120,15 +112,15 @@ export default function OnboardingPage() {
             </label>
             <label>
               Birthday
-              <input type="date" value={birthday} onChange={(event) => setBirthday(event.target.value)} />
+              <input required type="date" value={birthday} onChange={(event) => setBirthday(event.target.value)} />
             </label>
             <label>
               Emergency contact name
-              <input value={emergencyContactName} onChange={(event) => setEmergencyContactName(event.target.value)} />
+              <input required value={emergencyContactName} onChange={(event) => setEmergencyContactName(event.target.value)} />
             </label>
             <label>
               Emergency contact phone
-              <input value={emergencyContactPhone} onChange={(event) => setEmergencyContactPhone(event.target.value)} />
+              <input required value={emergencyContactPhone} onChange={(event) => setEmergencyContactPhone(event.target.value)} />
             </label>
             <button className="button pulse-button" type="submit" disabled={saving}>
               {saving ? 'Saving profile...' : 'Complete profile'}
