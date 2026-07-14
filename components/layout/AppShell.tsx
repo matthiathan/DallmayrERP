@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { canAccessPath, getDefaultPathForRole, isNavItemAllowed, navSections, roleLabels } from '@/lib/auth/permissions';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { displayUserName } from '@/types/dallmayrerp';
+import { displayProfileName, isProfileComplete } from '@/types/dallmayrerp';
 
 function StatusScreen({ title, message, action }: { title: string; message: string; action?: ReactNode }) {
   return (
@@ -25,7 +25,8 @@ function StatusScreen({ title, message, action }: { title: string; message: stri
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { authUser, businessUser, loading, error } = useAuth();
+  const { authUser, businessProfile, businessUser, userDetails, loading, error } = useAuth();
+  const profileComplete = isProfileComplete(userDetails);
 
   useEffect(() => {
     if (!loading && !authUser) {
@@ -36,12 +37,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (loading || !businessUser) return;
 
-    if (businessUser.onboarding_required && pathname !== '/onboarding') {
+    if (!profileComplete && pathname !== '/onboarding') {
       router.replace('/onboarding');
       return;
     }
 
-    if (!businessUser.onboarding_required && pathname === '/onboarding') {
+    if (profileComplete && pathname === '/onboarding') {
       router.replace(getDefaultPathForRole(businessUser.role));
       return;
     }
@@ -49,7 +50,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (pathname === '/' && businessUser.role !== 'admin') {
       router.replace(getDefaultPathForRole(businessUser.role));
     }
-  }, [businessUser, loading, pathname, router]);
+  }, [businessUser, loading, pathname, profileComplete, router]);
 
   const signOut = async () => {
     await getSupabaseClient().auth.signOut();
@@ -57,7 +58,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   if (loading) {
-    return <StatusScreen title="Loading secure workspace" message="Checking your Supabase session and business role." />;
+    return <StatusScreen title="Loading secure workspace" message="Checking your Supabase session, access invite and user details." />;
   }
 
   if (!authUser) {
@@ -72,7 +73,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     return (
       <StatusScreen
         title="Access pending"
-        message="Your login exists in Supabase Auth, but no matching business profile was found in public.users. Ask an administrator to invite your email address first."
+        message="Your login exists in Supabase Auth, but no matching access invite was found in public.users. Ask an administrator to invite your email address first."
         action={<button className="button secondary" onClick={signOut} type="button">Sign out</button>}
       />
     );
@@ -92,9 +93,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="brand">DallmayrERP</div>
         <div className="brand-subtitle">Role-based operations platform</div>
         <div className="user-chip">
-          <span>{displayUserName(businessUser)}</span>
+          <span>{displayProfileName(businessProfile)}</span>
           <strong>{roleLabels[businessUser.role]}</strong>
-          {businessUser.onboarding_required ? <em>Profile setup required</em> : null}
+          {!profileComplete ? <em>Profile setup required</em> : null}
         </div>
         {visibleSections.map((section) => (
           <div className="nav-section" key={section.heading}>
