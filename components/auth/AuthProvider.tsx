@@ -18,13 +18,6 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-async function stampLastLogin(profile: BusinessUser) {
-  await getSupabaseClient()
-    .from('users')
-    .update({ last_login_at: new Date().toISOString() })
-    .eq('id', profile.id);
-}
-
 async function loadDetails(userId: string): Promise<UserDetails | null> {
   const { data, error } = await getSupabaseClient()
     .from('user_details')
@@ -36,45 +29,28 @@ async function loadDetails(userId: string): Promise<UserDetails | null> {
   return (data ?? null) as UserDetails | null;
 }
 
-async function loadBusinessProfile(authUser: User | null, markLogin = false): Promise<BusinessProfile | null> {
-  if (!authUser) return null;
+async function loadBusinessProfile(authUser: User | null): Promise<BusinessProfile | null> {
+  if (!authUser?.email) return null;
 
   const client = getSupabaseClient();
+  const email = authUser.email.trim().toLowerCase();
 
-  const byAuth = await client
+  const { data: userRecord, error: userError } = await client
     .from('users')
     .select('*')
-    .eq('auth_user_id', authUser.id)
+    .eq('email', email)
     .maybeSingle();
 
-  if (byAuth.error) {
-    throw byAuth.error;
-  }
-
-  let userRecord = byAuth.data as BusinessUser | null;
-
-  if (!userRecord) {
-    const email = authUser.email?.trim().toLowerCase();
-    if (!email) return null;
-
-    const byEmail = await client
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .maybeSingle();
-
-    if (byEmail.error) {
-      throw byEmail.error;
-    }
-
-    userRecord = byEmail.data as BusinessUser | null;
-  }
-
+  if (userError) throw userError;
   if (!userRecord) return null;
 
   const details = await loadDetails(userRecord.id);
-  if (markLogin) await stampLastLogin(userRecord);
-  return { user: userRecord, details };
+  if (!details) return null;
+
+  return {
+    user: userRecord as BusinessUser,
+    details,
+  };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -126,12 +102,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     initialise();
 
-    const { data: subscription } = client.auth.onAuthStateChange(async (event, session) => {
+    const { data: subscription } = client.auth.onAuthStateChange(async (_event, session) => {
       if (!mounted) return;
       setAuthUser(session?.user ?? null);
       setLoading(true);
       try {
-        const profile = await loadBusinessProfile(session?.user ?? null, event === 'SIGNED_IN');
+        const profile = await loadBusinessProfile(session?.user ?? null);
         if (mounted) {
           setBusinessProfile(profile);
           setError(null);
