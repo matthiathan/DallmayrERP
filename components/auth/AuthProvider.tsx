@@ -18,6 +18,15 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+function withTimeout<T>(promise: Promise<T>, message: string, timeoutMs = 10000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_resolve, reject) => {
+      window.setTimeout(() => reject(new Error(message)), timeoutMs);
+    }),
+  ]);
+}
+
 async function loadDetails(userId: string): Promise<UserDetails | null> {
   const { data, error } = await getSupabaseClient()
     .from('user_details')
@@ -45,7 +54,6 @@ async function loadBusinessProfile(authUser: User | null): Promise<BusinessProfi
   if (!userRecord) return null;
 
   const details = await loadDetails(userRecord.id);
-  if (!details) return null;
 
   return {
     user: userRecord as BusinessUser,
@@ -59,29 +67,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  async function refreshProfile() {
+  async function loadFromSession() {
     const client = getSupabaseClient();
     const { data, error: sessionError } = await client.auth.getSession();
 
     if (sessionError) {
-      setAuthUser(null);
-      setBusinessProfile(null);
-      setError(sessionError.message);
-      return;
+      throw sessionError;
     }
 
     const currentUser = data.session?.user ?? null;
-    setAuthUser(currentUser);
-
-    if (!currentUser) {
-      setBusinessProfile(null);
-      setError(null);
-      return;
-    }
-
     const profile = await loadBusinessProfile(currentUser);
-    setBusinessProfile(profile);
-    setError(null);
+
+    return { currentUser, profile };
+  }
+
+  async function refreshProfile() {
+    setLoading(true);
+    try {
+      const { currentUser, profile } = await withTimeout(
+        loadFromSession(),
+        'Timed out while checking your session and ERP profile. Please refresh the page or sign in again.',
+      );
+      setAuthUser(currentUser);
+      setBusinessProfile(profile);
+      setError(null);
+    } catch (err) {
+      setAuthUser(null);
+      setBusinessProfile(null);
+      setError(err instanceof Error ? err.message : 'Could not load user profile.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -90,11 +106,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function initialise() {
       try {
-        await refreshProfile();
+        const { currentUser, profile } = await withTimeout(
+          loadFromSession(),
+          'Timed out while checking your session and ERP profile. Please refresh the page or sign in again.',
+        );
+        if (!mounted) return;
+        setAuthUser(currentUser);
+        setBusinessProfile(profile);
+        setError(null);
       } catch (err) {
-        if (mounted) {
-          setError(err instanceof Error ? err.message : 'Could not load user profile.');
-        }
+        if (!mounted) return;
+        setAuthUser(null);
+        setBusinessProfile(null);
+        setError(err instanceof Error ? err.message : 'Could not load user profile.');
       } finally {
         if (mounted) setLoading(false);
       }
@@ -102,23 +126,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     initialise();
 
-    const { data: subscription } = client.auth.onAuthStateChange(async (_event, session) => {
+    const { data: subscription } = client.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
       setAuthUser(session?.user ?? null);
       setLoading(true);
-      try {
-        const profile = await loadBusinessProfile(session?.user ?? null);
-        if (mounted) {
+
+      window.setTimeout(async () => {
+        if (!mounted) return;
+        try {
+          const profile = await withTimeout(
+            loadBusinessProfile(session?.user ?? null),
+            'Timed out while checking your ERP role and user details. Please refresh the page or sign in again.',
+          );
+          if (!mounted) return;
           setBusinessProfile(profile);
           setError(null);
-        }
-      } catch (err) {
-        if (mounted) {
+        } catch (err) {
+          if (!mounted) return;
+          setBusinessProfile(null);
           setError(err instanceof Error ? err.message : 'Could not load user profile.');
+        } finally {
+          if (mounted) setLoading(false);
         }
-      } finally {
-        if (mounted) setLoading(false);
-      }
+      }, 0);
     });
 
     return () => {
