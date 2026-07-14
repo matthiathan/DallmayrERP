@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { canAccessPath, getDefaultPathForRole, isNavItemAllowed, navSections, roleLabels } from '@/lib/auth/permissions';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
-function StatusScreen({ title, message, action }: { title: string; message: string; action?: React.ReactNode }) {
+function StatusScreen({ title, message, action }: { title: string; message: string; action?: ReactNode }) {
   return (
     <main className="main auth-state-page">
       <div className="neo-card auth-state-card">
@@ -20,7 +21,7 @@ function StatusScreen({ title, message, action }: { title: string; message: stri
   );
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { authUser, businessUser, loading, error } = useAuth();
