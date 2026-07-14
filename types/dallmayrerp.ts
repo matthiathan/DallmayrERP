@@ -22,6 +22,21 @@ export type Department =
 
 export type Branch = 'jhb' | 'cpt' | 'kzn' | 'national';
 
+export interface UserDetails {
+  id: string;
+  user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  full_name: string | null;
+  phone_number: string | null;
+  birthday: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  profile_completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface BusinessUser {
   id: string;
   auth_user_id: string | null;
@@ -48,6 +63,11 @@ export interface BusinessUser {
   updated_at: string;
 }
 
+export interface BusinessProfile {
+  user: BusinessUser;
+  details: UserDetails | null;
+}
+
 export interface StockItem {
   id: string;
   stock_name: string;
@@ -70,6 +90,22 @@ export interface KpiCardData {
   label: string;
   value: number | string;
   helper?: string;
+}
+
+export function isProfileComplete(details: UserDetails | null) {
+  return Boolean(
+    details?.first_name?.trim()
+    && details?.last_name?.trim()
+    && details?.phone_number?.trim(),
+  );
+}
+
+export function displayProfileName(profile: BusinessProfile | null) {
+  if (!profile) return 'Unknown user';
+  const fullName = profile.details?.full_name?.trim();
+  if (fullName) return fullName;
+  const joined = [profile.details?.first_name, profile.details?.last_name].filter(Boolean).join(' ').trim();
+  return joined || profile.user.email;
 }
 
 export function displayUserName(user: Pick<BusinessUser, 'first_name' | 'last_name' | 'full_name' | 'email'>) {
