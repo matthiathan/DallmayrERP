@@ -8,12 +8,24 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { canAccessPath, getDefaultPathForRole, isNavItemAllowed, navSections, roleLabels } from '@/lib/auth/permissions';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { displayProfileName, isProfileComplete } from '@/types/dallmayrerp';
+import { HamsterLoader } from '@/components/ui/HamsterLoader';
 
-function StatusScreen({ title, message, action }: { title: string; message: string; action?: ReactNode }) {
+function StatusScreen({
+  title,
+  message,
+  action,
+  loading = false,
+}: {
+  title: string;
+  message: string;
+  action?: ReactNode;
+  loading?: boolean;
+}) {
   return (
     <main className="main auth-state-page">
       <div className="neo-card auth-state-card">
         <div className="orb" />
+        {loading ? <HamsterLoader label={title} /> : null}
         <h1>{title}</h1>
         <p>{message}</p>
         {action ? <div className="action-row">{action}</div> : null}
@@ -59,7 +71,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   if (loading) {
-    return <StatusScreen title="Loading secure workspace" message="Checking your Supabase session, access invite and user details." />;
+    return <StatusScreen title="Loading secure workspace" message="Checking your Supabase session, access invite and user details." loading />;
   }
 
   if (!authUser) {
