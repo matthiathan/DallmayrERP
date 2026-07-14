@@ -16,7 +16,14 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-async function loadBusinessProfile(authUser: User | null): Promise<BusinessUser | null> {
+async function stampLastLogin(profile: BusinessUser) {
+  await getSupabaseClient()
+    .from('users')
+    .update({ last_login_at: new Date().toISOString() })
+    .eq('id', profile.id);
+}
+
+async function loadBusinessProfile(authUser: User | null, markLogin = false): Promise<BusinessUser | null> {
   if (!authUser) return null;
 
   const client = getSupabaseClient();
@@ -32,7 +39,9 @@ async function loadBusinessProfile(authUser: User | null): Promise<BusinessUser 
   }
 
   if (byAuth.data) {
-    return byAuth.data as BusinessUser;
+    const profile = byAuth.data as BusinessUser;
+    if (markLogin) await stampLastLogin(profile);
+    return profile;
   }
 
   const email = authUser.email?.trim().toLowerCase();
@@ -48,7 +57,11 @@ async function loadBusinessProfile(authUser: User | null): Promise<BusinessUser 
     throw byEmail.error;
   }
 
-  return (byEmail.data ?? null) as BusinessUser | null;
+  if (!byEmail.data) return null;
+
+  const profile = byEmail.data as BusinessUser;
+  if (markLogin) await stampLastLogin(profile);
+  return profile;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -100,12 +113,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     initialise();
 
-    const { data: subscription } = client.auth.onAuthStateChange(async (_event, session) => {
+    const { data: subscription } = client.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
       setAuthUser(session?.user ?? null);
       setLoading(true);
       try {
-        const profile = await loadBusinessProfile(session?.user ?? null);
+        const profile = await loadBusinessProfile(session?.user ?? null, event === 'SIGNED_IN');
         if (mounted) {
           setBusinessUser(profile);
           setError(null);
