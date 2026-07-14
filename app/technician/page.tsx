@@ -12,22 +12,23 @@ const features = [
 export default function TechnicianPage() {
   return (
     <AppShell>
-      <div className="page-header hero-panel">
+      <div className="page-header hero-panel spatial-card">
         <div>
           <div className="badge">Technician</div>
           <h1>Technician Jobs</h1>
           <p>Workshop and technical service workspace for machine work, proof photos and service close-outs.</p>
         </div>
       </div>
-      <div className="grid grid-3" style={{ marginBottom: 20 }}>
+      <div className="grid grid-3 spatial-kpi-grid" style={{ marginBottom: 20 }}>
         <KpiCard label="Jobs" value="Closeable" helper="Scan and close machine tasks from this page." />
         <KpiCard label="Machines" value="Scannable" helper="Use barcode/QR photos or manual machine barcode entry." />
         <KpiCard label="Proof" value="Photo Ready" helper="Attach closure evidence for operations review." />
       </div>
-      <div className="grid grid-2">
+      <div className="grid grid-2 spatial-stage spatial-dashboard">
         <TaskClosurePanel taskType="technician" />
-        <div className="neo-card">
-          <h2>Technician features</h2>
+        <div className="neo-card spatial-machine-panel spatial-card">
+          <h2>Machine / asset overview</h2>
+          <p>Scan the machine, capture condition notes and attach proof so the asset history can be reviewed later.</p>
           <div className="feature-list">
             {features.map((item) => <div className="feature-pill" key={item}>{item}</div>)}
           </div>
