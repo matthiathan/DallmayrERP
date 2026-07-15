@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { BarcodeCapture } from '@/components/ui/BarcodeCapture';
+import { recordAuditEvent } from '@/lib/data/audit';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Branch } from '@/types/dallmayrerp';
 
@@ -70,7 +71,7 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
       return;
     }
 
-    await client.from('stock_scan_events').insert({
+    const { error: scanError } = await client.from('stock_scan_events').insert({
       barcode: machineBarcode.trim(),
       scan_type: 'task_close',
       branch,
@@ -80,6 +81,23 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
       notes: `Task closure outcome: ${outcome}`,
     });
 
+    if (scanError) {
+      setSaving(false);
+      setError(`Task closed, but the machine scan event failed: ${scanError.message}`);
+      return;
+    }
+
+    await recordAuditEvent(client, {
+      actorUserId: businessUser.id,
+      actorRole: userDetails?.role,
+      branch,
+      entityType: 'task_closure',
+      entityId: closure.id,
+      action: 'task_closed',
+      summary: `${taskType} task closed for machine ${machineBarcode.trim()} with outcome ${outcome}.`,
+      afterPayload: { task_type: taskType, machine_barcode: machineBarcode.trim(), customer_name: customerName.trim() || null, outcome, photo_path: photoPath },
+    });
+
     setSaving(false);
     setMachineBarcode('');
     setCustomerName('');
@@ -87,7 +105,7 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
     setOutcome('completed');
     setNotes('');
     setPhoto(null);
-    setSuccess('Task closed and machine scan recorded.');
+    setSuccess('Task closed, machine scan recorded, and audit event captured.');
   }
 
   return (
