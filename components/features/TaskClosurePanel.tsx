@@ -16,7 +16,6 @@ type MachineLookup = {
   id: string;
   branch: Branch;
   machine_name: string | null;
-  asset_number: string | null;
   serial_number: string | null;
   status: string | null;
   customers?: CustomerRelation | CustomerRelation[] | null;
@@ -65,7 +64,7 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
 
     const { data, error: lookupError } = await getSupabaseClient()
       .from('machines')
-      .select('id, branch, machine_name, asset_number, serial_number, status, customers(customer_name, address, branch), customer_sites(site_name, address, branch)')
+      .select('id, branch, machine_name, serial_number, status, customers(customer_name, address, branch), customer_sites(site_name, address, branch)')
       .eq('machine_barcode', cleanValue)
       .maybeSingle();
 
@@ -82,11 +81,11 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
       setBranch((site?.branch ?? customer?.branch ?? machine.branch) as Branch);
       if (customer?.customer_name) setCustomerName(customer.customer_name);
       if (site?.address || customer?.address) setSiteAddress(site?.address ?? customer?.address ?? '');
-      setMachineLookupMessage(`Machine found: ${machine.machine_name ?? machine.asset_number ?? cleanValue}. Customer and site details were auto-filled where available.`);
+      setMachineLookupMessage(`Machine found: ${machine.machine_name ?? machine.serial_number ?? cleanValue}. Customer and site details were auto-filled where available.`);
       return;
     }
 
-    setMachineLookupMessage('Machine barcode not found yet. You can still close the task, then create the machine asset from Operations → Machine Assets.');
+    setMachineLookupMessage('Machine QR/barcode not found yet. You can still close the task, then create the machine from Operations → Machine Assets.');
   }
 
   async function closeTask(event: FormEvent<HTMLFormElement>) {
@@ -158,7 +157,16 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
       entityId: closure.id,
       action: 'task_closed',
       summary: `${taskType} task closed for machine ${machineBarcode.trim()} with outcome ${outcome}.`,
-      afterPayload: { task_type: taskType, machine_barcode: machineBarcode.trim(), machine_id: machineLookup?.id ?? null, customer_name: customerName.trim() || null, site_address: siteAddress.trim() || null, outcome, photo_path: photoPath },
+      afterPayload: {
+        task_type: taskType,
+        machine_barcode: machineBarcode.trim(),
+        machine_id: machineLookup?.id ?? null,
+        serial_number: machineLookup?.serial_number ?? null,
+        customer_name: customerName.trim() || null,
+        site_address: siteAddress.trim() || null,
+        outcome,
+        photo_path: photoPath,
+      },
     });
 
     setSaving(false);
@@ -176,7 +184,7 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
   return (
     <div className="neo-card">
       <h2>Close task with machine scan and photo</h2>
-      <p>Scan the machine barcode, capture proof/photo evidence, and close the job from mobile or desktop.</p>
+      <p>Scan the machine QR/barcode, capture proof/photo evidence, and close the job from mobile or desktop.</p>
       {error ? <div className="error">{error}</div> : null}
       {success ? <div className="success">{success}</div> : null}
       <form className="grid" onSubmit={closeTask}>
