@@ -8,7 +8,7 @@ import type { Branch } from '@/types/dallmayrerp';
 
 type JobStatus = 'new' | 'assigned' | 'in_progress' | 'completed' | 'verified' | 'closed' | 'cancelled';
 type Priority = 'low' | 'medium' | 'high' | 'critical';
-type JobRow = { id: string; job_number: string; branch: Branch; priority: Priority; status: JobStatus; summary: string; description: string | null; due_at: string | null; created_at: string };
+type JobRow = { id: string; job_number: string; branch: Branch; priority: Priority; status: JobStatus; title: string; description: string | null; due_at: string | null; created_at: string };
 
 const statuses: JobStatus[] = ['new', 'assigned', 'in_progress', 'completed', 'verified', 'closed', 'cancelled'];
 const priorities: Priority[] = ['low', 'medium', 'high', 'critical'];
@@ -17,7 +17,7 @@ const branches: Branch[] = ['jhb', 'cpt', 'kzn', 'national'];
 export function ServiceJobBoard() {
   const { businessUser, userDetails } = useAuth();
   const [jobs, setJobs] = useState<JobRow[]>([]);
-  const [summary, setSummary] = useState('');
+  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [branch, setBranch] = useState<Branch>(userDetails?.branch ?? 'jhb');
   const [priority, setPriority] = useState<Priority>('medium');
@@ -29,7 +29,7 @@ export function ServiceJobBoard() {
   async function loadJobs() {
     const { data, error: loadError } = await getSupabaseClient()
       .from('service_jobs')
-      .select('id, job_number, branch, priority, status, summary, description, due_at, created_at')
+      .select('id, job_number, branch, priority, status, title, description, due_at, created_at')
       .order('created_at', { ascending: false })
       .limit(120);
     if (loadError) {
@@ -47,15 +47,17 @@ export function ServiceJobBoard() {
 
   async function createJob(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!businessUser || !summary.trim()) return;
+    if (!businessUser || !title.trim()) return;
     setSaving(true);
     setError(null);
     setMessage(null);
     const client = getSupabaseClient();
+    const jobNumber = `SJ-${branch.toUpperCase()}-${Date.now()}`;
     const { data, error: createError } = await client.from('service_jobs').insert({
       branch,
       priority,
-      summary: summary.trim(),
+      job_number: jobNumber,
+      title: title.trim(),
       description: description.trim() || null,
       due_at: dueAt ? new Date(dueAt).toISOString() : null,
       created_by: businessUser.id,
@@ -74,12 +76,12 @@ export function ServiceJobBoard() {
       entityType: 'service_job',
       entityId: data.id,
       action: 'service_job_created',
-      summary: `${data.job_number} created: ${summary.trim()}`,
-      afterPayload: { branch, priority, summary, due_at: dueAt || null },
+      summary: `${data.job_number} created: ${title.trim()}`,
+      afterPayload: { branch, priority, title, due_at: dueAt || null },
     });
 
     setMessage(`${data.job_number} created.`);
-    setSummary('');
+    setTitle('');
     setDescription('');
     setDueAt('');
     await loadJobs();
@@ -122,9 +124,9 @@ export function ServiceJobBoard() {
             <label>Priority<select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>{priorities.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label>Due date<input type="datetime-local" value={dueAt} onChange={(event) => setDueAt(event.target.value)} /></label>
           </div>
-          <label>Job summary<input required value={summary} onChange={(event) => setSummary(event.target.value)} /></label>
+          <label>Job title<input required value={title} onChange={(event) => setTitle(event.target.value)} /></label>
           <label>Description<textarea value={description} onChange={(event) => setDescription(event.target.value)} /></label>
-          <button className="button pulse-button" disabled={saving || !summary.trim()} type="submit">{saving ? 'Creating job...' : 'Create service job'}</button>
+          <button className="button pulse-button" disabled={saving || !title.trim()} type="submit">{saving ? 'Creating job...' : 'Create service job'}</button>
         </form>
       </div>
       <div className="grid grid-3">
@@ -135,7 +137,7 @@ export function ServiceJobBoard() {
             {group.jobs.slice(0, 8).map((job) => (
               <div className="neo-card" key={job.id} style={{ marginBottom: 10 }}>
                 <strong>{job.job_number}</strong>
-                <p>{job.summary}<br />{job.branch.toUpperCase()} • {job.priority}</p>
+                <p>{job.title}<br />{job.branch.toUpperCase()} • {job.priority}</p>
                 <select value={job.status} onChange={(event) => updateStatus(job, event.target.value as JobStatus)}>
                   {statuses.map((status) => <option key={status}>{status}</option>)}
                 </select>
