@@ -18,7 +18,7 @@ export const roleHomePath: Record<BusinessRole, string> = {
   sales: '/sales',
   finance: '/finance',
   marketing: '/marketing',
-  executive: '/executive',
+  executive: '/executive/command-centre',
   warehouse_staff: '/warehouse/stock',
   technician: '/technician',
   road_technician: '/road-tech',
@@ -42,13 +42,18 @@ export const navSections: NavSection[] = [
     items: [
       { href: '/', label: 'System Dashboard', roles: ['admin'] },
       { href: '/admin/users', label: 'Users & Roles', roles: ['admin'] },
+      { href: '/admin/activity', label: 'Activity Log', roles: ['admin'] },
     ],
   },
   {
     heading: 'Operations',
     items: [
       { href: '/operations', label: 'Operations Control', roles: ['admin', 'operations'] },
+      { href: '/operations/deliveries', label: 'Delivery Board', roles: ['admin', 'operations'] },
+      { href: '/operations/service-jobs', label: 'Service Jobs', roles: ['admin', 'operations'] },
+      { href: '/operations/assets', label: 'Machine Assets', roles: ['admin', 'operations', 'technician', 'road_technician'] },
       { href: '/warehouse/stock', label: 'Warehouse Stock', roles: ['admin', 'warehouse_staff'] },
+      { href: '/warehouse/ledger', label: 'Inventory Ledger', roles: ['admin', 'operations', 'warehouse_staff'] },
       { href: '/technician', label: 'Technician Jobs', roles: ['admin', 'technician'] },
       { href: '/road-tech', label: 'Road Tech Routes', roles: ['admin', 'road_technician'] },
     ],
@@ -73,6 +78,7 @@ export const navSections: NavSection[] = [
   {
     heading: 'Executive',
     items: [
+      { href: '/executive/command-centre', label: 'Command Centre', roles: ['admin', 'executive'] },
       { href: '/executive', label: 'Executive Overview', roles: ['admin', 'executive'] },
       { href: '/executive/branches', label: 'Branch Performance', roles: ['admin', 'executive'] },
       { href: '/executive/contracts', label: 'Contract Risk', roles: ['admin', 'executive'] },
