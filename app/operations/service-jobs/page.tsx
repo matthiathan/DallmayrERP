@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { EnterpriseServiceJobBoard } from '@/components/features/EnterpriseServiceJobBoard';
 import { AppShell } from '@/components/layout/AppShell';
 
@@ -11,7 +12,9 @@ export default function OperationsServiceJobsPage() {
           <p>Create, prioritise, assign and manage customer-linked service work across branches and technicians.</p>
         </div>
       </div>
-      <EnterpriseServiceJobBoard />
+      <Suspense fallback={<div className="neo-card"><h2>Loading service dispatch...</h2></div>}>
+        <EnterpriseServiceJobBoard />
+      </Suspense>
     </AppShell>
   );
 }
