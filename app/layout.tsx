@@ -5,6 +5,7 @@ import './hamster-loader.css';
 import './feature-widgets.css';
 import './navigation.css';
 import './spatial-desktop.css';
+import './ultrawide.css';
 import './mobile.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 
