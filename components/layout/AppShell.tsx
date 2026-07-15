@@ -5,10 +5,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { GlobalSearch } from '@/components/ui/GlobalSearch';
+import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { canAccessPath, getDefaultPathForRole, isNavItemAllowed, navSections, roleLabels } from '@/lib/auth/permissions';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { displayProfileName, isProfileComplete } from '@/types/dallmayrerp';
-import { HamsterLoader } from '@/components/ui/HamsterLoader';
 
 function StatusScreen({
   title,
@@ -193,6 +194,8 @@ export function AppShell({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
+
+          <GlobalSearch />
 
           <div className="topbar-user">
             <div className="user-chip">
