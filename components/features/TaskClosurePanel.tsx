@@ -8,8 +8,8 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Branch } from '@/types/dallmayrerp';
 
 type TaskType = 'technician' | 'road_technician' | 'service_call' | 'preventive_service';
-
 type Outcome = 'completed' | 'follow_up_required' | 'parts_required' | 'customer_unavailable';
+type MachineLookup = { id: string; branch: Branch; machine_name: string | null; asset_number: string | null; serial_number: string | null; status: string | null };
 
 const outcomes: Outcome[] = ['completed', 'follow_up_required', 'parts_required', 'customer_unavailable'];
 
@@ -17,6 +17,8 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
   const { businessUser, userDetails } = useAuth();
   const [branch, setBranch] = useState<Branch>(defaultBranch ?? userDetails?.branch ?? 'jhb');
   const [machineBarcode, setMachineBarcode] = useState('');
+  const [machineLookup, setMachineLookup] = useState<MachineLookup | null>(null);
+  const [machineLookupMessage, setMachineLookupMessage] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState('');
   const [siteAddress, setSiteAddress] = useState('');
   const [outcome, setOutcome] = useState<Outcome>('completed');
@@ -25,6 +27,35 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  async function resolveMachine(value: string) {
+    const cleanValue = value.trim();
+    setMachineBarcode(cleanValue);
+    setMachineLookup(null);
+    setMachineLookupMessage(null);
+    if (!cleanValue) return;
+
+    const { data, error: lookupError } = await getSupabaseClient()
+      .from('machines')
+      .select('id, branch, machine_name, asset_number, serial_number, status')
+      .eq('machine_barcode', cleanValue)
+      .maybeSingle();
+
+    if (lookupError) {
+      setMachineLookupMessage(`Machine lookup failed: ${lookupError.message}`);
+      return;
+    }
+
+    if (data) {
+      const machine = data as MachineLookup;
+      setMachineLookup(machine);
+      setBranch(machine.branch);
+      setMachineLookupMessage(`Machine found: ${machine.machine_name ?? machine.asset_number ?? cleanValue} (${machine.branch.toUpperCase()}).`);
+      return;
+    }
+
+    setMachineLookupMessage('Machine barcode not found yet. You can still close the task, then create the machine asset from Operations → Machine Assets.');
+  }
 
   async function closeTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -95,11 +126,13 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
       entityId: closure.id,
       action: 'task_closed',
       summary: `${taskType} task closed for machine ${machineBarcode.trim()} with outcome ${outcome}.`,
-      afterPayload: { task_type: taskType, machine_barcode: machineBarcode.trim(), customer_name: customerName.trim() || null, outcome, photo_path: photoPath },
+      afterPayload: { task_type: taskType, machine_barcode: machineBarcode.trim(), machine_id: machineLookup?.id ?? null, customer_name: customerName.trim() || null, outcome, photo_path: photoPath },
     });
 
     setSaving(false);
     setMachineBarcode('');
+    setMachineLookup(null);
+    setMachineLookupMessage(null);
     setCustomerName('');
     setSiteAddress('');
     setOutcome('completed');
@@ -128,7 +161,8 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
             </select>
           </label>
         </div>
-        <BarcodeCapture label="Machine barcode" value={machineBarcode} onChange={setMachineBarcode} />
+        <BarcodeCapture label="Machine QR / barcode" value={machineBarcode} onChange={resolveMachine} />
+        {machineLookupMessage ? <div className={machineLookup ? 'success' : 'badge warning'}>{machineLookupMessage}</div> : null}
         <label>Site address<input value={siteAddress} onChange={(event) => setSiteAddress(event.target.value)} /></label>
         <label>Closure notes<textarea value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
         <label>Closure photo<input accept="image/*" capture="environment" type="file" onChange={(event) => setPhoto(event.target.files?.[0] ?? null)} /></label>
