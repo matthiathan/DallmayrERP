@@ -10,6 +10,8 @@ import type { Branch } from '@/types/dallmayrerp';
 
 type TaskType = 'technician' | 'road_technician' | 'service_call' | 'preventive_service';
 type Outcome = 'completed' | 'follow_up_required' | 'parts_required' | 'customer_unavailable';
+type CustomerRelation = { customer_name: string | null; address: string | null; branch: Branch | null };
+type SiteRelation = { site_name: string | null; address: string | null; branch: Branch | null };
 type MachineLookup = {
   id: string;
   branch: Branch;
@@ -17,11 +19,16 @@ type MachineLookup = {
   asset_number: string | null;
   serial_number: string | null;
   status: string | null;
-  customers?: { customer_name: string | null; address: string | null; branch: Branch | null } | null;
-  customer_sites?: { site_name: string | null; address: string | null; branch: Branch | null } | null;
+  customers?: CustomerRelation | CustomerRelation[] | null;
+  customer_sites?: SiteRelation | SiteRelation[] | null;
 };
 
 const outcomes: Outcome[] = ['completed', 'follow_up_required', 'parts_required', 'customer_unavailable'];
+
+function firstRelation<T>(relation: T | T[] | null | undefined): T | null {
+  if (Array.isArray(relation)) return relation[0] ?? null;
+  return relation ?? null;
+}
 
 export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskType; defaultBranch?: Branch }) {
   const { businessUser, userDetails } = useAuth();
@@ -69,8 +76,8 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
 
     if (data) {
       const machine = data as MachineLookup;
-      const customer = machine.customers;
-      const site = machine.customer_sites;
+      const customer = firstRelation(machine.customers);
+      const site = firstRelation(machine.customer_sites);
       setMachineLookup(machine);
       setBranch((site?.branch ?? customer?.branch ?? machine.branch) as Branch);
       if (customer?.customer_name) setCustomerName(customer.customer_name);
