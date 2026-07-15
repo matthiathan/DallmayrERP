@@ -1,6 +1,6 @@
 'use client';
 
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, useEffect, useId, useRef, useState } from 'react';
 import type { Html5Qrcode as Html5QrcodeInstance } from 'html5-qrcode';
 
 type ScannerMessageType = 'info' | 'success' | 'warning' | 'error';
@@ -32,7 +32,7 @@ export function BarcodeCapture({
   const [fileScanning, setFileScanning] = useState(false);
   const scannerRef = useRef<Html5QrcodeInstance | null>(null);
   const scanLockedRef = useRef(false);
-  const scannerId = useMemo(() => `live-scanner-${Math.random().toString(36).slice(2, 10)}`, []);
+  const scannerId = `live-scanner-${useId().replace(/:/g, '-')}`;
 
   async function loadScannerModule() {
     return import('html5-qrcode');
