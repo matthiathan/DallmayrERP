@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { BarcodeCapture } from '@/components/ui/BarcodeCapture';
+import { recordAuditEvent } from '@/lib/data/audit';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Branch } from '@/types/dallmayrerp';
 
@@ -69,14 +70,35 @@ export function StockScannerPanel({ defaultBranch }: { defaultBranch?: Branch })
       notes: notes.trim() || null,
     });
 
-    setSaving(false);
-
     if (scanError) {
+      setSaving(false);
       setError(scanError.message);
       return;
     }
 
-    setMessage(stockItemId ? 'Stock scan recorded.' : 'Stock scan recorded without linked stock item.');
+    const { data: movement } = await client.from('inventory_movements').insert({
+      stock_item_id: stockItemId,
+      branch,
+      movement_type: 'received',
+      quantity,
+      reference_type: 'stock_scan',
+      notes: notes.trim() || `Stock scan ${cleanBarcode}`,
+      created_by: businessUser.id,
+    }).select('id').single();
+
+    await recordAuditEvent(client, {
+      actorUserId: businessUser.id,
+      actorRole: userDetails?.role,
+      branch,
+      entityType: 'stock',
+      entityId: stockItemId,
+      action: 'stock_scan_recorded',
+      summary: `Stock scan recorded for ${cleanBarcode} with quantity ${quantity}.`,
+      afterPayload: { barcode: cleanBarcode, quantity, stock_item_id: stockItemId, inventory_movement_id: movement?.id ?? null },
+    });
+
+    setSaving(false);
+    setMessage(stockItemId ? 'Stock scan and inventory movement recorded.' : 'Stock scan recorded without linked stock item.');
     setBarcode('');
     setStockName('');
     setQuantity(1);
