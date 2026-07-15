@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { BarcodeCapture } from '@/components/ui/BarcodeCapture';
+import { CustomerSelect, type CustomerOption } from '@/components/ui/CustomerSelect';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Branch } from '@/types/dallmayrerp';
 
@@ -19,6 +20,17 @@ export function OrderScannerPanel({ defaultBranch }: { defaultBranch?: Branch })
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  function applyCustomer(customer: CustomerOption | null) {
+    if (!customer) {
+      setCustomerName('');
+      return;
+    }
+
+    setCustomerName(customer.customer_name);
+    setBranch(customer.branch);
+    if (customer.address) setDeliveryAddress(customer.address);
+  }
 
   async function addLine() {
     const cleanBarcode = barcode.trim();
@@ -114,7 +126,7 @@ export function OrderScannerPanel({ defaultBranch }: { defaultBranch?: Branch })
               <option value="jhb">jhb</option><option value="cpt">cpt</option><option value="kzn">kzn</option><option value="national">national</option>
             </select>
           </label>
-          <label>Customer name<input required value={customerName} onChange={(event) => setCustomerName(event.target.value)} /></label>
+          <CustomerSelect value={customerName} onSelect={applyCustomer} required />
           <label>Delivery address<input value={deliveryAddress} onChange={(event) => setDeliveryAddress(event.target.value)} /></label>
         </div>
         <BarcodeCapture label="Pick barcode" value={barcode} onChange={setBarcode} />
