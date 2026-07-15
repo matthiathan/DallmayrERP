@@ -1,17 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { EnterpriseDataTable, type EnterpriseColumn } from '@/components/ui/EnterpriseDataTable';
 import { PageToolbar } from '@/components/ui/PageToolbar';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { useClientQueryParam } from '@/lib/navigation/useClientQueryParam';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { CustomerRecord } from '@/types/enterprise-records';
 
 export default function CustomerDirectoryPage() {
-  const searchParams = useSearchParams();
+  const querySearch = useClientQueryParam('q');
+  const customerSearch = useClientQueryParam('customer');
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -52,20 +53,10 @@ export default function CustomerDirectoryPage() {
 
   return (
     <AppShell>
-      <div className="page-header hero-panel spatial-card">
-        <div><div className="badge">Customer Management</div><h1>Customer Directory</h1><p>Search customers and open a unified operational profile.</p></div>
-      </div>
+      <div className="page-header hero-panel spatial-card"><div><div className="badge">Customer Management</div><h1>Customer Directory</h1><p>Search customers and open a unified operational profile.</p></div></div>
       {error ? <div className="error">{error}</div> : null}
       <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadCustomers} type="button">{loading ? 'Refreshing...' : 'Refresh directory'}</button>} description="Search by customer name, account code, branch, phone, email or address." lastUpdated={lastUpdated} title="Customer records" />
-      <EnterpriseDataTable
-        columns={columns}
-        emptyMessage={loading ? 'Loading customers...' : 'No matching customers found.'}
-        getSearchText={(row) => [row.id, row.customer_name, row.customer_code, row.branch, row.phone, row.email, row.address, row.status].join(' ')}
-        initialSearch={searchParams.get('q') ?? searchParams.get('customer') ?? ''}
-        rowKey={(row) => row.id}
-        rows={customers}
-        searchPlaceholder="Search customer, account code, phone or address"
-      />
+      <EnterpriseDataTable columns={columns} emptyMessage={loading ? 'Loading customers...' : 'No matching customers found.'} getSearchText={(row) => [row.id, row.customer_name, row.customer_code, row.branch, row.phone, row.email, row.address, row.status].join(' ')} initialSearch={querySearch || customerSearch} rowKey={(row) => row.id} rows={customers} searchPlaceholder="Search customer, account code, phone or address" />
     </AppShell>
   );
 }
