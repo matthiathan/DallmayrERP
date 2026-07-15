@@ -1,23 +1,9 @@
 'use client';
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+import type { Html5Qrcode as Html5QrcodeInstance } from 'html5-qrcode';
 
 type ScannerMessageType = 'info' | 'success' | 'warning' | 'error';
-
-type Html5QrcodeInstance = {
-  start: (
-    cameraConfig: { facingMode?: string } | string,
-    configuration: Record<string, unknown>,
-    qrCodeSuccessCallback: (decodedText: string) => void,
-    qrCodeErrorCallback?: () => void,
-  ) => Promise<void>;
-  stop: () => Promise<void>;
-  clear: () => Promise<void> | void;
-  scanFile: (file: File, showImage?: boolean) => Promise<string>;
-};
-
-type Html5QrcodeConstructor = new (elementId: string, configOrVerbose?: { formatsToSupport?: number[]; verbose?: boolean } | boolean) => Html5QrcodeInstance;
-
 type Html5QrcodeFormats = Record<string, number>;
 
 function cleanScanValue(value: string) {
@@ -65,11 +51,7 @@ export function BarcodeCapture({
   const scannerId = useMemo(() => `live-scanner-${Math.random().toString(36).slice(2, 10)}`, []);
 
   async function loadScannerModule() {
-    const module = await import('html5-qrcode');
-    return {
-      Html5Qrcode: module.Html5Qrcode as Html5QrcodeConstructor,
-      Html5QrcodeSupportedFormats: module.Html5QrcodeSupportedFormats as unknown as Html5QrcodeFormats,
-    };
+    return import('html5-qrcode');
   }
 
   function acceptScan(rawValue: string) {
@@ -114,7 +96,10 @@ export function BarcodeCapture({
 
     try {
       const { Html5Qrcode, Html5QrcodeSupportedFormats } = await loadScannerModule();
-      const scanner = new Html5Qrcode(scannerId, { formatsToSupport: supportedFormats(Html5QrcodeSupportedFormats), verbose: false });
+      const scanner = new Html5Qrcode(scannerId, {
+        formatsToSupport: supportedFormats(Html5QrcodeSupportedFormats as unknown as Html5QrcodeFormats),
+        verbose: false,
+      });
       scannerRef.current = scanner;
 
       await scanner.start(
@@ -134,6 +119,7 @@ export function BarcodeCapture({
           acceptScan(decodedText);
           await stopCamera();
         },
+        () => undefined,
       );
 
       setCameraActive(true);
@@ -161,7 +147,10 @@ export function BarcodeCapture({
     try {
       await stopCamera();
       const { Html5Qrcode, Html5QrcodeSupportedFormats } = await loadScannerModule();
-      const scanner = new Html5Qrcode(scannerId, { formatsToSupport: supportedFormats(Html5QrcodeSupportedFormats), verbose: false });
+      const scanner = new Html5Qrcode(scannerId, {
+        formatsToSupport: supportedFormats(Html5QrcodeSupportedFormats as unknown as Html5QrcodeFormats),
+        verbose: false,
+      });
       scannerRef.current = scanner;
       const decodedText = await scanner.scanFile(file, false);
       acceptScan(decodedText);
