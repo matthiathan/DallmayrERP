@@ -1,6 +1,5 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { BarcodeCapture } from '@/components/ui/BarcodeCapture';
@@ -9,6 +8,7 @@ import { EnterpriseDataTable, type EnterpriseColumn } from '@/components/ui/Ente
 import { PageToolbar } from '@/components/ui/PageToolbar';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { recordAuditEvent } from '@/lib/data/audit';
+import { useClientQueryParam } from '@/lib/navigation/useClientQueryParam';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Branch } from '@/types/dallmayrerp';
 import type { MachineRecord, MachineStatus } from '@/types/enterprise-records';
@@ -26,7 +26,7 @@ function getCustomerName(machine: MachineRow) {
 }
 
 export function MachineAssetBoard() {
-  const searchParams = useSearchParams();
+  const focusedMachineId = useClientQueryParam('machine');
   const { businessUser, userDetails } = useAuth();
   const [machines, setMachines] = useState<MachineRow[]>([]);
   const [branch, setBranch] = useState<Branch>(userDetails?.branch ?? 'jhb');
@@ -150,17 +150,12 @@ export function MachineAssetBoard() {
           <button className="button pulse-button" disabled={saving || !serialNumber.trim() || !machineBarcode.trim()} type="submit">{saving ? 'Creating machine...' : 'Create machine'}</button>
         </form>
       </div>
-      <PageToolbar
-        actions={<button className="button secondary" disabled={loading} onClick={loadMachines} type="button">{loading ? 'Refreshing...' : 'Refresh register'}</button>}
-        description="Search, sort and page through customer-linked machines."
-        lastUpdated={lastUpdated}
-        title="Machine register"
-      />
+      <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadMachines} type="button">{loading ? 'Refreshing...' : 'Refresh register'}</button>} description="Search, sort and page through customer-linked machines." lastUpdated={lastUpdated} title="Machine register" />
       <EnterpriseDataTable
         columns={columns}
         emptyMessage={loading ? 'Loading machine records...' : 'No matching machines found.'}
         getSearchText={(row) => [row.id, row.machine_name, row.model, row.serial_number, row.machine_barcode, row.branch, row.status, getCustomerName(row)].join(' ')}
-        initialSearch={searchParams.get('machine') ?? ''}
+        initialSearch={focusedMachineId}
         rowKey={(row) => row.id}
         rows={machines}
         searchPlaceholder="Search machine, customer, model, serial number or barcode"
