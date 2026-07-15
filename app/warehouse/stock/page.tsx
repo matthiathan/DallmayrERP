@@ -1,6 +1,5 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { DocumentHub } from '@/components/features/DocumentHub';
 import { StockScannerPanel } from '@/components/features/StockScannerPanel';
@@ -8,6 +7,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { EnterpriseDataTable, type EnterpriseColumn } from '@/components/ui/EnterpriseDataTable';
 import { PageToolbar } from '@/components/ui/PageToolbar';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { useClientQueryParam } from '@/lib/navigation/useClientQueryParam';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { StockItem } from '@/types/dallmayrerp';
 
@@ -17,7 +17,7 @@ const emptyForm = {
 };
 
 export default function WarehouseStockPage() {
-  const searchParams = useSearchParams();
+  const focusedStockId = useClientQueryParam('stock');
   const [items, setItems] = useState<StockItem[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
@@ -93,49 +93,18 @@ export default function WarehouseStockPage() {
 
   return (
     <AppShell>
-      <div className="page-header hero-panel">
-        <div><div className="badge">Warehouse</div><h1>Warehouse Stock</h1><p>Add shipment stock, scan barcodes, share documentation and prepare inventory for deliveries.</p></div>
-      </div>
+      <div className="page-header hero-panel"><div><div className="badge">Warehouse</div><h1>Warehouse Stock</h1><p>Add shipment stock, scan barcodes, share documentation and prepare inventory for deliveries.</p></div></div>
       {error ? <div className="error">{error}</div> : null}
       {success ? <div className="success">{success}</div> : null}
-
-      <div className="grid grid-3 spatial-kpi-grid" style={{ marginBottom: 20 }}>
-        <div className="card"><div className="nav-heading">Stock rows</div><div className="kpi-value">{items.length}</div></div>
-        <div className="card"><div className="nav-heading">Low stock</div><div className="kpi-value">{lowStockCount}</div></div>
-        <div className="card"><div className="nav-heading">Loose items</div><div className="kpi-value">{items.reduce((sum, item) => sum + item.item_quantity, 0)}</div></div>
-      </div>
-
+      <div className="grid grid-3 spatial-kpi-grid" style={{ marginBottom: 20 }}><div className="card"><div className="nav-heading">Stock rows</div><div className="kpi-value">{items.length}</div></div><div className="card"><div className="nav-heading">Low stock</div><div className="kpi-value">{lowStockCount}</div></div><div className="card"><div className="nav-heading">Loose items</div><div className="kpi-value">{items.reduce((sum, item) => sum + item.item_quantity, 0)}</div></div></div>
       <div className="grid grid-2" style={{ marginBottom: 20 }}>
         <StockScannerPanel />
-        <div className="card">
-          <h2>Add or update stock manually</h2>
-          <form className="form-grid" onSubmit={addStock}>
-            <label>Stock name<input required value={form.stock_name} onChange={(event) => setForm({ ...form, stock_name: event.target.value })} /></label>
-            <label>Item barcode<input required value={form.item_barcode} onChange={(event) => setForm({ ...form, item_barcode: event.target.value })} /></label>
-            <label>Box barcode<input value={form.box_barcode} onChange={(event) => setForm({ ...form, box_barcode: event.target.value })} /></label>
-            <label>Item quantity<input min="0" type="number" value={form.item_quantity} onChange={(event) => setForm({ ...form, item_quantity: Number(event.target.value) })} /></label>
-            <label>Box quantity<input min="0" type="number" value={form.box_quantity} onChange={(event) => setForm({ ...form, box_quantity: Number(event.target.value) })} /></label>
-            <label>Items per box<input min="1" type="number" value={form.items_per_box} onChange={(event) => setForm({ ...form, items_per_box: Number(event.target.value) })} /></label>
-            <label>Category<input value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} /></label>
-            <label>Supplier<input value={form.supplier_name} onChange={(event) => setForm({ ...form, supplier_name: event.target.value })} /></label>
-            <label>Warehouse location<input value={form.warehouse_location} onChange={(event) => setForm({ ...form, warehouse_location: event.target.value })} /></label>
-            <label>Reorder level<input min="0" type="number" value={form.reorder_level} onChange={(event) => setForm({ ...form, reorder_level: Number(event.target.value) })} /></label>
-            <label>Notes<input value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} /></label>
-            <div style={{ alignSelf: 'end' }}><button className="button" disabled={saving}>{saving ? 'Saving...' : 'Save stock'}</button></div>
-          </form>
-        </div>
+        <div className="card"><h2>Add or update stock manually</h2><form className="form-grid" onSubmit={addStock}>
+          <label>Stock name<input required value={form.stock_name} onChange={(event) => setForm({ ...form, stock_name: event.target.value })} /></label><label>Item barcode<input required value={form.item_barcode} onChange={(event) => setForm({ ...form, item_barcode: event.target.value })} /></label><label>Box barcode<input value={form.box_barcode} onChange={(event) => setForm({ ...form, box_barcode: event.target.value })} /></label><label>Item quantity<input min="0" type="number" value={form.item_quantity} onChange={(event) => setForm({ ...form, item_quantity: Number(event.target.value) })} /></label><label>Box quantity<input min="0" type="number" value={form.box_quantity} onChange={(event) => setForm({ ...form, box_quantity: Number(event.target.value) })} /></label><label>Items per box<input min="1" type="number" value={form.items_per_box} onChange={(event) => setForm({ ...form, items_per_box: Number(event.target.value) })} /></label><label>Category<input value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} /></label><label>Supplier<input value={form.supplier_name} onChange={(event) => setForm({ ...form, supplier_name: event.target.value })} /></label><label>Warehouse location<input value={form.warehouse_location} onChange={(event) => setForm({ ...form, warehouse_location: event.target.value })} /></label><label>Reorder level<input min="0" type="number" value={form.reorder_level} onChange={(event) => setForm({ ...form, reorder_level: Number(event.target.value) })} /></label><label>Notes<input value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} /></label><div style={{ alignSelf: 'end' }}><button className="button" disabled={saving}>{saving ? 'Saving...' : 'Save stock'}</button></div>
+        </form></div>
       </div>
-
       <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadStock} type="button">{loading ? 'Refreshing...' : 'Refresh stock'}</button>} description="Search, sort and page through current stock records." lastUpdated={lastUpdated} title="Stock register" />
-      <EnterpriseDataTable
-        columns={columns}
-        emptyMessage={loading ? 'Loading stock records...' : 'No matching stock items found.'}
-        getSearchText={(row) => [row.id, row.stock_name, row.item_barcode, row.box_barcode, row.category, row.supplier_name, row.warehouse_location].join(' ')}
-        initialSearch={searchParams.get('stock') ?? ''}
-        rowKey={(row) => row.id}
-        rows={items}
-        searchPlaceholder="Search stock name, barcode, category, supplier or location"
-      />
+      <EnterpriseDataTable columns={columns} emptyMessage={loading ? 'Loading stock records...' : 'No matching stock items found.'} getSearchText={(row) => [row.id, row.stock_name, row.item_barcode, row.box_barcode, row.category, row.supplier_name, row.warehouse_location].join(' ')} initialSearch={focusedStockId} rowKey={(row) => row.id} rows={items} searchPlaceholder="Search stock name, barcode, category, supplier or location" />
       <div style={{ marginTop: 20 }}><DocumentHub department="warehouse" branch="all" /></div>
     </AppShell>
   );
