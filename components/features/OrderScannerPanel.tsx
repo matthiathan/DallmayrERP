@@ -8,6 +8,7 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Branch } from '@/types/dallmayrerp';
 
 type PickLine = { barcode: string; quantity: number; stock_name?: string | null; stock_item_id?: string | null };
+type StockLookup = { id: string; stock_name: string; item_barcode: string; box_barcode: string | null; item_quantity: number; box_quantity: number; warehouse_location: string | null };
 
 export function OrderScannerPanel({ defaultBranch }: { defaultBranch?: Branch }) {
   const { businessUser, userDetails } = useAuth();
@@ -15,6 +16,8 @@ export function OrderScannerPanel({ defaultBranch }: { defaultBranch?: Branch })
   const [customerName, setCustomerName] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [barcode, setBarcode] = useState('');
+  const [stockLookup, setStockLookup] = useState<StockLookup | null>(null);
+  const [stockLookupMessage, setStockLookupMessage] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [lines, setLines] = useState<PickLine[]>([]);
   const [saving, setSaving] = useState(false);
@@ -32,15 +35,47 @@ export function OrderScannerPanel({ defaultBranch }: { defaultBranch?: Branch })
     if (customer.address) setDeliveryAddress(customer.address);
   }
 
+  async function resolvePickStock(value: string) {
+    const cleanValue = value.trim();
+    setBarcode(cleanValue);
+    setStockLookup(null);
+    setStockLookupMessage(null);
+    if (!cleanValue) return;
+
+    const { data, error: lookupError } = await getSupabaseClient()
+      .from('stock_items')
+      .select('id, stock_name, item_barcode, box_barcode, item_quantity, box_quantity, warehouse_location')
+      .or(`item_barcode.eq.${cleanValue},box_barcode.eq.${cleanValue}`)
+      .maybeSingle();
+
+    if (lookupError) {
+      setStockLookupMessage(`Stock lookup failed: ${lookupError.message}`);
+      return;
+    }
+
+    if (data) {
+      const item = data as StockLookup;
+      setStockLookup(item);
+      setStockLookupMessage(`${item.stock_name} found. Available: ${item.item_quantity} item(s), ${item.box_quantity} box(es).`);
+      return;
+    }
+
+    setStockLookupMessage('Barcode not found. You can still add the line as unmatched stock.');
+  }
+
   async function addLine() {
     const cleanBarcode = barcode.trim();
     if (!cleanBarcode) return;
 
-    const { data: stockItem } = await getSupabaseClient()
-      .from('stock_items')
-      .select('id, stock_name')
-      .or(`item_barcode.eq.${cleanBarcode},box_barcode.eq.${cleanBarcode}`)
-      .maybeSingle();
+    let stockItem = stockLookup;
+    if (!stockItem) {
+      const { data } = await getSupabaseClient()
+        .from('stock_items')
+        .select('id, stock_name, item_barcode, box_barcode, item_quantity, box_quantity, warehouse_location')
+        .or(`item_barcode.eq.${cleanBarcode},box_barcode.eq.${cleanBarcode}`)
+        .maybeSingle();
+      stockItem = (data as StockLookup | null) ?? null;
+    }
 
     setLines((current) => [...current, {
       barcode: cleanBarcode,
@@ -49,6 +84,8 @@ export function OrderScannerPanel({ defaultBranch }: { defaultBranch?: Branch })
       stock_item_id: stockItem?.id ?? null,
     }]);
     setBarcode('');
+    setStockLookup(null);
+    setStockLookupMessage(null);
     setQuantity(1);
   }
 
@@ -129,7 +166,8 @@ export function OrderScannerPanel({ defaultBranch }: { defaultBranch?: Branch })
           <CustomerSelect value={customerName} onSelect={applyCustomer} required />
           <label>Delivery address<input value={deliveryAddress} onChange={(event) => setDeliveryAddress(event.target.value)} /></label>
         </div>
-        <BarcodeCapture label="Pick barcode" value={barcode} onChange={setBarcode} />
+        <BarcodeCapture label="Pick barcode" value={barcode} onChange={resolvePickStock} />
+        {stockLookupMessage ? <div className={stockLookup ? 'success' : 'badge warning'}>{stockLookupMessage}</div> : null}
         <div className="form-grid">
           <label>Quantity<input min="1" type="number" value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} /></label>
           <div style={{ alignSelf: 'end' }}><button className="button secondary" onClick={addLine} type="button">Add scanned line</button></div>
