@@ -3,13 +3,23 @@
 import { FormEvent, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { BarcodeCapture } from '@/components/ui/BarcodeCapture';
+import { CustomerSelect, type CustomerOption } from '@/components/ui/CustomerSelect';
 import { recordAuditEvent } from '@/lib/data/audit';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Branch } from '@/types/dallmayrerp';
 
 type TaskType = 'technician' | 'road_technician' | 'service_call' | 'preventive_service';
 type Outcome = 'completed' | 'follow_up_required' | 'parts_required' | 'customer_unavailable';
-type MachineLookup = { id: string; branch: Branch; machine_name: string | null; asset_number: string | null; serial_number: string | null; status: string | null };
+type MachineLookup = {
+  id: string;
+  branch: Branch;
+  machine_name: string | null;
+  asset_number: string | null;
+  serial_number: string | null;
+  status: string | null;
+  customers?: { customer_name: string | null; address: string | null; branch: Branch | null } | null;
+  customer_sites?: { site_name: string | null; address: string | null; branch: Branch | null } | null;
+};
 
 const outcomes: Outcome[] = ['completed', 'follow_up_required', 'parts_required', 'customer_unavailable'];
 
@@ -28,6 +38,17 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  function applyCustomer(customer: CustomerOption | null) {
+    if (!customer) {
+      setCustomerName('');
+      return;
+    }
+
+    setCustomerName(customer.customer_name);
+    setBranch(customer.branch);
+    if (customer.address) setSiteAddress(customer.address);
+  }
+
   async function resolveMachine(value: string) {
     const cleanValue = value.trim();
     setMachineBarcode(cleanValue);
@@ -37,7 +58,7 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
 
     const { data, error: lookupError } = await getSupabaseClient()
       .from('machines')
-      .select('id, branch, machine_name, asset_number, serial_number, status')
+      .select('id, branch, machine_name, asset_number, serial_number, status, customers(customer_name, address, branch), customer_sites(site_name, address, branch)')
       .eq('machine_barcode', cleanValue)
       .maybeSingle();
 
@@ -48,9 +69,13 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
 
     if (data) {
       const machine = data as MachineLookup;
+      const customer = machine.customers;
+      const site = machine.customer_sites;
       setMachineLookup(machine);
-      setBranch(machine.branch);
-      setMachineLookupMessage(`Machine found: ${machine.machine_name ?? machine.asset_number ?? cleanValue} (${machine.branch.toUpperCase()}).`);
+      setBranch((site?.branch ?? customer?.branch ?? machine.branch) as Branch);
+      if (customer?.customer_name) setCustomerName(customer.customer_name);
+      if (site?.address || customer?.address) setSiteAddress(site?.address ?? customer?.address ?? '');
+      setMachineLookupMessage(`Machine found: ${machine.machine_name ?? machine.asset_number ?? cleanValue}. Customer and site details were auto-filled where available.`);
       return;
     }
 
@@ -126,7 +151,7 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
       entityId: closure.id,
       action: 'task_closed',
       summary: `${taskType} task closed for machine ${machineBarcode.trim()} with outcome ${outcome}.`,
-      afterPayload: { task_type: taskType, machine_barcode: machineBarcode.trim(), machine_id: machineLookup?.id ?? null, customer_name: customerName.trim() || null, outcome, photo_path: photoPath },
+      afterPayload: { task_type: taskType, machine_barcode: machineBarcode.trim(), machine_id: machineLookup?.id ?? null, customer_name: customerName.trim() || null, site_address: siteAddress.trim() || null, outcome, photo_path: photoPath },
     });
 
     setSaving(false);
@@ -154,7 +179,7 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
               <option value="jhb">jhb</option><option value="cpt">cpt</option><option value="kzn">kzn</option><option value="national">national</option>
             </select>
           </label>
-          <label>Customer name<input value={customerName} onChange={(event) => setCustomerName(event.target.value)} /></label>
+          <CustomerSelect value={customerName} onSelect={applyCustomer} />
           <label>Outcome
             <select value={outcome} onChange={(event) => setOutcome(event.target.value as Outcome)}>
               {outcomes.map((item) => <option key={item}>{item}</option>)}
