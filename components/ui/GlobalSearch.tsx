@@ -33,7 +33,6 @@ export function GlobalSearch() {
       }
       if (event.key === 'Escape') setOpen(false);
     }
-
     window.addEventListener('keydown', handleShortcut);
     return () => window.removeEventListener('keydown', handleShortcut);
   }, []);
@@ -64,7 +63,6 @@ export function GlobalSearch() {
       setError(null);
       const pattern = `%${term}%`;
       const client = getSupabaseClient();
-
       try {
         const [customers, machines, stock, deliveries, services] = await Promise.all([
           client.from('customers').select('id, customer_name, customer_code, branch, address').or(`customer_name.ilike.${pattern},customer_code.ilike.${pattern}`).limit(6),
@@ -73,7 +71,6 @@ export function GlobalSearch() {
           client.from('delivery_orders').select('id, order_number, customer_name, branch, status').or(`order_number.ilike.${pattern},customer_name.ilike.${pattern}`).limit(6),
           client.from('service_jobs').select('id, job_number, summary, branch, status').or(`job_number.ilike.${pattern},summary.ilike.${pattern}`).limit(6),
         ]);
-
         const queryError = customers.error ?? machines.error ?? stock.error ?? deliveries.error ?? services.error;
         if (queryError) throw queryError;
         if (requestId !== requestRef.current) return;
@@ -84,7 +81,7 @@ export function GlobalSearch() {
             type: 'Customer' as const,
             title: row.customer_name,
             subtitle: `${row.customer_code ?? 'No account code'} • ${row.branch.toUpperCase()}${row.address ? ` • ${row.address}` : ''}`,
-            href: `/operations?customer=${row.id}`,
+            href: `/customers/${row.id}`,
           })),
           ...((machines.data ?? []) as Array<{ id: string; machine_name: string | null; serial_number: string | null; machine_barcode: string | null; branch: string; model: string | null }>).map((row) => ({
             id: row.id,
@@ -115,7 +112,6 @@ export function GlobalSearch() {
             href: `/operations/service-jobs?job=${row.id}`,
           })),
         ];
-
         setResults(nextResults.slice(0, 24));
       } catch (searchError) {
         if (requestId !== requestRef.current) return;
@@ -125,7 +121,6 @@ export function GlobalSearch() {
         if (requestId === requestRef.current) setLoading(false);
       }
     }, 260);
-
     return () => window.clearTimeout(timeout);
   }, [open, query]);
 
@@ -138,47 +133,21 @@ export function GlobalSearch() {
 
   return (
     <>
-      <button aria-haspopup="dialog" className="global-search-trigger" onClick={() => setOpen(true)} type="button">
-        <span>Search ERP</span>
-        <kbd>Ctrl K</kbd>
-      </button>
-
+      <button aria-haspopup="dialog" className="global-search-trigger" onClick={() => setOpen(true)} type="button"><span>Search ERP</span><kbd>Ctrl K</kbd></button>
       {open ? (
-        <div className="global-search-overlay" role="presentation" onMouseDown={(event) => {
-          if (event.target === event.currentTarget) closeSearch();
-        }}>
+        <div className="global-search-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeSearch(); }}>
           <section aria-label="Search DallmayrERP" aria-modal="true" className="global-search-dialog" role="dialog">
             <div className="global-search-input-row">
-              <input
-                aria-label="Search customers, machines, stock, delivery orders and service jobs"
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search customer, serial number, barcode, order or job..."
-                ref={inputRef}
-                type="search"
-                value={query}
-              />
+              <input aria-label="Search customers, machines, stock, delivery orders and service jobs" onChange={(event) => setQuery(event.target.value)} placeholder="Search customer, serial number, barcode, order or job..." ref={inputRef} type="search" value={query} />
               <button aria-label="Close search" className="button secondary" onClick={closeSearch} type="button">Close</button>
             </div>
-
-            <div className="global-search-quick-actions">
-              <Link href="/operations/service-jobs" onClick={closeSearch}>Create service job</Link>
-              <Link href="/warehouse/stock" onClick={closeSearch}>Scan stock</Link>
-              <Link href="/operations/deliveries" onClick={closeSearch}>Open deliveries</Link>
-              <Link href="/operations/assets" onClick={closeSearch}>Machine register</Link>
-            </div>
-
+            <div className="global-search-quick-actions"><Link href="/customers" onClick={closeSearch}>Customer directory</Link><Link href="/operations/service-jobs" onClick={closeSearch}>Create service job</Link><Link href="/warehouse/stock" onClick={closeSearch}>Scan stock</Link><Link href="/operations/deliveries" onClick={closeSearch}>Open deliveries</Link><Link href="/operations/assets" onClick={closeSearch}>Machine register</Link></div>
             <div aria-live="polite" className="global-search-results">
               {loading ? <div className="global-search-state">Searching enterprise records...</div> : null}
               {error ? <div className="error">{error}</div> : null}
               {!loading && !error && query.trim().length < 2 ? <div className="global-search-state">Enter at least two characters. Press Esc to close.</div> : null}
               {!loading && !error && query.trim().length >= 2 && results.length === 0 ? <div className="global-search-state">No matching records were found.</div> : null}
-              {results.map((result) => (
-                <Link className="global-search-result" href={result.href} key={`${result.type}-${result.id}`} onClick={closeSearch}>
-                  <span className="global-search-result-type">{result.type}</span>
-                  <strong>{result.title}</strong>
-                  <span>{result.subtitle}</span>
-                </Link>
-              ))}
+              {results.map((result) => <Link className="global-search-result" href={result.href} key={`${result.type}-${result.id}`} onClick={closeSearch}><span className="global-search-result-type">{result.type}</span><strong>{result.title}</strong><span>{result.subtitle}</span></Link>)}
             </div>
           </section>
         </div>
