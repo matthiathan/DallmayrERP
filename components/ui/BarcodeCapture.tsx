@@ -12,11 +12,11 @@ type Html5QrcodeInstance = {
     qrCodeErrorCallback?: () => void,
   ) => Promise<void>;
   stop: () => Promise<void>;
-  clear: () => Promise<void>;
+  clear: () => Promise<void> | void;
   scanFile: (file: File, showImage?: boolean) => Promise<string>;
 };
 
-type Html5QrcodeConstructor = new (elementId: string, verbose?: boolean) => Html5QrcodeInstance;
+type Html5QrcodeConstructor = new (elementId: string, configOrVerbose?: { formatsToSupport?: number[]; verbose?: boolean } | boolean) => Html5QrcodeInstance;
 
 type Html5QrcodeFormats = Record<string, number>;
 
@@ -29,6 +29,21 @@ function messageClass(type: ScannerMessageType) {
   if (type === 'error') return 'error';
   if (type === 'warning') return 'badge warning';
   return 'nav-heading';
+}
+
+function supportedFormats(formats: Html5QrcodeFormats) {
+  return [
+    formats.QR_CODE,
+    formats.CODE_39,
+    formats.CODE_93,
+    formats.CODE_128,
+    formats.EAN_13,
+    formats.EAN_8,
+    formats.UPC_A,
+    formats.UPC_E,
+    formats.DATA_MATRIX,
+    formats.PDF_417,
+  ].filter((format): format is number => typeof format === 'number');
 }
 
 export function BarcodeCapture({
@@ -74,10 +89,15 @@ export function BarcodeCapture({
     }
 
     try {
-      if (cameraActive) await scanner.stop();
-      await scanner.clear();
+      await scanner.stop();
     } catch {
       // Some browsers throw if stop is called after the stream has already stopped.
+    }
+
+    try {
+      await scanner.clear();
+    } catch {
+      // Clear can throw if the internal element has already been reset.
     } finally {
       scannerRef.current = null;
       scanLockedRef.current = false;
@@ -94,21 +114,8 @@ export function BarcodeCapture({
 
     try {
       const { Html5Qrcode, Html5QrcodeSupportedFormats } = await loadScannerModule();
-      const scanner = new Html5Qrcode(scannerId, false);
+      const scanner = new Html5Qrcode(scannerId, { formatsToSupport: supportedFormats(Html5QrcodeSupportedFormats), verbose: false });
       scannerRef.current = scanner;
-
-      const formatsToSupport = [
-        Html5QrcodeSupportedFormats.QR_CODE,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.CODE_93,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.DATA_MATRIX,
-        Html5QrcodeSupportedFormats.PDF_417,
-      ].filter((format) => typeof format === 'number');
 
       await scanner.start(
         { facingMode: 'environment' },
@@ -120,7 +127,6 @@ export function BarcodeCapture({
           }),
           aspectRatio: 1.777778,
           disableFlip: true,
-          formatsToSupport,
         },
         async (decodedText: string) => {
           if (scanLockedRef.current) return;
@@ -154,8 +160,8 @@ export function BarcodeCapture({
 
     try {
       await stopCamera();
-      const { Html5Qrcode } = await loadScannerModule();
-      const scanner = new Html5Qrcode(scannerId, false);
+      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await loadScannerModule();
+      const scanner = new Html5Qrcode(scannerId, { formatsToSupport: supportedFormats(Html5QrcodeSupportedFormats), verbose: false });
       scannerRef.current = scanner;
       const decodedText = await scanner.scanFile(file, false);
       acceptScan(decodedText);
@@ -173,7 +179,7 @@ export function BarcodeCapture({
   useEffect(() => () => {
     const scanner = scannerRef.current;
     if (!scanner) return;
-    scanner.stop().catch(() => undefined).finally(() => scanner.clear().catch(() => undefined));
+    scanner.stop().catch(() => undefined).finally(() => Promise.resolve(scanner.clear()).catch(() => undefined));
   }, []);
 
   return (
