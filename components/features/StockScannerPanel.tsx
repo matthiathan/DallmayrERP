@@ -7,16 +7,58 @@ import { recordAuditEvent } from '@/lib/data/audit';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Branch } from '@/types/dallmayrerp';
 
+type StockLookup = {
+  id: string;
+  stock_name: string;
+  item_barcode: string;
+  box_barcode: string | null;
+  item_quantity: number;
+  box_quantity: number;
+  reorder_level: number;
+  warehouse_location: string | null;
+};
+
 export function StockScannerPanel({ defaultBranch }: { defaultBranch?: Branch }) {
   const { businessUser, userDetails } = useAuth();
   const [branch, setBranch] = useState<Branch>(defaultBranch ?? userDetails?.branch ?? 'jhb');
   const [barcode, setBarcode] = useState('');
   const [stockName, setStockName] = useState('');
+  const [stockLookup, setStockLookup] = useState<StockLookup | null>(null);
+  const [stockLookupMessage, setStockLookupMessage] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  async function resolveStock(value: string) {
+    const cleanValue = value.trim();
+    setBarcode(cleanValue);
+    setStockLookup(null);
+    setStockLookupMessage(null);
+    if (!cleanValue) return;
+
+    const { data, error: lookupError } = await getSupabaseClient()
+      .from('stock_items')
+      .select('id, stock_name, item_barcode, box_barcode, item_quantity, box_quantity, reorder_level, warehouse_location')
+      .or(`item_barcode.eq.${cleanValue},box_barcode.eq.${cleanValue}`)
+      .maybeSingle();
+
+    if (lookupError) {
+      setStockLookupMessage(`Stock lookup failed: ${lookupError.message}`);
+      return;
+    }
+
+    if (data) {
+      const item = data as StockLookup;
+      setStockLookup(item);
+      setStockName(item.stock_name);
+      setStockLookupMessage(`${item.stock_name} found. Current: ${item.item_quantity} item(s), ${item.box_quantity} box(es).`);
+      return;
+    }
+
+    setStockLookupMessage('Barcode not found. Add a stock name to create the item while recording this scan.');
+  }
 
   async function addStockScan(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -101,6 +143,8 @@ export function StockScannerPanel({ defaultBranch }: { defaultBranch?: Branch })
     setMessage(stockItemId ? 'Stock scan and inventory movement recorded.' : 'Stock scan recorded without linked stock item.');
     setBarcode('');
     setStockName('');
+    setStockLookup(null);
+    setStockLookupMessage(null);
     setQuantity(1);
     setNotes('');
   }
@@ -121,7 +165,8 @@ export function StockScannerPanel({ defaultBranch }: { defaultBranch?: Branch })
           <label>Quantity<input min="1" type="number" value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} /></label>
           <label>Stock name when new<input value={stockName} onChange={(event) => setStockName(event.target.value)} /></label>
         </div>
-        <BarcodeCapture label="Stock barcode" value={barcode} onChange={setBarcode} />
+        <BarcodeCapture label="Stock barcode" value={barcode} onChange={resolveStock} />
+        {stockLookupMessage ? <div className={stockLookup ? 'success' : 'badge warning'}>{stockLookupMessage}</div> : null}
         <label>Notes<input value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
         <button className="button pulse-button" disabled={saving || !barcode.trim()} type="submit">{saving ? 'Recording scan...' : 'Record stock scan'}</button>
       </form>
