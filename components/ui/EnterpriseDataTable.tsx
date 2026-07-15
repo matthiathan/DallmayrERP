@@ -27,6 +27,7 @@ export function EnterpriseDataTable<T>({
   emptyMessage = 'No matching records found.',
   pageSizeOptions = [10, 20, 50],
   defaultPageSize = 20,
+  initialSearch = '',
   getSearchText,
   actions,
 }: {
@@ -37,13 +38,18 @@ export function EnterpriseDataTable<T>({
   emptyMessage?: string;
   pageSizeOptions?: number[];
   defaultPageSize?: number;
+  initialSearch?: string;
   getSearchText?: (row: T) => string;
   actions?: ReactNode;
 }) {
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(initialSearch);
   const [sort, setSort] = useState<SortState>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(defaultPageSize);
+
+  useEffect(() => {
+    setSearch(initialSearch);
+  }, [initialSearch]);
 
   const filteredRows = useMemo(() => {
     const term = search.trim().toLowerCase();
