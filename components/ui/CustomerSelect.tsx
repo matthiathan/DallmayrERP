@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { CustomerRecord } from '@/types/enterprise-records';
 
@@ -29,7 +30,7 @@ export function CustomerSelect({
   const [activeIndex, setActiveIndex] = useState(0);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const requestRef = useRef(0);
-  const listboxId = useRef(`customer-options-${Math.random().toString(36).slice(2, 9)}`);
+  const listboxId = useId();
 
   useEffect(() => {
     if (!open || value) setSearch(value);
@@ -63,7 +64,6 @@ export function CustomerSelect({
 
       const { data, error: loadError } = await query;
       if (requestId !== requestRef.current) return;
-
       if (loadError) {
         setError(loadError.message);
         setCustomers([]);
@@ -73,7 +73,6 @@ export function CustomerSelect({
       }
       setLoading(false);
     }, 220);
-
     return () => window.clearTimeout(timeout);
   }, [open, search]);
 
@@ -91,11 +90,11 @@ export function CustomerSelect({
     onSelect(null);
   }
 
-  function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+  function handleKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       setOpen(true);
-      setActiveIndex((current) => Math.min(customers.length - 1, current + 1));
+      setActiveIndex((current) => Math.min(Math.max(0, customers.length - 1), current + 1));
     }
     if (event.key === 'ArrowUp') {
       event.preventDefault();
@@ -115,7 +114,7 @@ export function CustomerSelect({
         <div className="customer-combobox-input-row">
           <input
             aria-autocomplete="list"
-            aria-controls={listboxId.current}
+            aria-controls={listboxId}
             aria-expanded={open}
             autoComplete="off"
             onChange={(event) => {
@@ -136,7 +135,7 @@ export function CustomerSelect({
         </div>
 
         {open ? (
-          <div className="customer-combobox-menu" id={listboxId.current} role="listbox">
+          <div className="customer-combobox-menu" id={listboxId} role="listbox">
             {loading ? <div className="customer-combobox-state">Searching customers...</div> : null}
             {!loading && error ? <div className="customer-combobox-state danger">{error}</div> : null}
             {!loading && !error && customers.length === 0 ? <div className="customer-combobox-state">No matching customers found.</div> : null}
