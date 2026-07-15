@@ -8,6 +8,7 @@ import type { Branch } from '@/types/dallmayrerp';
 
 type MovementType = 'received' | 'adjusted' | 'reserved' | 'picked' | 'dispatched' | 'returned' | 'transferred';
 type StockOption = { id: string; stock_name: string; item_barcode: string };
+type StockRelation = { stock_name: string | null };
 type MovementRow = {
   id: string;
   branch: Branch;
@@ -15,11 +16,17 @@ type MovementRow = {
   quantity: number;
   notes: string | null;
   created_at: string;
-  stock_items?: { stock_name: string | null } | null;
+  stock_items?: StockRelation | StockRelation[] | null;
 };
 
 const movementTypes: MovementType[] = ['received', 'adjusted', 'reserved', 'picked', 'dispatched', 'returned', 'transferred'];
 const branches: Branch[] = ['jhb', 'cpt', 'kzn', 'national'];
+
+function getMovementStockName(row: MovementRow) {
+  const relation = row.stock_items;
+  if (Array.isArray(relation)) return relation[0]?.stock_name ?? 'Unlinked';
+  return relation?.stock_name ?? 'Unlinked';
+}
 
 export function InventoryLedgerPanel() {
   const { businessUser, userDetails } = useAuth();
@@ -36,10 +43,15 @@ export function InventoryLedgerPanel() {
 
   async function loadLedger() {
     const client = getSupabaseClient();
-    const [{ data: stock }, { data: ledger }] = await Promise.all([
+    const [{ data: stock, error: stockError }, { data: ledger, error: ledgerError }] = await Promise.all([
       client.from('stock_items').select('id, stock_name, item_barcode').order('stock_name').limit(250),
       client.from('inventory_movements').select('id, branch, movement_type, quantity, notes, created_at, stock_items(stock_name)').order('created_at', { ascending: false }).limit(80),
     ]);
+
+    if (stockError || ledgerError) {
+      throw stockError ?? ledgerError ?? new Error('Could not load inventory ledger.');
+    }
+
     setStockItems((stock ?? []) as StockOption[]);
     setMovements((ledger ?? []) as MovementRow[]);
   }
@@ -124,7 +136,7 @@ export function InventoryLedgerPanel() {
       </div>
       <div className="table-wrap">
         <table><thead><tr><th>Time</th><th>Stock</th><th>Branch</th><th>Movement</th><th>Qty</th><th>Notes</th></tr></thead>
-          <tbody>{movements.length === 0 ? <tr><td colSpan={6}>No inventory movements yet.</td></tr> : movements.map((row) => <tr key={row.id}><td>{new Date(row.created_at).toLocaleString()}</td><td>{row.stock_items?.stock_name ?? 'Unlinked'}</td><td>{row.branch}</td><td>{row.movement_type}</td><td>{row.quantity}</td><td>{row.notes ?? '-'}</td></tr>)}</tbody>
+          <tbody>{movements.length === 0 ? <tr><td colSpan={6}>No inventory movements yet.</td></tr> : movements.map((row) => <tr key={row.id}><td>{new Date(row.created_at).toLocaleString()}</td><td>{getMovementStockName(row)}</td><td>{row.branch}</td><td>{row.movement_type}</td><td>{row.quantity}</td><td>{row.notes ?? '-'}</td></tr>)}</tbody>
         </table>
       </div>
     </div>
