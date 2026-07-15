@@ -1,4 +1,4 @@
-import { ServiceJobBoard } from '@/components/features/ServiceJobBoard';
+import { EnterpriseServiceJobBoard } from '@/components/features/EnterpriseServiceJobBoard';
 import { AppShell } from '@/components/layout/AppShell';
 
 export default function OperationsServiceJobsPage() {
@@ -8,10 +8,10 @@ export default function OperationsServiceJobsPage() {
         <div>
           <div className="badge">Operations</div>
           <h1>Service Jobs</h1>
-          <p>Create, prioritise and manage service work across branches and technicians.</p>
+          <p>Create, prioritise, assign and manage customer-linked service work across branches and technicians.</p>
         </div>
       </div>
-      <ServiceJobBoard />
+      <EnterpriseServiceJobBoard />
     </AppShell>
   );
 }
