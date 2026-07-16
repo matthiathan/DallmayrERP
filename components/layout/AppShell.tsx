@@ -66,7 +66,7 @@ function safeTabList(value: string | null): OpenTab[] {
     const parsed = JSON.parse(value) as OpenTab[];
     if (!Array.isArray(parsed)) return [];
     return parsed
-      .filter((item) => item && typeof item.href === 'string' && typeof item.label === 'string')
+      .filter((item) => item && typeof item.href === 'string' && typeof item.label === 'string' && typeof item.code === 'string')
       .slice(-9);
   } catch {
     return [];
@@ -131,7 +131,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     const nextTab: OpenTab = {
       href: activeItem.href,
       label: activeItem.label,
-      code: moduleCode(activeItem.label, activeItem.href),
+      code: activeItem.code || moduleCode(activeItem.label, activeItem.href),
     };
 
     setOpenTabs((current) => {
@@ -140,6 +140,23 @@ export function AppShell({ children }: { children: ReactNode }) {
       return next;
     });
   }, [pathname, userDetails?.role]);
+
+  useEffect(() => {
+    if (openTabs.length < 2) return;
+
+    function handleTabKeys(event: KeyboardEvent) {
+      if (!event.ctrlKey || event.key !== 'Tab') return;
+      event.preventDefault();
+      const currentIndex = openTabs.findIndex((tab) => isActivePath(pathname, tab.href));
+      const nextIndex = event.shiftKey
+        ? currentIndex <= 0 ? openTabs.length - 1 : currentIndex - 1
+        : currentIndex < 0 || currentIndex === openTabs.length - 1 ? 0 : currentIndex + 1;
+      router.push(openTabs[nextIndex].href);
+    }
+
+    window.addEventListener('keydown', handleTabKeys);
+    return () => window.removeEventListener('keydown', handleTabKeys);
+  }, [openTabs, pathname, router]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -206,16 +223,21 @@ export function AppShell({ children }: { children: ReactNode }) {
     .filter((section) => section.items.length > 0);
   const activeSection = visibleSections.find((section) => section.items.some((item) => isActivePath(pathname, item.href)));
   const activeItem = activeSection?.items.find((item) => isActivePath(pathname, item.href));
-  const activeTitle = activeItem?.label ?? 'My Workspace';
-  const activeCode = moduleCode(activeTitle, activeItem?.href ?? homePath);
-  const tabsToRender = openTabs.length > 0 ? openTabs : [{ href: homePath, label: 'My Workspace', code: 'MW' }];
+  const activeTitle = activeItem?.label ?? 'Start Page';
+  const activeCode = activeItem?.code ?? moduleCode(activeTitle, activeItem?.href ?? homePath);
+  const activeBranch = userDetails.branch.toUpperCase();
+  const activeTitleWithContext = activeItem ? `${activeTitle}-${activeBranch}` : activeTitle;
+  const userName = displayProfileName(businessProfile);
+  const environmentName = process.env.NEXT_PUBLIC_APP_ENVIRONMENT || 'Production';
+  const tabsToRender = openTabs.length > 0 ? openTabs : [{ href: homePath, label: 'Start Page', code: 'STP01' }];
 
   function closeTab(tabHref: string) {
-    setOpenTabs((current) => {
-      const next = current.filter((item) => item.href !== tabHref);
-      window.localStorage.setItem('dallmayr-open-tabs', JSON.stringify(next));
-      return next;
-    });
+    const next = openTabs.filter((item) => item.href !== tabHref);
+    setOpenTabs(next);
+    window.localStorage.setItem('dallmayr-open-tabs', JSON.stringify(next));
+    if (isActivePath(pathname, tabHref)) {
+      router.push(next.at(-1)?.href ?? homePath);
+    }
   }
 
   return (
@@ -251,8 +273,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                       const active = isActivePath(pathname, item.href);
                       return (
                         <Link aria-current={active ? 'page' : undefined} className={`erp-menu-item ${active ? 'active' : ''}`} href={item.href} key={item.href}>
-                          <span>{item.label}</span>
-                          {item.description ? <small>{item.description}</small> : null}
+                          <span className="erp-menu-code">{item.code}</span>
+                          <span className="erp-menu-text">
+                            <strong>{item.label}</strong>
+                            {item.description ? <small>{item.description}</small> : null}
+                          </span>
                         </Link>
                       );
                     })}
@@ -287,44 +312,42 @@ export function AppShell({ children }: { children: ReactNode }) {
           {tabsToRender.map((tab) => {
             const active = isActivePath(pathname, tab.href);
             return (
-              <Link aria-current={active ? 'page' : undefined} className={`erp-tab ${active ? 'active' : ''}`} href={tab.href} key={tab.href}>
-                <span>{tab.label}</span>
-                <small>[{tab.code}]</small>
+              <div className={`erp-tab ${active ? 'active' : ''}`} key={tab.href}>
+                <Link aria-current={active ? 'page' : undefined} className="erp-tab-link" href={tab.href}>
+                  <span>{tab.label}</span>
+                  <small>[{tab.code}]</small>
+                </Link>
                 {tabsToRender.length > 1 ? (
                   <button
                     aria-label={`Close ${tab.label} tab`}
                     className="erp-tab-close"
-                    onClick={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      closeTab(tab.href);
-                    }}
+                    onClick={() => closeTab(tab.href)}
                     type="button"
                   >
                     ×
                   </button>
                 ) : null}
-              </Link>
+              </div>
             );
           })}
         </div>
 
         <div className="erp-active-titlebar">
           <div>
-            <span>{activeTitle}</span>
+            <span>{activeTitleWithContext}</span>
             <strong>[{activeCode}]</strong>
           </div>
-          <strong>{activeSection?.heading ?? roleLabels[userDetails.role]}</strong>
+          <strong className="erp-context-strip">{environmentName} | {activeBranch} | {roleLabels[userDetails.role]} | {userName}</strong>
         </div>
 
         <div aria-modal="true" className="mobile-nav-panel" hidden={!menuOpen} id="mobile-navigation" role="dialog">
           <div className="user-chip mobile-user-chip">
-            <span>{displayProfileName(businessProfile)}</span>
+            <span>{userName}</span>
             <strong>{roleLabels[userDetails.role]}</strong>
             {!profileComplete ? <em>Profile setup required</em> : null}
           </div>
           <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} className="mobile-primary-link" href={homePath}>
-            My workspace
+            Start Page
           </Link>
           <nav aria-label="Mobile navigation">
             {visibleSections.map((section) => (
@@ -340,7 +363,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       href={item.href}
                     >
                       <span className="nav-card-copy">
-                        <strong>{item.label}</strong>
+                        <strong>{item.code} — {item.label}</strong>
                         {item.description ? <small>{item.description}</small> : null}
                       </span>
                     </Link>
@@ -363,7 +386,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <p>
               Your current role is <strong>{roleLabels[userDetails.role]}</strong>. Use the navigation menu to open your assigned pages.
             </p>
-            <Link className="button" href={homePath}>Go to my workspace</Link>
+            <Link className="button" href={homePath}>Go to Start Page</Link>
           </div>
         ) : (
           <>
