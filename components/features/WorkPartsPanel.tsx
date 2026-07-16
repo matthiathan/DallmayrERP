@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { BarcodeCapture } from '@/components/ui/BarcodeCapture';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ScannerMatchCard } from '@/components/ui/ScannerMatchCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { StatusTimeline } from '@/components/ui/StatusTimeline';
 import { resolveStockBarcode, type ResolvedStockBarcode } from '@/lib/data/stockBarcode';
 import { useDuplicateScanGuard } from '@/lib/hooks/useDuplicateScanGuard';
 import { getSupabaseClient } from '@/lib/supabase/client';
@@ -46,6 +49,16 @@ export function WorkPartsPanel({ workItemId }: { workItemId: string }) {
   }, [workItemId]);
 
   const totalCost = useMemo(() => parts.reduce((sum, part) => sum + Number(part.unit_cost ?? 0) * part.quantity, 0), [parts]);
+  const available = matched ? (unit === 'box' ? matched.box_quantity : matched.item_quantity) : 0;
+  const quantityInvalid = quantity <= 0;
+  const exceedsAvailable = Boolean(matched && quantity > available);
+  const fieldHint = !matched
+    ? 'Scan a part barcode to continue.'
+    : quantityInvalid
+      ? 'Quantity must be greater than zero.'
+      : exceedsAvailable
+        ? `Only ${available} ${unit}(s) are available.`
+        : null;
 
   async function resolveBarcode(value: string) {
     const clean = value.trim();
@@ -68,17 +81,16 @@ export function WorkPartsPanel({ workItemId }: { workItemId: string }) {
       setMatched(item);
       setUnit(item.matched_unit);
       setLocationId(item.default_location_id ?? '');
-      setMessage(`${item.stock_name} selected as ${item.matched_unit}.`);
+      setMessage(`${item.stock_name} selected as ${item.matched_unit}. Confirm quantity before using the part.`);
     } catch (lookupError) {
       setError(lookupError instanceof Error ? lookupError.message : 'Barcode lookup failed.');
     }
   }
 
   async function consumePart() {
-    if (!matched || quantity <= 0) return;
-    const available = unit === 'box' ? matched.box_quantity : matched.item_quantity;
-    if (quantity > available) {
-      setError(`Only ${available} ${unit}(s) are available.`);
+    if (!matched) return;
+    if (fieldHint) {
+      setError(fieldHint);
       return;
     }
     setSaving(true);
@@ -111,24 +123,25 @@ export function WorkPartsPanel({ workItemId }: { workItemId: string }) {
         <div><span className="minimal-kicker">Materials</span><h2>Parts used</h2><p>Scan stock used on this job. The stock ledger and job cost update together.</p></div>
         <div className="minimal-summary"><span>{parts.length} entries</span><strong>R {totalCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong></div>
       </div>
+      <StatusTimeline compact currentIndex={!matched ? 0 : fieldHint ? 1 : 2} steps={[{ label: 'Scan' }, { label: 'Confirm' }, { label: 'Use part' }]} />
       {error ? <div className="error">{error}</div> : null}
       {message ? <div className="success">{message}</div> : null}
 
       <div className="minimal-split">
         <div className="minimal-form">
           <BarcodeCapture label="Part barcode" value={barcode} onChange={resolveBarcode} />
-          {matched ? <div className="minimal-match"><div><strong>{matched.stock_name}</strong><span>{matched.matched_unit === 'box' ? matched.box_barcode : matched.item_barcode}</span></div><div><span>Matched</span><strong>{matched.matched_unit}</strong></div><div><span>Items</span><strong>{matched.item_quantity}</strong></div><div><span>Boxes</span><strong>{matched.box_quantity}</strong></div></div> : null}
+          {matched ? <ScannerMatchCard availableBoxes={matched.box_quantity} availableItems={matched.item_quantity} barcode={barcode} location={matched.warehouse_location} title={matched.stock_name} unit={matched.matched_unit} /> : null}
           <div className="minimal-grid-3">
-            <label>Quantity<input min="1" type="number" value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} /></label>
+            <label>Quantity<input min="1" type="number" value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} />{quantityInvalid || exceedsAvailable ? <small className="field-note danger">{fieldHint}</small> : null}</label>
             <label>Unit<select value={unit} onChange={(event) => setUnit(event.target.value as 'item' | 'box')}><option value="item">Items</option><option value="box">Boxes</option></select></label>
             <label>Source location<select value={locationId} onChange={(event) => setLocationId(event.target.value)}><option value="">Unassigned stock</option>{locations.map((location) => <option key={location.id} value={location.id}>{location.location_code}{location.description ? ` — ${location.description}` : ''}</option>)}</select></label>
           </div>
           <label>Notes<input value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Reason or installation note" /></label>
-          <button className="button" disabled={saving || !matched || quantity <= 0} onClick={consumePart} type="button">{saving ? 'Recording...' : 'Use part'}</button>
+          <button className="button" disabled={saving || !matched || Boolean(fieldHint)} onClick={consumePart} type="button">{saving ? 'Recording...' : 'Use part'}</button>
         </div>
 
         <div className="minimal-list">
-          {parts.length === 0 ? <div className="minimal-empty">No parts recorded.</div> : parts.map((part) => <article className="minimal-list-item" key={part.id}><div><strong>{stockName(part)}</strong><p>{part.quantity} {part.quantity_unit}{part.notes ? ` • ${part.notes}` : ''}</p><small>{new Date(part.created_at).toLocaleString()}</small></div><StatusBadge value="issued" label={part.unit_cost === null ? 'Cost not set' : `R ${(Number(part.unit_cost) * part.quantity).toFixed(2)}`} /></article>)}
+          {parts.length === 0 ? <EmptyState title="No parts used yet" message="Scan a part barcode to deduct stock and attach the cost to this work item." /> : parts.map((part) => <article className="minimal-list-item" key={part.id}><div><strong>{stockName(part)}</strong><p>{part.quantity} {part.quantity_unit}{part.notes ? ` • ${part.notes}` : ''}</p><small>{new Date(part.created_at).toLocaleString()}</small></div><StatusBadge value="issued" label={part.unit_cost === null ? 'Cost not set' : `R ${(Number(part.unit_cost) * part.quantity).toFixed(2)}`} /></article>)}
         </div>
       </div>
     </section>
