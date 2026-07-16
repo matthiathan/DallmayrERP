@@ -101,6 +101,8 @@ export function PreventiveMaintenanceBoard() {
         setError(generateError.message);
       } else if (Number(generated) > 0) {
         setMessage(`${generated} due maintenance work item(s) generated.`);
+      } else {
+        setMessage('No due maintenance work to generate.');
       }
     }
 
@@ -130,7 +132,7 @@ export function PreventiveMaintenanceBoard() {
   }
 
   useEffect(() => {
-    loadPlans(canManage).catch((loadError) => {
+    loadPlans(false).catch((loadError) => {
       setError(loadError instanceof Error ? loadError.message : 'Could not load preventive maintenance.');
       setLoading(false);
     });
@@ -173,14 +175,14 @@ export function PreventiveMaintenanceBoard() {
       return;
     }
 
-    setMessage('Preventive maintenance plan created.');
+    setMessage('Preventive maintenance plan created. Use Generate due work when ready to create work items.');
     setTitle('');
     setDescription('');
     setMachineId('');
     setNextDueAt('');
     setNextDueMeter('');
     setAssignedTo('');
-    await loadPlans(true);
+    await loadPlans(false);
   }
 
   async function togglePlan(plan: PlanRow) {
@@ -233,7 +235,7 @@ export function PreventiveMaintenanceBoard() {
       {canManage ? (
         <section className="neo-card">
           <div className="minimal-toolbar">
-            <div><h2>New maintenance plan</h2><p>Use calendar, meter or hybrid scheduling.</p></div>
+            <div><h2>New maintenance plan</h2><p>Use calendar, meter or hybrid scheduling. Plans do not create work until you generate due work.</p></div>
           </div>
           <form className="grid" onSubmit={createPlan}>
             <div className="form-grid">
@@ -257,7 +259,7 @@ export function PreventiveMaintenanceBoard() {
 
       <PageToolbar
         actions={canManage ? <button className="button secondary" disabled={loading || saving} onClick={() => loadPlans(true)} type="button">Generate due work</button> : <button className="button secondary" disabled={loading} onClick={() => loadPlans(false)} type="button">Refresh</button>}
-        description="Monitor scheduled work and open generated maintenance tasks."
+        description="Monitor scheduled work and explicitly generate due maintenance tasks."
         lastUpdated={lastUpdated}
         title="Maintenance plans"
       >
