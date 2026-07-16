@@ -13,15 +13,15 @@ export type NavSection = {
 };
 
 export const roleHomePath: Record<BusinessRole, string> = {
-  admin: '/',
-  operations: '/operations',
-  sales: '/sales',
-  finance: '/finance',
-  marketing: '/marketing',
-  executive: '/executive/command-centre',
-  warehouse_staff: '/warehouse/stock',
-  technician: '/technician',
-  road_technician: '/road-tech',
+  admin: '/workspace',
+  operations: '/workspace',
+  sales: '/workspace',
+  finance: '/workspace',
+  marketing: '/workspace',
+  executive: '/workspace',
+  warehouse_staff: '/workspace',
+  technician: '/workspace',
+  road_technician: '/workspace',
 };
 
 export const roleLabels: Record<BusinessRole, string> = {
@@ -38,34 +38,55 @@ export const roleLabels: Record<BusinessRole, string> = {
 
 export const navSections: NavSection[] = [
   {
+    heading: 'Workspace',
+    items: [
+      { href: '/workspace', label: 'My Workspace', roles: 'all', description: 'Role-focused daily shortcuts and live counts' },
+    ],
+  },
+  {
+    heading: 'Work',
+    items: [
+      { href: '/work', label: 'Action Centre', roles: 'all', description: 'Tasks, approvals, exceptions and operational requests' },
+      { href: '/work/execution', label: 'Work Execution', roles: ['admin', 'operations', 'technician', 'road_technician'] },
+      { href: '/operations', label: 'Operations Control', roles: ['admin', 'operations'] },
+      { href: '/operations/service-jobs', label: 'Service Jobs', roles: ['admin', 'operations'] },
+      { href: '/technician', label: 'Technician Jobs', roles: ['admin', 'technician'] },
+      { href: '/road-tech', label: 'Road Tech Routes', roles: ['admin', 'road_technician'] },
+      { href: '/operations/deliveries', label: 'Delivery Board', roles: ['admin', 'operations'] },
+    ],
+  },
+  {
+    heading: 'Stock',
+    items: [
+      { href: '/warehouse/stock', label: 'Stock Control', roles: ['admin', 'operations', 'warehouse_staff'] },
+      { href: '/warehouse/purchasing', label: 'Purchase Orders', roles: ['admin', 'operations', 'warehouse_staff'] },
+      { href: '/warehouse/purchasing/approvals', label: 'Purchase Approvals', roles: ['admin', 'operations', 'warehouse_staff', 'finance', 'executive'] },
+      { href: '/warehouse/traceability', label: 'Lots & Serials', roles: ['admin', 'operations', 'warehouse_staff'] },
+      { href: '/warehouse/locations', label: 'Warehouses & Locations', roles: ['admin', 'operations', 'warehouse_staff'] },
+      { href: '/warehouse/ledger', label: 'Inventory Ledger', roles: ['admin', 'operations', 'warehouse_staff'] },
+    ],
+  },
+  {
+    heading: 'Assets',
+    items: [
+      { href: '/operations/assets', label: 'Machine Assets', roles: ['admin', 'operations', 'technician', 'road_technician'] },
+      { href: '/operations/assets/lifecycle', label: 'Asset Lifecycle', roles: ['admin', 'operations', 'technician', 'road_technician', 'executive'] },
+      { href: '/operations/reliability', label: 'Asset Reliability', roles: ['admin', 'operations', 'technician', 'road_technician', 'executive'] },
+      { href: '/operations/maintenance', label: 'Preventive Maintenance', roles: ['admin', 'operations', 'technician', 'road_technician', 'executive'] },
+    ],
+  },
+  {
+    heading: 'Customers',
+    items: [
+      { href: '/customers', label: 'Customer Directory', roles: 'all' },
+    ],
+  },
+  {
     heading: 'Admin Control',
     items: [
       { href: '/', label: 'System Dashboard', roles: ['admin'] },
       { href: '/admin/users', label: 'Users & Roles', roles: ['admin'] },
       { href: '/admin/activity', label: 'Activity Log', roles: ['admin'] },
-    ],
-  },
-  {
-    heading: 'Operations',
-    items: [
-      { href: '/operations', label: 'Operations Control', roles: ['admin', 'operations'] },
-      { href: '/work', label: 'Action Centre', roles: 'all', description: 'Tasks, approvals, exceptions and operational requests' },
-      { href: '/work/execution', label: 'Work Execution', roles: ['admin', 'operations', 'technician', 'road_technician'] },
-      { href: '/customers', label: 'Customer Directory', roles: 'all' },
-      { href: '/operations/deliveries', label: 'Delivery Board', roles: ['admin', 'operations'] },
-      { href: '/operations/service-jobs', label: 'Service Jobs', roles: ['admin', 'operations'] },
-      { href: '/operations/maintenance', label: 'Preventive Maintenance', roles: ['admin', 'operations', 'technician', 'road_technician', 'executive'] },
-      { href: '/operations/reliability', label: 'Asset Reliability', roles: ['admin', 'operations', 'technician', 'road_technician', 'executive'] },
-      { href: '/operations/assets', label: 'Machine Assets', roles: ['admin', 'operations', 'technician', 'road_technician'] },
-      { href: '/operations/assets/lifecycle', label: 'Asset Lifecycle', roles: ['admin', 'operations', 'technician', 'road_technician', 'executive'] },
-      { href: '/warehouse/stock', label: 'Stock Control', roles: ['admin', 'operations', 'warehouse_staff'] },
-      { href: '/warehouse/traceability', label: 'Lots & Serials', roles: ['admin', 'operations', 'warehouse_staff'] },
-      { href: '/warehouse/purchasing', label: 'Purchase Orders', roles: ['admin', 'operations', 'warehouse_staff'] },
-      { href: '/warehouse/purchasing/approvals', label: 'Purchase Approvals', roles: ['admin', 'operations', 'warehouse_staff', 'finance', 'executive'] },
-      { href: '/warehouse/locations', label: 'Warehouses & Locations', roles: ['admin', 'operations', 'warehouse_staff'] },
-      { href: '/warehouse/ledger', label: 'Inventory Ledger', roles: ['admin', 'operations', 'warehouse_staff'] },
-      { href: '/technician', label: 'Technician Jobs', roles: ['admin', 'technician'] },
-      { href: '/road-tech', label: 'Road Tech Routes', roles: ['admin', 'road_technician'] },
     ],
   },
   {
@@ -86,7 +107,7 @@ export const navSections: NavSection[] = [
     ],
   },
   {
-    heading: 'Executive',
+    heading: 'Reports',
     items: [
       { href: '/executive/command-centre', label: 'Command Centre', roles: ['admin', 'executive'] },
       { href: '/executive', label: 'Executive Overview', roles: ['admin', 'executive'] },
