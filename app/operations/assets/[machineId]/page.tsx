@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { AppShell } from '@/components/layout/AppShell';
+import { AssetTicketCard } from '@/components/ui/AssetTicketCard';
 import { PageToolbar } from '@/components/ui/PageToolbar';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { getSupabaseClient } from '@/lib/supabase/client';
@@ -216,7 +217,28 @@ export default function AssetLifecycleWorkspacePage() {
       {error ? <div className="error">{error}</div> : null}
       {message ? <div className="success">{message}</div> : null}
       {!machine ? <div className="neo-card"><h1>Asset not found</h1><Link className="button" href="/operations/assets">Back to assets</Link></div> : <div className="grid professional-ops-stage">
-        <div className="page-header hero-panel spatial-card asset-print-header"><div><div className="badge">Asset lifecycle</div><h1>{machine.machine_name ?? machine.serial_number ?? 'Machine'}</h1><p>{machine.model ?? 'Model not recorded'} • {machine.branch.toUpperCase()}</p><div className="feature-list"><StatusBadge value={machine.status} /><StatusBadge value={machine.condition} /><StatusBadge value={machine.criticality} /><StatusBadge value={machine.custody_status} /></div><p>Serial: {machine.serial_number ?? '-'} • QR/barcode: {machine.machine_barcode ?? '-'}</p></div></div>
+        <AssetTicketCard
+          asset={{
+            id: machine.id,
+            machineName: machine.machine_name,
+            model: machine.model,
+            serialNumber: machine.serial_number,
+            barcode: machine.machine_barcode,
+            branch: machine.branch,
+            status: machine.status,
+            condition: machine.condition,
+            criticality: machine.criticality,
+            custodyStatus: machine.custody_status,
+            customerName: customer?.customer_name,
+            siteName: site?.site_name,
+            siteAddress: site?.address,
+            custodian: machine.current_custodian,
+            nextAuditAt: machine.next_audit_at,
+            warrantyExpiresAt: machine.warranty_expires_at,
+          }}
+          eyebrow="Asset profile"
+          action={<><Link className="button secondary" href="/operations/assets">Back to register</Link><button className="button secondary" onClick={() => window.print()} type="button">Print asset sheet</button></>}
+        />
 
         <PageToolbar actions={<><Link className="button secondary" href="/operations/assets">Back to register</Link><button className="button secondary" onClick={() => window.print()} type="button">Print asset sheet</button><button className="button secondary" onClick={loadAsset} type="button">Refresh</button></>} description="Complete ownership, audit, condition and maintenance history." lastUpdated={lastUpdated} title="Asset workspace" />
 
