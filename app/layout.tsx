@@ -15,6 +15,7 @@ import './ux-polish.css';
 import './density.css';
 import './ultrawide.css';
 import './mobile.css';
+import './erp-classic-navigation.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 
 export const metadata = {
