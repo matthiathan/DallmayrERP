@@ -16,6 +16,7 @@ begin
   if v_role not in ('admin','operations','technician','road_technician') then raise exception 'Not authorised'; end if;
   if p_action not in ('assign','checkout','checkin','service') then raise exception 'Invalid custody action'; end if;
   if p_condition not in ('good','fair','poor','critical','unknown') then raise exception 'Invalid condition'; end if;
+  if p_action in ('assign','checkout') and nullif(trim(coalesce(p_custodian,'')),'') is null then raise exception 'Custodian or deployment location is required'; end if;
   v_status:=case p_action when 'assign' then 'assigned' when 'checkout' then 'checked_out' when 'checkin' then 'available' else 'in_service' end;
   v_event:=case p_action when 'assign' then 'assigned' when 'checkout' then 'checked_out' when 'checkin' then 'checked_in' else 'maintenance' end;
   update public.machines
