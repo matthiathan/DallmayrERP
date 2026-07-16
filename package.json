@@ -9,7 +9,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start -p ${PORT:-3000}",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run build"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.48.1",
