@@ -4,19 +4,20 @@ import { FormEvent, useState } from 'react';
 import { BarcodeCapture } from '@/components/ui/BarcodeCapture';
 import { CustomerSelect, type CustomerOption } from '@/components/ui/CustomerSelect';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { resolveStockBarcode, type ResolvedStockBarcode } from '@/lib/data/stockBarcode';
+import { useDuplicateScanGuard } from '@/lib/hooks/useDuplicateScanGuard';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Branch } from '@/types/dallmayrerp';
 
 type QuantityUnit = 'item' | 'box';
 type PickLine = { barcode: string; quantity: number; quantity_unit: QuantityUnit; stock_name: string; stock_item_id: string };
-type StockLookup = { id: string; stock_name: string; item_barcode: string; box_barcode: string | null; item_quantity: number; box_quantity: number; items_per_box: number | null; warehouse_location: string | null };
 
 export function OrderScannerPanel({ defaultBranch }: { defaultBranch?: Branch }) {
   const [branch, setBranch] = useState<Branch>(defaultBranch ?? 'jhb');
   const [customerName, setCustomerName] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [barcode, setBarcode] = useState('');
-  const [stockLookup, setStockLookup] = useState<StockLookup | null>(null);
+  const [stockLookup, setStockLookup] = useState<ResolvedStockBarcode | null>(null);
   const [stockLookupMessage, setStockLookupMessage] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [quantityUnit, setQuantityUnit] = useState<QuantityUnit>('item');
@@ -24,6 +25,7 @@ export function OrderScannerPanel({ defaultBranch }: { defaultBranch?: Branch })
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const isDuplicateScan = useDuplicateScanGuard();
 
   function applyCustomer(customer: CustomerOption | null) {
     if (!customer) {
@@ -42,27 +44,23 @@ export function OrderScannerPanel({ defaultBranch }: { defaultBranch?: Branch })
     setStockLookupMessage(null);
     setError(null);
     if (!cleanValue) return;
-
-    const { data, error: lookupError } = await getSupabaseClient()
-      .from('stock_items')
-      .select('id, stock_name, item_barcode, box_barcode, item_quantity, box_quantity, items_per_box, warehouse_location')
-      .or(`item_barcode.eq.${cleanValue},box_barcode.eq.${cleanValue}`)
-      .maybeSingle();
-
-    if (lookupError) {
-      setError(lookupError.message);
-      return;
-    }
-    if (!data) {
-      setError('Barcode not found. Delivery lines must match an active stock item.');
+    if (isDuplicateScan(cleanValue)) {
+      setStockLookupMessage('Duplicate scan ignored. Scan again after a moment to confirm a repeated line.');
       return;
     }
 
-    const item = data as StockLookup;
-    const unit: QuantityUnit = item.box_barcode === cleanValue ? 'box' : 'item';
-    setStockLookup(item);
-    setQuantityUnit(unit);
-    setStockLookupMessage(`${item.stock_name} found. Available: ${item.item_quantity} item(s), ${item.box_quantity} box(es).`);
+    try {
+      const item = await resolveStockBarcode(cleanValue);
+      if (!item) {
+        setError('Barcode not found. Delivery lines must match an active stock item.');
+        return;
+      }
+      setStockLookup(item);
+      setQuantityUnit(item.matched_unit);
+      setStockLookupMessage(`${item.stock_name} found as ${item.matched_unit}. Available: ${item.item_quantity} item(s), ${item.box_quantity} box(es).`);
+    } catch (lookupError) {
+      setError(lookupError instanceof Error ? lookupError.message : 'Barcode lookup failed.');
+    }
   }
 
   function addLine() {
@@ -126,7 +124,7 @@ export function OrderScannerPanel({ defaultBranch }: { defaultBranch?: Branch })
         </div>
         <BarcodeCapture label="Pick item or box barcode" value={barcode} onChange={resolvePickStock} />
         {stockLookupMessage ? <div className="success">{stockLookupMessage}</div> : null}
-        {stockLookup ? <div className="stock-match-card"><div><strong>{stockLookup.stock_name}</strong><span>{quantityUnit === 'box' ? 'Box barcode' : 'Item barcode'}</span></div><div><span>Items</span><strong>{stockLookup.item_quantity}</strong></div><div><span>Boxes</span><strong>{stockLookup.box_quantity}</strong></div></div> : null}
+        {stockLookup ? <div className="stock-match-card"><div><strong>{stockLookup.stock_name}</strong><span>{stockLookup.matched_unit === 'box' ? 'Box barcode' : 'Item barcode'}</span></div><div><span>Matched</span><strong>{stockLookup.matched_unit}</strong></div><div><span>Items</span><strong>{stockLookup.item_quantity}</strong></div><div><span>Boxes</span><strong>{stockLookup.box_quantity}</strong></div></div> : null}
         <div className="form-grid"><label>Quantity<input min="1" type="number" value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} /></label><label>Unit<select value={quantityUnit} onChange={(event) => setQuantityUnit(event.target.value as QuantityUnit)}><option value="item">Items</option><option value="box">Boxes</option></select></label><div style={{ alignSelf: 'end' }}><button className="button secondary" disabled={!stockLookup} onClick={addLine} type="button">Add scanned line</button></div></div>
         <div className="table-wrap"><table><thead><tr><th>Barcode</th><th>Stock</th><th>Quantity</th><th>Action</th></tr></thead><tbody>{lines.length === 0 ? <tr><td colSpan={4}>No scanned order lines yet.</td></tr> : lines.map((line, index) => <tr key={`${line.barcode}-${index}`}><td>{line.barcode}</td><td>{line.stock_name}</td><td>{line.quantity} {line.quantity_unit}</td><td><button className="button secondary" onClick={() => setLines((current) => current.filter((_, lineIndex) => lineIndex !== index))} type="button">Remove</button></td></tr>)}</tbody></table></div>
         <button className="button pulse-button" disabled={saving || lines.length === 0 || !customerName.trim()} type="submit">{saving ? 'Creating and deducting stock...' : 'Create picked delivery order'}</button>
