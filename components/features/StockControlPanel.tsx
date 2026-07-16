@@ -2,7 +2,9 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { BarcodeCapture } from '@/components/ui/BarcodeCapture';
+import { ScannerMatchCard } from '@/components/ui/ScannerMatchCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { StatusTimeline } from '@/components/ui/StatusTimeline';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { resolveStockBarcode, type ResolvedStockBarcode } from '@/lib/data/stockBarcode';
 import { useDuplicateScanGuard } from '@/lib/hooks/useDuplicateScanGuard';
@@ -62,6 +64,24 @@ export function StockControlPanel({ onCommitted }: { onCommitted?: () => void })
 
   const branchWarehouseIds = useMemo(() => new Set(warehouses.filter((warehouse) => warehouse.branch === branch || branch === 'national').map((warehouse) => warehouse.id)), [branch, warehouses]);
   const availableLocations = useMemo(() => locations.filter((location) => branchWarehouseIds.has(location.warehouse_id)), [branchWarehouseIds, locations]);
+  const availableQuantity = stock ? (quantityUnit === 'box' ? stock.box_quantity : stock.item_quantity) : 0;
+  const deductingStock = mode === 'issued' || mode === 'adjustment_out';
+  const quantityInvalid = mode !== 'cycle_count' && quantity <= 0;
+  const exceedsAvailable = Boolean(stock && deductingStock && quantity > availableQuantity);
+  const transferInvalid = mode === 'transferred' && (!sourceLocationId || !destinationLocationId || sourceLocationId === destinationLocationId);
+  const adjustmentNeedsReason = mode.startsWith('adjustment') && !notes.trim();
+  const fieldHint = !stock
+    ? 'Scan an item or box barcode to continue.'
+    : quantityInvalid
+      ? 'Quantity must be greater than zero.'
+      : exceedsAvailable
+        ? `Only ${availableQuantity} ${quantityUnit}(s) are available.`
+        : transferInvalid
+          ? 'Select different source and destination locations.'
+          : adjustmentNeedsReason
+            ? 'Adjustment transactions require a reason.'
+            : null;
+  const timelineIndex = !stock ? 0 : fieldHint ? 1 : 2;
 
   async function resolveBarcode(value: string) {
     const cleanValue = value.trim();
@@ -87,7 +107,7 @@ export function StockControlPanel({ onCommitted }: { onCommitted?: () => void })
         setSourceLocationId(matched.default_location_id);
         setDestinationLocationId(matched.default_location_id);
       }
-      setMessage(`${matched.stock_name} found. On hand: ${matched.item_quantity} item(s) and ${matched.box_quantity} box(es).`);
+      setMessage(`${matched.stock_name} found. Confirm quantity and location before posting.`);
     } catch (lookupError) {
       setError(lookupError instanceof Error ? lookupError.message : 'Barcode lookup failed.');
     }
@@ -105,8 +125,8 @@ export function StockControlPanel({ onCommitted }: { onCommitted?: () => void })
   async function commitTransaction(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!stock) return;
-    if (mode === 'transferred' && (!sourceLocationId || !destinationLocationId || sourceLocationId === destinationLocationId)) {
-      setError('Select different source and destination locations.');
+    if (fieldHint) {
+      setError(fieldHint);
       return;
     }
 
@@ -148,16 +168,17 @@ export function StockControlPanel({ onCommitted }: { onCommitted?: () => void })
   return (
     <section className="neo-card stock-control-centre">
       <div className="page-toolbar-heading"><div><div className="badge">Phone stock control</div><h2>Scan and transact stock</h2><p>{selectedMode.helper}</p></div><StatusBadge value={stock ? 'active' : 'unknown'} label={stock ? 'Item matched' : 'Awaiting scan'} /></div>
+      <StatusTimeline compact currentIndex={timelineIndex} steps={[{ label: 'Scan' }, { label: 'Confirm' }, { label: 'Post' }]} />
       <div className="stock-mode-grid" role="tablist" aria-label="Stock transaction type">{modes.map((item) => <button aria-selected={mode === item.value} className={`stock-mode-button ${mode === item.value ? 'is-active' : ''}`} key={item.value} onClick={() => { setMode(item.value); setError(null); setMessage(null); }} role="tab" type="button"><strong>{item.label}</strong><span>{item.helper}</span></button>)}</div>
       {error ? <div className="error">{error}</div> : null}
       {message ? <div className="success">{message}</div> : null}
       <form className="grid" onSubmit={commitTransaction}>
-        <div className="form-grid"><label>Branch<select value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>{branches.map((item) => <option key={item} value={item}>{item.toUpperCase()}</option>)}</select></label><label>Quantity unit<select value={quantityUnit} onChange={(event) => setQuantityUnit(event.target.value as QuantityUnit)}><option value="item">Items</option><option value="box">Boxes</option></select></label><label>{mode === 'cycle_count' ? 'Counted quantity' : 'Quantity'}<input min={mode === 'cycle_count' ? 0 : 1} type="number" value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} /></label></div>
+        <div className="form-grid"><label>Branch<select value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>{branches.map((item) => <option key={item} value={item}>{item.toUpperCase()}</option>)}</select></label><label>Quantity unit<select value={quantityUnit} onChange={(event) => setQuantityUnit(event.target.value as QuantityUnit)}><option value="item">Items</option><option value="box">Boxes</option></select></label><label>{mode === 'cycle_count' ? 'Counted quantity' : 'Quantity'}<input min={mode === 'cycle_count' ? 0 : 1} type="number" value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} />{quantityInvalid || exceedsAvailable ? <small className="field-note danger">{fieldHint}</small> : null}</label></div>
         <BarcodeCapture label="Stock QR / barcode" value={barcode} onChange={resolveBarcode} />
-        {stock ? <div className="stock-match-card"><div><strong>{stock.stock_name}</strong><span>{stock.item_barcode}{stock.box_barcode ? ` • Box ${stock.box_barcode}` : ''}</span></div><div><span>Matched</span><strong>{stock.matched_unit}</strong></div><div><span>Items</span><strong>{stock.item_quantity}</strong></div><div><span>Boxes</span><strong>{stock.box_quantity}</strong></div><div><span>Reorder</span><strong>{stock.reorder_level}</strong></div></div> : null}
-        <div className="form-grid">{showSource ? <label>Source location<select required={mode === 'transferred'} value={sourceLocationId} onChange={(event) => setSourceLocationId(event.target.value)}><option value="">Unassigned / total stock</option>{availableLocations.map((location) => <option key={location.id} value={location.id}>{location.location_code}{location.description ? ` — ${location.description}` : ''}</option>)}</select></label> : null}{showDestination ? <label>Destination location<select required={mode === 'transferred'} value={destinationLocationId} onChange={(event) => setDestinationLocationId(event.target.value)}><option value="">Unassigned / total stock</option>{availableLocations.map((location) => <option key={location.id} value={location.id}>{location.location_code}{location.description ? ` — ${location.description}` : ''}</option>)}</select></label> : null}<label>Reference type<select value={referenceType} onChange={(event) => setReferenceType(event.target.value)}><option value="manual">Manual transaction</option><option value="purchase_order">Purchase order</option><option value="delivery_order">Delivery order</option><option value="service_job">Service job</option><option value="cycle_count">Cycle count sheet</option></select></label><label>Reference<input placeholder="PO number, order, job or count sheet" value={referenceId} onChange={(event) => setReferenceId(event.target.value)} /></label></div>
-        <label>Reason / notes<textarea required={mode.startsWith('adjustment')} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Reason, supplier delivery note, job number or stock-count comment" /></label>
-        <button className="button pulse-button" disabled={saving || !stock || !barcode || (mode !== 'cycle_count' && quantity <= 0)} type="submit">{saving ? 'Updating stock...' : `${selectedMode.label} stock`}</button>
+        {stock ? <ScannerMatchCard availableBoxes={stock.box_quantity} availableItems={stock.item_quantity} barcode={barcode} location={stock.warehouse_location} title={stock.stock_name} unit={stock.matched_unit} /> : null}
+        <div className="form-grid">{showSource ? <label>Source location<select required={mode === 'transferred'} value={sourceLocationId} onChange={(event) => setSourceLocationId(event.target.value)}><option value="">Unassigned / total stock</option>{availableLocations.map((location) => <option key={location.id} value={location.id}>{location.location_code}{location.description ? ` — ${location.description}` : ''}</option>)}</select>{transferInvalid ? <small className="field-note danger">Select a valid source.</small> : null}</label> : null}{showDestination ? <label>Destination location<select required={mode === 'transferred'} value={destinationLocationId} onChange={(event) => setDestinationLocationId(event.target.value)}><option value="">Unassigned / total stock</option>{availableLocations.map((location) => <option key={location.id} value={location.id}>{location.location_code}{location.description ? ` — ${location.description}` : ''}</option>)}</select>{transferInvalid ? <small className="field-note danger">Select a different destination.</small> : null}</label> : null}<label>Reference type<select value={referenceType} onChange={(event) => setReferenceType(event.target.value)}><option value="manual">Manual transaction</option><option value="purchase_order">Purchase order</option><option value="delivery_order">Delivery order</option><option value="service_job">Service job</option><option value="cycle_count">Cycle count sheet</option></select></label><label>Reference<input placeholder="PO number, order, job or count sheet" value={referenceId} onChange={(event) => setReferenceId(event.target.value)} /></label></div>
+        <label>Reason / notes<textarea required={mode.startsWith('adjustment')} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Reason, supplier delivery note, job number or stock-count comment" />{adjustmentNeedsReason ? <small className="field-note danger">Adjustment transactions require an audit reason.</small> : null}</label>
+        <button className="button pulse-button" disabled={saving || !stock || !barcode || Boolean(fieldHint)} type="submit">{saving ? 'Updating stock...' : `${selectedMode.label} stock`}</button>
       </form>
     </section>
   );
