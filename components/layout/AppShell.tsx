@@ -37,8 +37,24 @@ function StatusScreen({
   );
 }
 
+const sectionMeta: Record<string, { icon: string; description: string }> = {
+  Workspace: { icon: '◎', description: 'Your role-focused start page, daily shortcuts and live counts.' },
+  Work: { icon: '✓', description: 'Tasks, service jobs, deliveries, technician work and operational execution.' },
+  Stock: { icon: '▣', description: 'Stock control, purchasing, approvals, locations and inventory history.' },
+  Assets: { icon: '◇', description: 'Machines, lifecycle, reliability and preventive maintenance.' },
+  Customers: { icon: '◌', description: 'Customer directory and account records.' },
+  Reports: { icon: '▤', description: 'Executive, branch, service and warehouse reporting.' },
+  Commercial: { icon: '∑', description: 'Sales, finance and commercial workspaces.' },
+  Marketing: { icon: '✦', description: 'Campaigns, segments, renewals and marketing reports.' },
+  'Admin Control': { icon: '⚙', description: 'System dashboard, users, roles and activity controls.' },
+};
+
 function isActivePath(pathname: string, href: string) {
   return pathname === href || (href !== '/' && pathname.startsWith(`${href}/`));
+}
+
+function navInitial(label: string) {
+  return label.split(/\s+/).map((word) => word[0]).join('').slice(0, 2).toUpperCase();
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -159,7 +175,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <nav aria-label="Primary navigation" className="desktop-nav">
             {visibleSections.map((section) => {
               const sectionActive = section.items.some((item) => isActivePath(pathname, item.href));
+              const activeItem = section.items.find((item) => isActivePath(pathname, item.href));
               const sectionOpen = openDesktopSection === section.heading;
+              const meta = sectionMeta[section.heading] ?? { icon: '•', description: 'Open related ERP pages.' };
               return (
                 <details
                   className={`topnav-section topnav-dropdown ${sectionActive ? 'has-active' : ''}`}
@@ -173,24 +191,41 @@ export function AppShell({ children }: { children: ReactNode }) {
                   }}
                   open={sectionOpen}
                 >
-                  <summary className="topnav-trigger">
-                    <span>{section.heading}</span>
+                  <summary className="topnav-trigger" aria-label={`${section.heading} navigation${activeItem ? `, current page ${activeItem.label}` : ''}`}>
+                    <span className="topnav-trigger-icon" aria-hidden="true">{meta.icon}</span>
+                    <span className="topnav-trigger-copy">
+                      <span>{section.heading}</span>
+                      {activeItem ? <small>{activeItem.label}</small> : null}
+                    </span>
                     <span aria-hidden="true" className="dropdown-chevron">▾</span>
                   </summary>
-                  <div className="topnav-menu">
-                    {section.items.map((item) => {
-                      const active = isActivePath(pathname, item.href);
-                      return (
-                        <Link
-                          aria-current={active ? 'page' : undefined}
-                          key={item.href}
-                          className={`nav-link ${active ? 'active' : ''}`}
-                          href={item.href}
-                        >
-                          {item.label}
-                        </Link>
-                      );
-                    })}
+                  <div className={`topnav-menu ${section.items.length > 2 ? 'is-mega' : ''}`}>
+                    <div className="topnav-menu-header">
+                      <span aria-hidden="true" className="topnav-menu-icon">{meta.icon}</span>
+                      <div>
+                        <strong>{section.heading}</strong>
+                        <p>{meta.description}</p>
+                      </div>
+                    </div>
+                    <div className="topnav-menu-grid">
+                      {section.items.map((item) => {
+                        const active = isActivePath(pathname, item.href);
+                        return (
+                          <Link
+                            aria-current={active ? 'page' : undefined}
+                            key={item.href}
+                            className={`nav-link topnav-card ${active ? 'active' : ''}`}
+                            href={item.href}
+                          >
+                            <span aria-hidden="true" className="nav-card-icon">{navInitial(item.label)}</span>
+                            <span className="nav-card-copy">
+                              <strong>{item.label}</strong>
+                              {item.description ? <small>{item.description}</small> : null}
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </div>
                   </div>
                 </details>
               );
@@ -235,24 +270,31 @@ export function AppShell({ children }: { children: ReactNode }) {
             My workspace
           </Link>
           <nav aria-label="Mobile navigation">
-            {visibleSections.map((section) => (
-              <div className="nav-section" key={section.heading}>
-                <div className="nav-heading">{section.heading}</div>
-                {section.items.map((item) => {
-                  const active = isActivePath(pathname, item.href);
-                  return (
-                    <Link
-                      aria-current={active ? 'page' : undefined}
-                      key={item.href}
-                      className={`nav-link ${active ? 'active' : ''}`}
-                      href={item.href}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            ))}
+            {visibleSections.map((section) => {
+              const meta = sectionMeta[section.heading] ?? { icon: '•', description: 'Open related ERP pages.' };
+              return (
+                <div className="nav-section" key={section.heading}>
+                  <div className="nav-heading"><span aria-hidden="true">{meta.icon}</span>{section.heading}</div>
+                  {section.items.map((item) => {
+                    const active = isActivePath(pathname, item.href);
+                    return (
+                      <Link
+                        aria-current={active ? 'page' : undefined}
+                        key={item.href}
+                        className={`nav-link mobile-nav-card ${active ? 'active' : ''}`}
+                        href={item.href}
+                      >
+                        <span aria-hidden="true" className="nav-card-icon">{navInitial(item.label)}</span>
+                        <span className="nav-card-copy">
+                          <strong>{item.label}</strong>
+                          {item.description ? <small>{item.description}</small> : null}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              );
+            })}
           </nav>
           <button className="button secondary sign-out" onClick={signOut} type="button">
             Sign out
