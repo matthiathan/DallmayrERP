@@ -6,7 +6,7 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 
 type SearchResult = {
   id: string;
-  type: 'Customer' | 'Machine' | 'Stock' | 'Delivery' | 'Service';
+  type: 'Work' | 'Customer' | 'Machine' | 'Stock' | 'Delivery' | 'Service';
   title: string;
   subtitle: string;
   href: string;
@@ -64,18 +64,26 @@ export function GlobalSearch() {
       const pattern = `%${term}%`;
       const client = getSupabaseClient();
       try {
-        const [customers, machines, stock, deliveries, services] = await Promise.all([
+        const [work, customers, machines, stock, deliveries, services] = await Promise.all([
+          client.from('work_items').select('id, work_number, title, department, branch, priority, status').or(`work_number.ilike.${pattern},title.ilike.${pattern},department.ilike.${pattern}`).limit(6),
           client.from('customers').select('id, customer_name, customer_code, branch, address').or(`customer_name.ilike.${pattern},customer_code.ilike.${pattern}`).limit(6),
-          client.from('machines').select('id, machine_name, serial_number, machine_barcode, branch, model').or(`machine_name.ilike.${pattern},serial_number.ilike.${pattern},machine_barcode.ilike.${pattern}`).limit(6),
+          client.from('machines').select('id, machine_name, serial_number, machine_barcode, branch, model, condition').or(`machine_name.ilike.${pattern},serial_number.ilike.${pattern},machine_barcode.ilike.${pattern}`).limit(6),
           client.from('stock_items').select('id, stock_name, item_barcode, box_barcode, item_quantity, warehouse_location').or(`stock_name.ilike.${pattern},item_barcode.ilike.${pattern},box_barcode.ilike.${pattern}`).limit(6),
           client.from('delivery_orders').select('id, order_number, customer_name, branch, status').or(`order_number.ilike.${pattern},customer_name.ilike.${pattern}`).limit(6),
           client.from('service_jobs').select('id, job_number, summary, branch, status').or(`job_number.ilike.${pattern},summary.ilike.${pattern}`).limit(6),
         ]);
-        const queryError = customers.error ?? machines.error ?? stock.error ?? deliveries.error ?? services.error;
+        const queryError = work.error ?? customers.error ?? machines.error ?? stock.error ?? deliveries.error ?? services.error;
         if (queryError) throw queryError;
         if (requestId !== requestRef.current) return;
 
         const nextResults: SearchResult[] = [
+          ...((work.data ?? []) as Array<{ id: string; work_number: string; title: string; department: string; branch: string; priority: string; status: string }>).map((row) => ({
+            id: row.id,
+            type: 'Work' as const,
+            title: `${row.work_number} — ${row.title}`,
+            subtitle: `${row.department} • ${row.branch.toUpperCase()} • ${row.priority} • ${row.status.replace(/_/g, ' ')}`,
+            href: `/work/${row.id}`,
+          })),
           ...((customers.data ?? []) as Array<{ id: string; customer_name: string; customer_code: string | null; branch: string; address: string | null }>).map((row) => ({
             id: row.id,
             type: 'Customer' as const,
@@ -83,19 +91,19 @@ export function GlobalSearch() {
             subtitle: `${row.customer_code ?? 'No account code'} • ${row.branch.toUpperCase()}${row.address ? ` • ${row.address}` : ''}`,
             href: `/customers/${row.id}`,
           })),
-          ...((machines.data ?? []) as Array<{ id: string; machine_name: string | null; serial_number: string | null; machine_barcode: string | null; branch: string; model: string | null }>).map((row) => ({
+          ...((machines.data ?? []) as Array<{ id: string; machine_name: string | null; serial_number: string | null; machine_barcode: string | null; branch: string; model: string | null; condition: string }>).map((row) => ({
             id: row.id,
             type: 'Machine' as const,
             title: row.machine_name ?? row.serial_number ?? row.machine_barcode ?? 'Unnamed machine',
-            subtitle: `${row.model ?? 'Model not set'} • ${row.serial_number ?? 'No serial'} • ${row.branch.toUpperCase()}`,
-            href: `/operations/assets?machine=${row.id}`,
+            subtitle: `${row.model ?? 'Model not set'} • ${row.serial_number ?? 'No serial'} • ${row.branch.toUpperCase()} • ${row.condition}`,
+            href: `/operations/assets/${row.id}`,
           })),
           ...((stock.data ?? []) as Array<{ id: string; stock_name: string; item_barcode: string; item_quantity: number; warehouse_location: string | null }>).map((row) => ({
             id: row.id,
             type: 'Stock' as const,
             title: row.stock_name,
             subtitle: `${row.item_barcode} • ${row.item_quantity} item(s)${row.warehouse_location ? ` • ${row.warehouse_location}` : ''}`,
-            href: `/warehouse/stock?stock=${row.id}`,
+            href: `/warehouse/stock/${row.id}`,
           })),
           ...((deliveries.data ?? []) as Array<{ id: string; order_number: string; customer_name: string; branch: string; status: string }>).map((row) => ({
             id: row.id,
@@ -112,7 +120,7 @@ export function GlobalSearch() {
             href: `/operations/service-jobs?job=${row.id}`,
           })),
         ];
-        setResults(nextResults.slice(0, 24));
+        setResults(nextResults.slice(0, 30));
       } catch (searchError) {
         if (requestId !== requestRef.current) return;
         setError(searchError instanceof Error ? searchError.message : 'Search could not be completed.');
@@ -138,10 +146,10 @@ export function GlobalSearch() {
         <div className="global-search-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeSearch(); }}>
           <section aria-label="Search DallmayrERP" aria-modal="true" className="global-search-dialog" role="dialog">
             <div className="global-search-input-row">
-              <input aria-label="Search customers, machines, stock, delivery orders and service jobs" onChange={(event) => setQuery(event.target.value)} placeholder="Search customer, serial number, barcode, order or job..." ref={inputRef} type="search" value={query} />
+              <input aria-label="Search work, customers, machines, stock, delivery orders and service jobs" onChange={(event) => setQuery(event.target.value)} placeholder="Search work number, customer, serial, barcode, order or job..." ref={inputRef} type="search" value={query} />
               <button aria-label="Close search" className="button secondary" onClick={closeSearch} type="button">Close</button>
             </div>
-            <div className="global-search-quick-actions"><Link href="/customers" onClick={closeSearch}>Customer directory</Link><Link href="/operations/service-jobs" onClick={closeSearch}>Create service job</Link><Link href="/warehouse/stock" onClick={closeSearch}>Scan stock</Link><Link href="/operations/deliveries" onClick={closeSearch}>Open deliveries</Link><Link href="/operations/assets" onClick={closeSearch}>Machine register</Link></div>
+            <div className="global-search-quick-actions"><Link href="/work" onClick={closeSearch}>Action Centre</Link><Link href="/customers" onClick={closeSearch}>Customer directory</Link><Link href="/operations/service-jobs" onClick={closeSearch}>Service jobs</Link><Link href="/warehouse/stock" onClick={closeSearch}>Stock control</Link><Link href="/operations/assets" onClick={closeSearch}>Machine assets</Link></div>
             <div aria-live="polite" className="global-search-results">
               {loading ? <div className="global-search-state">Searching enterprise records...</div> : null}
               {error ? <div className="error">{error}</div> : null}
