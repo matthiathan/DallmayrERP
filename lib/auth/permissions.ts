@@ -53,6 +53,7 @@ export const navSections: NavSection[] = [
       { href: '/customers', label: 'Customer Directory', roles: 'all' },
       { href: '/operations/deliveries', label: 'Delivery Board', roles: ['admin', 'operations'] },
       { href: '/operations/service-jobs', label: 'Service Jobs', roles: ['admin', 'operations'] },
+      { href: '/operations/maintenance', label: 'Preventive Maintenance', roles: ['admin', 'operations', 'technician', 'road_technician', 'executive'] },
       { href: '/operations/assets', label: 'Machine Assets', roles: ['admin', 'operations', 'technician', 'road_technician'] },
       { href: '/warehouse/stock', label: 'Stock Control', roles: ['admin', 'operations', 'warehouse_staff'] },
       { href: '/warehouse/purchasing', label: 'Purchase Orders', roles: ['admin', 'operations', 'warehouse_staff'] },
