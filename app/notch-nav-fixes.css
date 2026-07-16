@@ -1,0 +1,58 @@
+.notch-erp-navbar,
+.notch-navbar-frame,
+.notch-navbar-shell,
+.notch-navbar-center,
+.notch-menu-row,
+.notch-menubar,
+.notch-menubar .erp-menu {
+  overflow: visible !important;
+}
+
+.notch-erp-navbar {
+  z-index: 1200;
+}
+
+.notch-navbar-frame {
+  position: relative;
+  z-index: 1201;
+}
+
+.notch-navbar-shell,
+.notch-navbar-center {
+  position: relative;
+  z-index: 1202;
+}
+
+.notch-menubar .erp-menu {
+  position: relative;
+  z-index: 1203;
+}
+
+.notch-menubar .erp-menu[open] {
+  z-index: 1300;
+}
+
+.notch-menubar .erp-menu-panel {
+  position: absolute;
+  z-index: 1400;
+  top: calc(100% + 10px);
+  left: 0;
+  max-height: min(76vh, 640px);
+  overflow-y: auto;
+}
+
+.notch-tab-row,
+.notch-titlebar {
+  display: none !important;
+}
+
+.erp-chrome + .top-main,
+.top-main {
+  padding-top: 18px;
+}
+
+@media (max-width: 980px) {
+  .notch-menubar .erp-menu-panel {
+    position: static;
+  }
+}
