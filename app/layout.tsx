@@ -9,6 +9,7 @@ import './enterprise-ui.css';
 import './stock-control.css';
 import './professional-ops.css';
 import './minimalist-ui.css';
+import './minimalist-operations.css';
 import './ultrawide.css';
 import './mobile.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
