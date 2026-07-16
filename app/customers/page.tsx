@@ -10,6 +10,9 @@ import { useClientQueryParam } from '@/lib/navigation/useClientQueryParam';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { CustomerRecord } from '@/types/enterprise-records';
 
+const customerDirectoryLimit = 5000;
+const customerDirectoryPageSize = 1000;
+
 export default function CustomerDirectoryPage() {
   const querySearch = useClientQueryParam('q');
   const customerSearch = useClientQueryParam('customer');
@@ -21,16 +24,30 @@ export default function CustomerDirectoryPage() {
   async function loadCustomers() {
     setLoading(true);
     setError(null);
-    const { data, error: loadError } = await getSupabaseClient()
-      .from('customers')
-      .select('id, customer_name, customer_code, branch, phone, email, address, status')
-      .order('customer_name')
-      .limit(2000);
-    if (loadError) setError(loadError.message);
-    else {
-      setCustomers((data ?? []) as CustomerRecord[]);
-      setLastUpdated(new Date());
+    const client = getSupabaseClient();
+    const allCustomers: CustomerRecord[] = [];
+
+    for (let from = 0; from < customerDirectoryLimit; from += customerDirectoryPageSize) {
+      const to = Math.min(from + customerDirectoryPageSize - 1, customerDirectoryLimit - 1);
+      const { data, error: loadError } = await client
+        .from('customers')
+        .select('id, customer_name, customer_code, branch, phone, email, address, status')
+        .order('customer_name')
+        .range(from, to);
+
+      if (loadError) {
+        setError(loadError.message);
+        setLoading(false);
+        return;
+      }
+
+      const batch = (data ?? []) as CustomerRecord[];
+      allCustomers.push(...batch);
+      if (batch.length < customerDirectoryPageSize) break;
     }
+
+    setCustomers(allCustomers);
+    setLastUpdated(new Date());
     setLoading(false);
   }
 
@@ -55,7 +72,7 @@ export default function CustomerDirectoryPage() {
     <AppShell>
       <div className="page-header hero-panel spatial-card"><div><div className="badge">Customer Management</div><h1>Customer Directory</h1><p>Search customers and open a unified operational profile.</p></div></div>
       {error ? <div className="error">{error}</div> : null}
-      <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadCustomers} type="button">{loading ? 'Refreshing...' : 'Refresh directory'}</button>} description="Search by customer name, account code, branch, phone, email or address." lastUpdated={lastUpdated} title="Customer records" />
+      <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadCustomers} type="button">{loading ? 'Refreshing...' : 'Refresh directory'}</button>} description={`${customers.length.toLocaleString()} customer records loaded. Use search to narrow by account code, phone, branch or address.`} lastUpdated={lastUpdated} title="Customer records" />
       <EnterpriseDataTable columns={columns} emptyMessage={loading ? 'Loading customers...' : 'No matching customers found.'} getSearchText={(row) => [row.id, row.customer_name, row.customer_code, row.branch, row.phone, row.email, row.address, row.status].join(' ')} initialSearch={querySearch || customerSearch} rowKey={(row) => row.id} rows={customers} searchPlaceholder="Search customer, account code, phone or address" />
     </AppShell>
   );
