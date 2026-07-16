@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BarcodeCapture } from '@/components/ui/BarcodeCapture';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { resolveStockBarcode, type ResolvedStockBarcode } from '@/lib/data/stockBarcode';
+import { useDuplicateScanGuard } from '@/lib/hooks/useDuplicateScanGuard';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
-type StockItem = { id: string; stock_name: string; item_barcode: string; box_barcode: string | null; item_quantity: number; box_quantity: number; unit_cost: number | null; default_location_id: string | null };
 type Location = { id: string; location_code: string; description: string | null };
 type PartRow = { id: string; quantity: number; quantity_unit: 'item' | 'box'; unit_cost: number | null; notes: string | null; created_at: string; stock_items?: { stock_name: string | null } | Array<{ stock_name: string | null }> | null };
 
@@ -16,7 +17,7 @@ function stockName(row: PartRow) {
 
 export function WorkPartsPanel({ workItemId }: { workItemId: string }) {
   const [barcode, setBarcode] = useState('');
-  const [matched, setMatched] = useState<StockItem | null>(null);
+  const [matched, setMatched] = useState<ResolvedStockBarcode | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [unit, setUnit] = useState<'item' | 'box'>('item');
   const [locationId, setLocationId] = useState('');
@@ -26,6 +27,7 @@ export function WorkPartsPanel({ workItemId }: { workItemId: string }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const isDuplicateScan = useDuplicateScanGuard();
 
   async function loadParts() {
     const client = getSupabaseClient();
@@ -52,20 +54,24 @@ export function WorkPartsPanel({ workItemId }: { workItemId: string }) {
     setError(null);
     setMessage(null);
     if (!clean) return;
-    const { data, error: lookupError } = await getSupabaseClient().from('stock_items').select('id, stock_name, item_barcode, box_barcode, item_quantity, box_quantity, unit_cost, default_location_id').or(`item_barcode.eq.${clean},box_barcode.eq.${clean}`).maybeSingle();
-    if (lookupError) {
-      setError(lookupError.message);
+    if (isDuplicateScan(clean)) {
+      setMessage('Duplicate scan ignored. Scan again after a moment to confirm repeated use.');
       return;
     }
-    if (!data) {
-      setError('Barcode not found in the stock master.');
-      return;
+
+    try {
+      const item = await resolveStockBarcode(clean);
+      if (!item) {
+        setError('Barcode not found in the stock master.');
+        return;
+      }
+      setMatched(item);
+      setUnit(item.matched_unit);
+      setLocationId(item.default_location_id ?? '');
+      setMessage(`${item.stock_name} selected as ${item.matched_unit}.`);
+    } catch (lookupError) {
+      setError(lookupError instanceof Error ? lookupError.message : 'Barcode lookup failed.');
     }
-    const item = data as StockItem;
-    setMatched(item);
-    setUnit(item.box_barcode === clean ? 'box' : 'item');
-    setLocationId(item.default_location_id ?? '');
-    setMessage(`${item.stock_name} selected.`);
   }
 
   async function consumePart() {
@@ -111,7 +117,7 @@ export function WorkPartsPanel({ workItemId }: { workItemId: string }) {
       <div className="minimal-split">
         <div className="minimal-form">
           <BarcodeCapture label="Part barcode" value={barcode} onChange={resolveBarcode} />
-          {matched ? <div className="minimal-match"><div><strong>{matched.stock_name}</strong><span>{unit === 'box' ? matched.box_barcode : matched.item_barcode}</span></div><div><span>Items</span><strong>{matched.item_quantity}</strong></div><div><span>Boxes</span><strong>{matched.box_quantity}</strong></div></div> : null}
+          {matched ? <div className="minimal-match"><div><strong>{matched.stock_name}</strong><span>{matched.matched_unit === 'box' ? matched.box_barcode : matched.item_barcode}</span></div><div><span>Matched</span><strong>{matched.matched_unit}</strong></div><div><span>Items</span><strong>{matched.item_quantity}</strong></div><div><span>Boxes</span><strong>{matched.box_quantity}</strong></div></div> : null}
           <div className="minimal-grid-3">
             <label>Quantity<input min="1" type="number" value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} /></label>
             <label>Unit<select value={unit} onChange={(event) => setUnit(event.target.value as 'item' | 'box')}><option value="item">Items</option><option value="box">Boxes</option></select></label>
