@@ -35,8 +35,10 @@ export function AssetReliabilityPanel({ machineId, currentMeter = 0, meterUnit =
   }
 
   useEffect(() => {
+    setReading(Number(currentMeter ?? 0));
+    setUnit(meterUnit ?? 'hours');
     loadReliability().catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Could not load reliability history.'));
-  }, [machineId]);
+  }, [machineId, currentMeter, meterUnit]);
 
   const downtimeMinutes = useMemo(() => downtime.reduce((sum, item) => sum + item.downtime_minutes, 0), [downtime]);
 
@@ -67,28 +69,28 @@ export function AssetReliabilityPanel({ machineId, currentMeter = 0, meterUnit =
     if (!startedAt || !endedAt) return;
     const start = new Date(startedAt);
     const end = new Date(endedAt);
-    const minutes = Math.round((end.getTime() - start.getTime()) / 60000);
-    if (minutes <= 0) {
+    if (end.getTime() <= start.getTime()) {
       setError('Downtime end must be after the start.');
       return;
     }
     setSaving(true);
     setError(null);
     setMessage(null);
-    const { error: downtimeError } = await getSupabaseClient().from('asset_downtime_events').insert({
-      machine_id: machineId,
-      started_at: start.toISOString(),
-      ended_at: end.toISOString(),
-      downtime_minutes: minutes,
-      reason: reason.trim() || null,
-      notes: downtimeNotes.trim() || null,
+    const { error: downtimeError } = await getSupabaseClient().rpc('record_asset_downtime', {
+      p_machine_id: machineId,
+      p_started_at: start.toISOString(),
+      p_ended_at: end.toISOString(),
+      p_reason: reason.trim() || null,
+      p_notes: downtimeNotes.trim() || null,
+      p_work_item_id: null,
+      p_service_job_id: null,
     });
     setSaving(false);
     if (downtimeError) {
       setError(downtimeError.message);
       return;
     }
-    setMessage('Downtime event recorded.');
+    setMessage('Downtime event recorded and asset totals updated.');
     setStartedAt('');
     setEndedAt('');
     setReason('');
@@ -109,7 +111,7 @@ export function AssetReliabilityPanel({ machineId, currentMeter = 0, meterUnit =
         <form className="minimal-form" onSubmit={recordMeter}>
           <h3>Meter reading</h3>
           <div className="minimal-grid-3">
-            <label>Reading<input min="0" step="0.01" type="number" value={reading} onChange={(event) => setReading(Number(event.target.value))} /></label>
+            <label>Reading<input min={Number(currentMeter ?? 0)} step="0.01" type="number" value={reading} onChange={(event) => setReading(Number(event.target.value))} /></label>
             <label>Unit<select value={unit} onChange={(event) => setUnit(event.target.value)}><option value="hours">Hours</option><option value="cycles">Cycles</option><option value="kilometres">Kilometres</option><option value="units">Units</option></select></label>
             <label>Source<select value={source} onChange={(event) => setSource(event.target.value)}><option value="manual">Manual</option><option value="service">Service</option><option value="inspection">Inspection</option><option value="sensor">Sensor</option></select></label>
           </div>
