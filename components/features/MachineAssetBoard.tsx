@@ -27,6 +27,7 @@ type MachineRow = MachineRecord & {
 
 const branches: Branch[] = ['jhb', 'cpt', 'kzn', 'national'];
 const statuses: MachineStatus[] = ['active', 'inactive', 'repair', 'retired', 'unknown'];
+const assetRegisterLimit = 6000;
 
 function getCustomerName(machine: MachineRow) {
   const relation = machine.customers;
@@ -67,7 +68,7 @@ export function MachineAssetBoard() {
       .from('machines')
       .select('id, branch, customer_id, site_id, serial_number, machine_barcode, machine_name, model, status, condition, criticality, custody_status, current_custodian, next_audit_at, created_at, customers(customer_name)')
       .order('created_at', { ascending: false })
-      .limit(1000);
+      .limit(assetRegisterLimit);
     if (loadError) {
       setError(loadError.message);
       setLoading(false);
@@ -196,7 +197,7 @@ export function MachineAssetBoard() {
         />
       ) : null}
 
-      <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadMachines} type="button">{loading ? 'Refreshing...' : 'Refresh register'}</button>} description="Search the lifecycle register and open any machine for custody, audit and maintenance history." lastUpdated={lastUpdated} title="Machine register" />
+      <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadMachines} type="button">{loading ? 'Refreshing...' : 'Refresh register'}</button>} description={`${machines.length.toLocaleString()} machine records loaded from the fixed asset master.`} lastUpdated={lastUpdated} title="Machine register" />
       <EnterpriseDataTable
         columns={columns}
         emptyMessage={loading ? 'Loading machine records...' : 'No matching machines found.'}
