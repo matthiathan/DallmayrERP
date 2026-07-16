@@ -17,7 +17,9 @@ import './ultrawide.css';
 import './mobile.css';
 import './erp-classic-navigation.css';
 import './notch-nav-fixes.css';
+import './ribbon-background.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
+import { TwistingRibbonBackground } from '@/components/ui/TwistingRibbonBackground';
 
 export const metadata = {
   title: 'DallmayrERP',
@@ -34,6 +36,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
+        <TwistingRibbonBackground />
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
