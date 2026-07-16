@@ -49,6 +49,7 @@ export const navSections: NavSection[] = [
     heading: 'Operations',
     items: [
       { href: '/operations', label: 'Operations Control', roles: ['admin', 'operations'] },
+      { href: '/work', label: 'Action Centre', roles: 'all', description: 'Tasks, approvals, exceptions and operational requests' },
       { href: '/customers', label: 'Customer Directory', roles: 'all' },
       { href: '/operations/deliveries', label: 'Delivery Board', roles: ['admin', 'operations'] },
       { href: '/operations/service-jobs', label: 'Service Jobs', roles: ['admin', 'operations'] },
