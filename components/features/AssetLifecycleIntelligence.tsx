@@ -142,7 +142,7 @@ export function AssetLifecycleIntelligence() {
     setMeterUnit(selected.meter_unit);
     setMeterReading(String(selected.meter_value));
     loadAsset(selected.id).catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Could not load asset history.'));
-  }, [selectedId, selected?.updated_at]);
+  }, [selectedId, machines]);
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
