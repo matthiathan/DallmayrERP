@@ -73,6 +73,41 @@ function safeTabList(value: string | null): OpenTab[] {
   }
 }
 
+function NotchRail({ side }: { side: 'left' | 'right' }) {
+  return (
+    <div aria-hidden="true" className={`notch-rail notch-rail-${side}`}>
+      <svg className="notch-line-svg" preserveAspectRatio="none">
+        <line x1="0" y1="39.5" x2="100%" y2="39.5" />
+        <line x1="0" y1="36.5" x2="100%" y2="36.5" />
+      </svg>
+    </div>
+  );
+}
+
+function NotchCorner({ side }: { side: 'left' | 'right' }) {
+  const backgroundPath = side === 'left'
+    ? "M0 0 H52 V64 C26 64 26 40 0 40 Z"
+    : "M0 0 H52 V40 C26 40 26 64 0 64 Z";
+  const outlineOne = side === 'left'
+    ? 'M0 39.5 C26 39.5 26 63.5 52 63.5'
+    : 'M0 63.5 C26 63.5 26 39.5 52 39.5';
+  const outlineTwo = side === 'left'
+    ? 'M0 36.5 C26 36.5 26 60.5 52 60.5'
+    : 'M0 60.5 C26 60.5 26 36.5 52 36.5';
+
+  return (
+    <div aria-hidden="true" className={`notch-corner notch-corner-${side}`}>
+      <svg className="notch-corner-bg" viewBox="0 0 52 64" preserveAspectRatio="none">
+        <path d={backgroundPath} />
+      </svg>
+      <svg className="notch-corner-lines" viewBox="0 0 52 64" preserveAspectRatio="none">
+        <path d={outlineOne} />
+        <path d={outlineTwo} />
+      </svg>
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -246,68 +281,83 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {menuOpen ? <button aria-label="Close navigation menu" className="mobile-nav-backdrop" onClick={() => setMenuOpen(false)} type="button" /> : null}
 
-      <header className="topbar erp-chrome">
-        <div className="erp-menu-row">
-          <Link className="erp-brand-button" href={homePath}>DallmayrERP</Link>
+      <header className="topbar erp-chrome notch-erp-navbar">
+        <div className="notch-navbar-frame">
+          <NotchRail side="left" />
+          <div className="notch-navbar-shell">
+            <NotchCorner side="left" />
 
-          <nav aria-label="ERP menu bar" className="erp-menubar">
-            {visibleSections.map((section) => {
-              const sectionActive = section.items.some((item) => isActivePath(pathname, item.href));
-              const sectionOpen = openDesktopSection === section.heading;
-              return (
-                <details
-                  className={`erp-menu ${sectionActive ? 'has-active' : ''}`}
-                  key={section.heading}
-                  onToggle={(event) => {
-                    const isOpen = event.currentTarget.open;
-                    setOpenDesktopSection((current) => {
-                      if (isOpen) return section.heading;
-                      return current === section.heading ? null : current;
-                    });
-                  }}
-                  open={sectionOpen}
+            <div className="notch-navbar-center">
+              <div className="erp-menu-row notch-menu-row">
+                <Link className="erp-brand-button notch-logo-button" href={homePath} aria-label="Open Start Page">
+                  <span className="notch-logo-mark">D</span>
+                  <span>DallmayrERP</span>
+                </Link>
+
+                <nav aria-label="ERP menu bar" className="erp-menubar notch-menubar">
+                  {visibleSections.map((section) => {
+                    const sectionActive = section.items.some((item) => isActivePath(pathname, item.href));
+                    const sectionOpen = openDesktopSection === section.heading;
+                    return (
+                      <details
+                        className={`erp-menu ${sectionActive ? 'has-active' : ''}`}
+                        key={section.heading}
+                        onToggle={(event) => {
+                          const isOpen = event.currentTarget.open;
+                          setOpenDesktopSection((current) => {
+                            if (isOpen) return section.heading;
+                            return current === section.heading ? null : current;
+                          });
+                        }}
+                        open={sectionOpen}
+                      >
+                        <summary className="erp-menu-label">{section.heading}</summary>
+                        <div className="erp-menu-panel">
+                          {section.items.map((item) => {
+                            const active = isActivePath(pathname, item.href);
+                            return (
+                              <Link aria-current={active ? 'page' : undefined} className={`erp-menu-item ${active ? 'active' : ''}`} href={item.href} key={item.href}>
+                                <span className="erp-menu-code">{item.code}</span>
+                                <span className="erp-menu-text">
+                                  <strong>{item.label}</strong>
+                                  {item.description ? <small>{item.description}</small> : null}
+                                </span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </details>
+                    );
+                  })}
+                </nav>
+
+                <div className="erp-command-area notch-command-area">
+                  <GlobalSearch />
+                  <DensityToggle />
+                  <button className="erp-signout" onClick={signOut} type="button">Sign out</button>
+                </div>
+
+                <button
+                  aria-controls="mobile-navigation"
+                  aria-expanded={menuOpen}
+                  aria-label={menuOpen ? 'Close quick navigation menu' : 'Open quick navigation menu'}
+                  className="hamburger-button notch-mobile-button"
+                  onClick={() => setMenuOpen((current) => !current)}
+                  type="button"
                 >
-                  <summary className="erp-menu-label">{section.heading}</summary>
-                  <div className="erp-menu-panel">
-                    {section.items.map((item) => {
-                      const active = isActivePath(pathname, item.href);
-                      return (
-                        <Link aria-current={active ? 'page' : undefined} className={`erp-menu-item ${active ? 'active' : ''}`} href={item.href} key={item.href}>
-                          <span className="erp-menu-code">{item.code}</span>
-                          <span className="erp-menu-text">
-                            <strong>{item.label}</strong>
-                            {item.description ? <small>{item.description}</small> : null}
-                          </span>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </details>
-              );
-            })}
-          </nav>
+                  <span />
+                  <span />
+                  <span />
+                </button>
+              </div>
+            </div>
 
-          <div className="erp-command-area">
-            <GlobalSearch />
-            <DensityToggle />
-            <button className="erp-signout" onClick={signOut} type="button">Sign out</button>
+            <NotchCorner side="right" />
           </div>
-
-          <button
-            aria-controls="mobile-navigation"
-            aria-expanded={menuOpen}
-            aria-label={menuOpen ? 'Close quick navigation menu' : 'Open quick navigation menu'}
-            className="hamburger-button"
-            onClick={() => setMenuOpen((current) => !current)}
-            type="button"
-          >
-            <span />
-            <span />
-            <span />
-          </button>
+          <NotchRail side="right" />
         </div>
 
-        <div aria-label="Open screens" className="erp-tab-row" role="navigation">
+        <div aria-label="Open screens" className="erp-tab-row notch-tab-row" role="navigation">
           <span aria-hidden="true" className="erp-window-icon">◉</span>
           {tabsToRender.map((tab) => {
             const active = isActivePath(pathname, tab.href);
@@ -332,7 +382,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </div>
 
-        <div className="erp-active-titlebar">
+        <div className="erp-active-titlebar notch-titlebar">
           <div>
             <span>{activeTitleWithContext}</span>
             <strong>[{activeCode}]</strong>
