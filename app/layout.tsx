@@ -11,6 +11,7 @@ import './professional-ops.css';
 import './minimalist-ui.css';
 import './minimalist-operations.css';
 import './minimalist-ui-polish.css';
+import './ux-polish.css';
 import './ultrawide.css';
 import './mobile.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
