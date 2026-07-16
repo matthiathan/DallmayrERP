@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { AssetTicketCard } from '@/components/ui/AssetTicketCard';
 import { BarcodeCapture } from '@/components/ui/BarcodeCapture';
 import { CustomerSelect, type CustomerOption } from '@/components/ui/CustomerSelect';
 import { EnterpriseDataTable, type EnterpriseColumn } from '@/components/ui/EnterpriseDataTable';
@@ -31,6 +32,14 @@ function getCustomerName(machine: MachineRow) {
   const relation = machine.customers;
   if (Array.isArray(relation)) return relation[0]?.customer_name ?? 'Unassigned';
   return relation?.customer_name ?? 'Unassigned';
+}
+
+function matchesScan(machine: MachineRow, scanValue: string) {
+  const needle = scanValue.trim().toLowerCase();
+  if (!needle) return false;
+  return [machine.id, machine.machine_barcode, machine.serial_number]
+    .filter(Boolean)
+    .some((value) => String(value).trim().toLowerCase() === needle);
 }
 
 export function MachineAssetBoard() {
@@ -82,9 +91,11 @@ export function MachineAssetBoard() {
     if (customer) setBranch(customer.branch);
   }
 
+  const scannedAsset = useMemo(() => machines.find((machine) => matchesScan(machine, machineBarcode)) ?? null, [machineBarcode, machines]);
+
   async function createMachine(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!businessUser) return;
+    if (!businessUser || scannedAsset) return;
     setSaving(true);
     setError(null);
     setMessage(null);
@@ -144,7 +155,7 @@ export function MachineAssetBoard() {
       {error ? <div className="error">{error}</div> : null}
       {message ? <div className="success">{message}</div> : null}
       <div className="neo-card spatial-machine-panel spatial-card">
-        <div className="page-toolbar-heading"><div><h2>Machine profiles</h2><p>Create customer-linked machines using the QR/barcode and serial number as operational identifiers.</p></div><Link className="button secondary" href="/work">Open Action Centre</Link></div>
+        <div className="page-toolbar-heading"><div><h2>Machine profiles</h2><p>Create customer-linked machines or scan an existing QR/barcode to view its asset ticket.</p></div><Link className="button secondary" href="/work">Open Action Centre</Link></div>
         <form className="grid" onSubmit={createMachine}>
           <div className="form-grid">
             <CustomerSelect label="Customer" onSelect={applyCustomer} value={customerName} />
@@ -157,9 +168,34 @@ export function MachineAssetBoard() {
             <label>Status<select value={status} onChange={(event) => setStatus(event.target.value as MachineStatus)}>{statuses.map((item) => <option key={item}>{item}</option>)}</select></label>
           </div>
           <BarcodeCapture label="Machine QR / barcode" value={machineBarcode} onChange={setMachineBarcode} />
-          <button className="button pulse-button" disabled={saving || !serialNumber.trim() || !machineBarcode.trim()} type="submit">{saving ? 'Creating machine...' : 'Create machine'}</button>
+          {scannedAsset ? <p className="field-note danger">Existing asset found. Open the asset ticket instead of creating a duplicate.</p> : null}
+          <button className="button pulse-button" disabled={saving || Boolean(scannedAsset) || !serialNumber.trim() || !machineBarcode.trim()} type="submit">{saving ? 'Creating machine...' : 'Create machine'}</button>
         </form>
       </div>
+
+      {scannedAsset ? (
+        <AssetTicketCard
+          asset={{
+            id: scannedAsset.id,
+            machineName: scannedAsset.machine_name,
+            model: scannedAsset.model,
+            serialNumber: scannedAsset.serial_number,
+            barcode: scannedAsset.machine_barcode,
+            branch: scannedAsset.branch,
+            status: scannedAsset.status,
+            condition: scannedAsset.condition,
+            criticality: scannedAsset.criticality,
+            custodyStatus: scannedAsset.custody_status,
+            customerName: getCustomerName(scannedAsset),
+            custodian: scannedAsset.current_custodian,
+            nextAuditAt: scannedAsset.next_audit_at,
+          }}
+          compact
+          eyebrow="Scanned asset"
+          action={<><Link className="button" href={`/operations/assets/${scannedAsset.id}`}>Open asset workspace</Link><button className="button secondary" onClick={() => setMachineBarcode('')} type="button">Clear scan</button></>}
+        />
+      ) : null}
+
       <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadMachines} type="button">{loading ? 'Refreshing...' : 'Refresh register'}</button>} description="Search the lifecycle register and open any machine for custody, audit and maintenance history." lastUpdated={lastUpdated} title="Machine register" />
       <EnterpriseDataTable
         columns={columns}
