@@ -13,6 +13,12 @@ import { canAccessPath, getDefaultPathForRole, isNavItemAllowed, navSections, ro
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { displayProfileName, isProfileComplete } from '@/types/dallmayrerp';
 
+type OpenTab = {
+  href: string;
+  label: string;
+  code: string;
+};
+
 function StatusScreen({
   title,
   message,
@@ -37,24 +43,34 @@ function StatusScreen({
   );
 }
 
-const sectionMeta: Record<string, { icon: string; description: string }> = {
-  Workspace: { icon: '◎', description: 'Your role-focused start page, daily shortcuts and live counts.' },
-  Work: { icon: '✓', description: 'Tasks, service jobs, deliveries, technician work and operational execution.' },
-  Stock: { icon: '▣', description: 'Stock control, purchasing, approvals, locations and inventory history.' },
-  Assets: { icon: '◇', description: 'Machines, lifecycle, reliability and preventive maintenance.' },
-  Customers: { icon: '◌', description: 'Customer directory and account records.' },
-  Reports: { icon: '▤', description: 'Executive, branch, service and warehouse reporting.' },
-  Commercial: { icon: '∑', description: 'Sales, finance and commercial workspaces.' },
-  Marketing: { icon: '✦', description: 'Campaigns, segments, renewals and marketing reports.' },
-  'Admin Control': { icon: '⚙', description: 'System dashboard, users, roles and activity controls.' },
-};
-
 function isActivePath(pathname: string, href: string) {
   return pathname === href || (href !== '/' && pathname.startsWith(`${href}/`));
 }
 
-function navInitial(label: string) {
-  return label.split(/\s+/).map((word) => word[0]).join('').slice(0, 2).toUpperCase();
+function moduleCode(label: string, href: string) {
+  const fromLabel = label
+    .replace(/&/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word[0])
+    .join('')
+    .slice(0, 5)
+    .toUpperCase();
+  const fallback = href.split('/').filter(Boolean).at(-1)?.replace(/[^a-z0-9]/gi, '').slice(0, 5).toUpperCase();
+  return fromLabel || fallback || 'HOME';
+}
+
+function safeTabList(value: string | null): OpenTab[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value) as OpenTab[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((item) => item && typeof item.href === 'string' && typeof item.label === 'string')
+      .slice(-9);
+  } catch {
+    return [];
+  }
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -63,6 +79,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { authUser, businessProfile, businessUser, userDetails, loading, error } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [openDesktopSection, setOpenDesktopSection] = useState<string | null>(null);
+  const [openTabs, setOpenTabs] = useState<OpenTab[]>([]);
   const profileComplete = isProfileComplete(userDetails);
   const role = userDetails?.role;
 
@@ -94,6 +111,35 @@ export function AppShell({ children }: { children: ReactNode }) {
     setMenuOpen(false);
     setOpenDesktopSection(null);
   }, [pathname]);
+
+  useEffect(() => {
+    setOpenTabs(safeTabList(window.localStorage.getItem('dallmayr-open-tabs')));
+  }, []);
+
+  useEffect(() => {
+    if (!userDetails?.role) return;
+    const allowedSections = navSections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => isNavItemAllowed(userDetails.role, item)),
+      }))
+      .filter((section) => section.items.length > 0);
+    const activeSection = allowedSections.find((section) => section.items.some((item) => isActivePath(pathname, item.href)));
+    const activeItem = activeSection?.items.find((item) => isActivePath(pathname, item.href));
+    if (!activeItem) return;
+
+    const nextTab: OpenTab = {
+      href: activeItem.href,
+      label: activeItem.label,
+      code: moduleCode(activeItem.label, activeItem.href),
+    };
+
+    setOpenTabs((current) => {
+      const next = [...current.filter((item) => item.href !== nextTab.href), nextTab].slice(-9);
+      window.localStorage.setItem('dallmayr-open-tabs', JSON.stringify(next));
+      return next;
+    });
+  }, [pathname, userDetails?.role]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -158,6 +204,19 @@ export function AppShell({ children }: { children: ReactNode }) {
       items: section.items.filter((item) => isNavItemAllowed(userDetails.role, item)),
     }))
     .filter((section) => section.items.length > 0);
+  const activeSection = visibleSections.find((section) => section.items.some((item) => isActivePath(pathname, item.href)));
+  const activeItem = activeSection?.items.find((item) => isActivePath(pathname, item.href));
+  const activeTitle = activeItem?.label ?? 'My Workspace';
+  const activeCode = moduleCode(activeTitle, activeItem?.href ?? homePath);
+  const tabsToRender = openTabs.length > 0 ? openTabs : [{ href: homePath, label: 'My Workspace', code: 'MW' }];
+
+  function closeTab(tabHref: string) {
+    setOpenTabs((current) => {
+      const next = current.filter((item) => item.href !== tabHref);
+      window.localStorage.setItem('dallmayr-open-tabs', JSON.stringify(next));
+      return next;
+    });
+  }
 
   return (
     <div className={`app-shell top-shell ${menuOpen ? 'mobile-menu-open' : ''}`}>
@@ -165,22 +224,17 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {menuOpen ? <button aria-label="Close navigation menu" className="mobile-nav-backdrop" onClick={() => setMenuOpen(false)} type="button" /> : null}
 
-      <header className="topbar">
-        <div className="topbar-main">
-          <Link className="topbar-brand" href={homePath}>
-            <span className="brand">DallmayrERP</span>
-            <span className="brand-subtitle">Role-based operations platform</span>
-          </Link>
+      <header className="topbar erp-chrome">
+        <div className="erp-menu-row">
+          <Link className="erp-brand-button" href={homePath}>DallmayrERP</Link>
 
-          <nav aria-label="Primary navigation" className="desktop-nav">
+          <nav aria-label="ERP menu bar" className="erp-menubar">
             {visibleSections.map((section) => {
               const sectionActive = section.items.some((item) => isActivePath(pathname, item.href));
-              const activeItem = section.items.find((item) => isActivePath(pathname, item.href));
               const sectionOpen = openDesktopSection === section.heading;
-              const meta = sectionMeta[section.heading] ?? { icon: '•', description: 'Open related ERP pages.' };
               return (
                 <details
-                  className={`topnav-section topnav-dropdown ${sectionActive ? 'has-active' : ''}`}
+                  className={`erp-menu ${sectionActive ? 'has-active' : ''}`}
                   key={section.heading}
                   onToggle={(event) => {
                     const isOpen = event.currentTarget.open;
@@ -191,59 +245,27 @@ export function AppShell({ children }: { children: ReactNode }) {
                   }}
                   open={sectionOpen}
                 >
-                  <summary className="topnav-trigger" aria-label={`${section.heading} navigation${activeItem ? `, current page ${activeItem.label}` : ''}`}>
-                    <span className="topnav-trigger-icon" aria-hidden="true">{meta.icon}</span>
-                    <span className="topnav-trigger-copy">
-                      <span>{section.heading}</span>
-                      {activeItem ? <small>{activeItem.label}</small> : null}
-                    </span>
-                    <span aria-hidden="true" className="dropdown-chevron">▾</span>
-                  </summary>
-                  <div className={`topnav-menu ${section.items.length > 2 ? 'is-mega' : ''}`}>
-                    <div className="topnav-menu-header">
-                      <span aria-hidden="true" className="topnav-menu-icon">{meta.icon}</span>
-                      <div>
-                        <strong>{section.heading}</strong>
-                        <p>{meta.description}</p>
-                      </div>
-                    </div>
-                    <div className="topnav-menu-grid">
-                      {section.items.map((item) => {
-                        const active = isActivePath(pathname, item.href);
-                        return (
-                          <Link
-                            aria-current={active ? 'page' : undefined}
-                            key={item.href}
-                            className={`nav-link topnav-card ${active ? 'active' : ''}`}
-                            href={item.href}
-                          >
-                            <span aria-hidden="true" className="nav-card-icon">{navInitial(item.label)}</span>
-                            <span className="nav-card-copy">
-                              <strong>{item.label}</strong>
-                              {item.description ? <small>{item.description}</small> : null}
-                            </span>
-                          </Link>
-                        );
-                      })}
-                    </div>
+                  <summary className="erp-menu-label">{section.heading}</summary>
+                  <div className="erp-menu-panel">
+                    {section.items.map((item) => {
+                      const active = isActivePath(pathname, item.href);
+                      return (
+                        <Link aria-current={active ? 'page' : undefined} className={`erp-menu-item ${active ? 'active' : ''}`} href={item.href} key={item.href}>
+                          <span>{item.label}</span>
+                          {item.description ? <small>{item.description}</small> : null}
+                        </Link>
+                      );
+                    })}
                   </div>
                 </details>
               );
             })}
           </nav>
 
-          <GlobalSearch />
-          <DensityToggle />
-
-          <div className="topbar-user">
-            <div className="user-chip">
-              <span>{displayProfileName(businessProfile)}</span>
-              <strong>{roleLabels[userDetails.role]}</strong>
-              {!profileComplete ? <em>Profile setup required</em> : null}
-            </div>
-            <button className="button secondary sign-out" onClick={signOut} type="button">
-              Sign out
-            </button>
+          <div className="erp-command-area">
+            <GlobalSearch />
+            <DensityToggle />
+            <button className="erp-signout" onClick={signOut} type="button">Sign out</button>
           </div>
 
           <button
@@ -260,6 +282,41 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
         </div>
 
+        <div aria-label="Open screens" className="erp-tab-row" role="navigation">
+          <span aria-hidden="true" className="erp-window-icon">◉</span>
+          {tabsToRender.map((tab) => {
+            const active = isActivePath(pathname, tab.href);
+            return (
+              <Link aria-current={active ? 'page' : undefined} className={`erp-tab ${active ? 'active' : ''}`} href={tab.href} key={tab.href}>
+                <span>{tab.label}</span>
+                <small>[{tab.code}]</small>
+                {tabsToRender.length > 1 ? (
+                  <button
+                    aria-label={`Close ${tab.label} tab`}
+                    className="erp-tab-close"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      closeTab(tab.href);
+                    }}
+                    type="button"
+                  >
+                    ×
+                  </button>
+                ) : null}
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="erp-active-titlebar">
+          <div>
+            <span>{activeTitle}</span>
+            <strong>[{activeCode}]</strong>
+          </div>
+          <strong>{activeSection?.heading ?? roleLabels[userDetails.role]}</strong>
+        </div>
+
         <div aria-modal="true" className="mobile-nav-panel" hidden={!menuOpen} id="mobile-navigation" role="dialog">
           <div className="user-chip mobile-user-chip">
             <span>{displayProfileName(businessProfile)}</span>
@@ -270,31 +327,27 @@ export function AppShell({ children }: { children: ReactNode }) {
             My workspace
           </Link>
           <nav aria-label="Mobile navigation">
-            {visibleSections.map((section) => {
-              const meta = sectionMeta[section.heading] ?? { icon: '•', description: 'Open related ERP pages.' };
-              return (
-                <div className="nav-section" key={section.heading}>
-                  <div className="nav-heading"><span aria-hidden="true">{meta.icon}</span>{section.heading}</div>
-                  {section.items.map((item) => {
-                    const active = isActivePath(pathname, item.href);
-                    return (
-                      <Link
-                        aria-current={active ? 'page' : undefined}
-                        key={item.href}
-                        className={`nav-link mobile-nav-card ${active ? 'active' : ''}`}
-                        href={item.href}
-                      >
-                        <span aria-hidden="true" className="nav-card-icon">{navInitial(item.label)}</span>
-                        <span className="nav-card-copy">
-                          <strong>{item.label}</strong>
-                          {item.description ? <small>{item.description}</small> : null}
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              );
-            })}
+            {visibleSections.map((section) => (
+              <div className="nav-section" key={section.heading}>
+                <div className="nav-heading">{section.heading}</div>
+                {section.items.map((item) => {
+                  const active = isActivePath(pathname, item.href);
+                  return (
+                    <Link
+                      aria-current={active ? 'page' : undefined}
+                      key={item.href}
+                      className={`nav-link mobile-nav-card ${active ? 'active' : ''}`}
+                      href={item.href}
+                    >
+                      <span className="nav-card-copy">
+                        <strong>{item.label}</strong>
+                        {item.description ? <small>{item.description}</small> : null}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
           <button className="button secondary sign-out" onClick={signOut} type="button">
             Sign out
