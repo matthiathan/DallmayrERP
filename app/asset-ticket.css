@@ -6,13 +6,14 @@
 }
 
 .asset-ticket-wrapper {
-  --asset-ticket-bg: #171717;
-  --asset-ticket-bg-light: #242424;
-  --asset-ticket-accent: #d4af37;
-  --asset-ticket-accent-2: #f3e7bd;
-  --asset-ticket-glow: rgba(212, 175, 55, 0.22);
-  --asset-ticket-text: #f8fafc;
-  --asset-ticket-muted: #cbd5e1;
+  --asset-ticket-bg: #ffffff;
+  --asset-ticket-bg-light: #f7f3e8;
+  --asset-ticket-accent: #b89122;
+  --asset-ticket-accent-2: #1f2937;
+  --asset-ticket-glow: rgba(184, 145, 34, 0.18);
+  --asset-ticket-text: #111827;
+  --asset-ticket-muted: #64748b;
+  --asset-ticket-border: rgba(148, 163, 184, 0.34);
   width: min(100%, 920px);
   font-size: 10px;
   perspective: 1000px;
@@ -24,14 +25,14 @@
   grid-template-columns: minmax(0, 1fr) minmax(210px, 280px);
   color: var(--asset-ticket-text);
   font-family: Inter, 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
-  filter: drop-shadow(0 18px 38px rgba(15, 23, 42, 0.24));
+  filter: drop-shadow(0 14px 28px rgba(15, 23, 42, 0.16));
   transform-style: preserve-3d;
   transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1), filter 0.45s ease;
 }
 
 .asset-ticket-wrapper:hover .asset-ticket {
-  transform: rotateX(1.5deg) rotateY(-2deg) translateY(-1px);
-  filter: drop-shadow(0 22px 44px rgba(15, 23, 42, 0.28)) drop-shadow(-3px -3px 14px var(--asset-ticket-glow));
+  transform: rotateX(1deg) rotateY(-1.5deg) translateY(-1px);
+  filter: drop-shadow(0 18px 34px rgba(15, 23, 42, 0.18)) drop-shadow(-2px -2px 10px var(--asset-ticket-glow));
 }
 
 .asset-ticket::after {
@@ -41,10 +42,10 @@
   z-index: 8;
   pointer-events: none;
   border-radius: 18px;
-  background: linear-gradient(115deg, transparent 0%, transparent 42%, rgba(255, 255, 255, 0.06) 46%, rgba(255, 255, 255, 0.14) 50%, rgba(255, 255, 255, 0.06) 54%, transparent 60%, transparent 100%);
+  background: linear-gradient(115deg, transparent 0%, transparent 43%, rgba(255, 255, 255, 0.16) 48%, rgba(255, 255, 255, 0.4) 50%, rgba(255, 255, 255, 0.16) 52%, transparent 58%, transparent 100%);
   background-size: 250% 250%;
   background-position: 100% 100%;
-  mix-blend-mode: overlay;
+  mix-blend-mode: normal;
   transition: background-position 0.55s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
@@ -58,7 +59,9 @@
   padding: clamp(18px, 3vw, 30px);
   background:
     radial-gradient(circle at right center, transparent 15px, var(--asset-ticket-bg) 16px),
-    linear-gradient(135deg, rgba(212, 175, 55, 0.12), transparent 42%);
+    linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(255, 255, 255, 0.92) 46%);
+  border: 1px solid var(--asset-ticket-border);
+  border-right: 0;
   border-top-left-radius: 18px;
   border-bottom-left-radius: 18px;
 }
@@ -69,13 +72,13 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.28;
+  opacity: 0.16;
   background-image:
-    linear-gradient(rgba(212, 175, 55, 0.14) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(212, 175, 55, 0.14) 1px, transparent 1px);
+    linear-gradient(rgba(184, 145, 34, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(184, 145, 34, 0.18) 1px, transparent 1px);
   background-size: 24px 24px;
   transform: perspective(500px) rotateX(18deg) scale(1.35);
-  animation: asset-ticket-grid-scroll 28s linear infinite;
+  animation: asset-ticket-grid-scroll 32s linear infinite;
 }
 
 @keyframes asset-ticket-grid-scroll {
@@ -100,7 +103,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #ffffff;
+  color: var(--asset-ticket-text);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.04em;
@@ -110,14 +113,15 @@
   width: 22px;
   height: 22px;
   color: var(--asset-ticket-accent);
-  filter: drop-shadow(0 0 4px var(--asset-ticket-glow));
+  filter: drop-shadow(0 0 3px var(--asset-ticket-glow));
 }
 
 .asset-ticket-type {
   flex: 0 0 auto;
   padding: 5px 10px;
-  border: 1px solid rgba(212, 175, 55, 0.76);
+  border: 1px solid rgba(184, 145, 34, 0.58);
   border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
   color: var(--asset-ticket-accent-2);
   font-size: 10px;
   font-weight: 900;
@@ -128,7 +132,7 @@
 .asset-ticket-title {
   max-width: 720px;
   margin: 0 0 8px;
-  color: #ffffff;
+  color: var(--asset-ticket-text);
   font-size: clamp(26px, 4.2vw, 48px);
   font-weight: 950;
   line-height: 0.98;
@@ -185,7 +189,7 @@
   position: absolute;
   top: 22px;
   bottom: 22px;
-  border-left: 2px dashed rgba(255, 255, 255, 0.22);
+  border-left: 2px dashed rgba(100, 116, 139, 0.34);
 }
 
 .asset-ticket-stub {
@@ -198,7 +202,9 @@
   padding: clamp(18px, 3vw, 30px);
   background:
     radial-gradient(circle at left center, transparent 15px, var(--asset-ticket-bg-light) 16px),
-    linear-gradient(180deg, rgba(212, 175, 55, 0.08), transparent 56%);
+    linear-gradient(180deg, rgba(212, 175, 55, 0.18), rgba(255, 255, 255, 0.72) 58%);
+  border: 1px solid var(--asset-ticket-border);
+  border-left: 0;
   border-top-right-radius: 18px;
   border-bottom-right-radius: 18px;
 }
@@ -211,8 +217,8 @@
 .asset-ticket-barcode {
   width: 100%;
   height: 52px;
-  background: repeating-linear-gradient(90deg, #fff 0, #fff 2px, transparent 2px, transparent 4px, #fff 4px, #fff 5px, transparent 5px, transparent 8px, #fff 8px, #fff 12px, transparent 12px, transparent 15px, #fff 15px, #fff 16px, transparent 16px, transparent 18px);
-  opacity: 0.76;
+  background: repeating-linear-gradient(90deg, #111827 0, #111827 2px, transparent 2px, transparent 4px, #111827 4px, #111827 5px, transparent 5px, transparent 8px, #111827 8px, #111827 12px, transparent 12px, transparent 15px, #111827 15px, #111827 16px, transparent 16px, transparent 18px);
+  opacity: 0.72;
 }
 
 .asset-ticket-barcode-id {
@@ -239,11 +245,11 @@
 }
 
 .asset-ticket-admit-num {
-  color: var(--asset-ticket-accent);
+  color: #8a6b14;
   font-size: clamp(28px, 4vw, 48px);
   font-weight: 950;
   line-height: 0.95;
-  text-shadow: 0 0 12px var(--asset-ticket-glow);
+  text-shadow: none;
   text-transform: uppercase;
 }
 
@@ -290,10 +296,12 @@
   }
 
   .asset-ticket-main {
+    border-right: 1px solid var(--asset-ticket-border);
+    border-bottom: 0;
     border-radius: 18px 18px 0 0;
     background:
       radial-gradient(circle at bottom center, transparent 14px, var(--asset-ticket-bg) 15px),
-      linear-gradient(135deg, rgba(212, 175, 55, 0.12), transparent 42%);
+      linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(255, 255, 255, 0.92) 46%);
   }
 
   .asset-ticket-perforation {
@@ -310,14 +318,16 @@
     bottom: 0;
     left: 18px;
     border-left: 0;
-    border-top: 2px dashed rgba(255, 255, 255, 0.22);
+    border-top: 2px dashed rgba(100, 116, 139, 0.34);
   }
 
   .asset-ticket-stub {
+    border-top: 0;
+    border-left: 1px solid var(--asset-ticket-border);
     border-radius: 0 0 18px 18px;
     background:
       radial-gradient(circle at top center, transparent 14px, var(--asset-ticket-bg-light) 15px),
-      linear-gradient(180deg, rgba(212, 175, 55, 0.08), transparent 56%);
+      linear-gradient(180deg, rgba(212, 175, 55, 0.16), rgba(255, 255, 255, 0.76) 58%);
   }
 
   .asset-ticket-details,
