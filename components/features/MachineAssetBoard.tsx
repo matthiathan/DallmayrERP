@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { BarcodeCapture } from '@/components/ui/BarcodeCapture';
@@ -14,7 +15,14 @@ import type { Branch } from '@/types/dallmayrerp';
 import type { MachineRecord, MachineStatus } from '@/types/enterprise-records';
 
 type CustomerRelation = { customer_name: string | null };
-type MachineRow = MachineRecord & { customers?: CustomerRelation | CustomerRelation[] | null };
+type MachineRow = MachineRecord & {
+  customers?: CustomerRelation | CustomerRelation[] | null;
+  condition: string;
+  criticality: string;
+  custody_status: string;
+  current_custodian: string | null;
+  next_audit_at: string | null;
+};
 
 const branches: Branch[] = ['jhb', 'cpt', 'kzn', 'national'];
 const statuses: MachineStatus[] = ['active', 'inactive', 'repair', 'retired', 'unknown'];
@@ -48,9 +56,9 @@ export function MachineAssetBoard() {
     setError(null);
     const { data, error: loadError } = await getSupabaseClient()
       .from('machines')
-      .select('id, branch, customer_id, site_id, serial_number, machine_barcode, machine_name, model, status, created_at, customers(customer_name)')
+      .select('id, branch, customer_id, site_id, serial_number, machine_barcode, machine_name, model, status, condition, criticality, custody_status, current_custodian, next_audit_at, created_at, customers(customer_name)')
       .order('created_at', { ascending: false })
-      .limit(500);
+      .limit(1000);
     if (loadError) {
       setError(loadError.message);
       setLoading(false);
@@ -107,7 +115,7 @@ export function MachineAssetBoard() {
       summary: `Machine created: ${machineName.trim() || cleanSerialNumber || cleanBarcode}.`,
       afterPayload: { branch, customer_id: customerId, machine_name: machineName.trim() || null, model: model.trim() || null, serial_number: cleanSerialNumber, machine_barcode: cleanBarcode, status },
     });
-    setMessage('Machine created and linked to the selected customer.');
+    setMessage('Machine created. Open its lifecycle workspace to set condition, custody and audit dates.');
     setCustomerId(null);
     setCustomerName('');
     setMachineName('');
@@ -119,12 +127,15 @@ export function MachineAssetBoard() {
   }
 
   const columns = useMemo<EnterpriseColumn<MachineRow>[]>(() => [
-    { id: 'machine', header: 'Machine', value: (row) => row.machine_name ?? '', render: (row) => <strong>{row.machine_name ?? 'Unnamed machine'}</strong>, sortable: true },
+    { id: 'machine', header: 'Machine', value: (row) => row.machine_name ?? '', render: (row) => <Link href={`/operations/assets/${row.id}`}><strong>{row.machine_name ?? row.serial_number ?? 'Unnamed machine'}</strong></Link>, sortable: true },
     { id: 'customer', header: 'Customer', value: getCustomerName, sortable: true },
     { id: 'model', header: 'Model', value: (row) => row.model ?? '', sortable: true },
-    { id: 'branch', header: 'Branch', value: (row) => row.branch.toUpperCase(), sortable: true },
-    { id: 'barcode', header: 'QR / barcode', value: (row) => row.machine_barcode ?? '', sortable: true },
     { id: 'serial', header: 'Serial number', value: (row) => row.serial_number ?? '', sortable: true },
+    { id: 'condition', header: 'Condition', value: (row) => row.condition, render: (row) => <StatusBadge value={row.condition} />, sortable: true },
+    { id: 'criticality', header: 'Criticality', value: (row) => row.criticality, render: (row) => <StatusBadge value={row.criticality} />, sortable: true },
+    { id: 'custody', header: 'Custody', value: (row) => row.custody_status, render: (row) => <div><StatusBadge value={row.custody_status} />{row.current_custodian ? <small>{row.current_custodian}</small> : null}</div>, sortable: true },
+    { id: 'audit', header: 'Next audit', value: (row) => row.next_audit_at ?? '', render: (row) => row.next_audit_at ? <div>{new Date(row.next_audit_at).toLocaleDateString()}{new Date(row.next_audit_at).getTime() < Date.now() ? <StatusBadge value="overdue" /> : null}</div> : 'Not scheduled', sortable: true },
+    { id: 'branch', header: 'Branch', value: (row) => row.branch.toUpperCase(), sortable: true },
     { id: 'status', header: 'Status', value: (row) => row.status, render: (row) => <StatusBadge value={row.status} />, sortable: true },
   ], []);
 
@@ -133,8 +144,7 @@ export function MachineAssetBoard() {
       {error ? <div className="error">{error}</div> : null}
       {message ? <div className="success">{message}</div> : null}
       <div className="neo-card spatial-machine-panel spatial-card">
-        <h2>Machine profiles</h2>
-        <p>Create customer-linked machines using the QR/barcode and serial number as operational identifiers.</p>
+        <div className="page-toolbar-heading"><div><h2>Machine profiles</h2><p>Create customer-linked machines using the QR/barcode and serial number as operational identifiers.</p></div><Link className="button secondary" href="/work">Open Action Centre</Link></div>
         <form className="grid" onSubmit={createMachine}>
           <div className="form-grid">
             <CustomerSelect label="Customer" onSelect={applyCustomer} value={customerName} />
@@ -150,15 +160,15 @@ export function MachineAssetBoard() {
           <button className="button pulse-button" disabled={saving || !serialNumber.trim() || !machineBarcode.trim()} type="submit">{saving ? 'Creating machine...' : 'Create machine'}</button>
         </form>
       </div>
-      <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadMachines} type="button">{loading ? 'Refreshing...' : 'Refresh register'}</button>} description="Search, sort and page through customer-linked machines." lastUpdated={lastUpdated} title="Machine register" />
+      <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadMachines} type="button">{loading ? 'Refreshing...' : 'Refresh register'}</button>} description="Search the lifecycle register and open any machine for custody, audit and maintenance history." lastUpdated={lastUpdated} title="Machine register" />
       <EnterpriseDataTable
         columns={columns}
         emptyMessage={loading ? 'Loading machine records...' : 'No matching machines found.'}
-        getSearchText={(row) => [row.id, row.machine_name, row.model, row.serial_number, row.machine_barcode, row.branch, row.status, getCustomerName(row)].join(' ')}
+        getSearchText={(row) => [row.id, row.machine_name, row.model, row.serial_number, row.machine_barcode, row.branch, row.status, row.condition, row.criticality, row.custody_status, row.current_custodian, getCustomerName(row)].join(' ')}
         initialSearch={focusedMachineId}
         rowKey={(row) => row.id}
         rows={machines}
-        searchPlaceholder="Search machine, customer, model, serial number or barcode"
+        searchPlaceholder="Search machine, customer, model, serial, condition or custodian"
       />
     </div>
   );
