@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { canAccessPath, getDefaultPathForRole, isNavItemAllowed, navSections, roleLabels } from '@/lib/auth/permissions';
@@ -268,7 +269,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link className="button" href={homePath}>Go to my workspace</Link>
           </div>
         ) : (
-          children
+          <>
+            <Breadcrumbs />
+            {children}
+          </>
         )}
       </main>
     </div>
