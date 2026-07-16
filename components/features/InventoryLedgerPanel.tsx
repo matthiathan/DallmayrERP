@@ -1,26 +1,28 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
-import { useAuth } from '@/components/auth/AuthProvider';
+import { useEffect, useMemo, useState } from 'react';
+import { PageToolbar } from '@/components/ui/PageToolbar';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { recordAuditEvent } from '@/lib/data/audit';
 import type { Branch } from '@/types/dallmayrerp';
 
-type MovementType = 'received' | 'adjusted' | 'reserved' | 'picked' | 'dispatched' | 'returned' | 'transferred';
-type StockOption = { id: string; stock_name: string; item_barcode: string };
 type StockRelation = { stock_name: string | null };
 type MovementRow = {
   id: string;
   branch: Branch;
-  movement_type: MovementType;
+  movement_type: string;
   quantity: number;
+  quantity_unit: 'item' | 'box';
+  source_location_id: string | null;
+  destination_location_id: string | null;
+  reference_type: string | null;
   notes: string | null;
+  balance_after_items: number | null;
+  balance_after_boxes: number | null;
   created_at: string;
   stock_items?: StockRelation | StockRelation[] | null;
 };
-
-const movementTypes: MovementType[] = ['received', 'adjusted', 'reserved', 'picked', 'dispatched', 'returned', 'transferred'];
-const branches: Branch[] = ['jhb', 'cpt', 'kzn', 'national'];
+type LocationRow = { id: string; location_code: string; description: string | null };
 
 function getMovementStockName(row: MovementRow) {
   const relation = row.stock_items;
@@ -29,114 +31,44 @@ function getMovementStockName(row: MovementRow) {
 }
 
 export function InventoryLedgerPanel() {
-  const { businessUser, userDetails } = useAuth();
-  const [stockItems, setStockItems] = useState<StockOption[]>([]);
   const [movements, setMovements] = useState<MovementRow[]>([]);
-  const [stockItemId, setStockItemId] = useState('');
-  const [branch, setBranch] = useState<Branch>(userDetails?.branch ?? 'jhb');
-  const [movementType, setMovementType] = useState<MovementType>('received');
-  const [quantity, setQuantity] = useState(1);
-  const [notes, setNotes] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [locations, setLocations] = useState<LocationRow[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
 
   async function loadLedger() {
+    setError(null);
     const client = getSupabaseClient();
-    const [{ data: stock, error: stockError }, { data: ledger, error: ledgerError }] = await Promise.all([
-      client.from('stock_items').select('id, stock_name, item_barcode').order('stock_name').limit(250),
-      client.from('inventory_movements').select('id, branch, movement_type, quantity, notes, created_at, stock_items(stock_name)').order('created_at', { ascending: false }).limit(80),
+    const [ledgerResult, locationResult] = await Promise.all([
+      client.from('inventory_movements').select('id, branch, movement_type, quantity, quantity_unit, source_location_id, destination_location_id, reference_type, notes, balance_after_items, balance_after_boxes, created_at, stock_items(stock_name)').order('created_at', { ascending: false }).limit(250),
+      client.from('stock_locations').select('id, location_code, description').order('location_code'),
     ]);
-
-    if (stockError || ledgerError) {
-      throw stockError ?? ledgerError ?? new Error('Could not load inventory ledger.');
-    }
-
-    setStockItems((stock ?? []) as StockOption[]);
-    setMovements((ledger ?? []) as MovementRow[]);
+    const firstError = ledgerResult.error ?? locationResult.error;
+    if (firstError) throw firstError;
+    setMovements((ledgerResult.data ?? []) as MovementRow[]);
+    setLocations((locationResult.data ?? []) as LocationRow[]);
+    setLastUpdated(new Date());
   }
 
   useEffect(() => {
-    loadLedger().catch((err) => setError(err instanceof Error ? err.message : 'Could not load inventory ledger.'));
+    loadLedger().catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Could not load inventory ledger.'));
   }, []);
 
-  async function addMovement(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!businessUser) return;
-    setSaving(true);
-    setError(null);
-    setMessage(null);
-
-    const signedQuantity = ['picked', 'dispatched'].includes(movementType) ? -Math.abs(quantity) : quantity;
-    const client = getSupabaseClient();
-    const { data, error: insertError } = await client.from('inventory_movements').insert({
-      stock_item_id: stockItemId || null,
-      branch,
-      movement_type: movementType,
-      quantity: signedQuantity,
-      notes: notes.trim() || null,
-      created_by: businessUser.id,
-    }).select('id').single();
-
-    setSaving(false);
-    if (insertError) {
-      setError(insertError.message);
-      return;
-    }
-
-    await recordAuditEvent(client, {
-      actorUserId: businessUser.id,
-      actorRole: userDetails?.role,
-      branch,
-      entityType: 'inventory',
-      entityId: data.id,
-      action: 'inventory_movement_created',
-      summary: `${movementType} movement recorded for quantity ${signedQuantity}.`,
-      afterPayload: { stock_item_id: stockItemId || null, movement_type: movementType, quantity: signedQuantity, notes },
-    });
-
-    setMessage('Inventory movement recorded in the enterprise ledger.');
-    setNotes('');
-    setQuantity(1);
-    await loadLedger();
-  }
+  const locationMap = useMemo(() => new Map(locations.map((location) => [location.id, location])), [locations]);
 
   return (
     <div className="grid">
-      <div className="neo-card spatial-card">
-        <h2>Inventory movement ledger</h2>
-        <p>Append-only enterprise stock movements. Use this for received, picked, dispatched, returned and adjusted stock evidence.</p>
-        {error ? <div className="error">{error}</div> : null}
-        {message ? <div className="success">{message}</div> : null}
-        <form className="grid" onSubmit={addMovement}>
-          <div className="form-grid">
-            <label>Stock item
-              <select value={stockItemId} onChange={(event) => setStockItemId(event.target.value)}>
-                <option value="">Unlinked movement</option>
-                {stockItems.map((item) => <option key={item.id} value={item.id}>{item.stock_name} ({item.item_barcode})</option>)}
-              </select>
-            </label>
-            <label>Branch
-              <select value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>
-                {branches.map((item) => <option key={item}>{item}</option>)}
-              </select>
-            </label>
-            <label>Movement
-              <select value={movementType} onChange={(event) => setMovementType(event.target.value as MovementType)}>
-                {movementTypes.map((item) => <option key={item}>{item}</option>)}
-              </select>
-            </label>
-          </div>
-          <div className="form-grid">
-            <label>Quantity<input min="1" type="number" value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} /></label>
-            <label>Notes<input value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
-            <div style={{ alignSelf: 'end' }}><button className="button pulse-button" disabled={saving || quantity < 1} type="submit">{saving ? 'Recording...' : 'Record movement'}</button></div>
-          </div>
-        </form>
-      </div>
+      {error ? <div className="error">{error}</div> : null}
+      <PageToolbar
+        actions={<button className="button secondary" onClick={() => loadLedger().catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Refresh failed.'))} type="button">Refresh ledger</button>}
+        description="Read-only evidence generated by receiving, issuing, picking, adjustments, transfers and cycle counts."
+        lastUpdated={lastUpdated}
+        title="Inventory movement ledger"
+      />
       <div className="table-wrap">
-        <table><thead><tr><th>Time</th><th>Stock</th><th>Branch</th><th>Movement</th><th>Qty</th><th>Notes</th></tr></thead>
-          <tbody>{movements.length === 0 ? <tr><td colSpan={6}>No inventory movements yet.</td></tr> : movements.map((row) => <tr key={row.id}><td>{new Date(row.created_at).toLocaleString()}</td><td>{getMovementStockName(row)}</td><td>{row.branch}</td><td>{row.movement_type}</td><td>{row.quantity}</td><td>{row.notes ?? '-'}</td></tr>)}</tbody>
+        <table>
+          <thead><tr><th>Time</th><th>Stock</th><th>Branch</th><th>Movement</th><th>Quantity</th><th>From</th><th>To</th><th>Balance after</th><th>Reference / notes</th></tr></thead>
+          <tbody>{movements.length === 0 ? <tr><td colSpan={9}>No inventory movements yet.</td></tr> : movements.map((row) => <tr key={row.id}><td>{new Date(row.created_at).toLocaleString()}</td><td>{getMovementStockName(row)}</td><td>{row.branch.toUpperCase()}</td><td><StatusBadge value={row.movement_type} /></td><td>{row.quantity > 0 ? '+' : ''}{row.quantity} {row.quantity_unit}</td><td>{row.source_location_id ? locationMap.get(row.source_location_id)?.location_code ?? '-' : '-'}</td><td>{row.destination_location_id ? locationMap.get(row.destination_location_id)?.location_code ?? '-' : '-'}</td><td>{row.balance_after_items ?? '-'} items / {row.balance_after_boxes ?? '-'} boxes</td><td>{row.notes ?? row.reference_type ?? '-'}</td></tr>)}</tbody>
         </table>
       </div>
     </div>
