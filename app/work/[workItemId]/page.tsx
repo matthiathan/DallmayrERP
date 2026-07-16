@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { WorkPartsPanel } from '@/components/features/WorkPartsPanel';
 import { AppShell } from '@/components/layout/AppShell';
 import { PageToolbar } from '@/components/ui/PageToolbar';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -219,6 +220,8 @@ export default function WorkItemWorkspacePage() {
             <div className="record-comment-list">{comments.length === 0 ? <p>No comments yet.</p> : comments.map((item) => <article className="record-comment" key={item.id}><div className="page-toolbar-heading"><strong>{item.created_by ? userMap.get(item.created_by)?.display_name || 'Business user' : 'System'}</strong><small>{new Date(item.created_at).toLocaleString()}</small></div><p>{item.body}</p></article>)}</div>
           </section>
         </div>
+
+        <WorkPartsPanel workItemId={workItemId} />
 
         <section className="neo-card"><h2>Audit timeline</h2><div className="record-timeline">{audit.length === 0 ? <p>Audit timeline is available to operations and administrators.</p> : audit.map((event) => <article className="record-timeline-item" key={event.id}><div><StatusBadge value={event.action} /><strong>{event.summary ?? event.action.replace(/_/g, ' ')}</strong><small>{new Date(event.created_at).toLocaleString()} • {event.actor_user_id ? userMap.get(event.actor_user_id)?.display_name || 'Business user' : 'System'}</small></div></article>)}</div></section>
       </div>}
