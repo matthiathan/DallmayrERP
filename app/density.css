@@ -1,0 +1,85 @@
+.density-toggle {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--minimal-border);
+  border-radius: 999px;
+  background: var(--minimal-surface-muted);
+}
+
+.density-toggle button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--minimal-muted);
+  font-size: .78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.density-toggle button.is-active {
+  background: var(--minimal-accent);
+  color: #fff;
+}
+
+html[data-density='compact'] .neo-card,
+html[data-density='compact'] .card,
+html[data-density='compact'] .page-toolbar,
+html[data-density='compact'] .minimal-panel,
+html[data-density='compact'] .minimal-list-item,
+html[data-density='compact'] .role-action-card,
+html[data-density='compact'] .scanner-match-card,
+html[data-density='compact'] .status-timeline-step {
+  padding: 10px 12px;
+}
+
+html[data-density='compact'] .grid,
+html[data-density='compact'] .minimal-split,
+html[data-density='compact'] .minimal-list,
+html[data-density='compact'] .role-action-grid,
+html[data-density='compact'] .status-timeline {
+  gap: 8px;
+}
+
+html[data-density='compact'] input,
+html[data-density='compact'] select,
+html[data-density='compact'] textarea,
+html[data-density='compact'] .button {
+  min-height: 34px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+html[data-density='compact'] th,
+html[data-density='compact'] td {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+html[data-density='comfortable'] .neo-card,
+html[data-density='comfortable'] .card,
+html[data-density='comfortable'] .page-toolbar,
+html[data-density='comfortable'] .minimal-panel,
+html[data-density='comfortable'] .minimal-list-item,
+html[data-density='comfortable'] .role-action-card,
+html[data-density='comfortable'] .scanner-match-card,
+html[data-density='comfortable'] .status-timeline-step {
+  padding: 22px;
+}
+
+html[data-density='comfortable'] .grid,
+html[data-density='comfortable'] .minimal-split,
+html[data-density='comfortable'] .minimal-list,
+html[data-density='comfortable'] .role-action-grid,
+html[data-density='comfortable'] .status-timeline {
+  gap: 18px;
+}
+
+@media (max-width: 900px) {
+  .density-toggle {
+    display: none;
+  }
+}
