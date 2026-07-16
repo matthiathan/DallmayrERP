@@ -7,6 +7,7 @@ import './navigation.css';
 import './spatial-desktop.css';
 import './enterprise-ui.css';
 import './stock-control.css';
+import './professional-ops.css';
 import './ultrawide.css';
 import './mobile.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
