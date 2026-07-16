@@ -3,6 +3,10 @@ type StatusTone = 'neutral' | 'info' | 'warning' | 'success' | 'danger' | 'purpl
 const statusTones: Record<string, StatusTone> = {
   new: 'info',
   draft: 'neutral',
+  ordered: 'info',
+  part_received: 'warning',
+  received: 'success',
+  purchase_received: 'success',
   assigned: 'purple',
   picked: 'purple',
   in_progress: 'warning',
@@ -22,6 +26,17 @@ const statusTones: Record<string, StatusTone> = {
   retired: 'neutral',
   cancelled: 'danger',
   overdue: 'danger',
+  low_stock: 'warning',
+  out_of_stock: 'danger',
+  issued: 'warning',
+  adjustment_in: 'info',
+  adjustment_out: 'danger',
+  adjusted: 'warning',
+  returned: 'success',
+  transferred: 'purple',
+  transfer_in: 'success',
+  transfer_out: 'purple',
+  cycle_count: 'info',
 };
 
 function formatStatus(value: string) {
