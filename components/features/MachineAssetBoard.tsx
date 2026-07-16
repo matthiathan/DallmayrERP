@@ -28,6 +28,7 @@ type MachineRow = MachineRecord & {
 const branches: Branch[] = ['jhb', 'cpt', 'kzn', 'national'];
 const statuses: MachineStatus[] = ['active', 'inactive', 'repair', 'retired', 'unknown'];
 const assetRegisterLimit = 6000;
+const assetRegisterPageSize = 1000;
 
 function getCustomerName(machine: MachineRow) {
   const relation = machine.customers;
@@ -64,17 +65,46 @@ export function MachineAssetBoard() {
   async function loadMachines() {
     setLoading(true);
     setError(null);
-    const { data, error: loadError } = await getSupabaseClient()
-      .from('machines')
-      .select('id, branch, customer_id, site_id, serial_number, machine_barcode, machine_name, model, status, condition, criticality, custody_status, current_custodian, next_audit_at, created_at, customers(customer_name)')
-      .order('created_at', { ascending: false })
-      .limit(assetRegisterLimit);
-    if (loadError) {
-      setError(loadError.message);
-      setLoading(false);
-      return;
+    const client = getSupabaseClient();
+    const allMachines: MachineRow[] = [];
+
+    for (let from = 0; from < assetRegisterLimit; from += assetRegisterPageSize) {
+      const to = Math.min(from + assetRegisterPageSize - 1, assetRegisterLimit - 1);
+      const { data, error: loadError } = await client
+        .from('machines')
+        .select('id, branch, customer_id, site_id, serial_number, machine_barcode, machine_name, model, status, condition, criticality, custody_status, current_custodian, next_audit_at, created_at')
+        .order('machine_name', { ascending: true })
+        .range(from, to);
+
+      if (loadError) {
+        setError(loadError.message);
+        setLoading(false);
+        return;
+      }
+
+      const batch = (data ?? []) as MachineRow[];
+      allMachines.push(...batch);
+      if (batch.length < assetRegisterPageSize) break;
     }
-    setMachines((data ?? []) as MachineRow[]);
+
+    const customerIds = Array.from(new Set(allMachines.map((machine) => machine.customer_id).filter((id): id is string => Boolean(id))));
+    const customerNameById = new Map<string, string>();
+
+    if (customerIds.length > 0) {
+      const { data: customerRows } = await client
+        .from('customers')
+        .select('id, customer_name')
+        .in('id', customerIds);
+
+      (customerRows ?? []).forEach((customer) => {
+        if (customer.id && customer.customer_name) customerNameById.set(customer.id, customer.customer_name);
+      });
+    }
+
+    setMachines(allMachines.map((machine) => ({
+      ...machine,
+      customers: machine.customer_id ? { customer_name: customerNameById.get(machine.customer_id) ?? null } : null,
+    })));
     setLastUpdated(new Date());
     setLoading(false);
   }
@@ -197,7 +227,7 @@ export function MachineAssetBoard() {
         />
       ) : null}
 
-      <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadMachines} type="button">{loading ? 'Refreshing...' : 'Refresh register'}</button>} description={`${machines.length.toLocaleString()} machine records loaded from the fixed asset master.`} lastUpdated={lastUpdated} title="Machine register" />
+      <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadMachines} type="button">{loading ? 'Refreshing...' : 'Refresh register'}</button>} description={`${loading ? 'Loading' : machines.length.toLocaleString()} machine records loaded from the fixed asset master.`} lastUpdated={lastUpdated} title="Machine register" />
       <EnterpriseDataTable
         columns={columns}
         emptyMessage={loading ? 'Loading machine records...' : 'No matching machines found.'}
