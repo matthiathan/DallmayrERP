@@ -57,9 +57,13 @@ export function TwistingRibbonBackground({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const canvasElement = canvas;
+    const containerElement = container;
+    const context = ctx;
+
     let animationFrameId = 0;
-    let width = container.clientWidth;
-    let height = container.clientHeight;
+    let width = containerElement.clientWidth;
+    let height = containerElement.clientHeight;
     let time = 0;
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -98,14 +102,14 @@ export function TwistingRibbonBackground({
     const edgeWeight = 0.5;
 
     function resize() {
-      width = container.clientWidth;
-      height = container.clientHeight;
+      width = containerElement.clientWidth;
+      height = containerElement.clientHeight;
       const pixelRatio = window.devicePixelRatio || 1;
-      canvas.width = Math.max(1, Math.floor(width * pixelRatio));
-      canvas.height = Math.max(1, Math.floor(height * pixelRatio));
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-      ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      canvasElement.width = Math.max(1, Math.floor(width * pixelRatio));
+      canvasElement.height = Math.max(1, Math.floor(height * pixelRatio));
+      canvasElement.style.width = `${width}px`;
+      canvasElement.style.height = `${height}px`;
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     }
 
     function buildSpine(currentTime: number) {
@@ -181,19 +185,19 @@ export function TwistingRibbonBackground({
     }
 
     function drawQuad(ax: number, ay: number, bx: number, by: number, cx: number, cy: number, dx: number, dy: number) {
-      ctx.beginPath();
-      ctx.moveTo(ax, ay);
-      ctx.lineTo(bx, by);
-      ctx.lineTo(cx, cy);
-      ctx.lineTo(dx, dy);
-      ctx.closePath();
-      ctx.fill();
+      context.beginPath();
+      context.moveTo(ax, ay);
+      context.lineTo(bx, by);
+      context.lineTo(cx, cy);
+      context.lineTo(dx, dy);
+      context.closePath();
+      context.fill();
     }
 
     function drawShadow(tops: Point[], bots: Point[], isDark: boolean) {
       const shadow = isDark ? darkShadow : lightShadow;
       const alpha = isDark ? 120 / 255 : 14 / 255;
-      ctx.fillStyle = `rgba(${shadow[0]}, ${shadow[1]}, ${shadow[2]}, ${alpha})`;
+      context.fillStyle = `rgba(${shadow[0]}, ${shadow[1]}, ${shadow[2]}, ${alpha})`;
       for (let index = 0; index < segments; index += 1) {
         drawQuad(
           tops[index].x + shadowOffsetX,
@@ -214,7 +218,7 @@ export function TwistingRibbonBackground({
 
       for (let index = 0; index < segments; index += 1) {
         const [red, green, blue] = getRibbonColor(index / segments, twists[index], currentTime, isDark);
-        ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`;
+        context.fillStyle = `rgb(${red}, ${green}, ${blue})`;
         drawQuad(
           tops[index].x,
           tops[index].y,
@@ -227,22 +231,22 @@ export function TwistingRibbonBackground({
         );
 
         if (Math.abs(twists[index]) > edgeMinTwist) {
-          ctx.strokeStyle = `rgba(${edgeColor[0]}, ${edgeColor[1]}, ${edgeColor[2]}, ${edgeAlpha})`;
-          ctx.lineWidth = edgeWeight;
-          ctx.beginPath();
-          ctx.moveTo(tops[index].x, tops[index].y);
-          ctx.lineTo(tops[index + 1].x, tops[index + 1].y);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.moveTo(bots[index].x, bots[index].y);
-          ctx.lineTo(bots[index + 1].x, bots[index + 1].y);
-          ctx.stroke();
+          context.strokeStyle = `rgba(${edgeColor[0]}, ${edgeColor[1]}, ${edgeColor[2]}, ${edgeAlpha})`;
+          context.lineWidth = edgeWeight;
+          context.beginPath();
+          context.moveTo(tops[index].x, tops[index].y);
+          context.lineTo(tops[index + 1].x, tops[index + 1].y);
+          context.stroke();
+          context.beginPath();
+          context.moveTo(bots[index].x, bots[index].y);
+          context.lineTo(bots[index + 1].x, bots[index + 1].y);
+          context.stroke();
         }
       }
     }
 
     function render() {
-      ctx.clearRect(0, 0, width, height);
+      context.clearRect(0, 0, width, height);
       time += prefersReducedMotion ? 0 : waveSpeed;
       const isDark = document.documentElement.classList.contains('dark');
       const points = buildSpine(time);
