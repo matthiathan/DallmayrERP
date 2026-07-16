@@ -19,14 +19,19 @@ function compareValues(left: string | number | null | undefined, right: string |
   return String(left ?? '').localeCompare(String(right ?? ''), undefined, { numeric: true, sensitivity: 'base' });
 }
 
+function normalisePageSize(defaultPageSize: number, options: number[]) {
+  if (options.includes(defaultPageSize)) return defaultPageSize;
+  return options[0] ?? defaultPageSize;
+}
+
 export function EnterpriseDataTable<T>({
   rows,
   columns,
   rowKey,
   searchPlaceholder = 'Search records',
   emptyMessage = 'No matching records found.',
-  pageSizeOptions = [10, 20, 50],
-  defaultPageSize = 20,
+  pageSizeOptions = [50, 100, 250, 500],
+  defaultPageSize = 100,
   initialSearch = '',
   getSearchText,
   actions,
@@ -42,14 +47,19 @@ export function EnterpriseDataTable<T>({
   getSearchText?: (row: T) => string;
   actions?: ReactNode;
 }) {
+  const pageSizeChoices = useMemo(() => Array.from(new Set(pageSizeOptions)).sort((a, b) => a - b), [pageSizeOptions]);
   const [search, setSearch] = useState(initialSearch);
   const [sort, setSort] = useState<SortState>(null);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(defaultPageSize);
+  const [pageSize, setPageSize] = useState(() => normalisePageSize(defaultPageSize, pageSizeChoices));
 
   useEffect(() => {
     setSearch(initialSearch);
   }, [initialSearch]);
+
+  useEffect(() => {
+    setPageSize((current) => (pageSizeChoices.includes(current) ? current : normalisePageSize(defaultPageSize, pageSizeChoices)));
+  }, [defaultPageSize, pageSizeChoices]);
 
   const filteredRows = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -98,6 +108,7 @@ export function EnterpriseDataTable<T>({
 
   const firstVisible = sortedRows.length === 0 ? 0 : (page - 1) * pageSize + 1;
   const lastVisible = Math.min(page * pageSize, sortedRows.length);
+  const totalPagesLabel = pageCount.toLocaleString();
 
   return (
     <section className="enterprise-table-shell">
@@ -106,7 +117,9 @@ export function EnterpriseDataTable<T>({
           <span className="sr-only">Search table</span>
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={searchPlaceholder} type="search" />
         </label>
-        <div className="enterprise-table-count">{filteredRows.length} record(s)</div>
+        <div className="enterprise-table-count">
+          <strong>{filteredRows.length.toLocaleString()}</strong> of {rows.length.toLocaleString()} record(s)
+        </div>
         {actions ? <div className="enterprise-table-actions">{actions}</div> : null}
       </div>
 
@@ -142,16 +155,18 @@ export function EnterpriseDataTable<T>({
       </div>
 
       <div className="enterprise-table-pagination">
-        <div>Showing {firstVisible}-{lastVisible} of {sortedRows.length}</div>
+        <div>Showing {firstVisible.toLocaleString()}-{lastVisible.toLocaleString()} of {sortedRows.length.toLocaleString()}</div>
         <label>Rows
           <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>
-            {pageSizeOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+            {pageSizeChoices.map((option) => <option key={option} value={option}>{option}</option>)}
           </select>
         </label>
         <div className="enterprise-pagination-buttons">
+          <button className="button secondary" disabled={page <= 1} onClick={() => setPage(1)} type="button">First</button>
           <button className="button secondary" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))} type="button">Previous</button>
-          <span>Page {page} of {pageCount}</span>
+          <span>Page {page.toLocaleString()} of {totalPagesLabel}</span>
           <button className="button secondary" disabled={page >= pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))} type="button">Next</button>
+          <button className="button secondary" disabled={page >= pageCount} onClick={() => setPage(pageCount)} type="button">Last</button>
         </div>
       </div>
     </section>
