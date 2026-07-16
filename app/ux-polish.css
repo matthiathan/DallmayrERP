@@ -1,0 +1,231 @@
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 14px;
+  color: var(--minimal-muted);
+  font-size: .84rem;
+  font-weight: 650;
+}
+
+.breadcrumbs a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.breadcrumbs a:hover,
+.breadcrumbs a:focus-visible {
+  color: var(--minimal-text);
+  text-decoration: underline;
+}
+
+.breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.empty-state {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 150px;
+  padding: 26px 18px;
+  color: var(--minimal-muted);
+  text-align: center;
+  border: 1px dashed var(--minimal-border-strong);
+  border-radius: 12px;
+  background: var(--minimal-surface-muted);
+}
+
+.empty-state h3,
+.empty-state p {
+  margin: 0;
+}
+
+.empty-state h3 {
+  color: var(--minimal-text);
+}
+
+.empty-state-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--minimal-border-strong);
+  border-radius: 999px;
+  color: var(--minimal-muted);
+}
+
+.status-timeline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 12px 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.status-timeline.is-compact {
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  margin: 10px 0 12px;
+}
+
+.status-timeline-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid var(--minimal-border);
+  border-radius: 10px;
+  background: var(--minimal-surface);
+  color: var(--minimal-muted);
+}
+
+.status-timeline-step strong,
+.status-timeline-step small {
+  display: block;
+}
+
+.status-timeline-step strong {
+  color: var(--minimal-text);
+}
+
+.status-timeline-step small {
+  margin-top: 2px;
+}
+
+.status-timeline-dot {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--minimal-border-strong);
+  border-radius: 999px;
+  font-size: .74rem;
+  font-weight: 800;
+  background: var(--minimal-surface-muted);
+}
+
+.status-timeline-step.is-current {
+  border-color: #9fa6ad;
+  background: #fbfbfc;
+}
+
+.status-timeline-step.is-current .status-timeline-dot,
+.status-timeline-step.is-complete .status-timeline-dot {
+  color: #fff;
+  background: var(--minimal-accent);
+  border-color: var(--minimal-accent);
+}
+
+.status-timeline-step.is-complete {
+  color: var(--minimal-text);
+}
+
+.scanner-match-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--minimal-border-strong);
+  border-radius: 12px;
+  background: #fbfcfd;
+}
+
+.scanner-match-card h3,
+.scanner-match-card p {
+  margin: 0;
+}
+
+.scanner-match-card p {
+  color: var(--minimal-muted);
+  overflow-wrap: anywhere;
+}
+
+.scanner-match-facts {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--minimal-muted);
+  font-size: .86rem;
+}
+
+.scanner-match-facts span:not(.status-badge) {
+  padding: 6px 9px;
+  border: 1px solid var(--minimal-border);
+  border-radius: 999px;
+  background: var(--minimal-surface);
+}
+
+.role-workspace-stage {
+  display: grid;
+  gap: 14px;
+}
+
+.role-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+}
+
+.role-action-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 122px;
+  padding: 16px;
+  color: inherit;
+  text-decoration: none;
+  border: 1px solid var(--minimal-border);
+  border-radius: 12px;
+  background: var(--minimal-surface);
+}
+
+.role-action-card:hover,
+.role-action-card:focus-visible {
+  border-color: var(--minimal-border-strong);
+  background: var(--minimal-surface-muted);
+}
+
+.role-action-card h3,
+.role-action-card p {
+  margin: 0;
+}
+
+.role-action-card p {
+  margin-top: 6px;
+  color: var(--minimal-muted);
+}
+
+.field-note.danger {
+  color: #a13131;
+  font-weight: 650;
+}
+
+@media (max-width: 760px) {
+  .breadcrumbs {
+    overflow-x: auto;
+    padding-bottom: 2px;
+    white-space: nowrap;
+  }
+
+  .scanner-match-card,
+  .role-action-card {
+    grid-template-columns: 1fr;
+  }
+
+  .scanner-match-facts {
+    justify-content: flex-start;
+  }
+
+  .status-timeline {
+    grid-template-columns: 1fr;
+  }
+}
