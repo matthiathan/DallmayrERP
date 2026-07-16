@@ -4,11 +4,12 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { BarcodeCapture } from '@/components/ui/BarcodeCapture';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { resolveStockBarcode, type ResolvedStockBarcode } from '@/lib/data/stockBarcode';
+import { useDuplicateScanGuard } from '@/lib/hooks/useDuplicateScanGuard';
 import type { Branch } from '@/types/dallmayrerp';
 
 type Mode = 'received' | 'issued' | 'adjustment_in' | 'adjustment_out' | 'cycle_count' | 'transferred';
 type QuantityUnit = 'item' | 'box';
-type StockLookup = { id: string; stock_name: string; item_barcode: string; box_barcode: string | null; item_quantity: number; box_quantity: number; items_per_box: number | null; reorder_level: number; warehouse_location: string | null; default_location_id: string | null };
 type Warehouse = { id: string; branch: Branch; warehouse_name: string };
 type Location = { id: string; warehouse_id: string; location_code: string; description: string | null };
 
@@ -28,7 +29,7 @@ export function StockControlPanel({ onCommitted }: { onCommitted?: () => void })
   const [barcode, setBarcode] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [quantityUnit, setQuantityUnit] = useState<QuantityUnit>('item');
-  const [stock, setStock] = useState<StockLookup | null>(null);
+  const [stock, setStock] = useState<ResolvedStockBarcode | null>(null);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [sourceLocationId, setSourceLocationId] = useState('');
@@ -39,6 +40,7 @@ export function StockControlPanel({ onCommitted }: { onCommitted?: () => void })
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const isDuplicateScan = useDuplicateScanGuard();
 
   async function loadLocations() {
     const client = getSupabaseClient();
@@ -68,25 +70,27 @@ export function StockControlPanel({ onCommitted }: { onCommitted?: () => void })
     setMessage(null);
     setError(null);
     if (!cleanValue) return;
-
-    const { data, error: lookupError } = await getSupabaseClient().from('stock_items').select('id, stock_name, item_barcode, box_barcode, item_quantity, box_quantity, items_per_box, reorder_level, warehouse_location, default_location_id').or(`item_barcode.eq.${cleanValue},box_barcode.eq.${cleanValue}`).maybeSingle();
-    if (lookupError) {
-      setError(lookupError.message);
-      return;
-    }
-    if (!data) {
-      setError('Barcode not found. Create the stock item in the stock register first.');
+    if (isDuplicateScan(cleanValue)) {
+      setMessage('Duplicate scan ignored. Scan again after a moment to confirm a repeat scan.');
       return;
     }
 
-    const matched = data as StockLookup;
-    setStock(matched);
-    setQuantityUnit(matched.box_barcode === cleanValue ? 'box' : 'item');
-    if (matched.default_location_id) {
-      setSourceLocationId(matched.default_location_id);
-      setDestinationLocationId(matched.default_location_id);
+    try {
+      const matched = await resolveStockBarcode(cleanValue);
+      if (!matched) {
+        setError('Barcode not found. Create the stock item in the stock register first.');
+        return;
+      }
+      setStock(matched);
+      setQuantityUnit(matched.matched_unit);
+      if (matched.default_location_id) {
+        setSourceLocationId(matched.default_location_id);
+        setDestinationLocationId(matched.default_location_id);
+      }
+      setMessage(`${matched.stock_name} found. On hand: ${matched.item_quantity} item(s) and ${matched.box_quantity} box(es).`);
+    } catch (lookupError) {
+      setError(lookupError instanceof Error ? lookupError.message : 'Barcode lookup failed.');
     }
-    setMessage(`${matched.stock_name} found. On hand: ${matched.item_quantity} item(s) and ${matched.box_quantity} box(es).`);
   }
 
   function resetForm() {
@@ -150,7 +154,7 @@ export function StockControlPanel({ onCommitted }: { onCommitted?: () => void })
       <form className="grid" onSubmit={commitTransaction}>
         <div className="form-grid"><label>Branch<select value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>{branches.map((item) => <option key={item} value={item}>{item.toUpperCase()}</option>)}</select></label><label>Quantity unit<select value={quantityUnit} onChange={(event) => setQuantityUnit(event.target.value as QuantityUnit)}><option value="item">Items</option><option value="box">Boxes</option></select></label><label>{mode === 'cycle_count' ? 'Counted quantity' : 'Quantity'}<input min={mode === 'cycle_count' ? 0 : 1} type="number" value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} /></label></div>
         <BarcodeCapture label="Stock QR / barcode" value={barcode} onChange={resolveBarcode} />
-        {stock ? <div className="stock-match-card"><div><strong>{stock.stock_name}</strong><span>{stock.item_barcode}{stock.box_barcode ? ` • Box ${stock.box_barcode}` : ''}</span></div><div><span>Items</span><strong>{stock.item_quantity}</strong></div><div><span>Boxes</span><strong>{stock.box_quantity}</strong></div><div><span>Reorder</span><strong>{stock.reorder_level}</strong></div></div> : null}
+        {stock ? <div className="stock-match-card"><div><strong>{stock.stock_name}</strong><span>{stock.item_barcode}{stock.box_barcode ? ` • Box ${stock.box_barcode}` : ''}</span></div><div><span>Matched</span><strong>{stock.matched_unit}</strong></div><div><span>Items</span><strong>{stock.item_quantity}</strong></div><div><span>Boxes</span><strong>{stock.box_quantity}</strong></div><div><span>Reorder</span><strong>{stock.reorder_level}</strong></div></div> : null}
         <div className="form-grid">{showSource ? <label>Source location<select required={mode === 'transferred'} value={sourceLocationId} onChange={(event) => setSourceLocationId(event.target.value)}><option value="">Unassigned / total stock</option>{availableLocations.map((location) => <option key={location.id} value={location.id}>{location.location_code}{location.description ? ` — ${location.description}` : ''}</option>)}</select></label> : null}{showDestination ? <label>Destination location<select required={mode === 'transferred'} value={destinationLocationId} onChange={(event) => setDestinationLocationId(event.target.value)}><option value="">Unassigned / total stock</option>{availableLocations.map((location) => <option key={location.id} value={location.id}>{location.location_code}{location.description ? ` — ${location.description}` : ''}</option>)}</select></label> : null}<label>Reference type<select value={referenceType} onChange={(event) => setReferenceType(event.target.value)}><option value="manual">Manual transaction</option><option value="purchase_order">Purchase order</option><option value="delivery_order">Delivery order</option><option value="service_job">Service job</option><option value="cycle_count">Cycle count sheet</option></select></label><label>Reference<input placeholder="PO number, order, job or count sheet" value={referenceId} onChange={(event) => setReferenceId(event.target.value)} /></label></div>
         <label>Reason / notes<textarea required={mode.startsWith('adjustment')} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Reason, supplier delivery note, job number or stock-count comment" /></label>
         <button className="button pulse-button" disabled={saving || !stock || !barcode || (mode !== 'cycle_count' && quantity <= 0)} type="submit">{saving ? 'Updating stock...' : `${selectedMode.label} stock`}</button>
