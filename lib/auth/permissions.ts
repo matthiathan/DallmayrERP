@@ -116,6 +116,7 @@ export const navSections: NavSection[] = [
       { href: '/warehouse/traceability', label: 'Lots & Serials', code: 'QRCD', roles: ['admin', 'operations', 'warehouse_staff'], description: 'Lots, serials, expiry tracking and QR/barcode traceability.' },
       { href: '/operations/reliability', label: 'Meter & Downtime Capture', code: 'UTIL1', roles: ['admin', 'operations', 'technician', 'road_technician', 'executive'], description: 'Utility screen for asset meter and downtime recording.' },
       { href: '/warehouse/locations', label: 'Location Setup', code: 'UTIL2', roles: ['admin', 'operations', 'warehouse_staff'], description: 'Warehouse, bin and stockroom setup utility.' },
+      { href: '/utilities/data-matching', label: 'Data Matching Workbench', code: 'DQ01', roles: ['admin', 'operations'], description: 'Find unlinked machines, duplicate customers, duplicate barcodes and duplicate serial numbers.' },
     ],
   },
   {
