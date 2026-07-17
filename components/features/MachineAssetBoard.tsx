@@ -6,34 +6,44 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { AssetTicketCard } from '@/components/ui/AssetTicketCard';
 import { BarcodeCapture } from '@/components/ui/BarcodeCapture';
 import { CustomerSelect, type CustomerOption } from '@/components/ui/CustomerSelect';
-import { EnterpriseDataTable, type EnterpriseColumn } from '@/components/ui/EnterpriseDataTable';
+import { type EnterpriseColumn } from '@/components/ui/EnterpriseDataTable';
 import { PageToolbar } from '@/components/ui/PageToolbar';
+import { RemoteDataTable } from '@/components/ui/RemoteDataTable';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { recordAuditEvent } from '@/lib/data/audit';
 import { useClientQueryParam } from '@/lib/navigation/useClientQueryParam';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Branch } from '@/types/dallmayrerp';
-import type { MachineRecord, MachineStatus } from '@/types/enterprise-records';
+import type { MachineStatus } from '@/types/enterprise-records';
 
-type CustomerRelation = { customer_name: string | null };
-type MachineRow = MachineRecord & {
-  customers?: CustomerRelation | CustomerRelation[] | null;
+type MachineRow = {
+  id: string;
+  branch: Branch;
+  customer_id: string | null;
+  site_id: string | null;
+  serial_number: string | null;
+  machine_barcode: string | null;
+  machine_name: string | null;
+  model: string | null;
+  status: MachineStatus;
   condition: string;
   criticality: string;
   custody_status: string;
   current_custodian: string | null;
   next_audit_at: string | null;
+  created_at: string;
+  customer_name: string | null;
+  site_name: string | null;
+  site_address: string | null;
+  total_count: number | null;
 };
 
-const branches: Branch[] = ['jhb', 'cpt', 'kzn', 'national'];
-const statuses: MachineStatus[] = ['active', 'inactive', 'repair', 'retired', 'unknown'];
-const assetRegisterLimit = 6000;
-const assetRegisterPageSize = 1000;
+const branches: Array<'all' | Branch> = ['all', 'jhb', 'cpt', 'kzn', 'national'];
+const statuses: Array<'all' | MachineStatus> = ['all', 'active', 'inactive', 'repair', 'retired', 'unknown'];
+const linkFilters = ['all', 'linked', 'unlinked'] as const;
 
 function getCustomerName(machine: MachineRow) {
-  const relation = machine.customers;
-  if (Array.isArray(relation)) return relation[0]?.customer_name ?? 'Unassigned';
-  return relation?.customer_name ?? 'Unassigned';
+  return machine.customer_name ?? 'Unassigned';
 }
 
 function matchesScan(machine: MachineRow, scanValue: string) {
@@ -42,6 +52,12 @@ function matchesScan(machine: MachineRow, scanValue: string) {
   return [machine.id, machine.machine_barcode, machine.serial_number]
     .filter(Boolean)
     .some((value) => String(value).trim().toLowerCase() === needle);
+}
+
+function linkFilterToRpc(value: (typeof linkFilters)[number]) {
+  if (value === 'linked') return false;
+  if (value === 'unlinked') return true;
+  return null;
 }
 
 export function MachineAssetBoard() {
@@ -56,6 +72,14 @@ export function MachineAssetBoard() {
   const [serialNumber, setSerialNumber] = useState('');
   const [machineBarcode, setMachineBarcode] = useState('');
   const [status, setStatus] = useState<MachineStatus>('active');
+  const [search, setSearch] = useState(focusedMachineId ?? '');
+  const [branchFilter, setBranchFilter] = useState<'all' | Branch>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | MachineStatus>('all');
+  const [linkFilter, setLinkFilter] = useState<(typeof linkFilters)[number]>('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(100);
+  const [totalRows, setTotalRows] = useState(0);
+  const [scannedAsset, setScannedAsset] = useState<MachineRow | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -65,56 +89,67 @@ export function MachineAssetBoard() {
   async function loadMachines() {
     setLoading(true);
     setError(null);
-    const client = getSupabaseClient();
-    const allMachines: MachineRow[] = [];
+    const { data, error: loadError } = await getSupabaseClient().rpc('search_machine_assets', {
+      p_search: search.trim() || null,
+      p_branch: branchFilter,
+      p_status: statusFilter,
+      p_unlinked: linkFilterToRpc(linkFilter),
+      p_offset: (page - 1) * pageSize,
+      p_limit: pageSize,
+    });
 
-    for (let from = 0; from < assetRegisterLimit; from += assetRegisterPageSize) {
-      const to = Math.min(from + assetRegisterPageSize - 1, assetRegisterLimit - 1);
-      const { data, error: loadError } = await client
-        .from('machines')
-        .select('id, branch, customer_id, site_id, serial_number, machine_barcode, machine_name, model, status, condition, criticality, custody_status, current_custodian, next_audit_at, created_at')
-        .order('machine_name', { ascending: true })
-        .range(from, to);
-
-      if (loadError) {
-        setError(loadError.message);
-        setLoading(false);
-        return;
-      }
-
-      const batch = (data ?? []) as MachineRow[];
-      allMachines.push(...batch);
-      if (batch.length < assetRegisterPageSize) break;
+    if (loadError) {
+      setError(loadError.message);
+      setLoading(false);
+      return;
     }
 
-    const customerIds = Array.from(new Set(allMachines.map((machine) => machine.customer_id).filter((id): id is string => Boolean(id))));
-    const customerNameById = new Map<string, string>();
-
-    if (customerIds.length > 0) {
-      const { data: customerRows } = await client
-        .from('customers')
-        .select('id, customer_name')
-        .in('id', customerIds);
-
-      (customerRows ?? []).forEach((customer) => {
-        if (customer.id && customer.customer_name) customerNameById.set(customer.id, customer.customer_name);
-      });
-    }
-
-    setMachines(allMachines.map((machine) => ({
-      ...machine,
-      customers: machine.customer_id ? { customer_name: customerNameById.get(machine.customer_id) ?? null } : null,
-    })));
+    const rows = (data ?? []) as MachineRow[];
+    setMachines(rows);
+    setTotalRows(rows[0]?.total_count ?? 0);
     setLastUpdated(new Date());
     setLoading(false);
   }
 
   useEffect(() => {
-    loadMachines().catch((loadError) => {
-      setError(loadError instanceof Error ? loadError.message : 'Could not load machines.');
-      setLoading(false);
-    });
-  }, []);
+    const handle = window.setTimeout(() => {
+      loadMachines().catch((loadError) => {
+        setError(loadError instanceof Error ? loadError.message : 'Could not load machines.');
+        setLoading(false);
+      });
+    }, 220);
+    return () => window.clearTimeout(handle);
+  }, [search, branchFilter, statusFilter, linkFilter, page, pageSize]);
+
+  useEffect(() => {
+    if (focusedMachineId) {
+      setSearch(focusedMachineId);
+      setPage(1);
+    }
+  }, [focusedMachineId]);
+
+  useEffect(() => {
+    const cleanBarcode = machineBarcode.trim();
+    if (!cleanBarcode) {
+      setScannedAsset(null);
+      return;
+    }
+
+    const handle = window.setTimeout(async () => {
+      const { data } = await getSupabaseClient().rpc('search_machine_assets', {
+        p_search: cleanBarcode,
+        p_branch: 'all',
+        p_status: 'all',
+        p_unlinked: null,
+        p_offset: 0,
+        p_limit: 1,
+      });
+      const match = ((data ?? []) as MachineRow[]).find((machine) => matchesScan(machine, cleanBarcode)) ?? null;
+      setScannedAsset(match);
+    }, 250);
+
+    return () => window.clearTimeout(handle);
+  }, [machineBarcode]);
 
   function applyCustomer(customer: CustomerOption | null) {
     setCustomerId(customer?.id ?? null);
@@ -122,7 +157,15 @@ export function MachineAssetBoard() {
     if (customer) setBranch(customer.branch);
   }
 
-  const scannedAsset = useMemo(() => machines.find((machine) => matchesScan(machine, machineBarcode)) ?? null, [machineBarcode, machines]);
+  function updateSearch(value: string) {
+    setSearch(value);
+    setPage(1);
+  }
+
+  function updatePageSize(value: number) {
+    setPageSize(value);
+    setPage(1);
+  }
 
   async function createMachine(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -165,20 +208,20 @@ export function MachineAssetBoard() {
     setSerialNumber('');
     setMachineBarcode('');
     setStatus('active');
+    setScannedAsset(null);
     await loadMachines();
   }
 
   const columns = useMemo<EnterpriseColumn<MachineRow>[]>(() => [
-    { id: 'machine', header: 'Machine', value: (row) => row.machine_name ?? '', render: (row) => <Link href={`/operations/assets/${row.id}`}><strong>{row.machine_name ?? row.serial_number ?? 'Unnamed machine'}</strong></Link>, sortable: true },
-    { id: 'customer', header: 'Customer', value: getCustomerName, sortable: true },
-    { id: 'model', header: 'Model', value: (row) => row.model ?? '', sortable: true },
-    { id: 'serial', header: 'Serial number', value: (row) => row.serial_number ?? '', sortable: true },
-    { id: 'condition', header: 'Condition', value: (row) => row.condition, render: (row) => <StatusBadge value={row.condition} />, sortable: true },
-    { id: 'criticality', header: 'Criticality', value: (row) => row.criticality, render: (row) => <StatusBadge value={row.criticality} />, sortable: true },
-    { id: 'custody', header: 'Custody', value: (row) => row.custody_status, render: (row) => <div><StatusBadge value={row.custody_status} />{row.current_custodian ? <small>{row.current_custodian}</small> : null}</div>, sortable: true },
-    { id: 'audit', header: 'Next audit', value: (row) => row.next_audit_at ?? '', render: (row) => row.next_audit_at ? <div>{new Date(row.next_audit_at).toLocaleDateString()}{new Date(row.next_audit_at).getTime() < Date.now() ? <StatusBadge value="overdue" /> : null}</div> : 'Not scheduled', sortable: true },
-    { id: 'branch', header: 'Branch', value: (row) => row.branch.toUpperCase(), sortable: true },
-    { id: 'status', header: 'Status', value: (row) => row.status, render: (row) => <StatusBadge value={row.status} />, sortable: true },
+    { id: 'machine', header: 'Machine', value: (row) => row.machine_name ?? '', render: (row) => <Link href={`/operations/assets/${row.id}`}><strong>{row.machine_name ?? row.serial_number ?? 'Unnamed machine'}</strong></Link> },
+    { id: 'customer', header: 'Customer', value: getCustomerName },
+    { id: 'model', header: 'Model', value: (row) => row.model ?? '' },
+    { id: 'serial', header: 'Serial number', value: (row) => row.serial_number ?? '' },
+    { id: 'barcode', header: 'QR / Barcode', value: (row) => row.machine_barcode ?? '' },
+    { id: 'condition', header: 'Condition', value: (row) => row.condition, render: (row) => <StatusBadge value={row.condition} /> },
+    { id: 'criticality', header: 'Criticality', value: (row) => row.criticality, render: (row) => <StatusBadge value={row.criticality} /> },
+    { id: 'branch', header: 'Branch', value: (row) => row.branch.toUpperCase() },
+    { id: 'status', header: 'Status', value: (row) => row.status, render: (row) => <StatusBadge value={row.status} /> },
   ], []);
 
   return (
@@ -190,13 +233,13 @@ export function MachineAssetBoard() {
         <form className="grid" onSubmit={createMachine}>
           <div className="form-grid">
             <CustomerSelect label="Customer" onSelect={applyCustomer} value={customerName} />
-            <label>Branch<select value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>{branches.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label>Branch<select value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>{branches.filter((item): item is Branch => item !== 'all').map((item) => <option key={item}>{item}</option>)}</select></label>
             <label>Machine name<input value={machineName} onChange={(event) => setMachineName(event.target.value)} /></label>
           </div>
           <div className="form-grid">
             <label>Model<input value={model} onChange={(event) => setModel(event.target.value)} /></label>
             <label>Serial number<input required value={serialNumber} onChange={(event) => setSerialNumber(event.target.value)} /></label>
-            <label>Status<select value={status} onChange={(event) => setStatus(event.target.value as MachineStatus)}>{statuses.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label>Status<select value={status} onChange={(event) => setStatus(event.target.value as MachineStatus)}>{statuses.filter((item): item is MachineStatus => item !== 'all').map((item) => <option key={item}>{item}</option>)}</select></label>
           </div>
           <BarcodeCapture label="Machine QR / barcode" value={machineBarcode} onChange={setMachineBarcode} />
           {scannedAsset ? <p className="field-note danger">Existing asset found. Open the asset ticket instead of creating a duplicate.</p> : null}
@@ -218,6 +261,8 @@ export function MachineAssetBoard() {
             criticality: scannedAsset.criticality,
             custodyStatus: scannedAsset.custody_status,
             customerName: getCustomerName(scannedAsset),
+            siteName: scannedAsset.site_name,
+            siteAddress: scannedAsset.site_address,
             custodian: scannedAsset.current_custodian,
             nextAuditAt: scannedAsset.next_audit_at,
           }}
@@ -227,15 +272,28 @@ export function MachineAssetBoard() {
         />
       ) : null}
 
-      <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadMachines} type="button">{loading ? 'Refreshing...' : 'Refresh register'}</button>} description={`${loading ? 'Loading' : machines.length.toLocaleString()} machine records loaded from the fixed asset master.`} lastUpdated={lastUpdated} title="Machine register" />
-      <EnterpriseDataTable
+      <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadMachines} type="button">{loading ? 'Refreshing...' : 'Refresh register'}</button>} description="Database-backed search across machine, customer, site, serial, barcode, status and branch." lastUpdated={lastUpdated} title="Machine register" />
+      <RemoteDataTable
         columns={columns}
-        emptyMessage={loading ? 'Loading machine records...' : 'No matching machines found.'}
-        getSearchText={(row) => [row.id, row.machine_name, row.model, row.serial_number, row.machine_barcode, row.branch, row.status, row.condition, row.criticality, row.custody_status, row.current_custodian, getCustomerName(row)].join(' ')}
-        initialSearch={focusedMachineId}
+        emptyMessage="No matching machines found."
+        filters={(
+          <>
+            <label>Branch<select value={branchFilter} onChange={(event) => { setBranchFilter(event.target.value as 'all' | Branch); setPage(1); }}>{branches.map((item) => <option key={item} value={item}>{item.toUpperCase()}</option>)}</select></label>
+            <label>Status<select value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value as 'all' | MachineStatus); setPage(1); }}>{statuses.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+            <label>Link status<select value={linkFilter} onChange={(event) => { setLinkFilter(event.target.value as (typeof linkFilters)[number]); setPage(1); }}>{linkFilters.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+          </>
+        )}
+        loading={loading}
+        onPageChange={setPage}
+        onPageSizeChange={updatePageSize}
+        onSearchChange={updateSearch}
+        page={page}
+        pageSize={pageSize}
         rowKey={(row) => row.id}
         rows={machines}
-        searchPlaceholder="Search machine, customer, model, serial, condition or custodian"
+        search={search}
+        searchPlaceholder="Search machine, customer, site, serial, barcode, status or branch"
+        totalRows={totalRows}
       />
     </div>
   );
