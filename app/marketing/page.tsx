@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { DocumentHub } from '@/components/features/DocumentHub';
@@ -8,6 +9,26 @@ import { KpiCard } from '@/components/ui/KpiCard';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { countRawContracts, countRawCustomers, safeCountRows } from '@/lib/data/counts';
 import { getSupabaseClient } from '@/lib/supabase/client';
+
+type MarketingSegmentSummary = {
+  with_email?: number;
+  without_machines?: number;
+  with_contract_reference?: number;
+};
+
+type SalesSummary = {
+  renewals_overdue?: number;
+  renewals_30?: number;
+  renewals_60?: number;
+  renewals_90?: number;
+  renewals_no_end?: number;
+  open_opportunities?: number;
+};
+
+function asNumber(value: unknown) {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
 export default function MarketingDashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -22,6 +43,12 @@ export default function MarketingDashboardPage() {
     jhbContracts: 0,
     cptContracts: 0,
     kznContracts: 0,
+    contactableCustomers: 0,
+    unmappedCustomers: 0,
+    contractLinkedCustomers: 0,
+    renewalsDue: 0,
+    renewalsNoEnd: 0,
+    openOpportunities: 0,
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -29,12 +56,17 @@ export default function MarketingDashboardPage() {
     async function load() {
       try {
         const client = getSupabaseClient();
-        const [customers, contracts, assets, campaigns] = await Promise.all([
+        const [customers, contracts, assets, campaigns, segmentResult, salesResult] = await Promise.all([
           countRawCustomers(client),
           countRawContracts(client),
-          safeCountRows(client, 'fixed_assets'),
+          safeCountRows(client, 'machines'),
           safeCountRows(client, 'marketing_campaigns'),
+          client.rpc('get_marketing_segment_summary', { p_branch: 'all' }),
+          client.rpc('get_sales_workspace_summary', { p_branch: 'all', p_salesman: 'all' }),
         ]);
+
+        const segmentSummary = (segmentResult.data ?? {}) as MarketingSegmentSummary;
+        const salesSummary = (salesResult.data ?? {}) as SalesSummary;
         setData({
           customers: customers.total,
           contracts: contracts.total,
@@ -46,7 +78,17 @@ export default function MarketingDashboardPage() {
           jhbContracts: contracts.jhb,
           cptContracts: contracts.cpt,
           kznContracts: contracts.kzn,
+          contactableCustomers: asNumber(segmentSummary.with_email),
+          unmappedCustomers: asNumber(segmentSummary.without_machines),
+          contractLinkedCustomers: asNumber(segmentSummary.with_contract_reference),
+          renewalsDue: asNumber(salesSummary.renewals_overdue) + asNumber(salesSummary.renewals_30) + asNumber(salesSummary.renewals_60) + asNumber(salesSummary.renewals_90),
+          renewalsNoEnd: asNumber(salesSummary.renewals_no_end),
+          openOpportunities: asNumber(salesSummary.open_opportunities),
         });
+
+        if (segmentResult.error || salesResult.error) {
+          setError(segmentResult.error?.message ?? salesResult.error?.message ?? null);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Marketing dashboard failed to load.');
       } finally {
@@ -56,29 +98,37 @@ export default function MarketingDashboardPage() {
     load();
   }, []);
 
+  const renewalDue = data.renewalsDue.toLocaleString();
+
   return (
     <AppShell>
       <div className="page-header hero-panel"><div><div className="badge">Marketing</div><h1>Marketing Dashboard</h1><p>Customer intelligence, segmentation, campaign planning and shared marketing documentation.</p></div></div>
       {error ? <div className="error">{error}</div> : null}
       {loading ? <HamsterLoader label="Loading marketing data" /> : null}
-      <div className="grid grid-2" style={{ marginBottom: 20 }}>
-        <KpiCard label="Customer base" value={data.customers} helper="Raw customer master rows across all branches" />
-        <KpiCard label="Contracts" value={data.contracts} helper="Useful for renewal and retention campaigns" />
-        <KpiCard label="Machines / assets" value={data.assets} helper="Installed estate for upgrade and service campaigns" />
-        <KpiCard label="Campaigns" value={data.campaigns} helper="Campaign rows once marketing tables are applied" />
+      <div className="grid grid-4" style={{ marginBottom: 20 }}>
+        <KpiCard label="Customer base" value={data.customers.toLocaleString()} helper={`${data.contactableCustomers.toLocaleString()} contactable by email`} />
+        <KpiCard label="Contracts" value={data.contracts.toLocaleString()} helper={`${renewalDue} need renewal attention`} />
+        <KpiCard label="Machines" value={data.assets.toLocaleString()} helper={`${data.unmappedCustomers.toLocaleString()} customers still need machine mapping review`} />
+        <KpiCard label="Campaigns" value={data.campaigns.toLocaleString()} helper={`${data.openOpportunities.toLocaleString()} open sales opportunities`} />
       </div>
       <div className="grid grid-2" style={{ marginBottom: 20 }}>
         <BarChart title="Customer base by branch" data={[{ label: 'JHB', value: data.jhbCustomers }, { label: 'CPT', value: data.cptCustomers }, { label: 'KZN', value: data.kznCustomers }]} />
         <DonutChart title="Contract records by branch" data={[{ label: 'JHB', value: data.jhbContracts }, { label: 'CPT', value: data.cptContracts }, { label: 'KZN', value: data.kznContracts }]} />
       </div>
+      <div className="grid grid-4" style={{ marginBottom: 20 }}>
+        <Link className="card" href="/marketing/contract-renewals"><div className="nav-heading">Renewal campaigns</div><div className="kpi-value">{renewalDue}</div><p>Open the live 30/60/90 renewal worklist and export campaign audiences.</p></Link>
+        <Link className="card" href="/marketing/segments"><div className="nav-heading">Customer segments</div><div className="kpi-value">{data.contactableCustomers.toLocaleString()}</div><p>Filter by branch, status, category, salesman, contact readiness and machine mapping.</p></Link>
+        <Link className="card" href="/sales"><div className="nav-heading">Sales opportunities</div><div className="kpi-value">{data.openOpportunities.toLocaleString()}</div><p>Create and manage renewal, upgrade, new-machine and reactivation opportunities.</p></Link>
+        <Link className="card" href="/marketing/campaigns"><div className="nav-heading">Campaign planning</div><div className="kpi-value">{data.campaigns.toLocaleString()}</div><p>Create campaign records, track status and manage the campaign schedule.</p></Link>
+      </div>
       <div className="card" style={{ marginBottom: 20 }}>
-        <h2>Recommended marketing actions</h2>
-        <ul>
-          <li>Build contract renewal campaigns for customers expiring in 30, 60 and 90 days.</li>
-          <li>Segment customers by branch, category, service frequency, machine count and salesman.</li>
-          <li>Flag customers with many service calls as retention opportunities.</li>
-          <li>Upload campaign briefs, price sheets and approvals here for branch access.</li>
-        </ul>
+        <h2>Marketing action queue</h2>
+        <div className="feature-list">
+          <Link className="feature-pill" href="/marketing/contract-renewals">{data.renewalsDue.toLocaleString()} renewal records need follow-up</Link>
+          <Link className="feature-pill" href="/marketing/contract-renewals">{data.renewalsNoEnd.toLocaleString()} contracts need end-date cleanup</Link>
+          <Link className="feature-pill" href="/marketing/segments">{data.unmappedCustomers.toLocaleString()} customers need machine-mapping review</Link>
+          <Link className="feature-pill" href="/marketing/segments">{data.contractLinkedCustomers.toLocaleString()} customers have contract references</Link>
+        </div>
       </div>
       <DocumentHub department="marketing" branch="all" />
     </AppShell>
