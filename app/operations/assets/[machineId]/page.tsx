@@ -94,9 +94,6 @@ export default function AssetLifecycleWorkspacePage() {
   const customer = machine ? firstRelation(machine.customers) : null;
   const site = machine ? firstRelation(machine.customer_sites) : null;
   const canEditProfile = ['admin', 'operations'].includes(userDetails?.role ?? '');
-  const openJobs = jobs.filter((job) => !['closed', 'cancelled'].includes(job.status));
-  const auditDue = Boolean(machine?.next_audit_at && new Date(machine.next_audit_at).getTime() < Date.now());
-  const warrantyRisk = Boolean(machine?.warranty_expires_at && new Date(machine.warranty_expires_at).getTime() < Date.now() + 60 * 86400000);
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -240,9 +237,7 @@ export default function AssetLifecycleWorkspacePage() {
           action={<><Link className="button secondary" href="/operations/assets">Back to register</Link><button className="button secondary" onClick={() => window.print()} type="button">Print asset sheet</button></>}
         />
 
-        <PageToolbar actions={<><Link className="button secondary" href="/operations/assets">Back to register</Link><button className="button secondary" onClick={() => window.print()} type="button">Print asset sheet</button><button className="button secondary" onClick={loadAsset} type="button">Refresh</button></>} description="Complete ownership, audit, condition and maintenance history." lastUpdated={lastUpdated} title="Asset workspace" />
-
-        <div className="grid grid-3 spatial-kpi-grid"><div className="card"><div className="nav-heading">Customer</div><strong>{customer?.customer_name ?? 'Unassigned'}</strong></div><div className="card"><div className="nav-heading">Site</div><strong>{site?.site_name ?? 'No site'}</strong><small>{site?.address ?? ''}</small></div><div className="card"><div className="nav-heading">Custodian</div><strong>{machine.current_custodian ?? 'Available'}</strong></div><div className="card"><div className="nav-heading">Open service jobs</div><div className="kpi-value">{openJobs.length}</div></div><div className="card"><div className="nav-heading">Next audit</div><strong>{machine.next_audit_at ? new Date(machine.next_audit_at).toLocaleString() : 'Not scheduled'}</strong>{auditDue ? <StatusBadge value="overdue" /> : null}</div><div className="card"><div className="nav-heading">Warranty</div><strong>{machine.warranty_expires_at ?? 'Not recorded'}</strong>{warrantyRisk ? <StatusBadge value="warning" label="Review warranty" /> : null}</div></div>
+        <PageToolbar actions={<button className="button secondary" onClick={loadAsset} type="button">Refresh</button>} description="Use the ticket for identity and status. The sections below manage lifecycle, custody, audits, maintenance work and history without repeating the same asset summary." lastUpdated={lastUpdated} title="Asset workspace" />
 
         {canEditProfile ? <section className="neo-card"><h2>Lifecycle profile</h2><form className="grid" onSubmit={saveProfile}><div className="form-grid"><label>Criticality<select value={criticality} onChange={(event) => setCriticality(event.target.value)}><option>low</option><option>medium</option><option>high</option><option>critical</option></select></label><label>Condition<select value={condition} onChange={(event) => setCondition(event.target.value)}><option>good</option><option>fair</option><option>poor</option><option>critical</option><option>unknown</option></select></label><label>Installed date<input type="date" value={installedAt} onChange={(event) => setInstalledAt(event.target.value)} /></label><label>Warranty expiry<input type="date" value={warrantyExpiresAt} onChange={(event) => setWarrantyExpiresAt(event.target.value)} /></label><label>Next audit<input type="datetime-local" value={nextAuditAt} onChange={(event) => setNextAuditAt(event.target.value)} /></label></div><button className="button" disabled={saving} type="submit">Save lifecycle profile</button></form></section> : null}
 
