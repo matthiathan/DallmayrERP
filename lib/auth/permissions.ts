@@ -76,6 +76,7 @@ export const navSections: NavSection[] = [
       { href: '/technician', label: 'Technician Jobs', code: 'TJ01', roles: ['admin', 'technician'], description: 'Technician queue for assigned machine work.' },
       { href: '/road-tech', label: 'Road Tech Routes', code: 'RT01', roles: ['admin', 'road_technician'], description: 'Road technician routes, delivery work and field tasks.' },
       { href: '/warehouse/stock', label: 'Stock Control', code: 'SC01', roles: ['admin', 'operations', 'warehouse_staff'], description: 'Scan, receive, issue, transfer, adjust and cycle count stock.' },
+      { href: '/warehouse/planning', label: 'Inventory Planning', code: 'IP01', roles: ['admin', 'operations', 'warehouse_staff', 'executive'], description: 'Stock-out risk, recommended orders, excess stock and branch redistribution.' },
       { href: '/warehouse/purchasing', label: 'Purchase Orders', code: 'PO01', roles: ['admin', 'operations', 'warehouse_staff'], description: 'Create purchase orders and receive stock into locations.' },
       { href: '/warehouse/purchasing/approvals', label: 'Purchase Approvals', code: 'PA01', roles: ['admin', 'operations', 'warehouse_staff', 'finance', 'executive'], description: 'Review purchase requests and approval risk.' },
     ],
@@ -100,6 +101,7 @@ export const navSections: NavSection[] = [
       { href: '/executive/contracts', label: 'Contract Risk', code: 'CTR01', roles: ['admin', 'executive'], description: 'Contract exposure, renewal pressure and account risk.' },
       { href: '/executive/service', label: 'Service Performance', code: 'SVR01', roles: ['admin', 'executive'], description: 'Service workload, SLA and maintenance performance.' },
       { href: '/executive/warehouse', label: 'Warehouse Risk', code: 'WHR01', roles: ['admin', 'executive'], description: 'Stock risk, low-stock exposure and inventory value.' },
+      { href: '/warehouse/planning', label: 'Inventory Planning', code: 'IPR01', roles: ['admin', 'operations', 'warehouse_staff', 'executive'], description: 'Exception-based replenishment and redistribution report.' },
     ],
   },
   {
