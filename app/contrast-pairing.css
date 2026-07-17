@@ -2,6 +2,8 @@
   --erp-surface-light: rgba(255, 255, 255, 0.96);
   --erp-surface-light-solid: #ffffff;
   --erp-surface-muted: #f8fafc;
+  --erp-row-alt: #f8fafc;
+  --erp-row-hover: #fff7df;
   --erp-border-soft: rgba(148, 163, 184, 0.32);
   --erp-text-strong: #111827;
   --erp-text: #1f2937;
@@ -108,6 +110,13 @@ body {
   color: #64748b !important;
 }
 
+/* Register tables must be readable before hover. Hover is only a highlight. */
+.enterprise-table-wrap table,
+.table-wrap table {
+  background: var(--erp-surface-light-solid) !important;
+  color: var(--erp-text) !important;
+}
+
 .enterprise-table-wrap thead th,
 .table-wrap thead th {
   background: #f1f5f9 !important;
@@ -115,9 +124,40 @@ body {
   border-bottom: 1px solid var(--erp-border-soft) !important;
 }
 
-.enterprise-table-wrap tbody td,
-.table-wrap tbody td {
+.enterprise-table-wrap tbody tr,
+.table-wrap tbody tr {
+  background: var(--erp-surface-light-solid) !important;
   color: var(--erp-text) !important;
+  opacity: 1 !important;
+}
+
+.enterprise-table-wrap tbody tr:nth-child(even),
+.table-wrap tbody tr:nth-child(even) {
+  background: var(--erp-row-alt) !important;
+}
+
+.enterprise-table-wrap tbody tr:hover,
+.table-wrap tbody tr:hover,
+.enterprise-table-wrap tbody tr:focus-within,
+.table-wrap tbody tr:focus-within {
+  background: var(--erp-row-hover) !important;
+  color: var(--erp-text-strong) !important;
+}
+
+.enterprise-table-wrap tbody td,
+.table-wrap tbody td,
+.enterprise-table-wrap tbody td *,
+.table-wrap tbody td * {
+  color: var(--erp-text) !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+.enterprise-table-wrap tbody td strong,
+.table-wrap tbody td strong,
+.enterprise-table-wrap tbody td a,
+.table-wrap tbody td a {
+  color: var(--erp-text-strong) !important;
 }
 
 .table-sort-button {
