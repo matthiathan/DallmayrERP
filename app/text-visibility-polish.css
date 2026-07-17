@@ -105,6 +105,69 @@
   gap: 12px;
 }
 
+/* Contrast pairing: dark hero surfaces must carry light text, while work panels stay light. */
+.hero-panel,
+.page-header.hero-panel {
+  color: #f8fafc;
+}
+
+.hero-panel h1,
+.hero-panel h2,
+.hero-panel h3,
+.hero-panel p,
+.hero-panel .badge {
+  color: inherit;
+}
+
+.hero-panel p {
+  color: rgba(248, 250, 252, 0.82);
+}
+
+.hero-panel .badge {
+  background: rgba(255, 255, 255, 0.94);
+  color: #1f2937;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+}
+
+.spatial-machine-panel,
+.spatial-machine-panel.spatial-card,
+.spatial-machine-panel.neo-card {
+  background: rgba(255, 255, 255, 0.96) !important;
+  color: #111827 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+}
+
+.spatial-machine-panel h1,
+.spatial-machine-panel h2,
+.spatial-machine-panel h3,
+.spatial-machine-panel p,
+.spatial-machine-panel label,
+.spatial-machine-panel .nav-heading,
+.spatial-machine-panel strong,
+.spatial-machine-panel small {
+  color: #111827 !important;
+}
+
+.spatial-machine-panel p,
+.spatial-machine-panel small,
+.spatial-machine-panel .field-note {
+  color: #475569 !important;
+}
+
+.spatial-machine-panel input,
+.spatial-machine-panel select,
+.spatial-machine-panel textarea {
+  background: #ffffff;
+  color: #111827;
+  border-color: rgba(100, 116, 139, 0.42);
+}
+
+.spatial-machine-panel input::placeholder,
+.spatial-machine-panel textarea::placeholder {
+  color: #64748b;
+}
+
 @media (max-width: 760px) {
   .asset-ticket-title {
     font-size: clamp(22px, 9vw, 34px);
