@@ -20,6 +20,7 @@ import './notch-nav-fixes.css';
 import './ribbon-background.css';
 import './asset-ticket.css';
 import './text-visibility-polish.css';
+import './contrast-pairing.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { TwistingRibbonBackground } from '@/components/ui/TwistingRibbonBackground';
 
