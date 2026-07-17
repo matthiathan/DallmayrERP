@@ -222,7 +222,7 @@ export default function SalesPage() {
     setOpportunityPage(1);
   }
 
-  function updateOpportunityStatus(value: OpportunityStatus) {
+  function updateOpportunityStatusFilter(value: OpportunityStatus) {
     setOpportunityStatus(value);
     setOpportunityPage(1);
   }
@@ -324,7 +324,7 @@ export default function SalesPage() {
     await loadSalesWorkspace();
   }
 
-  async function updateOpportunityStatus(id: string, status: Exclude<OpportunityStatus, 'all'>) {
+  async function changeOpportunityStatus(id: string, status: Exclude<OpportunityStatus, 'all'>) {
     setSaving(true);
     const { error: updateError } = await getSupabaseClient().from('sales_opportunities').update({ status }).eq('id', id);
     setSaving(false);
@@ -364,7 +364,7 @@ export default function SalesPage() {
     { id: 'next', header: 'Next action', value: (row) => row.next_action_date ?? '', render: (row) => row.next_action_date ?? 'Not scheduled' },
     { id: 'owner', header: 'Owner', value: (row) => row.owner_name ?? '' },
     { id: 'notes', header: 'Notes', value: (row) => row.notes ?? '' },
-    { id: 'status', header: 'Status', value: (row) => row.status, render: (row) => <select aria-label="Opportunity status" disabled={saving} onChange={(event) => updateOpportunityStatus(row.id, event.target.value as Exclude<OpportunityStatus, 'all'>)} value={row.status}>{opportunityStatuses.filter((item) => item !== 'all').map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select> },
+    { id: 'status', header: 'Status', value: (row) => row.status, render: (row) => <select aria-label="Opportunity status" disabled={saving} onChange={(event) => changeOpportunityStatus(row.id, event.target.value as Exclude<OpportunityStatus, 'all'>)} value={row.status}>{opportunityStatuses.filter((item) => item !== 'all').map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select> },
   ], [saving]);
 
   const renewalDue = asNumber(summary?.renewals_overdue) + asNumber(summary?.renewals_30) + asNumber(summary?.renewals_60) + asNumber(summary?.renewals_90);
@@ -400,7 +400,7 @@ export default function SalesPage() {
           <label>Branch<select value={branch} onChange={(event) => updateBranch(event.target.value as BranchFilter)}>{branches.map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select></label>
           <label>Salesman<select value={salesman} onChange={(event) => updateSalesman(event.target.value)}>{salesmanOptions.map((item) => <option key={item} value={item}>{item === 'all' ? 'All salesmen' : item}</option>)}</select></label>
           <label>Renewal window<select value={renewalWindow} onChange={(event) => updateRenewalWindow(event.target.value as RenewalWindow)}>{renewalWindows.map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select></label>
-          <label>Opportunity status<select value={opportunityStatus} onChange={(event) => updateOpportunityStatus(event.target.value as OpportunityStatus)}>{opportunityStatuses.map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select></label>
+          <label>Opportunity status<select value={opportunityStatus} onChange={(event) => updateOpportunityStatusFilter(event.target.value as OpportunityStatus)}>{opportunityStatuses.map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select></label>
         </div>
         <div className="feature-list" style={{ marginTop: 16 }}>
           {(summary?.branch_breakdown ?? []).map((item) => <div className="feature-pill" key={item.branch}>{String(item.branch ?? '').toUpperCase()}: {asNumber(item.customer_count).toLocaleString()} customers</div>)}
@@ -418,7 +418,7 @@ export default function SalesPage() {
         onSearchChange={updateRenewalSearch}
         page={renewalPage}
         pageSize={renewalPageSize}
-        rowKey={(row) => `${row.branch}-${row.customer_code ?? row.customer_name}-${row.contract_number ?? row.end_date_text ?? row.days_to_expire}`}
+        rowKey={(row) => `${row.branch}-${row.customer_code ?? row.customer_name}-${row.contract_number ?? row.start_date_text ?? ''}-${row.end_date_text ?? ''}-${row.days_to_expire ?? ''}`}
         rows={renewals}
         search={renewalSearch}
         searchPlaceholder="Search renewal customer, account code, contract, type or salesman"
@@ -446,7 +446,7 @@ export default function SalesPage() {
       <RemoteDataTable
         columns={opportunityColumns}
         emptyMessage="No sales opportunities match the current filters."
-        filters={<div className="form-grid"><label>Type<select value={opportunityType} onChange={(event) => updateOpportunityType(event.target.value as OpportunityType)}>{opportunityTypes.map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select></label><label>Status<select value={opportunityStatus} onChange={(event) => updateOpportunityStatus(event.target.value as OpportunityStatus)}>{opportunityStatuses.map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select></label></div>}
+        filters={<div className="form-grid"><label>Type<select value={opportunityType} onChange={(event) => updateOpportunityType(event.target.value as OpportunityType)}>{opportunityTypes.map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select></label><label>Status<select value={opportunityStatus} onChange={(event) => updateOpportunityStatusFilter(event.target.value as OpportunityStatus)}>{opportunityStatuses.map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select></label></div>}
         loading={loading}
         onPageChange={setOpportunityPage}
         onPageSizeChange={(value) => { setOpportunityPageSize(value); setOpportunityPage(1); }}
