@@ -1,0 +1,19 @@
+:root {
+  --erp-surface-light: rgba(255, 255, 255, 0.96);
+  --erp-surface-light-solid: #ffffff;
+  --erp-surface-muted: #f8fafc;
+  --erp-border-soft: rgba(148, 163, 184, 0.32);
+  --erp-text-strong: #111827;
+  --erp-text: #1f2937;
+  --erp-text-muted: #475569;
+  --erp-dark-surface: #0f172a;
+  --erp-dark-text: #f8fafc;
+  --erp-dark-muted: rgba(248, 250, 252, 0.78);
+  --erp-gold: #b89122;
+}
+
+body {
+  color: var(--erp-text);
+}
+
+/* Dark surfaces: hero
