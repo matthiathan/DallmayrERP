@@ -54,11 +54,11 @@ export function AssetTicketCard({ asset, eyebrow = 'Asset Pass', action, compact
     { label: 'Customer', value: cleanValue(asset.customerName, 'Unassigned') },
     { label: 'Branch', value: cleanValue(asset.branch?.toUpperCase()) },
     { label: 'Serial', value: cleanValue(asset.serialNumber) },
-    { label: 'QR / Barcode', value: cleanValue(asset.barcode) },
     { label: 'Site', value: cleanValue(asset.siteName, 'No site linked') },
     { label: 'Condition', value: cleanValue(asset.condition) },
     { label: 'Criticality', value: cleanValue(asset.criticality) },
     { label: 'Custody', value: cleanValue(asset.custodyStatus) },
+    { label: 'Custodian', value: cleanValue(asset.custodian, 'Available') },
   ];
 
   return (
