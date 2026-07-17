@@ -3,20 +3,32 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
-import { EnterpriseDataTable, type EnterpriseColumn } from '@/components/ui/EnterpriseDataTable';
+import { type EnterpriseColumn } from '@/components/ui/EnterpriseDataTable';
 import { PageToolbar } from '@/components/ui/PageToolbar';
+import { RemoteDataTable } from '@/components/ui/RemoteDataTable';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { useClientQueryParam } from '@/lib/navigation/useClientQueryParam';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { CustomerRecord } from '@/types/enterprise-records';
 
-const customerDirectoryLimit = 5000;
-const customerDirectoryPageSize = 1000;
+const branches = ['all', 'jhb', 'cpt', 'kzn', 'national'] as const;
+const statuses = ['all', 'active', 'inactive', 'unknown'] as const;
+
+function normaliseSearch(value: string) {
+  return value.trim().replace(/[,()]/g, ' ');
+}
 
 export default function CustomerDirectoryPage() {
   const querySearch = useClientQueryParam('q');
   const customerSearch = useClientQueryParam('customer');
+  const initialSearch = querySearch || customerSearch || '';
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
+  const [search, setSearch] = useState(initialSearch);
+  const [branch, setBranch] = useState<(typeof branches)[number]>('all');
+  const [status, setStatus] = useState<(typeof statuses)[number]>('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(100);
+  const [totalRows, setTotalRows] = useState(0);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -25,55 +37,110 @@ export default function CustomerDirectoryPage() {
     setLoading(true);
     setError(null);
     const client = getSupabaseClient();
-    const allCustomers: CustomerRecord[] = [];
+    const offset = (page - 1) * pageSize;
+    let query = client
+      .from('customers')
+      .select('id, customer_name, customer_code, branch, phone, email, address, status', { count: 'exact' })
+      .order('customer_name')
+      .range(offset, offset + pageSize - 1);
 
-    for (let from = 0; from < customerDirectoryLimit; from += customerDirectoryPageSize) {
-      const to = Math.min(from + customerDirectoryPageSize - 1, customerDirectoryLimit - 1);
-      const { data, error: loadError } = await client
-        .from('customers')
-        .select('id, customer_name, customer_code, branch, phone, email, address, status')
-        .order('customer_name')
-        .range(from, to);
+    if (branch !== 'all') query = query.eq('branch', branch);
+    if (status !== 'all') query = query.eq('status', status);
 
-      if (loadError) {
-        setError(loadError.message);
-        setLoading(false);
-        return;
-      }
-
-      const batch = (data ?? []) as CustomerRecord[];
-      allCustomers.push(...batch);
-      if (batch.length < customerDirectoryPageSize) break;
+    const cleanSearch = normaliseSearch(search);
+    if (cleanSearch) {
+      const pattern = `%${cleanSearch}%`;
+      query = query.or([
+        `customer_name.ilike.${pattern}`,
+        `customer_code.ilike.${pattern}`,
+        `phone.ilike.${pattern}`,
+        `email.ilike.${pattern}`,
+        `address.ilike.${pattern}`,
+      ].join(','));
     }
 
-    setCustomers(allCustomers);
-    setLastUpdated(new Date());
+    const { data, count, error: loadError } = await query;
+    if (loadError) {
+      setError(loadError.message);
+    } else {
+      setCustomers((data ?? []) as CustomerRecord[]);
+      setTotalRows(count ?? 0);
+      setLastUpdated(new Date());
+    }
     setLoading(false);
   }
 
   useEffect(() => {
-    loadCustomers().catch((loadError) => {
-      setError(loadError instanceof Error ? loadError.message : 'Could not load customers.');
-      setLoading(false);
-    });
-  }, []);
+    const handle = window.setTimeout(() => {
+      loadCustomers().catch((loadError) => {
+        setError(loadError instanceof Error ? loadError.message : 'Could not load customers.');
+        setLoading(false);
+      });
+    }, 220);
+    return () => window.clearTimeout(handle);
+  }, [search, branch, status, page, pageSize]);
+
+  useEffect(() => {
+    setSearch(initialSearch);
+  }, [initialSearch]);
+
+  function updateSearch(value: string) {
+    setSearch(value);
+    setPage(1);
+  }
+
+  function updateBranch(value: string) {
+    setBranch(value as (typeof branches)[number]);
+    setPage(1);
+  }
+
+  function updateStatus(value: string) {
+    setStatus(value as (typeof statuses)[number]);
+    setPage(1);
+  }
+
+  function updatePageSize(value: number) {
+    setPageSize(value);
+    setPage(1);
+  }
 
   const columns = useMemo<EnterpriseColumn<CustomerRecord>[]>(() => [
-    { id: 'name', header: 'Customer', value: (row) => row.customer_name, render: (row) => <Link href={`/customers/${row.id}`}><strong>{row.customer_name}</strong></Link>, sortable: true },
-    { id: 'code', header: 'Account code', value: (row) => row.customer_code ?? '', sortable: true },
-    { id: 'branch', header: 'Branch', value: (row) => row.branch.toUpperCase(), sortable: true },
-    { id: 'phone', header: 'Phone', value: (row) => row.phone ?? '', sortable: true },
-    { id: 'email', header: 'Email', value: (row) => row.email ?? '', sortable: true },
-    { id: 'address', header: 'Address', value: (row) => row.address ?? '', sortable: true },
-    { id: 'status', header: 'Status', value: (row) => row.status ?? 'unknown', render: (row) => <StatusBadge value={row.status ?? 'unknown'} />, sortable: true },
+    { id: 'name', header: 'Customer', value: (row) => row.customer_name, render: (row) => <Link href={`/customers/${row.id}`}><strong>{row.customer_name}</strong></Link> },
+    { id: 'code', header: 'Account code', value: (row) => row.customer_code ?? '' },
+    { id: 'branch', header: 'Branch', value: (row) => row.branch.toUpperCase() },
+    { id: 'phone', header: 'Phone', value: (row) => row.phone ?? '' },
+    { id: 'email', header: 'Email', value: (row) => row.email ?? '' },
+    { id: 'address', header: 'Address', value: (row) => row.address ?? '' },
+    { id: 'status', header: 'Status', value: (row) => row.status ?? 'unknown', render: (row) => <StatusBadge value={row.status ?? 'unknown'} /> },
   ], []);
 
   return (
     <AppShell>
       <div className="page-header hero-panel spatial-card"><div><div className="badge">Customer Management</div><h1>Customer Directory</h1><p>Search customers and open a unified operational profile.</p></div></div>
       {error ? <div className="error">{error}</div> : null}
-      <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadCustomers} type="button">{loading ? 'Refreshing...' : 'Refresh directory'}</button>} description={`${customers.length.toLocaleString()} customer records loaded. Use search to narrow by account code, phone, branch or address.`} lastUpdated={lastUpdated} title="Customer records" />
-      <EnterpriseDataTable columns={columns} emptyMessage={loading ? 'Loading customers...' : 'No matching customers found.'} getSearchText={(row) => [row.id, row.customer_name, row.customer_code, row.branch, row.phone, row.email, row.address, row.status].join(' ')} initialSearch={querySearch || customerSearch} rowKey={(row) => row.id} rows={customers} searchPlaceholder="Search customer, account code, phone or address" />
+      <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadCustomers} type="button">{loading ? 'Refreshing...' : 'Refresh directory'}</button>} description="Database-backed search by customer name, account code, branch, phone, email or address." lastUpdated={lastUpdated} title="Customer records" />
+      <RemoteDataTable
+        actions={null}
+        columns={columns}
+        emptyMessage="No matching customers found."
+        filters={(
+          <>
+            <label>Branch<select value={branch} onChange={(event) => updateBranch(event.target.value)}>{branches.map((item) => <option key={item} value={item}>{item.toUpperCase()}</option>)}</select></label>
+            <label>Status<select value={status} onChange={(event) => updateStatus(event.target.value)}>{statuses.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+          </>
+        )}
+        loading={loading}
+        onPageChange={setPage}
+        onPageSizeChange={updatePageSize}
+        onSearchChange={updateSearch}
+        page={page}
+        pageSize={pageSize}
+        rowKey={(row) => row.id}
+        rows={customers}
+        search={search}
+        searchPlaceholder="Search customer, account code, phone, email or address"
+        totalRows={totalRows}
+      />
     </AppShell>
   );
 }
