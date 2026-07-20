@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { PointerEvent as ReactPointerEvent } from 'react';
 import { usePathname } from 'next/navigation';
 
 export type ResizableColumnDefinition = {
@@ -90,7 +91,7 @@ export function useResizableColumns(columns: ResizableColumnDefinition[], tableI
     return widths[columnId] ?? defaults[columnId] ?? DEFAULT_COLUMN_WIDTH;
   }, [defaults, widths]);
 
-  const startResize = useCallback((columnId: string, event: React.PointerEvent<HTMLElement>) => {
+  const startResize = useCallback((columnId: string, event: ReactPointerEvent<HTMLElement>) => {
     event.preventDefault();
     event.stopPropagation();
     resizeState.current = {
