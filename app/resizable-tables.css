@@ -1,0 +1,112 @@
+/* Resizable ERP table columns
+   Imported after the nowrap layout so user-controlled column widths win. */
+
+.resizable-enterprise-table {
+  table-layout: fixed !important;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.resizable-enterprise-table th,
+.resizable-enterprise-table td {
+  max-width: none !important;
+  min-width: 0 !important;
+}
+
+.resizable-enterprise-table th {
+  position: sticky;
+  top: 0;
+  user-select: none;
+}
+
+.resizable-th-content {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  height: 100%;
+  min-height: 38px;
+  min-width: 0;
+  position: relative;
+  width: 100%;
+}
+
+.resizable-th-content .table-sort-button,
+.resizable-th-content .table-header-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap !important;
+}
+
+.table-column-resizer {
+  align-self: stretch;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  cursor: col-resize;
+  flex: 0 0 12px;
+  margin: -10px -8px -10px 2px;
+  min-height: 0 !important;
+  padding: 0;
+  position: relative;
+  touch-action: none;
+  width: 12px;
+}
+
+.table-column-resizer::after {
+  background: rgba(100, 116, 139, 0.42);
+  border-radius: 999px;
+  content: '';
+  height: calc(100% - 8px);
+  left: 5px;
+  opacity: 0.55;
+  position: absolute;
+  top: 4px;
+  transition: background 0.16s ease, opacity 0.16s ease, width 0.16s ease;
+  width: 2px;
+}
+
+.table-column-resizer:hover::after,
+.table-column-resizer:focus-visible::after {
+  background: #b89122;
+  opacity: 1;
+  width: 3px;
+}
+
+.table-column-resizer:focus-visible {
+  outline: 2px solid rgba(184, 145, 34, 0.55);
+  outline-offset: 2px;
+}
+
+body.is-resizing-table-column,
+body.is-resizing-table-column * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+.column-width-reset {
+  flex: 0 0 auto;
+}
+
+.resizable-enterprise-table td > *,
+.resizable-enterprise-table td strong,
+.resizable-enterprise-table td small,
+.resizable-enterprise-table td span,
+.resizable-enterprise-table td a {
+  max-width: 100%;
+}
+
+@media (max-width: 760px) {
+  .table-column-resizer {
+    flex-basis: 16px;
+    margin-right: -10px;
+    width: 16px;
+  }
+
+  .table-column-resizer::after {
+    left: 7px;
+  }
+}
