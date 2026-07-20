@@ -44,6 +44,7 @@ export function useResizableColumns(columns: ResizableColumnDefinition[], tableI
   const key = useMemo(() => storageKey(pathname, tableId, columns), [columns, pathname, tableId]);
   const resizeState = useRef<ResizeState | null>(null);
   const [widths, setWidths] = useState<Record<string, number>>({});
+  const [activeColumnId, setActiveColumnId] = useState<string | null>(null);
 
   const defaults = useMemo(() => {
     return columns.reduce<Record<string, number>>((acc, column) => {
@@ -91,6 +92,36 @@ export function useResizableColumns(columns: ResizableColumnDefinition[], tableI
     return widths[columnId] ?? defaults[columnId] ?? DEFAULT_COLUMN_WIDTH;
   }, [defaults, widths]);
 
+  const setColumnWidth = useCallback((columnId: string, nextWidth: number) => {
+    const column = columns.find((item) => item.id === columnId);
+    const minWidth = column?.minWidth ?? MIN_COLUMN_WIDTH;
+    const maxWidth = column?.maxWidth ?? MAX_COLUMN_WIDTH;
+    setWidths((currentWidths) => ({
+      ...currentWidths,
+      [columnId]: clampWidth(nextWidth, minWidth, maxWidth),
+    }));
+  }, [columns]);
+
+  const nudgeColumn = useCallback((columnId: string, delta: number) => {
+    const column = columns.find((item) => item.id === columnId);
+    const minWidth = column?.minWidth ?? MIN_COLUMN_WIDTH;
+    const maxWidth = column?.maxWidth ?? MAX_COLUMN_WIDTH;
+    setWidths((currentWidths) => {
+      const currentWidth = currentWidths[columnId] ?? defaults[columnId] ?? DEFAULT_COLUMN_WIDTH;
+      return {
+        ...currentWidths,
+        [columnId]: clampWidth(currentWidth + delta, minWidth, maxWidth),
+      };
+    });
+  }, [columns, defaults]);
+
+  const resetColumn = useCallback((columnId: string) => {
+    setWidths((currentWidths) => ({
+      ...currentWidths,
+      [columnId]: defaults[columnId] ?? DEFAULT_COLUMN_WIDTH,
+    }));
+  }, [defaults]);
+
   const startResize = useCallback((columnId: string, event: ReactPointerEvent<HTMLElement>) => {
     event.preventDefault();
     event.stopPropagation();
@@ -99,19 +130,17 @@ export function useResizableColumns(columns: ResizableColumnDefinition[], tableI
       startX: event.clientX,
       startWidth: getColumnWidth(columnId),
     };
+    setActiveColumnId(columnId);
 
     const handleMove = (moveEvent: PointerLikeEvent) => {
       const current = resizeState.current;
       if (!current) return;
-      const column = columns.find((item) => item.id === current.columnId);
-      const minWidth = column?.minWidth ?? MIN_COLUMN_WIDTH;
-      const maxWidth = column?.maxWidth ?? MAX_COLUMN_WIDTH;
-      const nextWidth = clampWidth(current.startWidth + moveEvent.clientX - current.startX, minWidth, maxWidth);
-      setWidths((currentWidths) => ({ ...currentWidths, [current.columnId]: nextWidth }));
+      setColumnWidth(current.columnId, current.startWidth + moveEvent.clientX - current.startX);
     };
 
     const handleEnd = () => {
       resizeState.current = null;
+      setActiveColumnId(null);
       window.removeEventListener('pointermove', handleMove);
       window.removeEventListener('pointerup', handleEnd);
       window.removeEventListener('pointercancel', handleEnd);
@@ -122,7 +151,7 @@ export function useResizableColumns(columns: ResizableColumnDefinition[], tableI
     window.addEventListener('pointermove', handleMove);
     window.addEventListener('pointerup', handleEnd);
     window.addEventListener('pointercancel', handleEnd);
-  }, [columns, getColumnWidth]);
+  }, [getColumnWidth, setColumnWidth]);
 
   const resetWidths = useCallback(() => {
     setWidths(defaults);
@@ -136,8 +165,12 @@ export function useResizableColumns(columns: ResizableColumnDefinition[], tableI
   }, [defaults, key]);
 
   return {
+    activeColumnId,
     getColumnWidth,
+    nudgeColumn,
+    resetColumn,
     resetWidths,
+    setColumnWidth,
     startResize,
     totalWidth,
     widths,
