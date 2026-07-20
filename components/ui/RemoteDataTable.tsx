@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import type { EnterpriseColumn } from '@/components/ui/EnterpriseDataTable';
+import { useResizableColumns } from '@/components/ui/useResizableColumns';
 
 type RemoteDataTableProps<T> = {
   rows: T[];
@@ -17,6 +18,7 @@ type RemoteDataTableProps<T> = {
   emptyMessage?: string;
   actions?: ReactNode;
   filters?: ReactNode;
+  tableId?: string;
   onSearchChange: (value: string) => void;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
@@ -36,6 +38,7 @@ export function RemoteDataTable<T>({
   emptyMessage = 'No matching records found.',
   actions,
   filters,
+  tableId = 'remote',
   onSearchChange,
   onPageChange,
   onPageSizeChange,
@@ -43,6 +46,7 @@ export function RemoteDataTable<T>({
   const pageCount = Math.max(1, Math.ceil(totalRows / pageSize));
   const firstVisible = totalRows === 0 ? 0 : (page - 1) * pageSize + 1;
   const lastVisible = Math.min(page * pageSize, totalRows);
+  const { getColumnWidth, resetWidths, startResize, totalWidth } = useResizableColumns(columns, tableId);
 
   return (
     <section className="enterprise-table-shell remote-table-shell">
@@ -60,16 +64,30 @@ export function RemoteDataTable<T>({
           <strong>{totalRows.toLocaleString()}</strong> matching record(s)
         </div>
         {actions ? <div className="enterprise-table-actions">{actions}</div> : null}
+        <button className="button secondary column-width-reset" onClick={resetWidths} type="button">Reset columns</button>
       </div>
 
       {filters ? <div className="remote-table-filters">{filters}</div> : null}
 
       <div className="table-wrap enterprise-table-wrap">
-        <table>
+        <table className="resizable-enterprise-table" style={{ minWidth: `${totalWidth}px`, width: `${totalWidth}px` }}>
+          <colgroup>
+            {columns.map((column) => <col key={column.id} style={{ width: `${getColumnWidth(column.id)}px` }} />)}
+          </colgroup>
           <thead>
             <tr>
               {columns.map((column) => (
-                <th className={column.className} key={column.id}>{column.header}</th>
+                <th className={column.className} key={column.id} style={{ width: `${getColumnWidth(column.id)}px` }}>
+                  <div className="resizable-th-content">
+                    <span className="table-header-label">{column.header}</span>
+                    <button
+                      aria-label={`Resize ${column.header} column`}
+                      className="table-column-resizer"
+                      onPointerDown={(event) => startResize(column.id, event)}
+                      type="button"
+                    />
+                  </div>
+                </th>
               ))}
             </tr>
           </thead>
@@ -79,7 +97,7 @@ export function RemoteDataTable<T>({
             ) : rows.map((row) => (
               <tr key={rowKey(row)}>
                 {columns.map((column) => (
-                  <td className={column.className} key={column.id}>{column.render ? column.render(row) : column.value(row) ?? '-'}</td>
+                  <td className={column.className} key={column.id} style={{ width: `${getColumnWidth(column.id)}px` }}>{column.render ? column.render(row) : column.value(row) ?? '-'}</td>
                 ))}
               </tr>
             ))}
