@@ -22,6 +22,7 @@ import './asset-ticket.css';
 import './text-visibility-polish.css';
 import './contrast-pairing.css';
 import './professional-nowrap-layout.css';
+import './resizable-tables.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { TwistingRibbonBackground } from '@/components/ui/TwistingRibbonBackground';
 
