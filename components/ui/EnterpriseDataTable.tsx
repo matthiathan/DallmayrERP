@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useResizableColumns } from '@/components/ui/useResizableColumns';
 
 export type EnterpriseColumn<T> = {
   id: string;
@@ -10,6 +11,9 @@ export type EnterpriseColumn<T> = {
   render?: (row: T) => ReactNode;
   sortable?: boolean;
   className?: string;
+  minWidth?: number;
+  defaultWidth?: number;
+  maxWidth?: number;
 };
 
 type SortState = { columnId: string; direction: 'asc' | 'desc' } | null;
@@ -52,6 +56,7 @@ export function EnterpriseDataTable<T>({
   const [sort, setSort] = useState<SortState>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => normalisePageSize(defaultPageSize, pageSizeChoices));
+  const { getColumnWidth, resetWidths, startResize, totalWidth } = useResizableColumns(columns, 'enterprise');
 
   useEffect(() => {
     setSearch(initialSearch);
@@ -121,22 +126,34 @@ export function EnterpriseDataTable<T>({
           <strong>{filteredRows.length.toLocaleString()}</strong> of {rows.length.toLocaleString()} record(s)
         </div>
         {actions ? <div className="enterprise-table-actions">{actions}</div> : null}
+        <button className="button secondary column-width-reset" onClick={resetWidths} type="button">Reset columns</button>
       </div>
 
       <div className="table-wrap enterprise-table-wrap">
-        <table>
+        <table className="resizable-enterprise-table" style={{ minWidth: `${totalWidth}px`, width: `${totalWidth}px` }}>
+          <colgroup>
+            {columns.map((column) => <col key={column.id} style={{ width: `${getColumnWidth(column.id)}px` }} />)}
+          </colgroup>
           <thead>
             <tr>
               {columns.map((column) => {
                 const activeSort = sort?.columnId === column.id ? sort.direction : null;
                 return (
-                  <th aria-sort={activeSort === 'asc' ? 'ascending' : activeSort === 'desc' ? 'descending' : 'none'} className={column.className} key={column.id}>
-                    {column.sortable ? (
-                      <button className="table-sort-button" onClick={() => toggleSort(column)} type="button">
-                        <span>{column.header}</span>
-                        <span aria-hidden="true">{activeSort === 'asc' ? '↑' : activeSort === 'desc' ? '↓' : '↕'}</span>
-                      </button>
-                    ) : column.header}
+                  <th aria-sort={activeSort === 'asc' ? 'ascending' : activeSort === 'desc' ? 'descending' : 'none'} className={column.className} key={column.id} style={{ width: `${getColumnWidth(column.id)}px` }}>
+                    <div className="resizable-th-content">
+                      {column.sortable ? (
+                        <button className="table-sort-button" onClick={() => toggleSort(column)} type="button">
+                          <span>{column.header}</span>
+                          <span aria-hidden="true">{activeSort === 'asc' ? '↑' : activeSort === 'desc' ? '↓' : '↕'}</span>
+                        </button>
+                      ) : <span className="table-header-label">{column.header}</span>}
+                      <button
+                        aria-label={`Resize ${column.header} column`}
+                        className="table-column-resizer"
+                        onPointerDown={(event) => startResize(column.id, event)}
+                        type="button"
+                      />
+                    </div>
                   </th>
                 );
               })}
@@ -147,7 +164,7 @@ export function EnterpriseDataTable<T>({
               <tr><td colSpan={columns.length}>{emptyMessage}</td></tr>
             ) : visibleRows.map((row) => (
               <tr key={rowKey(row)}>
-                {columns.map((column) => <td className={column.className} key={column.id}>{column.render ? column.render(row) : column.value(row) ?? '-'}</td>)}
+                {columns.map((column) => <td className={column.className} key={column.id} style={{ width: `${getColumnWidth(column.id)}px` }}>{column.render ? column.render(row) : column.value(row) ?? '-'}</td>)}
               </tr>
             ))}
           </tbody>
