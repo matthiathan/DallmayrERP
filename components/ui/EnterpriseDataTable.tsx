@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 import { useResizableColumns } from '@/components/ui/useResizableColumns';
 
 export type EnterpriseColumn<T> = {
@@ -26,6 +26,29 @@ function compareValues(left: string | number | null | undefined, right: string |
 function normalisePageSize(defaultPageSize: number, options: number[]) {
   if (options.includes(defaultPageSize)) return defaultPageSize;
   return options[0] ?? defaultPageSize;
+}
+
+function handleColumnResizeKey(
+  event: KeyboardEvent<HTMLButtonElement>,
+  columnId: string,
+  nudgeColumn: (columnId: string, delta: number) => void,
+  resetColumn: (columnId: string) => void,
+) {
+  const step = event.shiftKey ? 64 : 24;
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault();
+    nudgeColumn(columnId, -step);
+    return;
+  }
+  if (event.key === 'ArrowRight') {
+    event.preventDefault();
+    nudgeColumn(columnId, step);
+    return;
+  }
+  if (event.key === 'Home' || event.key === 'Enter') {
+    event.preventDefault();
+    resetColumn(columnId);
+  }
 }
 
 export function EnterpriseDataTable<T>({
@@ -56,7 +79,15 @@ export function EnterpriseDataTable<T>({
   const [sort, setSort] = useState<SortState>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => normalisePageSize(defaultPageSize, pageSizeChoices));
-  const { getColumnWidth, resetWidths, startResize, totalWidth } = useResizableColumns(columns, 'enterprise');
+  const {
+    activeColumnId,
+    getColumnWidth,
+    nudgeColumn,
+    resetColumn,
+    resetWidths,
+    startResize,
+    totalWidth,
+  } = useResizableColumns(columns, 'enterprise');
 
   useEffect(() => {
     setSearch(initialSearch);
@@ -138,8 +169,9 @@ export function EnterpriseDataTable<T>({
             <tr>
               {columns.map((column) => {
                 const activeSort = sort?.columnId === column.id ? sort.direction : null;
+                const columnWidth = getColumnWidth(column.id);
                 return (
-                  <th aria-sort={activeSort === 'asc' ? 'ascending' : activeSort === 'desc' ? 'descending' : 'none'} className={column.className} key={column.id} style={{ width: `${getColumnWidth(column.id)}px` }}>
+                  <th aria-sort={activeSort === 'asc' ? 'ascending' : activeSort === 'desc' ? 'descending' : 'none'} className={column.className} key={column.id} style={{ width: `${columnWidth}px` }}>
                     <div className="resizable-th-content">
                       {column.sortable ? (
                         <button className="table-sort-button" onClick={() => toggleSort(column)} type="button">
@@ -148,9 +180,18 @@ export function EnterpriseDataTable<T>({
                         </button>
                       ) : <span className="table-header-label">{column.header}</span>}
                       <button
-                        aria-label={`Resize ${column.header} column`}
+                        aria-label={`Resize ${column.header} column. Drag, use arrow keys, or double click to reset.`}
+                        aria-valuenow={columnWidth}
                         className="table-column-resizer"
+                        data-active={activeColumnId === column.id ? 'true' : undefined}
+                        onDoubleClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          resetColumn(column.id);
+                        }}
+                        onKeyDown={(event) => handleColumnResizeKey(event, column.id, nudgeColumn, resetColumn)}
                         onPointerDown={(event) => startResize(column.id, event)}
+                        title="Drag to resize. Arrow keys resize. Double-click or Enter resets this column."
                         type="button"
                       />
                     </div>
@@ -164,7 +205,10 @@ export function EnterpriseDataTable<T>({
               <tr><td colSpan={columns.length}>{emptyMessage}</td></tr>
             ) : visibleRows.map((row) => (
               <tr key={rowKey(row)}>
-                {columns.map((column) => <td className={column.className} key={column.id} style={{ width: `${getColumnWidth(column.id)}px` }}>{column.render ? column.render(row) : column.value(row) ?? '-'}</td>)}
+                {columns.map((column) => {
+                  const columnWidth = getColumnWidth(column.id);
+                  return <td className={column.className} key={column.id} style={{ width: `${columnWidth}px` }}>{column.render ? column.render(row) : column.value(row) ?? '-'}</td>;
+                })}
               </tr>
             ))}
           </tbody>
