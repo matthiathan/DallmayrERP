@@ -239,7 +239,7 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
           <CustomerSelect value={customerName} onSelect={applyCustomer} />
           <label>Outcome
             <select value={outcome} onChange={(event) => setOutcome(event.target.value as Outcome)}>
-              {outcomes.map((item) => <option key={item}>{item.replace(/_/g, ' ')}</option>)}
+              {outcomes.map((item) => <option key={item} value={item}>{item.replace(/_/g, ' ')}</option>)}
             </select>
           </label>
         </div>
