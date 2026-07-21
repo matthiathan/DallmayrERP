@@ -7,8 +7,6 @@ import { roleLabels } from '@/lib/auth/permissions';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { displayProfileName } from '@/types/dallmayrerp';
 
-type AccountMenuPlacement = 'desktop' | 'mobile';
-
 function initialsFor(name: string) {
   const initials = name
     .split(/\s+/)
@@ -23,25 +21,22 @@ function initialsFor(name: string) {
 
 export function GlobalAccountMenu() {
   const { authUser, businessProfile, userDetails, loading } = useAuth();
-  const [desktopTarget, setDesktopTarget] = useState<Element | null>(null);
-  const [mobileTarget, setMobileTarget] = useState<Element | null>(null);
+  const [brandTarget, setBrandTarget] = useState<Element | null>(null);
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     if (loading || !authUser) {
-      setDesktopTarget(null);
-      setMobileTarget(null);
+      setBrandTarget(null);
       return;
     }
 
-    function syncTargets() {
-      setDesktopTarget(document.querySelector('.erp-command-area.notch-command-area'));
-      setMobileTarget(document.querySelector('#mobile-navigation.mobile-nav-panel'));
+    function syncTarget() {
+      setBrandTarget(document.querySelector('.erp-menu-row.notch-menu-row'));
     }
 
-    syncTargets();
+    syncTarget();
 
-    const observer = new MutationObserver(syncTargets);
+    const observer = new MutationObserver(syncTarget);
     observer.observe(document.body, { childList: true, subtree: true });
 
     return () => observer.disconnect();
@@ -81,7 +76,7 @@ export function GlobalAccountMenu() {
   const userName = displayProfileName(businessProfile);
   const userInitials = useMemo(() => initialsFor(userName), [userName]);
 
-  if (loading || !authUser || !businessProfile || !userDetails) return null;
+  if (loading || !authUser || !businessProfile || !userDetails || !brandTarget) return null;
 
   const userEmail = businessProfile.user.email;
   const roleLabel = roleLabels[userDetails.role];
@@ -103,44 +98,36 @@ export function GlobalAccountMenu() {
     window.location.replace('/login');
   }
 
-  function accountMenu(placement: AccountMenuPlacement) {
-    return (
-      <details className={`dallmayr-account-menu is-${placement}`}>
-        <summary
-          aria-label={`Open account menu for ${userName}`}
-          className="dallmayr-account-trigger"
-        >
-          <span aria-hidden="true" className="dallmayr-account-avatar">{userInitials}</span>
-          <span className="dallmayr-account-identity">
-            <strong>{userName}</strong>
-            <small>{roleLabel}</small>
-          </span>
-          <span aria-hidden="true" className="dallmayr-account-chevron">▾</span>
-        </summary>
+  return createPortal(
+    <details className="dallmayr-account-menu is-brand">
+      <summary
+        aria-label={`Open account menu for ${userName}`}
+        className="dallmayr-account-trigger"
+      >
+        <span aria-hidden="true" className="dallmayr-account-avatar">{userInitials}</span>
+        <span className="dallmayr-account-identity">
+          <strong>{userName}</strong>
+          <small>{roleLabel}</small>
+        </span>
+        <span aria-hidden="true" className="dallmayr-account-chevron">▾</span>
+      </summary>
 
-        <div className="dallmayr-account-panel">
-          <div className="dallmayr-account-meta">
-            <strong>{userName}</strong>
-            <span>{userEmail}</span>
-            <small>{roleLabel} · {branchLabel}</small>
-          </div>
-          <button
-            className="dallmayr-account-signout"
-            disabled={signingOut}
-            onClick={signOut}
-            type="button"
-          >
-            {signingOut ? 'Signing out…' : 'Sign out'}
-          </button>
+      <div className="dallmayr-account-panel">
+        <div className="dallmayr-account-meta">
+          <strong>{userName}</strong>
+          <span>{userEmail}</span>
+          <small>{roleLabel} · {branchLabel}</small>
         </div>
-      </details>
-    );
-  }
-
-  return (
-    <>
-      {desktopTarget ? createPortal(accountMenu('desktop'), desktopTarget) : null}
-      {mobileTarget ? createPortal(accountMenu('mobile'), mobileTarget) : null}
-    </>
+        <button
+          className="dallmayr-account-signout"
+          disabled={signingOut}
+          onClick={signOut}
+          type="button"
+        >
+          {signingOut ? 'Signing out…' : 'Sign out'}
+        </button>
+      </div>
+    </details>,
+    brandTarget,
   );
 }

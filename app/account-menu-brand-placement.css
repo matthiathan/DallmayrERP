@@ -1,0 +1,95 @@
+.erp-menu-row.notch-menu-row {
+  position: relative;
+  min-height: 76px;
+}
+
+.notch-navbar-frame,
+.notch-navbar-shell,
+.notch-navbar-center {
+  min-height: 76px;
+  height: 76px;
+}
+
+.erp-menu-row.notch-menu-row > .erp-brand-button.notch-logo-button {
+  align-self: start;
+  min-height: 32px;
+  margin-top: 5px;
+  padding-block: 3px;
+}
+
+.dallmayr-account-menu.is-brand {
+  position: absolute;
+  top: 42px;
+  left: 20px;
+  z-index: 2300;
+  width: min(220px, calc(100vw - 100px));
+}
+
+.dallmayr-account-menu.is-brand .dallmayr-account-trigger {
+  min-height: 25px;
+  max-width: none;
+  padding: 2px 7px 2px 4px;
+  border-radius: 999px;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.1);
+}
+
+.dallmayr-account-menu.is-brand .dallmayr-account-avatar {
+  width: 19px;
+  height: 19px;
+  font-size: 9px;
+}
+
+.dallmayr-account-menu.is-brand .dallmayr-account-identity strong {
+  font-size: 11px;
+}
+
+.dallmayr-account-menu.is-brand .dallmayr-account-identity small {
+  display: none;
+}
+
+.dallmayr-account-menu.is-brand .dallmayr-account-panel {
+  top: calc(100% + 6px);
+  right: auto;
+  left: 0;
+}
+
+@media (max-width: 980px) {
+  .notch-navbar-frame {
+    min-height: 76px;
+    height: auto;
+  }
+
+  .notch-navbar-shell,
+  .notch-navbar-center {
+    min-height: 76px;
+    height: 76px;
+  }
+
+  .erp-menu-row.notch-menu-row {
+    min-height: 76px;
+  }
+
+  .erp-menu-row.notch-menu-row > .erp-brand-button.notch-logo-button {
+    margin-top: 0;
+  }
+
+  .dallmayr-account-menu.is-brand {
+    top: 48px;
+    left: 10px;
+    width: min(220px, calc(100vw - 90px));
+  }
+
+  .dallmayr-account-menu.is-brand .dallmayr-account-panel {
+    width: min(300px, calc(100vw - 20px));
+  }
+}
+
+@media (max-width: 520px) {
+  .erp-menu-row .erp-brand-button.notch-logo-button span:not(.notch-logo-mark) {
+    display: inline;
+  }
+
+  .dallmayr-account-menu.is-brand {
+    width: min(210px, calc(100vw - 82px));
+  }
+}
