@@ -6,7 +6,7 @@ import { KpiCard } from '@/components/ui/KpiCard';
 import { PageToolbar } from '@/components/ui/PageToolbar';
 import { RemoteDataTable } from '@/components/ui/RemoteDataTable';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import type { EnterpriseColumn } from '@/components/ui/EnterpriseDataTable';
+import type { EnterpriseColumn, TableColumnFilters } from '@/components/ui/EnterpriseDataTable';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type BranchFilter = 'all' | 'jhb' | 'cpt' | 'kzn';
@@ -78,6 +78,7 @@ export default function FinancePage() {
   const [rows, setRows] = useState<FinanceRow[]>([]);
   const [totalRows, setTotalRows] = useState(0);
   const [search, setSearch] = useState('');
+  const [columnFilters, setColumnFilters] = useState<TableColumnFilters>({});
   const [branch, setBranch] = useState<BranchFilter>('all');
   const [creditRisk, setCreditRisk] = useState<CreditRiskFilter>('all');
   const [vatFilter, setVatFilter] = useState<VatFilter>('all');
@@ -102,6 +103,7 @@ export default function FinancePage() {
         p_debit_order: debitOrder,
         p_offset: (page - 1) * pageSize,
         p_limit: pageSize,
+        p_column_filters: columnFilters,
       }),
     ]);
 
@@ -128,7 +130,7 @@ export default function FinancePage() {
       });
     }, 220);
     return () => window.clearTimeout(handle);
-  }, [search, branch, creditRisk, vatFilter, debitOrder, page, pageSize]);
+  }, [search, columnFilters, branch, creditRisk, vatFilter, debitOrder, page, pageSize]);
 
   function resetPage(setter: () => void) {
     setter();
@@ -168,11 +170,11 @@ export default function FinancePage() {
     { id: 'branch', header: 'Branch', value: (row) => row.branch.toUpperCase() },
     { id: 'status', header: 'Status', value: (row) => row.active_status ?? '', render: (row) => <StatusBadge value={row.active_status ?? 'unknown'} /> },
     { id: 'terms', header: 'Credit terms', value: (row) => row.credit_days ?? '', render: (row) => <span>{row.credit_days || 'No terms'}</span> },
-    { id: 'limit', header: 'Credit limit', value: (row) => asNumber(row.credit_limit_value), render: (row) => <strong>{formatCurrency(row.credit_limit_value)}</strong> },
-    { id: 'vat', header: 'VAT', value: (row) => row.vat_trn ?? '', render: (row) => <span>{row.vat_trn || 'Missing'}{row.vat_treatment ? ` • ${row.vat_treatment}` : ''}</span> },
+    { id: 'limit', header: 'Credit limit', value: (row) => `${row.credit_limit ?? ''} ${row.credit_limit_value ?? ''}`, render: (row) => <strong>{formatCurrency(row.credit_limit_value)}</strong> },
+    { id: 'vat', header: 'VAT', value: (row) => `${row.vat_trn ?? ''} ${row.vat_treatment ?? ''}`, render: (row) => <span>{row.vat_trn || 'Missing'}{row.vat_treatment ? ` • ${row.vat_treatment}` : ''}</span> },
     { id: 'debit', header: 'Debit order', value: (row) => row.debit_order ?? '', render: (row) => <StatusBadge value={row.debit_order || 'not set'} /> },
     { id: 'bill', header: 'Bill To', value: (row) => row.bill_to ?? '' },
-    { id: 'contact', header: 'Contact', value: (row) => row.email ?? row.phone ?? '', render: (row) => <small>{row.email ?? row.phone ?? 'No contact detail'}</small> },
+    { id: 'contact', header: 'Contact', value: (row) => `${row.email ?? ''} ${row.phone ?? ''}`, render: (row) => <small>{row.email ?? row.phone ?? 'No contact detail'}</small> },
   ], []);
 
   return (
@@ -195,7 +197,7 @@ export default function FinancePage() {
 
       <PageToolbar
         actions={<><button className="button secondary" disabled={loading} onClick={loadFinance} type="button">{loading ? 'Refreshing...' : 'Refresh finance data'}</button><button className="button secondary" disabled={rows.length === 0} onClick={exportVisibleRows} type="button">Export visible CSV</button></>}
-        description="Filter finance exposure by branch, credit risk, VAT completeness and debit-order status."
+        description="Filter finance exposure by branch, credit risk, VAT completeness and debit-order status. Each table heading also has its own contains filter."
         lastUpdated={lastUpdated}
         title="Finance control filters"
       />
@@ -213,9 +215,11 @@ export default function FinancePage() {
       </div>
 
       <RemoteDataTable
+        columnFilters={columnFilters}
         columns={columns}
         emptyMessage="No finance accounts match the current filters."
         loading={loading}
+        onColumnFiltersChange={(filters) => { setColumnFilters(filters); setPage(1); }}
         onPageChange={setPage}
         onPageSizeChange={(value) => { setPageSize(value); setPage(1); }}
         onSearchChange={(value) => { setSearch(value); setPage(1); }}
@@ -225,6 +229,7 @@ export default function FinancePage() {
         rows={rows}
         search={search}
         searchPlaceholder="Search customer, account code, VAT number, bill-to, email or phone"
+        tableId="finance-accounts"
         totalRows={totalRows}
       />
     </AppShell>
