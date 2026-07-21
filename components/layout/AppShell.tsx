@@ -19,6 +19,10 @@ type OpenTab = {
   code: string;
 };
 
+const DESKTOP_PRIMARY_SECTION_LIMIT = 5;
+const DESKTOP_OVERFLOW_THRESHOLD = 6;
+const DESKTOP_OVERFLOW_KEY = '__desktop_more__';
+
 function StatusScreen({
   title,
   message,
@@ -86,8 +90,8 @@ function NotchRail({ side }: { side: 'left' | 'right' }) {
 
 function NotchCorner({ side }: { side: 'left' | 'right' }) {
   const backgroundPath = side === 'left'
-    ? "M0 0 H52 V64 C26 64 26 40 0 40 Z"
-    : "M0 0 H52 V40 C26 40 26 64 0 64 Z";
+    ? 'M0 0 H52 V64 C26 64 26 40 0 40 Z'
+    : 'M0 0 H52 V40 C26 40 26 64 0 64 Z';
   const outlineOne = side === 'left'
     ? 'M0 39.5 C26 39.5 26 63.5 52 63.5'
     : 'M0 63.5 C26 63.5 26 39.5 52 39.5';
@@ -256,6 +260,16 @@ export function AppShell({ children }: { children: ReactNode }) {
       items: section.items.filter((item) => isNavItemAllowed(userDetails.role, item)),
     }))
     .filter((section) => section.items.length > 0);
+  const useDesktopOverflow = visibleSections.length > DESKTOP_OVERFLOW_THRESHOLD;
+  const primaryDesktopSections = useDesktopOverflow
+    ? visibleSections.slice(0, DESKTOP_PRIMARY_SECTION_LIMIT)
+    : visibleSections;
+  const overflowDesktopSections = useDesktopOverflow
+    ? visibleSections.slice(DESKTOP_PRIMARY_SECTION_LIMIT)
+    : [];
+  const overflowDesktopActive = overflowDesktopSections.some((section) =>
+    section.items.some((item) => isActivePath(pathname, item.href)),
+  );
   const activeSection = visibleSections.find((section) => section.items.some((item) => isActivePath(pathname, item.href)));
   const activeItem = activeSection?.items.find((item) => isActivePath(pathname, item.href));
   const activeTitle = activeItem?.label ?? 'Start Page';
@@ -295,7 +309,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </Link>
 
                 <nav aria-label="ERP menu bar" className="erp-menubar notch-menubar">
-                  {visibleSections.map((section) => {
+                  {primaryDesktopSections.map((section) => {
                     const sectionActive = section.items.some((item) => isActivePath(pathname, item.href));
                     const sectionOpen = openDesktopSection === section.heading;
                     return (
@@ -329,6 +343,43 @@ export function AppShell({ children }: { children: ReactNode }) {
                       </details>
                     );
                   })}
+
+                  {overflowDesktopSections.length > 0 ? (
+                    <details
+                      className={`erp-menu erp-menu-overflow ${overflowDesktopActive ? 'has-active' : ''}`}
+                      onToggle={(event) => {
+                        const isOpen = event.currentTarget.open;
+                        setOpenDesktopSection((current) => {
+                          if (isOpen) return DESKTOP_OVERFLOW_KEY;
+                          return current === DESKTOP_OVERFLOW_KEY ? null : current;
+                        });
+                      }}
+                      open={openDesktopSection === DESKTOP_OVERFLOW_KEY}
+                    >
+                      <summary className="erp-menu-label">More</summary>
+                      <div className="erp-menu-panel erp-overflow-menu-panel">
+                        {overflowDesktopSections.map((section) => (
+                          <section className="erp-overflow-section" key={section.heading}>
+                            <h3>{section.heading}</h3>
+                            <div className="erp-overflow-section-links">
+                              {section.items.map((item) => {
+                                const active = isActivePath(pathname, item.href);
+                                return (
+                                  <Link aria-current={active ? 'page' : undefined} className={`erp-menu-item ${active ? 'active' : ''}`} href={item.href} key={item.href}>
+                                    <span className="erp-menu-code">{item.code}</span>
+                                    <span className="erp-menu-text">
+                                      <strong>{item.label}</strong>
+                                      {item.description ? <small>{item.description}</small> : null}
+                                    </span>
+                                  </Link>
+                                );
+                              })}
+                            </div>
+                          </section>
+                        ))}
+                      </div>
+                    </details>
+                  ) : null}
                 </nav>
 
                 <div className="erp-command-area notch-command-area">
