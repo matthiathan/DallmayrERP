@@ -35,25 +35,44 @@ export function isExactMachineMatch(machine: MachineSearchIdentity, value: strin
     .some((candidate) => normaliseComparable(candidate) === needle);
 }
 
-function matchRank(machine: MachineSearchIdentity, value: string) {
-  const needle = normaliseComparable(value);
-  const identifiers = [machine.id, machine.machine_barcode, machine.serial_number].map(normaliseComparable);
-  const descriptions = [machine.machine_name, machine.model].map(normaliseComparable);
+type MatchScore = {
+  exactRank: number;
+  position: number;
+  fieldPriority: number;
+};
 
-  if (identifiers.some((candidate) => candidate === needle)) return 0;
-  if (identifiers.some((candidate) => candidate.startsWith(needle))) return 1;
-  if (identifiers.some((candidate) => candidate.includes(needle))) return 2;
-  if (descriptions.some((candidate) => candidate.startsWith(needle))) return 3;
-  if (descriptions.some((candidate) => candidate.includes(needle))) return 4;
-  return 5;
+function matchScore(machine: MachineSearchIdentity, value: string): MatchScore {
+  const needle = normaliseComparable(value);
+  const candidates = [
+    machine.id,
+    machine.machine_barcode,
+    machine.serial_number,
+    machine.machine_name,
+    machine.model,
+  ].map(normaliseComparable);
+
+  const positions = candidates.map((candidate) => candidate.indexOf(needle));
+  const matchingPositions = positions.filter((position) => position >= 0);
+  const earliestPosition = matchingPositions.length > 0 ? Math.min(...matchingPositions) : Number.POSITIVE_INFINITY;
+  const fieldPriority = positions.findIndex((position) => position === earliestPosition);
+
+  return {
+    exactRank: candidates.some((candidate) => candidate === needle) ? 0 : 1,
+    position: earliestPosition,
+    fieldPriority: fieldPriority >= 0 ? fieldPriority : candidates.length,
+  };
 }
 
 export function rankMachineMatches<T extends MachineSearchIdentity>(machines: T[], value: string) {
   const filtered = machines.filter((machine) => containsMachineTerm(machine, value));
 
   return [...filtered].sort((left, right) => {
-    const rankDifference = matchRank(left, value) - matchRank(right, value);
-    if (rankDifference !== 0) return rankDifference;
+    const leftScore = matchScore(left, value);
+    const rightScore = matchScore(right, value);
+
+    if (leftScore.exactRank !== rightScore.exactRank) return leftScore.exactRank - rightScore.exactRank;
+    if (leftScore.position !== rightScore.position) return leftScore.position - rightScore.position;
+    if (leftScore.fieldPriority !== rightScore.fieldPriority) return leftScore.fieldPriority - rightScore.fieldPriority;
 
     const leftLabel = left.machine_name ?? left.serial_number ?? left.machine_barcode ?? left.id;
     const rightLabel = right.machine_name ?? right.serial_number ?? right.machine_barcode ?? right.id;
