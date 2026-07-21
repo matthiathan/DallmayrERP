@@ -24,6 +24,7 @@ import './contrast-pairing.css';
 import './professional-nowrap-layout.css';
 import './resizable-tables.css';
 import './account-menu.css';
+import './account-menu-brand-placement.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { GlobalAccountMenu } from '@/components/layout/GlobalAccountMenu';
 import { TwistingRibbonBackground } from '@/components/ui/TwistingRibbonBackground';
