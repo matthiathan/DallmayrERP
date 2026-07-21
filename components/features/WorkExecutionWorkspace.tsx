@@ -8,7 +8,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type CustomerRelation = { customer_name: string | null };
-type MachineRelation = { machine_name: string | null; serial_number: string | null };
+type MachineRelation = { machine_name: string | null; serial_number: string | null; machine_barcode: string | null };
 type WorkOption = {
   id: string;
   work_number: string;
@@ -43,7 +43,7 @@ export function WorkExecutionWorkspace() {
     setError(null);
     const { data, error: loadError } = await getSupabaseClient()
       .from('work_items')
-      .select('id, work_number, title, work_type, status, priority, branch, assigned_to, customer_id, machine_id, due_at, customers(customer_name), machines(machine_name, serial_number)')
+      .select('id, work_number, title, work_type, status, priority, branch, assigned_to, customer_id, machine_id, due_at, customers(customer_name), machines(machine_name, serial_number, machine_barcode)')
       .not('status', 'in', '(completed,cancelled)')
       .order('due_at', { ascending: true, nullsFirst: false })
       .limit(500);
@@ -71,7 +71,7 @@ export function WorkExecutionWorkspace() {
     return workItems.filter((item) => {
       const customer = firstRelation(item.customers)?.customer_name ?? '';
       const machine = firstRelation(item.machines);
-      const text = [item.work_number, item.title, item.work_type, item.priority, item.branch, customer, machine?.machine_name, machine?.serial_number].join(' ').toLowerCase();
+      const text = [item.work_number, item.title, item.work_type, item.priority, item.branch, customer, machine?.machine_name, machine?.serial_number, machine?.machine_barcode].join(' ').toLowerCase();
       const ownershipMatch = view === 'all' || item.assigned_to === businessUser?.id;
       return ownershipMatch && (!term || text.includes(term));
     });
@@ -84,16 +84,16 @@ export function WorkExecutionWorkspace() {
       {error ? <div className="error">{error}</div> : null}
       <div className="minimal-split">
         <aside className="neo-card">
-          <div className="minimal-toolbar"><div><h2>Open work</h2><p>Select an item to execute.</p></div><button className="button secondary" onClick={loadWork} type="button">Refresh</button></div>
+          <div className="minimal-toolbar"><div><h2>Open work</h2><p>Select an item to execute. Partial words, serials and barcodes are supported.</p></div><button className="button secondary" onClick={loadWork} type="button">Refresh</button></div>
           <div className="form-grid">
-            <label>Search<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Number, title, customer or machine" /></label>
+            <label>Search<input autoComplete="off" autoCorrect="off" spellCheck={false} type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Part of number, title, customer, serial or barcode" /></label>
             {canSeeAll ? <label>View<select value={view} onChange={(event) => setView(event.target.value as 'mine' | 'all')}><option value="mine">My assigned work</option><option value="all">All open work</option></select></label> : null}
           </div>
           <div className="minimal-list minimal-form-section">
-            {filtered.length === 0 ? <div className="minimal-empty">{loading ? 'Loading work...' : 'No open work matches this view.'}</div> : filtered.map((item) => {
+            {filtered.length === 0 ? <div className="minimal-empty">{loading ? 'Loading work...' : 'No open work matches this partial search.'}</div> : filtered.map((item) => {
               const customer = firstRelation(item.customers)?.customer_name;
               const machine = firstRelation(item.machines);
-              return <button className={`minimal-list-item ${selectedId === item.id ? 'is-selected' : ''}`} key={item.id} onClick={() => setSelectedId(item.id)} type="button"><div><span className="nav-heading">{item.work_number}</span><h3>{item.title}</h3><p>{customer ?? 'No customer'}{machine ? ` • ${machine.machine_name ?? machine.serial_number ?? 'Machine'}` : ''}</p></div><div><StatusBadge value={item.status} /><StatusBadge value={item.priority} /></div></button>;
+              return <button className={`minimal-list-item ${selectedId === item.id ? 'is-selected' : ''}`} key={item.id} onClick={() => setSelectedId(item.id)} type="button"><div><span className="nav-heading">{item.work_number}</span><h3>{item.title}</h3><p>{customer ?? 'No customer'}{machine ? ` • ${machine.machine_name ?? machine.serial_number ?? machine.machine_barcode ?? 'Machine'}` : ''}</p></div><div><StatusBadge value={item.status} /><StatusBadge value={item.priority} /></div></button>;
             })}
           </div>
         </aside>

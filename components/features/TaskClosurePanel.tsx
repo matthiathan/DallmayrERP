@@ -1,11 +1,12 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { BarcodeCapture } from '@/components/ui/BarcodeCapture';
 import { CustomerSelect, type CustomerOption } from '@/components/ui/CustomerSelect';
 import { recordAuditEvent } from '@/lib/data/audit';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { isExactMachineMatch, machineSearchLabel, normaliseLookupTerm, rankMachineMatches } from '@/lib/search/machineSearch';
 import type { Branch } from '@/types/dallmayrerp';
 
 type TaskType = 'technician' | 'road_technician' | 'service_call' | 'preventive_service';
@@ -16,7 +17,9 @@ type MachineLookup = {
   id: string;
   branch: Branch;
   machine_name: string | null;
+  model: string | null;
   serial_number: string | null;
+  machine_barcode: string | null;
   status: string | null;
   customers?: CustomerRelation | CustomerRelation[] | null;
   customer_sites?: SiteRelation | SiteRelation[] | null;
@@ -34,6 +37,7 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
   const [branch, setBranch] = useState<Branch>(defaultBranch ?? userDetails?.branch ?? 'jhb');
   const [machineBarcode, setMachineBarcode] = useState('');
   const [machineLookup, setMachineLookup] = useState<MachineLookup | null>(null);
+  const [machineCandidates, setMachineCandidates] = useState<MachineLookup[]>([]);
   const [machineLookupMessage, setMachineLookupMessage] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState('');
   const [siteAddress, setSiteAddress] = useState('');
@@ -43,6 +47,7 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const lookupRequestRef = useRef(0);
 
   function applyCustomer(customer: CustomerOption | null) {
     if (!customer) {
@@ -55,42 +60,78 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
     if (customer.address) setSiteAddress(customer.address);
   }
 
+  function applyMachine(machine: MachineLookup, lookupTerm: string) {
+    const customer = firstRelation(machine.customers);
+    const site = firstRelation(machine.customer_sites);
+    const canonicalCode = machine.machine_barcode ?? machine.serial_number ?? lookupTerm;
+
+    setMachineLookup(machine);
+    setMachineCandidates([]);
+    setMachineBarcode(canonicalCode);
+    setBranch((site?.branch ?? customer?.branch ?? machine.branch) as Branch);
+    if (customer?.customer_name) setCustomerName(customer.customer_name);
+    if (site?.address || customer?.address) setSiteAddress(site?.address ?? customer?.address ?? '');
+    setMachineLookupMessage(`Machine selected: ${machineSearchLabel(machine)}. The stored barcode, customer and site details were used where available.`);
+  }
+
   async function resolveMachine(value: string) {
-    const cleanValue = value.trim();
+    const cleanValue = normaliseLookupTerm(value);
+    const requestId = ++lookupRequestRef.current;
     setMachineBarcode(cleanValue);
     setMachineLookup(null);
+    setMachineCandidates([]);
     setMachineLookupMessage(null);
+    setError(null);
     if (!cleanValue) return;
 
+    if (cleanValue.length < 2) {
+      setMachineLookupMessage('Enter at least two characters from the machine barcode, serial number or name.');
+      return;
+    }
+
+    const pattern = `%${cleanValue}%`;
     const { data, error: lookupError } = await getSupabaseClient()
       .from('machines')
-      .select('id, branch, machine_name, serial_number, status, customers(customer_name, address, branch), customer_sites(site_name, address, branch)')
-      .eq('machine_barcode', cleanValue)
-      .maybeSingle();
+      .select('id, branch, machine_name, model, serial_number, machine_barcode, status, customers(customer_name, address, branch), customer_sites(site_name, address, branch)')
+      .or(`machine_barcode.ilike.${pattern},serial_number.ilike.${pattern},machine_name.ilike.${pattern},model.ilike.${pattern}`)
+      .limit(12);
+
+    if (requestId !== lookupRequestRef.current) return;
 
     if (lookupError) {
       setMachineLookupMessage(`Machine lookup failed: ${lookupError.message}`);
       return;
     }
 
-    if (data) {
-      const machine = data as MachineLookup;
-      const customer = firstRelation(machine.customers);
-      const site = firstRelation(machine.customer_sites);
-      setMachineLookup(machine);
-      setBranch((site?.branch ?? customer?.branch ?? machine.branch) as Branch);
-      if (customer?.customer_name) setCustomerName(customer.customer_name);
-      if (site?.address || customer?.address) setSiteAddress(site?.address ?? customer?.address ?? '');
-      setMachineLookupMessage(`Machine found: ${machine.machine_name ?? machine.serial_number ?? cleanValue}. Customer and site details were auto-filled where available.`);
+    const rankedMatches = rankMachineMatches((data ?? []) as MachineLookup[], cleanValue);
+    const exactMatch = rankedMatches.find((machine) => isExactMachineMatch(machine, cleanValue));
+
+    if (exactMatch) {
+      applyMachine(exactMatch, cleanValue);
       return;
     }
 
-    setMachineLookupMessage('Machine QR/barcode not found yet. You can still close the task, then create the machine from Operations → Machine Assets.');
+    if (rankedMatches.length === 1) {
+      applyMachine(rankedMatches[0], cleanValue);
+      return;
+    }
+
+    if (rankedMatches.length > 1) {
+      setMachineCandidates(rankedMatches);
+      setMachineLookupMessage(`${rankedMatches.length} machines contain “${cleanValue}”. Choose the correct machine before closing the task.`);
+      return;
+    }
+
+    setMachineLookupMessage('No machine contains that barcode, serial number or name. Check the entry, try fewer characters, or create the machine from Operations → Machine Assets.');
   }
 
   async function closeTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!businessUser) return;
+    if (machineCandidates.length > 0 && !machineLookup) {
+      setError('Choose the correct machine from the partial matches before closing the task.');
+      return;
+    }
 
     setSaving(true);
     setError(null);
@@ -172,6 +213,7 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
     setSaving(false);
     setMachineBarcode('');
     setMachineLookup(null);
+    setMachineCandidates([]);
     setMachineLookupMessage(null);
     setCustomerName('');
     setSiteAddress('');
@@ -184,29 +226,43 @@ export function TaskClosurePanel({ taskType, defaultBranch }: { taskType: TaskTy
   return (
     <div className="neo-card">
       <h2>Close task with machine scan and photo</h2>
-      <p>Scan the machine QR/barcode, capture proof/photo evidence, and close the job from mobile or desktop.</p>
+      <p>Scan the machine QR/barcode or enter any distinctive part of the barcode, serial number or machine name. Partial matches are shown for confirmation.</p>
       {error ? <div className="error">{error}</div> : null}
       {success ? <div className="success">{success}</div> : null}
       <form className="grid" onSubmit={closeTask}>
         <div className="form-grid">
           <label>Branch
             <select value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>
-              <option value="jhb">jhb</option><option value="cpt">cpt</option><option value="kzn">kzn</option><option value="national">national</option>
+              <option value="jhb">JHB</option><option value="cpt">CPT</option><option value="kzn">KZN</option><option value="national">National</option>
             </select>
           </label>
           <CustomerSelect value={customerName} onSelect={applyCustomer} />
           <label>Outcome
             <select value={outcome} onChange={(event) => setOutcome(event.target.value as Outcome)}>
-              {outcomes.map((item) => <option key={item}>{item}</option>)}
+              {outcomes.map((item) => <option key={item} value={item}>{item.replace(/_/g, ' ')}</option>)}
             </select>
           </label>
         </div>
-        <BarcodeCapture label="Machine QR / barcode" value={machineBarcode} onChange={resolveMachine} />
-        {machineLookupMessage ? <div className={machineLookup ? 'success' : 'badge warning'}>{machineLookupMessage}</div> : null}
+        <BarcodeCapture label="Machine QR / barcode / serial" value={machineBarcode} onChange={resolveMachine} />
+        {machineLookupMessage ? <div aria-live="polite" className={machineLookup ? 'success' : 'field-note danger'}>{machineLookupMessage}</div> : null}
+        {machineCandidates.length > 0 ? (
+          <div className="machine-match-options">
+            <p>Several machines match this partial entry. Select one to use its stored barcode and customer details.</p>
+            <div className="machine-match-list">
+              {machineCandidates.map((machine) => (
+                <button className="machine-match-option" key={machine.id} onClick={() => applyMachine(machine, machineBarcode)} type="button">
+                  <strong>{machineSearchLabel(machine)}</strong>
+                  <span>{machine.serial_number ?? 'No serial'} • {machine.machine_barcode ?? 'No barcode'}</span>
+                  <small>{machine.model ?? 'Model not set'} • {machine.branch.toUpperCase()}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <label>Site address<input value={siteAddress} onChange={(event) => setSiteAddress(event.target.value)} /></label>
         <label>Closure notes<textarea value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
         <label>Closure photo<input accept="image/*" capture="environment" type="file" onChange={(event) => setPhoto(event.target.files?.[0] ?? null)} /></label>
-        <button className="button pulse-button" disabled={saving || !machineBarcode.trim()} type="submit">{saving ? 'Closing task...' : 'Close task'}</button>
+        <button className="button pulse-button" disabled={saving || !machineBarcode.trim() || machineCandidates.length > 0} type="submit">{saving ? 'Closing task...' : 'Close task'}</button>
       </form>
     </div>
   );

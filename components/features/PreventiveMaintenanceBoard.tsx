@@ -57,6 +57,11 @@ function machineLabel(machine: Pick<MachineOption, 'machine_name' | 'serial_numb
   return machine.machine_name ?? machine.serial_number ?? machine.machine_barcode ?? 'Unnamed machine';
 }
 
+function machineOptionLabel(machine: MachineOption) {
+  const code = machine.serial_number ?? machine.machine_barcode ?? 'No serial or barcode';
+  return `${machineLabel(machine)} — ${code} — ${machine.branch.toUpperCase()}`;
+}
+
 function isDue(plan: PlanRow) {
   const machine = firstRelation(plan.machines);
   const calendarDue = Boolean(plan.next_due_at && new Date(plan.next_due_at).getTime() <= Date.now());
@@ -69,6 +74,7 @@ export function PreventiveMaintenanceBoard() {
   const [plans, setPlans] = useState<PlanRow[]>([]);
   const [machines, setMachines] = useState<MachineOption[]>([]);
   const [users, setUsers] = useState<AssignableUser[]>([]);
+  const [machineSearch, setMachineSearch] = useState('');
   const [machineId, setMachineId] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -178,6 +184,7 @@ export function PreventiveMaintenanceBoard() {
     setMessage('Preventive maintenance plan created. Use Generate due work when ready to create work items.');
     setTitle('');
     setDescription('');
+    setMachineSearch('');
     setMachineId('');
     setNextDueAt('');
     setNextDueMeter('');
@@ -208,11 +215,16 @@ export function PreventiveMaintenanceBoard() {
   }
 
   const userMap = useMemo(() => new Map(users.map((user) => [user.user_id, user])), [users]);
+  const filteredMachines = useMemo(() => {
+    const term = machineSearch.trim().toLowerCase();
+    if (!term) return machines;
+    return machines.filter((machine) => [machine.machine_name, machine.serial_number, machine.machine_barcode, machine.branch].join(' ').toLowerCase().includes(term));
+  }, [machineSearch, machines]);
   const filteredPlans = useMemo(() => {
     const term = search.trim().toLowerCase();
     return plans.filter((plan) => {
       const machine = firstRelation(plan.machines);
-      const text = [plan.plan_number, plan.title, machine ? machineLabel(machine) : '', machine?.serial_number, plan.priority, plan.trigger_type].join(' ').toLowerCase();
+      const text = [plan.plan_number, plan.title, machine ? machineLabel(machine) : '', machine?.serial_number, machine?.machine_barcode, plan.priority, plan.trigger_type].join(' ').toLowerCase();
       return !term || text.includes(term);
     });
   }, [plans, search]);
@@ -235,18 +247,19 @@ export function PreventiveMaintenanceBoard() {
       {canManage ? (
         <section className="neo-card">
           <div className="minimal-toolbar">
-            <div><h2>New maintenance plan</h2><p>Use calendar, meter or hybrid scheduling. Plans do not create work until you generate due work.</p></div>
+            <div><h2>New maintenance plan</h2><p>Find the machine using any part of its name, serial number, barcode or branch before selecting it.</p></div>
           </div>
           <form className="grid" onSubmit={createPlan}>
             <div className="form-grid">
-              <label>Machine<select required value={machineId} onChange={(event) => setMachineId(event.target.value)}><option value="">Select machine</option>{machines.map((machine) => <option key={machine.id} value={machine.id}>{machineLabel(machine)} — {machine.branch.toUpperCase()}</option>)}</select></label>
+              <label>Find machine<input autoComplete="off" autoCorrect="off" spellCheck={false} type="search" value={machineSearch} onChange={(event) => setMachineSearch(event.target.value)} placeholder="Part of machine, serial, barcode or branch" /></label>
+              <label>Machine<select required value={machineId} onChange={(event) => setMachineId(event.target.value)}><option value="">{filteredMachines.length ? 'Select machine' : 'No machines match the search'}</option>{filteredMachines.map((machine) => <option key={machine.id} value={machine.id}>{machineOptionLabel(machine)}</option>)}</select><small className="field-note">{filteredMachines.length.toLocaleString()} matching machine(s).</small></label>
               <label>Plan title<input required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Quarterly preventive service" /></label>
               <label>Trigger<select value={triggerType} onChange={(event) => setTriggerType(event.target.value as TriggerType)}><option value="calendar">Calendar</option><option value="meter">Meter</option><option value="hybrid">Calendar or meter</option></select></label>
               {triggerType !== 'meter' ? <label>Interval days<input min="1" type="number" value={intervalDays} onChange={(event) => setIntervalDays(Number(event.target.value))} /></label> : null}
               {triggerType !== 'calendar' ? <label>Meter interval<input min="1" step="0.01" type="number" value={intervalMeter} onChange={(event) => setIntervalMeter(Number(event.target.value))} /></label> : null}
               {triggerType !== 'meter' ? <label>First due date<input type="datetime-local" value={nextDueAt} onChange={(event) => setNextDueAt(event.target.value)} /></label> : null}
               {triggerType !== 'calendar' ? <label>First due meter<input min="0" step="0.01" type="number" value={nextDueMeter} onChange={(event) => setNextDueMeter(event.target.value)} /></label> : null}
-              <label>Priority<select value={priority} onChange={(event) => setPriority(event.target.value as WorkPriority)}>{priorities.map((item) => <option key={item}>{item}</option>)}</select></label>
+              <label>Priority<select value={priority} onChange={(event) => setPriority(event.target.value as WorkPriority)}>{priorities.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
               <label>Estimated minutes<input min="1" type="number" value={estimatedMinutes} onChange={(event) => setEstimatedMinutes(Number(event.target.value))} /></label>
               <label>Default assignee<select value={assignedTo} onChange={(event) => setAssignedTo(event.target.value)}><option value="">Unassigned</option>{users.map((user) => <option key={user.user_id} value={user.user_id}>{user.display_name || user.role} — {user.branch.toUpperCase()}</option>)}</select></label>
             </div>
@@ -259,15 +272,15 @@ export function PreventiveMaintenanceBoard() {
 
       <PageToolbar
         actions={canManage ? <button className="button secondary" disabled={loading || saving} onClick={() => loadPlans(true)} type="button">Generate due work</button> : <button className="button secondary" disabled={loading} onClick={() => loadPlans(false)} type="button">Refresh</button>}
-        description="Monitor scheduled work and explicitly generate due maintenance tasks."
+        description="Monitor scheduled work and explicitly generate due maintenance tasks. The search accepts any part of a plan, machine, serial or barcode."
         lastUpdated={lastUpdated}
         title="Maintenance plans"
       >
-        <label>Search<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Plan, machine, serial or priority" /></label>
+        <label>Search<input autoComplete="off" autoCorrect="off" spellCheck={false} type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Part of plan, machine, serial, barcode or priority" /></label>
       </PageToolbar>
 
       <div className="minimal-list">
-        {filteredPlans.length === 0 ? <div className="minimal-empty">{loading ? 'Loading maintenance plans...' : 'No maintenance plans found.'}</div> : filteredPlans.map((plan) => {
+        {filteredPlans.length === 0 ? <div className="minimal-empty">{loading ? 'Loading maintenance plans...' : 'No maintenance plans match this partial search.'}</div> : filteredPlans.map((plan) => {
           const machine = firstRelation(plan.machines);
           const due = plan.is_active && isDue(plan);
           return (

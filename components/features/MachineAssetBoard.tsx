@@ -13,6 +13,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { recordAuditEvent } from '@/lib/data/audit';
 import { useClientQueryParam } from '@/lib/navigation/useClientQueryParam';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { isExactMachineMatch, machineSearchLabel, normaliseLookupTerm, rankMachineMatches } from '@/lib/search/machineSearch';
 import type { Branch } from '@/types/dallmayrerp';
 import type { MachineStatus } from '@/types/enterprise-records';
 
@@ -46,14 +47,6 @@ function getCustomerName(machine: MachineRow) {
   return machine.customer_name ?? 'Unassigned';
 }
 
-function matchesScan(machine: MachineRow, scanValue: string) {
-  const needle = scanValue.trim().toLowerCase();
-  if (!needle) return false;
-  return [machine.id, machine.machine_barcode, machine.serial_number]
-    .filter(Boolean)
-    .some((value) => String(value).trim().toLowerCase() === needle);
-}
-
 function linkFilterToRpc(value: (typeof linkFilters)[number]) {
   if (value === 'linked') return false;
   if (value === 'unlinked') return true;
@@ -80,6 +73,7 @@ export function MachineAssetBoard() {
   const [pageSize, setPageSize] = useState(100);
   const [totalRows, setTotalRows] = useState(0);
   const [scannedAsset, setScannedAsset] = useState<MachineRow | null>(null);
+  const [scanCandidates, setScanCandidates] = useState<MachineRow[]>([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -129,32 +123,68 @@ export function MachineAssetBoard() {
   }, [focusedMachineId]);
 
   useEffect(() => {
-    const cleanBarcode = machineBarcode.trim();
+    const cleanBarcode = normaliseLookupTerm(machineBarcode);
     if (!cleanBarcode) {
       setScannedAsset(null);
+      setScanCandidates([]);
       return;
     }
 
+    if (cleanBarcode.length < 2) {
+      setScannedAsset(null);
+      setScanCandidates([]);
+      return;
+    }
+
+    let cancelled = false;
     const handle = window.setTimeout(async () => {
-      const { data } = await getSupabaseClient().rpc('search_machine_assets', {
+      const { data, error: scanError } = await getSupabaseClient().rpc('search_machine_assets', {
         p_search: cleanBarcode,
         p_branch: 'all',
         p_status: 'all',
         p_unlinked: null,
         p_offset: 0,
-        p_limit: 1,
+        p_limit: 12,
       });
-      const match = ((data ?? []) as MachineRow[]).find((machine) => matchesScan(machine, cleanBarcode)) ?? null;
-      setScannedAsset(match);
+
+      if (cancelled) return;
+      if (scanError) {
+        setError(`Machine lookup failed: ${scanError.message}`);
+        setScannedAsset(null);
+        setScanCandidates([]);
+        return;
+      }
+
+      const rankedMatches = rankMachineMatches((data ?? []) as MachineRow[], cleanBarcode);
+      const exactMatch = rankedMatches.find((machine) => isExactMachineMatch(machine, cleanBarcode));
+      const selectedMatch = exactMatch ?? (rankedMatches.length === 1 ? rankedMatches[0] : null);
+
+      setScannedAsset(selectedMatch);
+      setScanCandidates(selectedMatch ? [] : rankedMatches);
     }, 250);
 
-    return () => window.clearTimeout(handle);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(handle);
+    };
   }, [machineBarcode]);
 
   function applyCustomer(customer: CustomerOption | null) {
     setCustomerId(customer?.id ?? null);
     setCustomerName(customer?.customer_name ?? '');
     if (customer) setBranch(customer.branch);
+  }
+
+  function selectScannedAsset(machine: MachineRow) {
+    setScannedAsset(machine);
+    setScanCandidates([]);
+    setMachineBarcode(machine.machine_barcode ?? machine.serial_number ?? machine.id);
+  }
+
+  function clearScan() {
+    setMachineBarcode('');
+    setScannedAsset(null);
+    setScanCandidates([]);
   }
 
   function updateSearch(value: string) {
@@ -169,7 +199,7 @@ export function MachineAssetBoard() {
 
   async function createMachine(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!businessUser || scannedAsset) return;
+    if (!businessUser || scannedAsset || scanCandidates.length > 0) return;
     setSaving(true);
     setError(null);
     setMessage(null);
@@ -209,6 +239,7 @@ export function MachineAssetBoard() {
     setMachineBarcode('');
     setStatus('active');
     setScannedAsset(null);
+    setScanCandidates([]);
     await loadMachines();
   }
 
@@ -229,21 +260,35 @@ export function MachineAssetBoard() {
       {error ? <div className="error">{error}</div> : null}
       {message ? <div className="success">{message}</div> : null}
       <div className="neo-card spatial-machine-panel spatial-card">
-        <div className="page-toolbar-heading"><div><h2>Machine profiles</h2><p>Create customer-linked machines or scan an existing QR/barcode to view its asset ticket.</p></div><Link className="button secondary" href="/work">Open Action Centre</Link></div>
+        <div className="page-toolbar-heading"><div><h2>Machine profiles</h2><p>Create customer-linked machines or enter any distinctive part of an existing QR/barcode or serial number to prevent duplicate records.</p></div><Link className="button secondary" href="/work">Open Action Centre</Link></div>
         <form className="grid" onSubmit={createMachine}>
           <div className="form-grid">
             <CustomerSelect label="Customer" onSelect={applyCustomer} value={customerName} />
-            <label>Branch<select value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>{branches.filter((item): item is Branch => item !== 'all').map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label>Branch<select value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>{branches.filter((item): item is Branch => item !== 'all').map((item) => <option key={item} value={item}>{item.toUpperCase()}</option>)}</select></label>
             <label>Machine name<input value={machineName} onChange={(event) => setMachineName(event.target.value)} /></label>
           </div>
           <div className="form-grid">
             <label>Model<input value={model} onChange={(event) => setModel(event.target.value)} /></label>
             <label>Serial number<input required value={serialNumber} onChange={(event) => setSerialNumber(event.target.value)} /></label>
-            <label>Status<select value={status} onChange={(event) => setStatus(event.target.value as MachineStatus)}>{statuses.filter((item): item is MachineStatus => item !== 'all').map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label>Status<select value={status} onChange={(event) => setStatus(event.target.value as MachineStatus)}>{statuses.filter((item): item is MachineStatus => item !== 'all').map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
           </div>
-          <BarcodeCapture label="Machine QR / barcode" value={machineBarcode} onChange={setMachineBarcode} />
+          <BarcodeCapture label="Machine QR / barcode / serial lookup" value={machineBarcode} onChange={setMachineBarcode} />
           {scannedAsset ? <p className="field-note danger">Existing asset found. Open the asset ticket instead of creating a duplicate.</p> : null}
-          <button className="button pulse-button" disabled={saving || Boolean(scannedAsset) || !serialNumber.trim() || !machineBarcode.trim()} type="submit">{saving ? 'Creating machine...' : 'Create machine'}</button>
+          {scanCandidates.length > 0 ? (
+            <div className="machine-match-options">
+              <p>{scanCandidates.length} existing machines contain this partial code. Select the correct asset or enter more characters before creating anything.</p>
+              <div className="machine-match-list">
+                {scanCandidates.map((machine) => (
+                  <button className="machine-match-option" key={machine.id} onClick={() => selectScannedAsset(machine)} type="button">
+                    <strong>{machineSearchLabel(machine)}</strong>
+                    <span>{machine.serial_number ?? 'No serial'} • {machine.machine_barcode ?? 'No barcode'}</span>
+                    <small>{getCustomerName(machine)} • {machine.branch.toUpperCase()}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          <button className="button pulse-button" disabled={saving || Boolean(scannedAsset) || scanCandidates.length > 0 || !serialNumber.trim() || !machineBarcode.trim()} type="submit">{saving ? 'Creating machine...' : 'Create machine'}</button>
         </form>
       </div>
 
@@ -267,15 +312,15 @@ export function MachineAssetBoard() {
             nextAuditAt: scannedAsset.next_audit_at,
           }}
           compact
-          eyebrow="Scanned asset"
-          action={<><Link className="button" href={`/operations/assets/${scannedAsset.id}`}>Open asset workspace</Link><button className="button secondary" onClick={() => setMachineBarcode('')} type="button">Clear scan</button></>}
+          eyebrow="Matched asset"
+          action={<><Link className="button" href={`/operations/assets/${scannedAsset.id}`}>Open asset workspace</Link><button className="button secondary" onClick={clearScan} type="button">Clear scan</button></>}
         />
       ) : null}
 
-      <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadMachines} type="button">{loading ? 'Refreshing...' : 'Refresh register'}</button>} description="Database-backed search across machine, customer, site, serial, barcode, status and branch." lastUpdated={lastUpdated} title="Machine register" />
+      <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadMachines} type="button">{loading ? 'Refreshing...' : 'Refresh register'}</button>} description="Contains search across machine, customer, site, serial, barcode, status and branch. Enter any distinctive portion of a code." lastUpdated={lastUpdated} title="Machine register" />
       <RemoteDataTable
         columns={columns}
-        emptyMessage="No matching machines found."
+        emptyMessage="No matching machines found. Try fewer characters from the serial number or barcode."
         filters={(
           <>
             <label>Branch<select value={branchFilter} onChange={(event) => { setBranchFilter(event.target.value as 'all' | Branch); setPage(1); }}>{branches.map((item) => <option key={item} value={item}>{item.toUpperCase()}</option>)}</select></label>
@@ -292,7 +337,7 @@ export function MachineAssetBoard() {
         rowKey={(row) => row.id}
         rows={machines}
         search={search}
-        searchPlaceholder="Search machine, customer, site, serial, barcode, status or branch"
+        searchPlaceholder="Enter part of a machine, customer, serial, barcode, site, status or branch"
         totalRows={totalRows}
       />
     </div>
