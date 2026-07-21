@@ -1,0 +1,119 @@
+/* Fixed top navigation positioning.
+   Loaded after the dark bezel theme so the shared ERP header remains at the viewport top
+   without covering page content or mobile navigation. */
+
+:root {
+  --erp-fixed-nav-offset: 118px;
+  --erp-fixed-nav-gap: 14px;
+}
+
+html {
+  scroll-padding-top: calc(var(--erp-fixed-nav-offset) + var(--erp-fixed-nav-gap));
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.app-shell.top-shell {
+  min-height: 100dvh;
+  padding-top: var(--erp-fixed-nav-offset);
+}
+
+.erp-chrome.topbar {
+  position: fixed !important;
+  inset: 0 0 auto 0 !important;
+  width: 100%;
+  max-width: none;
+  margin: 0 !important;
+  z-index: 5000 !important;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Keep menus and account popovers above page content while the bezel is fixed. */
+.erp-chrome.topbar,
+.notch-navbar-frame,
+.notch-navbar-shell,
+.notch-navbar-center,
+.erp-menu-row.notch-menu-row {
+  overflow: visible !important;
+}
+
+.notch-menubar .erp-menu[open],
+.notch-menubar .erp-menu-panel,
+.dallmayr-account-menu.is-brand,
+.dallmayr-account-panel {
+  z-index: 5100 !important;
+}
+
+/* Fixed mobile navigation starts below the bezel rather than covering it. */
+.mobile-nav-backdrop {
+  position: fixed !important;
+  top: var(--erp-fixed-nav-offset) !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  height: auto !important;
+  z-index: 4900 !important;
+}
+
+.mobile-nav-panel {
+  position: fixed !important;
+  top: var(--erp-fixed-nav-offset) !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: auto !important;
+  height: calc(100dvh - var(--erp-fixed-nav-offset)) !important;
+  max-height: calc(100dvh - var(--erp-fixed-nav-offset)) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  z-index: 5050 !important;
+}
+
+/* Anchor targets and focused sections should not disappear behind the fixed header. */
+main[id],
+section[id],
+article[id],
+[id]:target {
+  scroll-margin-top: calc(var(--erp-fixed-nav-offset) + var(--erp-fixed-nav-gap));
+}
+
+@media (max-width: 980px) {
+  :root {
+    --erp-fixed-nav-offset: calc(104px + env(safe-area-inset-top, 0px));
+    --erp-fixed-nav-gap: 10px;
+  }
+
+  .erp-chrome.topbar {
+    padding-top: max(7px, env(safe-area-inset-top)) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  :root {
+    --erp-fixed-nav-offset: calc(102px + env(safe-area-inset-top, 0px));
+  }
+}
+
+@media print {
+  :root {
+    --erp-fixed-nav-offset: 0px;
+  }
+
+  .app-shell.top-shell {
+    padding-top: 0 !important;
+  }
+
+  .erp-chrome.topbar {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+  }
+
+  .mobile-nav-backdrop,
+  .mobile-nav-panel {
+    display: none !important;
+  }
+}
