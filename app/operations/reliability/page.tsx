@@ -120,7 +120,7 @@ export default function AssetReliabilityPage() {
         <div className="minimal-panel-header">
           <div>
             <h2>Select machine</h2>
-            <p>Enter part of the machine name, serial number, QR/barcode or branch. Every displayed result contains the complete sequence you typed.</p>
+            <p>Enter part of the machine name, serial number, QR/barcode or branch. Results must contain the complete characters in the same order you typed, but the sequence may appear anywhere in the field.</p>
           </div>
         </div>
 
@@ -143,9 +143,9 @@ export default function AssetReliabilityPage() {
         <div aria-atomic="true" aria-live="polite" className="reliability-search-status" id="reliability-search-status">
           {!cleanSearch ? 'Enter at least two characters to start searching.' : null}
           {cleanSearch.length === 1 ? 'Enter one more character to start searching.' : null}
-          {cleanSearch.length >= 2 && searching ? `Searching for machines containing “${cleanSearch}”…` : null}
-          {cleanSearch.length >= 2 && !searching && !error && totalCount === 0 ? `No machine contains the complete sequence “${cleanSearch}”.` : null}
-          {cleanSearch.length >= 2 && !searching && !error && totalCount > 0 ? `${totalCount.toLocaleString('en-ZA')} machine${totalCount === 1 ? '' : 's'} contain the complete sequence “${cleanSearch}”.${totalCount > matches.length ? ` Showing the first ${matches.length}; enter more characters to narrow the results.` : ''}` : null}
+          {cleanSearch.length >= 2 && searching ? `Searching for the ordered sequence “${cleanSearch}”…` : null}
+          {cleanSearch.length >= 2 && !searching && !error && totalCount === 0 ? `No machine contains “${cleanSearch}” in the same order.` : null}
+          {cleanSearch.length >= 2 && !searching && !error && totalCount > 0 ? `${totalCount.toLocaleString('en-ZA')} machine${totalCount === 1 ? '' : 's'} contain “${cleanSearch}” in the same order.${totalCount > matches.length ? ` Showing the first ${matches.length}; enter more characters to narrow the results.` : ''}` : null}
         </div>
 
         {matches.length > 0 ? (
