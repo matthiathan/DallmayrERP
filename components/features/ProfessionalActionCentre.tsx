@@ -20,6 +20,7 @@ type QueueView = 'my' | 'overdue' | 'approvals' | 'unassigned' | 'all';
 const branches: Branch[] = ['jhb', 'cpt', 'kzn', 'national'];
 const workTypes: WorkType[] = ['request', 'task', 'approval', 'inspection', 'maintenance', 'incident'];
 const priorities: WorkPriority[] = ['low', 'medium', 'high', 'critical'];
+const technicianRoles = new Set(['technician', 'road_technician']);
 
 function firstRelation<T>(value: T | T[] | null | undefined) {
   return Array.isArray(value) ? value[0] ?? null : value ?? null;
@@ -58,6 +59,7 @@ export function ProfessionalActionCentre() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const canCreateWork = Boolean(userDetails?.role && !technicianRoles.has(userDetails.role));
 
   async function loadCentre() {
     setError(null);
@@ -89,6 +91,10 @@ export function ProfessionalActionCentre() {
 
   async function createWork(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canCreateWork) {
+      setError('Technicians cannot create or request tasks. Operations must assign technician work.');
+      return;
+    }
     if (!title.trim()) return;
     setSaving(true);
     setError(null);
@@ -160,26 +166,34 @@ export function ProfessionalActionCentre() {
         <div className="card"><div className="nav-heading">Audits due in 30 days</div><div className="kpi-value">{dueAudits.length}</div></div>
       </div>
 
-      <section className="neo-card">
-        <div className="badge">Structured work intake</div>
-        <h2>Create work request or task</h2>
-        <p>Capture operational requests consistently, assign ownership, set SLA dates and require approval where necessary.</p>
-        <form className="grid" onSubmit={createWork}>
-          <div className="form-grid">
-            <label>Title<input required value={title} onChange={(event) => setTitle(event.target.value)} /></label>
-            <label>Type<select value={workType} onChange={(event) => setWorkType(event.target.value as WorkType)}>{workTypes.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label>Department<input value={department} onChange={(event) => setDepartment(event.target.value)} /></label>
-            <label>Branch<select value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>{branches.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label>Priority<select value={priority} onChange={(event) => setPriority(event.target.value as WorkPriority)}>{priorities.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label>Assign to<select value={assignedTo} onChange={(event) => setAssignedTo(event.target.value)}><option value="">Unassigned</option>{users.map((user) => <option key={user.user_id} value={user.user_id}>{user.display_name || user.role} — {user.branch.toUpperCase()}</option>)}</select></label>
-            <label>Due date<input type="datetime-local" value={dueAt} onChange={(event) => setDueAt(event.target.value)} /></label>
-            <label>SLA target<input type="datetime-local" value={slaDueAt} onChange={(event) => setSlaDueAt(event.target.value)} /></label>
-            <label className="checkbox-field"><input checked={approvalRequired} onChange={(event) => setApprovalRequired(event.target.checked)} type="checkbox" /> Approval required</label>
-          </div>
-          <label>Description<textarea value={description} onChange={(event) => setDescription(event.target.value)} /></label>
-          <button className="button" disabled={saving || !title.trim()} type="submit">{saving ? 'Creating...' : 'Create work item'}</button>
-        </form>
-      </section>
+      {canCreateWork ? (
+        <section className="neo-card">
+          <div className="badge">Structured work intake</div>
+          <h2>Create work request or task</h2>
+          <p>Capture operational requests consistently, assign ownership, set SLA dates and require approval where necessary.</p>
+          <form className="grid" onSubmit={createWork}>
+            <div className="form-grid">
+              <label>Title<input required value={title} onChange={(event) => setTitle(event.target.value)} /></label>
+              <label>Type<select value={workType} onChange={(event) => setWorkType(event.target.value as WorkType)}>{workTypes.map((item) => <option key={item}>{item}</option>)}</select></label>
+              <label>Department<input value={department} onChange={(event) => setDepartment(event.target.value)} /></label>
+              <label>Branch<select value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>{branches.map((item) => <option key={item}>{item}</option>)}</select></label>
+              <label>Priority<select value={priority} onChange={(event) => setPriority(event.target.value as WorkPriority)}>{priorities.map((item) => <option key={item}>{item}</option>)}</select></label>
+              <label>Assign to<select value={assignedTo} onChange={(event) => setAssignedTo(event.target.value)}><option value="">Unassigned</option>{users.map((user) => <option key={user.user_id} value={user.user_id}>{user.display_name || user.role} — {user.branch.toUpperCase()}</option>)}</select></label>
+              <label>Due date<input type="datetime-local" value={dueAt} onChange={(event) => setDueAt(event.target.value)} /></label>
+              <label>SLA target<input type="datetime-local" value={slaDueAt} onChange={(event) => setSlaDueAt(event.target.value)} /></label>
+              <label className="checkbox-field"><input checked={approvalRequired} onChange={(event) => setApprovalRequired(event.target.checked)} type="checkbox" /> Approval required</label>
+            </div>
+            <label>Description<textarea value={description} onChange={(event) => setDescription(event.target.value)} /></label>
+            <button className="button" disabled={saving || !title.trim()} type="submit">{saving ? 'Creating...' : 'Create work item'}</button>
+          </form>
+        </section>
+      ) : (
+        <section className="neo-card">
+          <div className="badge">Assigned work only</div>
+          <h2>Tasks are provided by Operations</h2>
+          <p>Technicians cannot create or request tasks. Use the My work queue below to open, update and complete work assigned by an Operations manager.</p>
+        </section>
+      )}
 
       <PageToolbar actions={<button className="button secondary" onClick={() => loadCentre().catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Refresh failed.'))} type="button">Refresh centre</button>} description="One operational queue across tasks, approvals and exception-driven work." lastUpdated={lastUpdated} title="Action Centre">
         <label>Queue<select value={view} onChange={(event) => setView(event.target.value as QueueView)}><option value="my">My work</option><option value="overdue">Overdue</option><option value="approvals">Approvals</option><option value="unassigned">Unassigned</option><option value="all">All work</option></select></label>
