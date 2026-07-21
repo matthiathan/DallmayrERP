@@ -1,0 +1,648 @@
+/* Dark beveled application navigation.
+   Loaded last so the shared header consistently matches the approved charcoal-and-gold concept. */
+
+:root {
+  --bezel-bg-top: #2b2f35;
+  --bezel-bg-mid: #22262c;
+  --bezel-bg-bottom: #181b20;
+  --bezel-panel: #20242a;
+  --bezel-panel-raised: #2a2f36;
+  --bezel-border: #424852;
+  --bezel-border-soft: rgba(255, 255, 255, 0.1);
+  --bezel-highlight: rgba(255, 255, 255, 0.12);
+  --bezel-shadow: rgba(6, 8, 11, 0.55);
+  --bezel-text: #f4f5f7;
+  --bezel-text-soft: #c8ced7;
+  --bezel-muted: #929ba8;
+  --bezel-gold: #d4af37;
+  --bezel-gold-bright: #f0c94f;
+  --bezel-gold-soft: rgba(212, 175, 55, 0.16);
+}
+
+.erp-chrome.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1200;
+  padding: 10px 14px 12px;
+  border: 0 !important;
+  background: linear-gradient(180deg, #eef1f4 0%, #e8ecf0 100%) !important;
+  color: var(--bezel-text) !important;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08) !important;
+  backdrop-filter: none;
+}
+
+.notch-navbar-frame {
+  display: block !important;
+  min-height: 92px !important;
+  background: transparent !important;
+}
+
+.notch-rail,
+.notch-corner {
+  display: none !important;
+}
+
+.notch-navbar-shell {
+  position: relative;
+  display: block !important;
+  width: min(100%, 1720px);
+  height: 92px !important;
+  min-height: 92px !important;
+  margin: 0 auto;
+  overflow: visible !important;
+  border: 1px solid #3b414a;
+  border-radius: 19px;
+  background:
+    linear-gradient(180deg, var(--bezel-highlight), transparent 2px),
+    linear-gradient(180deg, var(--bezel-bg-top) 0%, var(--bezel-bg-mid) 48%, var(--bezel-bg-bottom) 100%) !important;
+  box-shadow:
+    0 16px 30px rgba(15, 23, 42, 0.24),
+    0 4px 8px rgba(15, 23, 42, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.75),
+    inset 0 0 0 4px rgba(255, 255, 255, 0.018) !important;
+  filter: none !important;
+}
+
+.notch-navbar-shell::before,
+.notch-navbar-shell::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.notch-navbar-shell::before {
+  inset: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 13px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.055),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.62);
+}
+
+.notch-navbar-shell::after {
+  left: 18px;
+  right: 18px;
+  bottom: -7px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(4, 6, 9, 0.22);
+  filter: blur(8px);
+}
+
+.notch-navbar-center {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 92px !important;
+  min-height: 92px !important;
+  border-radius: inherit;
+  background: transparent !important;
+}
+
+.notch-navbar-center::before,
+.notch-navbar-center::after {
+  display: none !important;
+}
+
+.erp-menu-row.notch-menu-row {
+  position: relative;
+  display: grid !important;
+  grid-template-columns: minmax(270px, 320px) minmax(400px, 1fr) auto auto;
+  align-items: center !important;
+  gap: clamp(16px, 2vw, 34px) !important;
+  width: 100%;
+  min-height: 92px !important;
+  padding: 12px 20px 11px !important;
+  background: transparent !important;
+}
+
+.erp-brand-button.notch-logo-button,
+.erp-menu-row.notch-menu-row > .erp-brand-button.notch-logo-button {
+  align-self: start;
+  justify-self: start;
+  min-height: 38px !important;
+  margin: 1px 0 0 !important;
+  padding: 3px 7px 3px 3px !important;
+  border: 1px solid transparent !important;
+  border-radius: 11px !important;
+  background: transparent !important;
+  color: var(--bezel-text) !important;
+  box-shadow: none !important;
+  font-size: 17px !important;
+  font-weight: 820 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.erp-brand-button.notch-logo-button:hover,
+.erp-brand-button.notch-logo-button:focus-visible {
+  border-color: rgba(212, 175, 55, 0.38) !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+  outline: 0 !important;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.12) !important;
+}
+
+.notch-logo-mark {
+  width: 34px !important;
+  height: 34px !important;
+  border: 1px solid rgba(240, 201, 79, 0.78);
+  border-radius: 10px !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.1), transparent 48%),
+    linear-gradient(180deg, #24282e, #121519) !important;
+  color: var(--bezel-gold-bright) !important;
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.13),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.75) !important;
+  font-size: 17px !important;
+  font-weight: 900 !important;
+}
+
+.erp-menubar.notch-menubar {
+  align-self: center;
+  gap: clamp(16px, 1.55vw, 29px) !important;
+  padding: 0 !important;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.erp-menubar.notch-menubar::-webkit-scrollbar {
+  display: none;
+}
+
+.erp-menu-label {
+  position: relative;
+  min-height: 40px !important;
+  padding: 2px 0 !important;
+  color: var(--bezel-text-soft) !important;
+  font-size: 14px !important;
+  font-weight: 720 !important;
+  letter-spacing: -0.012em;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.55);
+}
+
+.erp-menu-label:hover,
+.erp-menu-label:focus-visible,
+.erp-menu[open] .erp-menu-label,
+.erp-menu.has-active .erp-menu-label {
+  color: #ffffff !important;
+  outline: 0;
+}
+
+.erp-menu-label::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  right: -10px;
+  top: 3px;
+  bottom: 3px;
+  z-index: -1;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.erp-menu-label:hover::before,
+.erp-menu-label:focus-visible::before,
+.erp-menu[open] .erp-menu-label::before {
+  border-color: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.erp-menu.has-active .erp-menu-label::after,
+.erp-menu[open] .erp-menu-label::after {
+  left: 0 !important;
+  right: 0 !important;
+  bottom: -9px !important;
+  height: 3px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(90deg, var(--bezel-gold), var(--bezel-gold-bright)) !important;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.34);
+}
+
+.erp-menu-panel {
+  top: calc(100% + 18px) !important;
+  min-width: 350px;
+  padding: 8px !important;
+  border: 1px solid #4a515b !important;
+  border-radius: 14px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), transparent 2px),
+    linear-gradient(180deg, #282d34, #1b1f24) !important;
+  color: var(--bezel-text) !important;
+  box-shadow:
+    0 24px 55px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.72) !important;
+}
+
+.erp-menu-item {
+  min-height: 52px;
+  border: 1px solid transparent !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  color: var(--bezel-text) !important;
+}
+
+.erp-menu-item:hover,
+.erp-menu-item:focus-visible,
+.erp-menu-item.active,
+.erp-menu-item[aria-current='page'] {
+  border-color: rgba(212, 175, 55, 0.34) !important;
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.13), rgba(212, 175, 55, 0.07)) !important;
+  outline: 0;
+}
+
+.erp-menu-code {
+  border-color: rgba(212, 175, 55, 0.42) !important;
+  background: rgba(212, 175, 55, 0.11) !important;
+  color: var(--bezel-gold-bright) !important;
+}
+
+.erp-menu-text strong {
+  color: #ffffff !important;
+}
+
+.erp-menu-text small {
+  color: var(--bezel-muted) !important;
+}
+
+.erp-command-area.notch-command-area {
+  align-self: center;
+  gap: 10px !important;
+}
+
+.erp-command-area .global-search-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  width: clamp(230px, 22vw, 345px);
+  min-height: 48px !important;
+  padding: 7px 10px 7px 15px !important;
+  border: 1px solid #555d68 !important;
+  border-radius: 15px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 46%),
+    linear-gradient(180deg, #242930, #171a1f) !important;
+  color: var(--bezel-text-soft) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.74),
+    0 4px 12px rgba(0, 0, 0, 0.18) !important;
+  text-align: left !important;
+}
+
+.erp-command-area .global-search-trigger::before {
+  content: '⌕';
+  flex: 0 0 auto;
+  color: #d9dee6;
+  font-size: 25px;
+  font-weight: 400;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.erp-command-area .global-search-trigger > span {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--bezel-text-soft) !important;
+  font-size: 15px;
+  font-weight: 720;
+  white-space: nowrap !important;
+}
+
+.erp-command-area .global-search-trigger kbd {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border: 1px solid rgba(212, 175, 55, 0.38);
+  border-radius: 9px;
+  background: rgba(212, 175, 55, 0.09);
+  color: var(--bezel-gold-bright);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 820;
+}
+
+.erp-command-area .global-search-trigger:hover,
+.erp-command-area .global-search-trigger:focus-visible {
+  border-color: rgba(212, 175, 55, 0.6) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), transparent 46%),
+    linear-gradient(180deg, #2b3037, #1b1e23) !important;
+  outline: 0;
+  box-shadow:
+    0 0 0 3px rgba(212, 175, 55, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.75) !important;
+}
+
+.density-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(10, 12, 15, 0.32) !important;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.58),
+    0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.density-toggle button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  min-width: 38px !important;
+  height: 38px;
+  min-height: 38px !important;
+  padding: 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  border-radius: 999px !important;
+  background: linear-gradient(180deg, #292e35, #191c21) !important;
+  color: var(--bezel-text-soft) !important;
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  font-size: 12px;
+  font-weight: 820;
+}
+
+.density-toggle button:hover,
+.density-toggle button:focus-visible {
+  border-color: rgba(212, 175, 55, 0.45) !important;
+  color: #ffffff !important;
+  outline: 0;
+}
+
+.density-toggle button.is-active,
+.density-toggle button[aria-pressed='true'] {
+  border-color: var(--bezel-gold) !important;
+  background: linear-gradient(180deg, #323840, #1d2126) !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 0 0 2px rgba(212, 175, 55, 0.13),
+    0 4px 10px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Account control beneath the brand */
+.dallmayr-account-menu.is-brand {
+  top: 50px !important;
+  left: 22px !important;
+  width: min(260px, calc(100vw - 110px)) !important;
+}
+
+.dallmayr-account-menu.is-brand .dallmayr-account-trigger {
+  min-height: 31px !important;
+  padding: 3px 9px 3px 4px !important;
+  border: 1px solid #4b525d !important;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), transparent 48%),
+    linear-gradient(180deg, #292e35, #191c21) !important;
+  color: var(--bezel-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.72),
+    0 3px 8px rgba(0, 0, 0, 0.24) !important;
+}
+
+.dallmayr-account-menu.is-brand .dallmayr-account-trigger:hover,
+.dallmayr-account-menu.is-brand .dallmayr-account-trigger:focus-visible,
+.dallmayr-account-menu.is-brand[open] > .dallmayr-account-trigger {
+  border-color: rgba(212, 175, 55, 0.56) !important;
+  background: linear-gradient(180deg, #31363e, #20242a) !important;
+  outline: 0 !important;
+  box-shadow:
+    0 0 0 3px rgba(212, 175, 55, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.72) !important;
+}
+
+.dallmayr-account-menu.is-brand .dallmayr-account-avatar {
+  width: 23px !important;
+  height: 23px !important;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  background: linear-gradient(180deg, #1f2328, #101215) !important;
+  color: var(--bezel-gold-bright) !important;
+  font-size: 9px !important;
+}
+
+.dallmayr-account-menu.is-brand .dallmayr-account-identity strong {
+  color: var(--bezel-text) !important;
+  font-size: 12px !important;
+}
+
+.dallmayr-account-menu.is-brand .dallmayr-account-chevron {
+  color: var(--bezel-text-soft) !important;
+}
+
+.dallmayr-account-panel {
+  border-color: #4a515b !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), transparent 2px),
+    linear-gradient(180deg, #292e35, #1b1f24) !important;
+  color: var(--bezel-text) !important;
+  box-shadow:
+    0 24px 55px rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.72) !important;
+}
+
+.dallmayr-account-meta strong {
+  color: #ffffff !important;
+}
+
+.dallmayr-account-meta span,
+.dallmayr-account-meta small {
+  color: var(--bezel-text-soft) !important;
+}
+
+.dallmayr-account-signout {
+  border-color: rgba(240, 201, 79, 0.35) !important;
+  background: rgba(212, 175, 55, 0.09) !important;
+  color: var(--bezel-gold-bright) !important;
+}
+
+.dallmayr-account-signout:hover,
+.dallmayr-account-signout:focus-visible {
+  border-color: rgba(240, 201, 79, 0.6) !important;
+  background: rgba(212, 175, 55, 0.16) !important;
+  outline: 0 !important;
+}
+
+/* Compact mobile version */
+.erp-chrome .hamburger-button {
+  border: 1px solid #4b525d !important;
+  border-radius: 11px !important;
+  background: linear-gradient(180deg, #2c3138, #191c21) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.72),
+    0 4px 10px rgba(0, 0, 0, 0.25) !important;
+}
+
+.erp-chrome .hamburger-button span {
+  background: var(--bezel-text-soft) !important;
+}
+
+.mobile-nav-backdrop {
+  background: rgba(5, 7, 10, 0.68) !important;
+  backdrop-filter: blur(4px);
+}
+
+.mobile-nav-panel {
+  border-left: 1px solid #4b525d !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 2px),
+    linear-gradient(180deg, #282d34, #171a1f) !important;
+  color: var(--bezel-text) !important;
+  box-shadow: -20px 0 55px rgba(0, 0, 0, 0.5) !important;
+}
+
+.mobile-nav-panel .nav-heading {
+  color: var(--bezel-gold-bright) !important;
+}
+
+.mobile-nav-panel .mobile-primary-link,
+.mobile-nav-panel .mobile-nav-card {
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+  color: var(--bezel-text) !important;
+}
+
+.mobile-nav-panel .mobile-nav-card strong,
+.mobile-nav-panel .mobile-primary-link {
+  color: #ffffff !important;
+}
+
+.mobile-nav-panel .mobile-nav-card small {
+  color: var(--bezel-muted) !important;
+}
+
+.mobile-nav-panel .mobile-nav-card.active,
+.mobile-nav-panel .mobile-nav-card:hover,
+.mobile-nav-panel .mobile-nav-card:focus-visible,
+.mobile-nav-panel .mobile-primary-link:hover,
+.mobile-nav-panel .mobile-primary-link:focus-visible {
+  border-color: rgba(212, 175, 55, 0.38) !important;
+  background: var(--bezel-gold-soft) !important;
+  outline: 0;
+}
+
+@media (max-width: 1320px) {
+  .erp-menu-row.notch-menu-row {
+    grid-template-columns: minmax(250px, 285px) minmax(360px, 1fr) auto auto;
+    gap: 18px !important;
+  }
+
+  .erp-command-area .global-search-trigger {
+    width: clamp(210px, 20vw, 280px);
+  }
+
+  .erp-menubar.notch-menubar {
+    gap: 15px !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  .erp-menu-row.notch-menu-row {
+    grid-template-columns: minmax(235px, 270px) minmax(330px, 1fr) auto;
+  }
+
+  .density-toggle,
+  .erp-signout {
+    display: none !important;
+  }
+
+  .erp-command-area .global-search-trigger {
+    width: 225px;
+  }
+}
+
+@media (max-width: 980px) {
+  .erp-chrome.topbar {
+    padding: max(7px, env(safe-area-inset-top)) 7px 9px;
+    background: linear-gradient(180deg, #eceff2 0%, #e4e8ec 100%) !important;
+  }
+
+  .notch-navbar-frame,
+  .notch-navbar-shell,
+  .notch-navbar-center {
+    min-height: 84px !important;
+    height: 84px !important;
+  }
+
+  .notch-navbar-shell {
+    width: 100%;
+    border-radius: 15px;
+  }
+
+  .erp-menu-row.notch-menu-row {
+    display: flex !important;
+    align-items: flex-start !important;
+    min-height: 84px !important;
+    padding: 9px 11px !important;
+  }
+
+  .erp-brand-button.notch-logo-button,
+  .erp-menu-row.notch-menu-row > .erp-brand-button.notch-logo-button {
+    min-height: 38px !important;
+    margin: 0 !important;
+  }
+
+  .erp-brand-button.notch-logo-button span:not(.notch-logo-mark) {
+    display: inline !important;
+  }
+
+  .dallmayr-account-menu.is-brand {
+    top: 48px !important;
+    left: 12px !important;
+    width: min(245px, calc(100vw - 92px)) !important;
+  }
+
+  .erp-chrome .hamburger-button {
+    align-self: center;
+    width: 44px;
+    min-width: 44px !important;
+    height: 44px;
+    min-height: 44px !important;
+    margin: 9px 0 0 auto !important;
+  }
+
+  .mobile-nav-panel {
+    width: min(92vw, 410px) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .erp-brand-button.notch-logo-button {
+    font-size: 15px !important;
+  }
+
+  .notch-logo-mark {
+    width: 31px !important;
+    height: 31px !important;
+    font-size: 15px !important;
+  }
+
+  .dallmayr-account-menu.is-brand {
+    width: min(220px, calc(100vw - 78px)) !important;
+  }
+
+  .dallmayr-account-menu.is-brand .dallmayr-account-identity strong {
+    max-width: 150px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .erp-menu-label::before,
+  .dallmayr-account-chevron {
+    transition: none !important;
+  }
+}
