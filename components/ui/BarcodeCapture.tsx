@@ -196,7 +196,16 @@ export function BarcodeCapture({
 
       <label>
         Manual code entry
-        <input value={value} onChange={(event) => onChange(cleanScanValue(event.target.value))} placeholder="Scan or type code" inputMode="text" autoCapitalize="characters" />
+        <input
+          autoCapitalize="characters"
+          autoComplete="off"
+          autoCorrect="off"
+          inputMode="text"
+          onChange={(event) => onChange(cleanScanValue(event.target.value))}
+          placeholder="Scan or type code"
+          spellCheck={false}
+          value={value}
+        />
       </label>
 
       <label>
