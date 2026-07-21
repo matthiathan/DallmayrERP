@@ -83,6 +83,7 @@ export function GlobalAccountMenu() {
 
   if (loading || !authUser || !businessProfile || !userDetails) return null;
 
+  const userEmail = businessProfile.user.email;
   const roleLabel = roleLabels[userDetails.role];
   const branchLabel = userDetails.branch.toUpperCase();
 
@@ -120,7 +121,7 @@ export function GlobalAccountMenu() {
         <div className="dallmayr-account-panel">
           <div className="dallmayr-account-meta">
             <strong>{userName}</strong>
-            <span>{businessProfile.user.email}</span>
+            <span>{userEmail}</span>
             <small>{roleLabel} · {branchLabel}</small>
           </div>
           <button
