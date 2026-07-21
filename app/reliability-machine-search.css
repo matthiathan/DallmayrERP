@@ -1,0 +1,208 @@
+/* Live machine search for the Asset Reliability workspace. */
+
+.reliability-machine-search-panel {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.reliability-machine-search-panel .minimal-panel-header {
+  margin-bottom: 0;
+}
+
+.reliability-search-field {
+  display: grid;
+  gap: 7px;
+  width: min(100%, 920px);
+  min-width: 0;
+}
+
+.reliability-search-field input {
+  min-height: 50px;
+  padding-inline: 15px;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.reliability-search-status {
+  min-height: 24px;
+  color: #475467;
+  font-size: 13px;
+  font-weight: 620;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.reliability-machine-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 11px;
+  width: 100%;
+  max-height: 560px;
+  padding: 4px 6px 4px 2px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #c8d0d8 transparent;
+}
+
+.reliability-machine-result,
+button.reliability-machine-result {
+  display: grid !important;
+  align-content: start;
+  justify-items: stretch;
+  gap: 11px;
+  width: 100%;
+  min-width: 0;
+  min-height: 126px;
+  padding: 15px !important;
+  overflow: hidden;
+  border: 1px solid #d9dee6 !important;
+  border-radius: 12px !important;
+  background: linear-gradient(180deg, #ffffff, #f8fafc) !important;
+  color: #1a1d21 !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05) !important;
+  text-align: left !important;
+  white-space: normal !important;
+}
+
+.reliability-machine-result:hover,
+.reliability-machine-result:focus-visible {
+  border-color: rgba(212, 175, 55, 0.78) !important;
+  background: #fffdf5 !important;
+  outline: 0;
+  box-shadow:
+    0 0 0 3px rgba(212, 175, 55, 0.14),
+    0 8px 18px rgba(15, 23, 42, 0.08) !important;
+}
+
+.reliability-machine-result.is-selected,
+.reliability-machine-result[aria-selected='true'] {
+  border-color: #9b7617 !important;
+  background: #fbf4d8 !important;
+  box-shadow:
+    inset 4px 0 0 #d4af37,
+    0 0 0 3px rgba(212, 175, 55, 0.13) !important;
+}
+
+.reliability-machine-result-title {
+  display: block;
+  min-width: 0;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.reliability-machine-result-facts {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.reliability-machine-result-facts > span {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+  color: #475467;
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.reliability-machine-result-facts strong {
+  color: #667085;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.reliability-selected-machine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  margin-bottom: 14px;
+  padding: 15px 17px;
+  border: 1px solid rgba(212, 175, 55, 0.58);
+  border-left: 4px solid #d4af37;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fffef9, #fbf4d8);
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.06);
+}
+
+.reliability-selected-machine > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.reliability-selected-machine .minimal-kicker {
+  margin: 0;
+}
+
+.reliability-selected-machine strong,
+.reliability-selected-machine small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.reliability-selected-machine strong {
+  color: #111827;
+  font-size: 17px;
+}
+
+.reliability-selected-machine small {
+  color: #5b6573;
+  line-height: 1.4;
+}
+
+@media (max-width: 760px) {
+  .reliability-machine-results {
+    grid-template-columns: 1fr;
+    max-height: 68dvh;
+    padding-right: 3px;
+  }
+
+  .reliability-machine-result,
+  button.reliability-machine-result {
+    min-height: 0;
+  }
+
+  .reliability-selected-machine {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .reliability-selected-machine .button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .reliability-search-field input {
+    font-size: 16px;
+  }
+
+  .reliability-machine-result-facts > span {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .reliability-machine-result,
+  .reliability-selected-machine {
+    border-color: #667085 !important;
+  }
+
+  .reliability-search-status,
+  .reliability-machine-result-facts > span,
+  .reliability-selected-machine small {
+    color: #344054 !important;
+  }
+}
