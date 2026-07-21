@@ -33,6 +33,7 @@ import './fixed-top-navigation.css';
 import './role-workspace-details.css';
 import './reliability-machine-search.css';
 import './desktop-nav-overflow.css';
+import './table-column-filters.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { GlobalAccountMenu } from '@/components/layout/GlobalAccountMenu';
 
