@@ -29,6 +29,7 @@ import './professional-layout-system.css';
 import './user-first-layout.css';
 import './scanner-feedback-fix.css';
 import './dark-bezel-navigation.css';
+import './fixed-top-navigation.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { GlobalAccountMenu } from '@/components/layout/GlobalAccountMenu';
 
