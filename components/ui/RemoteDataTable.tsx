@@ -1,7 +1,14 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
-import type { EnterpriseColumn } from '@/components/ui/EnterpriseDataTable';
+import {
+  normaliseTableFilter,
+  rowMatchesColumnFilters,
+  type EnterpriseColumn,
+  type TableColumnFilters,
+} from '@/components/ui/EnterpriseDataTable';
+import { TableScrollFrame } from '@/components/ui/TableScrollFrame';
 import { useResizableColumns } from '@/components/ui/useResizableColumns';
 
 type RemoteDataTableProps<T> = {
@@ -19,6 +26,8 @@ type RemoteDataTableProps<T> = {
   actions?: ReactNode;
   filters?: ReactNode;
   tableId?: string;
+  columnFilters?: TableColumnFilters;
+  onColumnFiltersChange?: (filters: TableColumnFilters) => void;
   onSearchChange: (value: string) => void;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
@@ -62,13 +71,22 @@ export function RemoteDataTable<T>({
   actions,
   filters,
   tableId = 'remote',
+  columnFilters,
+  onColumnFiltersChange,
   onSearchChange,
   onPageChange,
   onPageSizeChange,
 }: RemoteDataTableProps<T>) {
+  const [localColumnFilters, setLocalColumnFilters] = useState<TableColumnFilters>({});
+  const effectiveColumnFilters = columnFilters ?? localColumnFilters;
+  const hasColumnFilters = Object.values(effectiveColumnFilters).some((value) => normaliseTableFilter(value));
+  const visibleRows = useMemo(
+    () => rows.filter((row) => rowMatchesColumnFilters(row, columns, effectiveColumnFilters)),
+    [columns, effectiveColumnFilters, rows],
+  );
   const pageCount = Math.max(1, Math.ceil(totalRows / pageSize));
   const firstVisible = totalRows === 0 ? 0 : (page - 1) * pageSize + 1;
-  const lastVisible = Math.min(page * pageSize, totalRows);
+  const lastVisible = Math.min((page - 1) * pageSize + visibleRows.length, totalRows);
   const {
     activeColumnId,
     getColumnWidth,
@@ -78,6 +96,20 @@ export function RemoteDataTable<T>({
     startResize,
     totalWidth,
   } = useResizableColumns(columns, tableId);
+
+  function updateColumnFilter(columnId: string, value: string) {
+    const next = { ...effectiveColumnFilters };
+    if (value) next[columnId] = value;
+    else delete next[columnId];
+
+    if (onColumnFiltersChange) onColumnFiltersChange(next);
+    else setLocalColumnFilters(next);
+  }
+
+  function clearColumnFilters() {
+    if (onColumnFiltersChange) onColumnFiltersChange({});
+    else setLocalColumnFilters({});
+  }
 
   return (
     <section className="enterprise-table-shell remote-table-shell">
@@ -95,12 +127,13 @@ export function RemoteDataTable<T>({
           <strong>{totalRows.toLocaleString()}</strong> matching record(s)
         </div>
         {actions ? <div className="enterprise-table-actions">{actions}</div> : null}
+        {hasColumnFilters ? <button className="button secondary" disabled={loading} onClick={clearColumnFilters} type="button">Clear column filters</button> : null}
         <button className="button secondary column-width-reset" onClick={resetWidths} type="button">Reset columns</button>
       </div>
 
       {filters ? <div className="remote-table-filters">{filters}</div> : null}
 
-      <div className="table-wrap enterprise-table-wrap">
+      <TableScrollFrame totalWidth={totalWidth}>
         <table className="resizable-enterprise-table" style={{ minWidth: `${totalWidth}px`, width: `${totalWidth}px` }}>
           <colgroup>
             {columns.map((column) => <col key={column.id} style={{ width: `${getColumnWidth(column.id)}px` }} />)}
@@ -109,10 +142,26 @@ export function RemoteDataTable<T>({
             <tr>
               {columns.map((column) => {
                 const columnWidth = getColumnWidth(column.id);
+                const filterable = column.filterable !== false;
                 return (
                   <th className={column.className} key={column.id} style={{ width: `${columnWidth}px` }}>
-                    <div className="resizable-th-content">
-                      <span className="table-header-label">{column.header}</span>
+                    <div className="resizable-th-stack">
+                      <div className="resizable-th-content">
+                        <span className="table-header-label">{column.header}</span>
+                      </div>
+                      {filterable ? (
+                        <input
+                          aria-label={`Filter ${column.header} column`}
+                          autoComplete="off"
+                          className="table-column-filter-input"
+                          disabled={loading}
+                          onChange={(event) => updateColumnFilter(column.id, event.target.value)}
+                          placeholder={column.filterPlaceholder ?? `Filter ${column.header}`}
+                          spellCheck={false}
+                          type="search"
+                          value={effectiveColumnFilters[column.id] ?? ''}
+                        />
+                      ) : <span aria-hidden="true" className="table-column-filter-spacer" />}
                       <button
                         aria-label={`Resize ${column.header} column. Drag, use arrow keys, or double click to reset.`}
                         aria-valuenow={columnWidth}
@@ -135,9 +184,9 @@ export function RemoteDataTable<T>({
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 ? (
+            {visibleRows.length === 0 ? (
               <tr><td colSpan={columns.length}>{loading ? 'Loading records...' : emptyMessage}</td></tr>
-            ) : rows.map((row) => (
+            ) : visibleRows.map((row) => (
               <tr key={rowKey(row)}>
                 {columns.map((column) => {
                   const columnWidth = getColumnWidth(column.id);
@@ -147,7 +196,7 @@ export function RemoteDataTable<T>({
             ))}
           </tbody>
         </table>
-      </div>
+      </TableScrollFrame>
 
       <div className="enterprise-table-pagination">
         <div>{loading ? 'Refreshing...' : `Showing ${firstVisible.toLocaleString()}-${lastVisible.toLocaleString()} of ${totalRows.toLocaleString()}`}</div>
