@@ -25,9 +25,9 @@ import './professional-nowrap-layout.css';
 import './resizable-tables.css';
 import './account-menu.css';
 import './account-menu-brand-placement.css';
+import './professional-layout-system.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { GlobalAccountMenu } from '@/components/layout/GlobalAccountMenu';
-import { TwistingRibbonBackground } from '@/components/ui/TwistingRibbonBackground';
 
 export const metadata = {
   title: 'DallmayrERP',
@@ -44,7 +44,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <TwistingRibbonBackground />
         <AuthProvider>
           <GlobalAccountMenu />
           {children}
