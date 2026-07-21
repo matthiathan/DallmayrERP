@@ -23,7 +23,9 @@ import './text-visibility-polish.css';
 import './contrast-pairing.css';
 import './professional-nowrap-layout.css';
 import './resizable-tables.css';
+import './account-menu.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
+import { GlobalAccountMenu } from '@/components/layout/GlobalAccountMenu';
 import { TwistingRibbonBackground } from '@/components/ui/TwistingRibbonBackground';
 
 export const metadata = {
@@ -42,7 +44,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         <TwistingRibbonBackground />
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <GlobalAccountMenu />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
