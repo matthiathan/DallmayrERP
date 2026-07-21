@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
-import { type EnterpriseColumn } from '@/components/ui/EnterpriseDataTable';
+import { type EnterpriseColumn, type TableColumnFilters } from '@/components/ui/EnterpriseDataTable';
 import { PageToolbar } from '@/components/ui/PageToolbar';
 import { RemoteDataTable } from '@/components/ui/RemoteDataTable';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -18,12 +18,18 @@ function normaliseSearch(value: string) {
   return value.trim().replace(/[,()]/g, ' ');
 }
 
+function containsPattern(value: string | undefined) {
+  const clean = normaliseSearch(value ?? '').replace(/[%_\\]/g, '');
+  return clean ? `%${clean}%` : null;
+}
+
 export default function CustomerDirectoryPage() {
   const querySearch = useClientQueryParam('q');
   const customerSearch = useClientQueryParam('customer');
   const initialSearch = querySearch || customerSearch || '';
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [search, setSearch] = useState(initialSearch);
+  const [columnFilters, setColumnFilters] = useState<TableColumnFilters>({});
   const [branch, setBranch] = useState<(typeof branches)[number]>('all');
   const [status, setStatus] = useState<(typeof statuses)[number]>('all');
   const [page, setPage] = useState(1);
@@ -59,6 +65,22 @@ export default function CustomerDirectoryPage() {
       ].join(','));
     }
 
+    const customerFilter = containsPattern(columnFilters.name);
+    const codeFilter = containsPattern(columnFilters.code);
+    const branchFilter = containsPattern(columnFilters.branch);
+    const phoneFilter = containsPattern(columnFilters.phone);
+    const emailFilter = containsPattern(columnFilters.email);
+    const addressFilter = containsPattern(columnFilters.address);
+    const statusFilter = containsPattern(columnFilters.status);
+
+    if (customerFilter) query = query.ilike('customer_name', customerFilter);
+    if (codeFilter) query = query.ilike('customer_code', codeFilter);
+    if (branchFilter) query = query.ilike('branch', branchFilter);
+    if (phoneFilter) query = query.ilike('phone', phoneFilter);
+    if (emailFilter) query = query.ilike('email', emailFilter);
+    if (addressFilter) query = query.ilike('address', addressFilter);
+    if (statusFilter) query = query.ilike('status', statusFilter);
+
     const { data, count, error: loadError } = await query;
     if (loadError) {
       setError(loadError.message);
@@ -78,7 +100,7 @@ export default function CustomerDirectoryPage() {
       });
     }, 220);
     return () => window.clearTimeout(handle);
-  }, [search, branch, status, page, pageSize]);
+  }, [search, columnFilters, branch, status, page, pageSize]);
 
   useEffect(() => {
     setSearch(initialSearch);
@@ -118,9 +140,10 @@ export default function CustomerDirectoryPage() {
     <AppShell>
       <div className="page-header hero-panel spatial-card"><div><div className="badge">Customer Management</div><h1>Customer Directory</h1><p>Search customers and open a unified operational profile.</p></div></div>
       {error ? <div className="error">{error}</div> : null}
-      <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadCustomers} type="button">{loading ? 'Refreshing...' : 'Refresh directory'}</button>} description="Database-backed search by customer name, account code, branch, phone, email or address." lastUpdated={lastUpdated} title="Customer records" />
+      <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadCustomers} type="button">{loading ? 'Refreshing...' : 'Refresh directory'}</button>} description="Database-backed search by customer name, account code, branch, phone, email or address. Each column also supports its own contains filter." lastUpdated={lastUpdated} title="Customer records" />
       <RemoteDataTable
         actions={null}
+        columnFilters={columnFilters}
         columns={columns}
         emptyMessage="No matching customers found."
         filters={(
@@ -130,6 +153,7 @@ export default function CustomerDirectoryPage() {
           </>
         )}
         loading={loading}
+        onColumnFiltersChange={(filters) => { setColumnFilters(filters); setPage(1); }}
         onPageChange={setPage}
         onPageSizeChange={updatePageSize}
         onSearchChange={updateSearch}
@@ -139,6 +163,7 @@ export default function CustomerDirectoryPage() {
         rows={customers}
         search={search}
         searchPlaceholder="Search customer, account code, phone, email or address"
+        tableId="customer-directory"
         totalRows={totalRows}
       />
     </AppShell>

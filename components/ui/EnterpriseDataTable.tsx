@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
+import { TableScrollFrame } from '@/components/ui/TableScrollFrame';
 import { useResizableColumns } from '@/components/ui/useResizableColumns';
+
+export type TableColumnFilters = Record<string, string>;
 
 export type EnterpriseColumn<T> = {
   id: string;
@@ -10,6 +13,8 @@ export type EnterpriseColumn<T> = {
   value: (row: T) => string | number | null | undefined;
   render?: (row: T) => ReactNode;
   sortable?: boolean;
+  filterable?: boolean;
+  filterPlaceholder?: string;
   className?: string;
   minWidth?: number;
   defaultWidth?: number;
@@ -26,6 +31,30 @@ function compareValues(left: string | number | null | undefined, right: string |
 function normalisePageSize(defaultPageSize: number, options: number[]) {
   if (options.includes(defaultPageSize)) return defaultPageSize;
   return options[0] ?? defaultPageSize;
+}
+
+export function normaliseTableFilter(value: unknown) {
+  return String(value ?? '')
+    .normalize('NFKC')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+export function rowMatchesColumnFilters<T>(
+  row: T,
+  columns: EnterpriseColumn<T>[],
+  filters: TableColumnFilters,
+) {
+  return Object.entries(filters).every(([columnId, rawTerm]) => {
+    const term = normaliseTableFilter(rawTerm);
+    if (!term) return true;
+
+    const column = columns.find((item) => item.id === columnId);
+    if (!column || column.filterable === false) return true;
+
+    return normaliseTableFilter(column.value(row)).includes(term);
+  });
 }
 
 function handleColumnResizeKey(
@@ -76,6 +105,7 @@ export function EnterpriseDataTable<T>({
 }) {
   const pageSizeChoices = useMemo(() => Array.from(new Set(pageSizeOptions)).sort((a, b) => a - b), [pageSizeOptions]);
   const [search, setSearch] = useState(initialSearch);
+  const [columnFilters, setColumnFilters] = useState<TableColumnFilters>({});
   const [sort, setSort] = useState<SortState>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => normalisePageSize(defaultPageSize, pageSizeChoices));
@@ -98,16 +128,19 @@ export function EnterpriseDataTable<T>({
   }, [defaultPageSize, pageSizeChoices]);
 
   const filteredRows = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return rows;
+    const term = normaliseTableFilter(search);
 
     return rows.filter((row) => {
-      const searchable = getSearchText
-        ? getSearchText(row)
-        : columns.map((column) => String(column.value(row) ?? '')).join(' ');
-      return searchable.toLowerCase().includes(term);
+      if (term) {
+        const searchable = getSearchText
+          ? getSearchText(row)
+          : columns.map((column) => String(column.value(row) ?? '')).join(' ');
+        if (!normaliseTableFilter(searchable).includes(term)) return false;
+      }
+
+      return rowMatchesColumnFilters(row, columns, columnFilters);
     });
-  }, [columns, getSearchText, rows, search]);
+  }, [columnFilters, columns, getSearchText, rows, search]);
 
   const sortedRows = useMemo(() => {
     if (!sort) return filteredRows;
@@ -128,7 +161,7 @@ export function EnterpriseDataTable<T>({
 
   useEffect(() => {
     setPage(1);
-  }, [search, pageSize]);
+  }, [search, pageSize, columnFilters]);
 
   useEffect(() => {
     if (page > pageCount) setPage(pageCount);
@@ -142,6 +175,16 @@ export function EnterpriseDataTable<T>({
     });
   }
 
+  function updateColumnFilter(columnId: string, value: string) {
+    setColumnFilters((current) => {
+      const next = { ...current };
+      if (value) next[columnId] = value;
+      else delete next[columnId];
+      return next;
+    });
+  }
+
+  const hasColumnFilters = Object.values(columnFilters).some((value) => normaliseTableFilter(value));
   const firstVisible = sortedRows.length === 0 ? 0 : (page - 1) * pageSize + 1;
   const lastVisible = Math.min(page * pageSize, sortedRows.length);
   const totalPagesLabel = pageCount.toLocaleString();
@@ -157,10 +200,11 @@ export function EnterpriseDataTable<T>({
           <strong>{filteredRows.length.toLocaleString()}</strong> of {rows.length.toLocaleString()} record(s)
         </div>
         {actions ? <div className="enterprise-table-actions">{actions}</div> : null}
+        {hasColumnFilters ? <button className="button secondary" onClick={() => setColumnFilters({})} type="button">Clear column filters</button> : null}
         <button className="button secondary column-width-reset" onClick={resetWidths} type="button">Reset columns</button>
       </div>
 
-      <div className="table-wrap enterprise-table-wrap">
+      <TableScrollFrame totalWidth={totalWidth}>
         <table className="resizable-enterprise-table" style={{ minWidth: `${totalWidth}px`, width: `${totalWidth}px` }}>
           <colgroup>
             {columns.map((column) => <col key={column.id} style={{ width: `${getColumnWidth(column.id)}px` }} />)}
@@ -170,15 +214,30 @@ export function EnterpriseDataTable<T>({
               {columns.map((column) => {
                 const activeSort = sort?.columnId === column.id ? sort.direction : null;
                 const columnWidth = getColumnWidth(column.id);
+                const filterable = column.filterable !== false;
                 return (
                   <th aria-sort={activeSort === 'asc' ? 'ascending' : activeSort === 'desc' ? 'descending' : 'none'} className={column.className} key={column.id} style={{ width: `${columnWidth}px` }}>
-                    <div className="resizable-th-content">
-                      {column.sortable ? (
-                        <button className="table-sort-button" onClick={() => toggleSort(column)} type="button">
-                          <span>{column.header}</span>
-                          <span aria-hidden="true">{activeSort === 'asc' ? '↑' : activeSort === 'desc' ? '↓' : '↕'}</span>
-                        </button>
-                      ) : <span className="table-header-label">{column.header}</span>}
+                    <div className="resizable-th-stack">
+                      <div className="resizable-th-content">
+                        {column.sortable ? (
+                          <button className="table-sort-button" onClick={() => toggleSort(column)} type="button">
+                            <span>{column.header}</span>
+                            <span aria-hidden="true">{activeSort === 'asc' ? '↑' : activeSort === 'desc' ? '↓' : '↕'}</span>
+                          </button>
+                        ) : <span className="table-header-label">{column.header}</span>}
+                      </div>
+                      {filterable ? (
+                        <input
+                          aria-label={`Filter ${column.header} column`}
+                          autoComplete="off"
+                          className="table-column-filter-input"
+                          onChange={(event) => updateColumnFilter(column.id, event.target.value)}
+                          placeholder={column.filterPlaceholder ?? `Filter ${column.header}`}
+                          spellCheck={false}
+                          type="search"
+                          value={columnFilters[column.id] ?? ''}
+                        />
+                      ) : <span aria-hidden="true" className="table-column-filter-spacer" />}
                       <button
                         aria-label={`Resize ${column.header} column. Drag, use arrow keys, or double click to reset.`}
                         aria-valuenow={columnWidth}
@@ -213,7 +272,7 @@ export function EnterpriseDataTable<T>({
             ))}
           </tbody>
         </table>
-      </div>
+      </TableScrollFrame>
 
       <div className="enterprise-table-pagination">
         <div>Showing {firstVisible.toLocaleString()}-{lastVisible.toLocaleString()} of {sortedRows.length.toLocaleString()}</div>
