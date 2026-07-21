@@ -10,10 +10,7 @@ function cleanScanValue(value: string) {
 }
 
 function messageClass(type: ScannerMessageType) {
-  if (type === 'success') return 'success';
-  if (type === 'error') return 'error';
-  if (type === 'warning') return 'badge warning';
-  return 'nav-heading';
+  return `scanner-message scanner-message-${type}`;
 }
 
 export function BarcodeCapture({
@@ -25,7 +22,7 @@ export function BarcodeCapture({
   value: string;
   onChange: (value: string) => void;
 }) {
-  const [message, setMessage] = useState('Tap Start camera to scan, or type the code manually. QR links are treated as plain text only.');
+  const [message, setMessage] = useState('Select Start camera scan, scan from a photo, or type the code manually. QR links are read as text only.');
   const [messageType, setMessageType] = useState<ScannerMessageType>('info');
   const [cameraActive, setCameraActive] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -75,7 +72,7 @@ export function BarcodeCapture({
   async function startCamera() {
     if (starting || cameraActive) return;
     setStarting(true);
-    setMessage('Opening rear camera. Allow camera access when prompted.');
+    setMessage('Opening the rear camera. Allow camera access when prompted.');
     setMessageType('info');
 
     try {
@@ -117,14 +114,14 @@ export function BarcodeCapture({
 
       setCameraActive(true);
       setStarting(false);
-      setMessage('Camera active. Point the box at the machine QR code or stock barcode.');
+      setMessage('Camera active. Point the scan box at the machine QR code or stock barcode.');
       setMessageType('info');
     } catch (err) {
       scannerRef.current = null;
       scanLockedRef.current = false;
       setCameraActive(false);
       setStarting(false);
-      setMessage(err instanceof Error ? err.message : 'Camera scanner could not start. Use manual entry or photo scan.');
+      setMessage(err instanceof Error ? err.message : 'The camera scanner could not start. Use manual entry or scan from a photo.');
       setMessageType('error');
     }
   }
@@ -134,7 +131,7 @@ export function BarcodeCapture({
     if (!file) return;
 
     setFileScanning(true);
-    setMessage('Scanning selected image locally on this device.');
+    setMessage('Scanning the selected image locally on this device.');
     setMessageType('info');
 
     try {
@@ -159,7 +156,7 @@ export function BarcodeCapture({
       await scanner.clear();
       scannerRef.current = null;
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'No barcode found in the photo. Try live camera or manual entry.');
+      setMessage(err instanceof Error ? err.message : 'No barcode was found in the photo. Try the live camera or manual entry.');
       setMessageType('warning');
     } finally {
       setFileScanning(false);
@@ -210,10 +207,23 @@ export function BarcodeCapture({
 
       <label>
         Scan from photo
-        <input accept="image/*" capture="environment" disabled={fileScanning} type="file" onChange={scanFile} />
+        <input
+          accept="image/*"
+          capture="environment"
+          className="scanner-file-input"
+          disabled={fileScanning}
+          type="file"
+          onChange={scanFile}
+        />
       </label>
 
-      <p className={messageClass(messageType)}>{message}</p>
+      <p
+        aria-atomic="true"
+        aria-live={messageType === 'error' ? 'assertive' : 'polite'}
+        className={messageClass(messageType)}
+      >
+        {message}
+      </p>
     </div>
   );
 }
