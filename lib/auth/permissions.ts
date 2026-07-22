@@ -71,7 +71,8 @@ export const navSections: NavSection[] = [
       { href: '/work', label: 'Action Centre', code: 'ACT01', roles: 'all', description: 'Assigned work, approvals, exceptions and operational requests.' },
       { href: '/work/execution', label: 'Work Execution', code: 'WEX01', roles: ['admin', 'operations', 'technician', 'road_technician'], description: 'Checklists, comments, parts used and controlled job closure.' },
       { href: '/operations', label: 'Operations Control', code: 'OPS01', roles: ['admin', 'operations'], description: 'Operations overview, exceptions and management controls.' },
-      { href: '/operations/service-jobs', label: 'Schedules Call Log', code: 'SCL21', roles: ['admin', 'operations'], description: 'Service jobs, dispatch, priorities and technician assignment.' },
+      { href: '/operations/service-planning', label: 'Service Route Planner', code: 'SRP01', roles: ['admin', 'operations'], description: 'Plan daily driver routes from paid monthly obligations and requested service work.' },
+      { href: '/operations/service-jobs', label: 'Scheduled Call Log', code: 'SCL21', roles: ['admin', 'operations'], description: 'Create requested service jobs, dispatch priorities and technician assignments.' },
       { href: '/operations/deliveries', label: 'Delivery Board', code: 'DL01', roles: ['admin', 'operations'], description: 'Picked, dispatched, delivered and closed delivery orders.' },
       { href: '/technician', label: 'Technician Jobs', code: 'TJ01', roles: ['admin', 'technician'], description: 'Technician queue for assigned machine work.' },
       { href: '/road-tech', label: 'Road Tech Routes', code: 'RT01', roles: ['admin', 'road_technician'], description: 'Road technician routes, delivery work and field tasks.' },
@@ -90,6 +91,7 @@ export const navSections: NavSection[] = [
       { href: '/marketing/campaigns', label: 'Campaigns', code: 'CMP01', roles: ['admin', 'marketing'], description: 'Campaign planning, execution and status tracking.' },
       { href: '/marketing/contract-renewals', label: 'Contract Renewals', code: 'REN01', roles: ['admin', 'marketing'], description: 'Renewal pipeline, risk and account follow-up.' },
       { href: '/finance', label: 'Finance Workspace', code: 'FIN01', roles: ['admin', 'finance'], description: 'Finance review, commercial risk and reporting.' },
+      { href: '/finance/service-coverage', label: 'Monthly Service Coverage', code: 'FSC01', roles: ['admin', 'finance'], description: 'Confirm monthly service payments and report paid customers who were not serviced.' },
     ],
   },
   {

@@ -1,0 +1,207 @@
+/* Paid monthly service planning and Finance coverage. */
+
+.monthly-service-stage {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+
+.monthly-service-stage > * {
+  min-width: 0;
+}
+
+.monthly-service-kpis {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.monthly-service-kpis .kpi-card {
+  min-width: 0;
+  min-height: 140px;
+}
+
+.monthly-service-kpis .nav-heading,
+.monthly-service-kpis .kpi-value,
+.monthly-service-kpis p {
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+
+.monthly-service-section,
+.monthly-service-editor {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.monthly-service-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  min-width: 0;
+}
+
+.monthly-service-editor-panel {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #d8dee7;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fff, #f7f8fa);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.monthly-service-editor-panel h3,
+.monthly-service-editor-panel p {
+  margin: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.monthly-service-editor-panel h3 {
+  color: #111827;
+  font-size: 17px;
+}
+
+.monthly-service-editor-panel p {
+  color: #5b6573;
+  line-height: 1.5;
+}
+
+.monthly-service-editor-panel .form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.monthly-service-editor-panel label,
+.service-plan-heading label {
+  min-width: 0;
+}
+
+.monthly-service-editor-panel input,
+.monthly-service-editor-panel select,
+.monthly-service-editor-panel textarea,
+.service-plan-heading select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.monthly-service-editor-panel textarea {
+  min-height: 94px;
+  resize: vertical;
+}
+
+.service-date-stepper {
+  display: grid;
+  grid-template-columns: auto minmax(150px, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.service-date-stepper .button {
+  min-width: 44px;
+  padding-inline: 10px;
+}
+
+.compact-action {
+  min-height: 34px !important;
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+}
+
+.compact-action.is-selected {
+  border-color: #b89122 !important;
+  background: rgba(184, 145, 34, 0.13) !important;
+  color: #6f5511 !important;
+  box-shadow: 0 0 0 2px rgba(184, 145, 34, 0.12) !important;
+}
+
+.monthly-service-stage .resizable-enterprise-table td strong {
+  display: grid;
+  gap: 4px;
+  white-space: normal !important;
+}
+
+.monthly-service-stage .resizable-enterprise-table td strong small,
+.monthly-service-stage .resizable-enterprise-table td div small {
+  display: block;
+  color: #667085;
+  font-weight: 500;
+  line-height: 1.35;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+
+.service-plan-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  min-width: 0;
+}
+
+.service-plan-heading > div {
+  min-width: 0;
+}
+
+.service-plan-heading > label {
+  flex: 0 1 270px;
+}
+
+.finance-service-editor {
+  margin-top: 4px;
+}
+
+@media (max-width: 1180px) {
+  .monthly-service-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .monthly-service-editor-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .monthly-service-stage {
+    gap: 16px;
+  }
+
+  .monthly-service-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .monthly-service-kpis .kpi-card {
+    min-height: 0;
+  }
+
+  .monthly-service-editor-panel {
+    padding: 15px;
+  }
+
+  .monthly-service-editor-panel .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .service-date-stepper {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+  }
+
+  .service-plan-heading {
+    display: grid;
+    align-items: start;
+  }
+
+  .service-plan-heading > label {
+    width: 100%;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .monthly-service-editor-panel {
+    border-color: #667085;
+  }
+}
