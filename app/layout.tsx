@@ -95,7 +95,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html data-background-style="aurora" data-theme-tone="dark" lang="en">
+    <html
+      data-background-style="aurora"
+      data-theme-tone="dark"
+      lang="en"
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: APPEARANCE_BOOT_SCRIPT }} />
       </head>
