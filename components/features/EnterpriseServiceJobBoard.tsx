@@ -2,12 +2,18 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { ServiceCallLogCreateForm, type TechnicianOption } from '@/components/features/ServiceCallLogCreateForm';
 import { PageToolbar } from '@/components/ui/PageToolbar';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Branch } from '@/types/dallmayrerp';
 import type { ServiceJobRecord, ServiceJobStatus, ServicePriority } from '@/types/enterprise-records';
+
+type TechnicianOption = {
+  user_id: string;
+  display_name: string;
+  role: string;
+  branch: Branch;
+};
 
 type CustomerRelation = { customer_name: string | null };
 type MachineRelation = { machine_name: string | null; serial_number: string | null };
@@ -57,8 +63,7 @@ export function EnterpriseServiceJobBoard() {
     setError(null);
     const client = getSupabaseClient();
     const [jobsResult, techniciansResult] = await Promise.all([
-      client
-        .from('service_jobs')
+      client.from('service_jobs')
         .select(`
           id, job_number, incident_number, branch, customer_id,
           customer_code_snapshot, customer_name_snapshot, site_id, machine_id,
@@ -154,31 +159,12 @@ export function EnterpriseServiceJobBoard() {
       const machine = firstRelation(job.machines);
       const technician = job.assigned_to ? technicianMap.get(job.assigned_to)?.display_name ?? '' : '';
       const text = [
-        job.id,
-        job.incident_number,
-        job.job_number,
-        job.ticket_case_number,
-        job.ticket_reference,
-        job.work_order_number,
-        job.summary,
-        job.complaint_details,
-        customer,
-        job.customer_code_snapshot,
-        job.contact_name,
-        job.telephone,
-        job.mobile,
-        job.contact_email,
-        job.service_type,
-        job.service_code,
-        job.site_location,
-        job.call_type,
-        job.call_reason,
-        job.category,
-        job.sub_category,
-        job.group_3,
-        machine?.machine_name,
-        machine?.serial_number,
-        technician,
+        job.id, job.incident_number, job.job_number, job.ticket_case_number,
+        job.ticket_reference, job.work_order_number, job.summary, job.complaint_details,
+        customer, job.customer_code_snapshot, job.contact_name, job.telephone, job.mobile,
+        job.contact_email, job.service_type, job.service_code, job.site_location,
+        job.call_type, job.call_reason, job.category, job.sub_category, job.group_3,
+        machine?.machine_name, machine?.serial_number, technician,
       ].join(' ').toLowerCase();
 
       return (!term || text.includes(term))
@@ -197,17 +183,13 @@ export function EnterpriseServiceJobBoard() {
       {error ? <div className="error" role="alert">{error}</div> : null}
       {message ? <div className="success" role="status">{message}</div> : null}
 
-      <ServiceCallLogCreateForm technicians={technicians} onCreated={loadBoard} />
-
       <PageToolbar
         actions={<button className="button secondary" onClick={() => loadBoard().catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Refresh failed.'))} type="button">Refresh board</button>}
-        description="Search the complete call log and move service work only through valid workflow stages."
+        description="View, search, assign and progress scheduled call-log records through controlled workflow stages. New recurring plans are created under Preventive Maintenance."
         lastUpdated={lastUpdated}
         title="Service dispatch"
       >
-        <label>Search
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Incident, ticket, WO, customer, contact or machine" type="search" />
-        </label>
+        <label>Search<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Incident, ticket, WO, customer, contact or machine" type="search" /></label>
         <label>Branch
           <select value={branchFilter} onChange={(event) => setBranchFilter(event.target.value)}>
             <option value="all">All branches</option>
@@ -225,10 +207,7 @@ export function EnterpriseServiceJobBoard() {
       <div className="grid grid-3 service-call-log-board">
         {grouped.map((group) => (
           <section className="card spatial-card service-call-log-lane" key={group.status}>
-            <div className="page-toolbar-heading">
-              <h3>{group.status.replace(/_/g, ' ')}</h3>
-              <StatusBadge value={group.status} />
-            </div>
+            <div className="page-toolbar-heading"><h3>{group.status.replace(/_/g, ' ')}</h3><StatusBadge value={group.status} /></div>
             <p>{group.jobs.length} call log(s)</p>
             <div className="grid">
               {group.jobs.length === 0 ? <div className="feature-pill">No call logs in this stage</div> : null}
@@ -236,11 +215,7 @@ export function EnterpriseServiceJobBoard() {
                 const customer = job.customer_name_snapshot ?? firstRelation(job.customers)?.customer_name ?? 'Customer not linked';
                 const machine = firstRelation(job.machines);
                 const assignedTechnician = job.assigned_to ? technicianMap.get(job.assigned_to) : null;
-                const overdue = Boolean(
-                  job.due_at
-                  && new Date(job.due_at).getTime() < Date.now()
-                  && !['completed', 'verified', 'closed', 'cancelled'].includes(job.status),
-                );
+                const overdue = Boolean(job.due_at && new Date(job.due_at).getTime() < Date.now() && !['completed', 'verified', 'closed', 'cancelled'].includes(job.status));
                 const requirements = [
                   job.parts_extra ? 'Parts extra' : null,
                   job.performance_report_required ? 'Performance report' : null,
@@ -251,15 +226,10 @@ export function EnterpriseServiceJobBoard() {
                 return (
                   <article className="neo-card service-call-log-card" key={job.id}>
                     <div className="page-toolbar-heading">
-                      <div>
-                        <strong>Incident {job.incident_number}</strong>
-                        <small>{job.job_number}</small>
-                      </div>
+                      <div><strong>Incident {job.incident_number}</strong><small>{job.job_number}</small></div>
                       <StatusBadge value={job.priority} />
                     </div>
-
                     <p className="service-call-log-summary"><strong>{job.complaint_details}</strong></p>
-
                     <dl className="service-call-log-details">
                       <div><dt>Customer</dt><dd>{job.customer_code_snapshot ? `${job.customer_code_snapshot} — ` : ''}{customer}</dd></div>
                       <div><dt>Service</dt><dd>{job.service_code ? `${job.service_code} — ` : ''}{job.service_type}</dd></div>
@@ -270,17 +240,10 @@ export function EnterpriseServiceJobBoard() {
                       <div><dt>WO / Ticket</dt><dd>{job.work_order_number || 'No WO'} · {job.ticket_case_number || 'No ticket case'}</dd></div>
                       <div><dt>Reported</dt><dd>{formatDateTime(job.reported_at)}</dd></div>
                     </dl>
-
-                    {requirements.length > 0 ? (
-                      <div className="service-call-log-flags">
-                        {requirements.map((requirement) => <span key={requirement}>{requirement}</span>)}
-                      </div>
-                    ) : null}
-
+                    {requirements.length > 0 ? <div className="service-call-log-flags">{requirements.map((requirement) => <span key={requirement}>{requirement}</span>)}</div> : null}
                     {job.assignment_notes ? <p className="service-call-log-note"><strong>Assignment notes:</strong> {job.assignment_notes}</p> : null}
                     {job.due_at ? <p>{overdue ? <StatusBadge value="overdue" /> : null} Follow up {formatDateTime(job.due_at)}</p> : null}
                     {job.closed_at ? <p><strong>Closed:</strong> {formatDateTime(job.closed_at)}{job.closing_remarks ? ` — ${job.closing_remarks}` : ''}</p> : null}
-
                     <label>Technician
                       <select disabled={updatingId === job.id || ['closed', 'cancelled'].includes(job.status)} value={job.assigned_to ?? ''} onChange={(event) => assignJob(job, event.target.value)}>
                         <option value="">Unassigned</option>
