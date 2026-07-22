@@ -9,7 +9,7 @@ export default function OperationsServiceJobsPage() {
         <div>
           <div className="badge">Operations</div>
           <h1>Scheduled Call Log</h1>
-          <p>Create complete customer service incidents, assign technicians, track follow-ups and control verified closure.</p>
+          <p>View service incidents, assign technicians, track follow-ups and control verified closure. Recurring plans are created under Preventive Maintenance.</p>
         </div>
       </div>
       <Suspense fallback={<div className="neo-card"><h2>Loading service call log...</h2></div>}>
