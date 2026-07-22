@@ -1,0 +1,211 @@
+/* Dedicated Operations Manager workspace and reporting layouts. */
+
+.operations-manager-stage {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+
+.operations-manager-kpis {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.operations-manager-kpis > * {
+  min-width: 0;
+}
+
+.operations-manager-section {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.operations-route-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.operations-route-summary > div,
+.operations-exception-grid > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #d9dee6;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff, #f7f8fa);
+}
+
+.operations-route-summary span,
+.operations-exception-grid span {
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.operations-route-summary strong,
+.operations-exception-grid strong {
+  color: #111827;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.operations-attention-list {
+  display: grid;
+  gap: 10px;
+}
+
+.operations-attention-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid #d9dee6;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.operations-attention-card > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.operations-attention-card > div:last-child {
+  justify-items: end;
+}
+
+.operations-attention-card strong,
+.operations-attention-card small,
+.operations-attention-card span {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.operations-attention-card small {
+  color: #667085;
+  line-height: 1.4;
+}
+
+.operations-manager-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.operations-manager-actions .role-action-card {
+  min-height: 132px;
+}
+
+.operations-indicator-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.operations-indicator-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #d9dee6;
+  border-radius: 13px;
+  background: linear-gradient(180deg, #fff, #f7f8fa);
+}
+
+.operations-indicator-card > div {
+  display: grid;
+  gap: 6px;
+}
+
+.operations-indicator-card span {
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.operations-indicator-card strong {
+  color: #111827;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.operations-indicator-card .status-badge {
+  justify-content: flex-start;
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+}
+
+.operations-exception-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.operations-exception-grid .status-badge {
+  justify-self: start;
+}
+
+.compact-empty-state {
+  min-height: 80px;
+  padding: 18px;
+}
+
+@media (max-width: 1180px) {
+  .operations-manager-kpis,
+  .operations-route-summary,
+  .operations-exception-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .operations-manager-actions,
+  .operations-indicator-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .operations-manager-stage {
+    gap: 16px;
+  }
+
+  .operations-manager-kpis,
+  .operations-route-summary,
+  .operations-manager-actions,
+  .operations-indicator-grid,
+  .operations-exception-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .operations-attention-card {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .operations-attention-card > div:last-child {
+    justify-items: start;
+  }
+
+  .operations-manager-actions .role-action-card {
+    min-height: 0;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .operations-route-summary > div,
+  .operations-exception-grid > div,
+  .operations-attention-card,
+  .operations-indicator-card {
+    border-color: #667085;
+  }
+}

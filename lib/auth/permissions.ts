@@ -6,6 +6,7 @@ export type NavItem = {
   roles: BusinessRole[] | 'all';
   code: string;
   description?: string;
+  navigationOnlyFor?: BusinessRole[];
 };
 
 export type NavSection = {
@@ -15,7 +16,7 @@ export type NavSection = {
 
 export const roleHomePath: Record<BusinessRole, string> = {
   admin: '/workspace',
-  operations: '/workspace',
+  operations: '/operations/dashboard',
   sales: '/workspace',
   finance: '/workspace',
   marketing: '/workspace',
@@ -27,7 +28,7 @@ export const roleHomePath: Record<BusinessRole, string> = {
 
 export const roleLabels: Record<BusinessRole, string> = {
   admin: 'Administrator',
-  operations: 'Operations',
+  operations: 'Operations Manager',
   sales: 'Sales',
   finance: 'Finance',
   marketing: 'Marketing',
@@ -37,7 +38,58 @@ export const roleLabels: Record<BusinessRole, string> = {
   road_technician: 'Road Technician',
 };
 
+const operationsNavigationOnly: BusinessRole[] = ['operations'];
+
 export const navSections: NavSection[] = [
+  {
+    heading: 'Operations',
+    items: [
+      { href: '/operations/dashboard', label: 'Operations Start Page', code: 'OPH01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Live branch workload, route pressure, service exceptions and daily priorities.' },
+      { href: '/operations/service-planning', label: 'Daily Service Planner', code: 'SRP01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Plan clients, drivers, route numbers, stop order and reschedules.' },
+      { href: '/operations/service-jobs', label: 'Scheduled Call Log', code: 'SCL21', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Create request-only service work and assign technicians.' },
+      { href: '/operations/deliveries', label: 'Delivery Board', code: 'DL01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Control picked, dispatched, delivered and closed delivery orders.' },
+      { href: '/work', label: 'Operations Action Centre', code: 'ACT01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Review approvals, exceptions, unassigned work and escalations.' },
+      { href: '/work/execution', label: 'Work Execution Review', code: 'WEX01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Review checklists, evidence, parts used and controlled closure.' },
+    ],
+  },
+  {
+    heading: 'Assets & Maintenance',
+    items: [
+      { href: '/customers', label: 'Customer Master', code: 'CM01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Customer accounts, sites, contacts, addresses and branch ownership.' },
+      { href: '/operations/assets', label: 'Machine Master', code: 'MM01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Machine register, customer links, QR codes and serial numbers.' },
+      { href: '/operations/assets/lifecycle', label: 'Asset Lifecycle', code: 'FAL01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Custody, condition, audit history and lifecycle events.' },
+      { href: '/operations/reliability', label: 'Asset Reliability', code: 'FAR01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Meter readings, downtime, restoration and reliability evidence.' },
+      { href: '/operations/maintenance', label: 'Preventive Maintenance', code: 'PM01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Calendar, meter and hybrid maintenance planning.' },
+      { href: '/utilities/data-matching', label: 'Data Matching Workbench', code: 'DQ01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Resolve unlinked machines, duplicate customers, barcodes and serials.' },
+    ],
+  },
+  {
+    heading: 'Inventory',
+    items: [
+      { href: '/warehouse/stock', label: 'Stock Control', code: 'SC01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Review stock, scans, issues, transfers, adjustments and counts.' },
+      { href: '/warehouse/planning', label: 'Inventory Planning', code: 'IP01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Stock-out risk, recommended orders and branch redistribution.' },
+      { href: '/warehouse/purchasing', label: 'Purchase Orders', code: 'PO01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Create purchase orders and monitor receiving.' },
+      { href: '/warehouse/purchasing/approvals', label: 'Purchase Approvals', code: 'PA01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Review purchase requests and operational approval risk.' },
+      { href: '/warehouse/locations', label: 'Warehouse Locations', code: 'WL01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Warehouses, stockrooms, shelves, bins and dispatch areas.' },
+      { href: '/warehouse/traceability', label: 'Lots & Serials', code: 'QRCD', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Lot, serial, expiry and barcode traceability.' },
+      { href: '/warehouse/ledger', label: 'Inventory Ledger', code: 'BIL01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Read-only stock movement and balance history.' },
+    ],
+  },
+  {
+    heading: 'Reports',
+    items: [
+      { href: '/operations/reports', label: 'Operations Performance', code: 'OPR01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Service, route, delivery and workload performance by date and branch.' },
+      { href: '/operations/maintenance', label: 'Maintenance Due', code: 'OPR02', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Forward-looking preventive maintenance pressure.' },
+      { href: '/warehouse/planning', label: 'Inventory Exceptions', code: 'OPR03', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Low stock, excess stock and redistribution exceptions.' },
+    ],
+  },
+  {
+    heading: 'Windows',
+    items: [
+      { href: '/operations/dashboard', label: 'Operations Start Page', code: 'WIN01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Return to the Operations Manager home page.' },
+      { href: '/work', label: 'Action Centre', code: 'WIN02', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Open the Operations action and exception inbox.' },
+    ],
+  },
   {
     heading: 'System',
     items: [
@@ -133,6 +185,8 @@ export const navSections: NavSection[] = [
 ];
 
 export function isNavItemAllowed(role: BusinessRole, item: NavItem) {
+  if (item.navigationOnlyFor) return item.navigationOnlyFor.includes(role);
+  if (role === 'operations') return false;
   return item.roles === 'all' || item.roles.includes(role) || role === 'admin';
 }
 
