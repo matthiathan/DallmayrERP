@@ -1,0 +1,434 @@
+:root {
+  --user-accent: #d4af37;
+  --user-theme: #7a4b22;
+  --user-background: #0d0905;
+  --accent-ink: #101318;
+
+  --accent: var(--user-accent);
+  --accent-bright: color-mix(in srgb, var(--user-accent) 68%, white);
+  --accent-soft: color-mix(in srgb, var(--user-accent) 22%, transparent);
+  --accent-faint: color-mix(in srgb, var(--user-accent) 9%, transparent);
+  --accent-dark: color-mix(in srgb, var(--user-accent) 58%, black);
+  --accent-deep: color-mix(in srgb, var(--user-accent) 34%, black);
+  --accent-border: color-mix(in srgb, var(--user-accent) 46%, transparent);
+  --accent-glow: 0 0 0 3px color-mix(in srgb, var(--user-accent) 18%, transparent),
+    0 0 24px color-mix(in srgb, var(--user-accent) 16%, transparent);
+
+  /* Compatibility aliases used throughout the existing design system. */
+  --gold: var(--user-accent);
+  --gold-2: var(--accent-bright);
+  --gold-dark: var(--accent-dark);
+  --primary: var(--user-accent);
+  --primary-color: var(--user-accent);
+  --primary-strong: var(--accent-dark);
+  --primary-soft: var(--accent-soft);
+  --focus-color: var(--user-accent);
+  --link-color: var(--accent-bright);
+}
+
+html,
+html[data-theme-tone='dark'] {
+  color-scheme: dark;
+  --bg: color-mix(in srgb, var(--user-background) 84%, black);
+  --bg-deep: color-mix(in srgb, var(--user-background) 58%, black);
+  --surface: color-mix(in srgb, var(--user-theme) 28%, #08090b);
+  --surface-2: color-mix(in srgb, var(--user-theme) 38%, #0b0d11);
+  --surface-3: color-mix(in srgb, var(--user-theme) 50%, #101319);
+  --surface-raised: color-mix(in srgb, var(--user-theme) 42%, #15171c);
+  --surface-input: color-mix(in srgb, var(--user-theme) 16%, #08090b);
+  --ridge: color-mix(in srgb, var(--user-theme) 58%, white);
+  --ridge-soft: color-mix(in srgb, var(--user-theme) 24%, transparent);
+  --text: #fffaf0;
+  --text-strong: #ffffff;
+  --muted: #d8d2c8;
+  --muted-strong: #eee8dc;
+  --panel-border: color-mix(in srgb, var(--user-theme) 46%, white 18%);
+  --panel-highlight: color-mix(in srgb, var(--user-theme) 18%, white);
+  --panel-shadow: rgba(0, 0, 0, 0.5);
+  --nav-text: #f8f4ec;
+  --input-placeholder: rgba(255, 250, 240, 0.46);
+}
+
+html[data-theme-tone='light'] {
+  color-scheme: light;
+  --bg: color-mix(in srgb, var(--user-background) 18%, white);
+  --bg-deep: color-mix(in srgb, var(--user-background) 32%, #e6eaf0);
+  --surface: color-mix(in srgb, var(--user-theme) 9%, white);
+  --surface-2: color-mix(in srgb, var(--user-theme) 15%, white);
+  --surface-3: color-mix(in srgb, var(--user-theme) 24%, white);
+  --surface-raised: color-mix(in srgb, var(--user-theme) 12%, white);
+  --surface-input: color-mix(in srgb, var(--user-theme) 5%, white);
+  --ridge: color-mix(in srgb, var(--user-theme) 54%, #334155);
+  --ridge-soft: color-mix(in srgb, var(--user-theme) 22%, transparent);
+  --text: #172033;
+  --text-strong: #0f172a;
+  --muted: #52606f;
+  --muted-strong: #334155;
+  --panel-border: color-mix(in srgb, var(--user-theme) 30%, #64748b);
+  --panel-highlight: rgba(255, 255, 255, 0.86);
+  --panel-shadow: rgba(15, 23, 42, 0.18);
+  --nav-text: #172033;
+  --input-placeholder: rgba(23, 32, 51, 0.46);
+  --shadow-heavy: 0 24px 62px rgba(15, 23, 42, 0.18);
+  --shadow-raised: 7px 9px 20px rgba(15, 23, 42, 0.15), -2px -2px 8px rgba(255, 255, 255, 0.72);
+  --shadow-inset: inset 4px 5px 11px rgba(15, 23, 42, 0.12), inset -2px -2px 7px rgba(255, 255, 255, 0.78);
+}
+
+html {
+  background: var(--bg-deep) !important;
+  scrollbar-color: var(--accent) var(--surface);
+}
+
+body {
+  color: var(--text) !important;
+  background-color: var(--bg-deep) !important;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+html[data-background-style='aurora'] body {
+  background:
+    radial-gradient(circle at 14% 8%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 31%),
+    radial-gradient(circle at 86% 10%, color-mix(in srgb, var(--user-theme) 44%, transparent), transparent 29%),
+    radial-gradient(circle at 52% 88%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 35%),
+    linear-gradient(135deg, var(--bg-deep), var(--bg) 46%, var(--bg-deep)) !important;
+}
+
+html[data-background-style='mesh'] body {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, transparent) 0 25%, transparent 25% 50%, color-mix(in srgb, var(--user-theme) 18%, transparent) 50% 75%, transparent 75%) 0 0 / 64px 64px,
+    linear-gradient(45deg, transparent 0 25%, color-mix(in srgb, var(--accent) 7%, transparent) 25% 50%, transparent 50% 75%, color-mix(in srgb, var(--user-theme) 14%, transparent) 75%) 0 0 / 64px 64px,
+    linear-gradient(145deg, var(--bg-deep), var(--bg)) !important;
+}
+
+html[data-background-style='dots'] body {
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--accent) 24%, transparent) 1.2px, transparent 1.4px) 0 0 / 24px 24px,
+    radial-gradient(circle, color-mix(in srgb, var(--user-theme) 26%, transparent) 1px, transparent 1.3px) 12px 12px / 24px 24px,
+    linear-gradient(145deg, var(--bg-deep), var(--bg)) !important;
+}
+
+html[data-background-style='solid'] body {
+  background: var(--bg-deep) !important;
+}
+
+html[data-background-style='solid'] body::before,
+html[data-background-style='solid'] body::after,
+html[data-background-style='dots'] body::before {
+  opacity: 0 !important;
+}
+
+body::before {
+  background-image:
+    linear-gradient(45deg, color-mix(in srgb, var(--accent) 5%, transparent) 25%, transparent 25%),
+    linear-gradient(-45deg, color-mix(in srgb, var(--user-theme) 7%, transparent) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(0, 0, 0, 0.12) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(0, 0, 0, 0.09) 75%) !important;
+}
+
+body::after {
+  background:
+    radial-gradient(ellipse at center, transparent 42%, color-mix(in srgb, var(--bg-deep) 72%, transparent) 100%),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 5%, transparent), transparent 18%, transparent 82%, color-mix(in srgb, var(--user-theme) 7%, transparent)) !important;
+}
+
+::selection {
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+
+* {
+  scrollbar-color: var(--accent) color-mix(in srgb, var(--surface) 82%, transparent);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--accent-bright), var(--accent-dark));
+  border: 2px solid var(--surface);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+
+input[type='checkbox'],
+input[type='radio'],
+input[type='range'],
+progress {
+  accent-color: var(--accent);
+}
+
+/* Theme every structural surface from one set of tokens. */
+.sidebar,
+.neo-sidebar,
+.erp-chrome,
+.erp-chrome.topbar,
+.erp-menu-row,
+.notch-menu-row,
+.mobile-nav-panel,
+.notch-menu-panel,
+.erp-menu-panel {
+  color: var(--nav-text) !important;
+  border-color: var(--panel-border) !important;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--panel-highlight) 28%, transparent), transparent 22%),
+    linear-gradient(155deg, var(--surface-3), var(--surface) 58%, var(--bg-deep)) !important;
+}
+
+.hero-panel,
+.card,
+.neo-card,
+.spatial-card,
+.minimal-panel,
+.minimal-card,
+.page-toolbar,
+.table-wrap,
+.enterprise-table-shell,
+.remote-table-shell,
+.user-chip,
+.feature-pill,
+.role-workspace-panel,
+.operations-manager-panel,
+.monthly-service-panel,
+.call-log-section,
+.requested-service-create-card {
+  color: var(--text) !important;
+  border-color: var(--panel-border) !important;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--panel-highlight) 22%, transparent), transparent 22%),
+    linear-gradient(145deg, var(--surface-raised), var(--surface) 58%, color-mix(in srgb, var(--bg-deep) 86%, black)) !important;
+  box-shadow:
+    var(--shadow-heavy),
+    inset 0 1px 0 color-mix(in srgb, var(--panel-highlight) 55%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--bg-deep) 72%, transparent) !important;
+}
+
+html[data-theme-tone='light'] .hero-panel,
+html[data-theme-tone='light'] .card,
+html[data-theme-tone='light'] .neo-card,
+html[data-theme-tone='light'] .spatial-card,
+html[data-theme-tone='light'] .minimal-panel,
+html[data-theme-tone='light'] .minimal-card,
+html[data-theme-tone='light'] .page-toolbar,
+html[data-theme-tone='light'] .table-wrap,
+html[data-theme-tone='light'] .enterprise-table-shell,
+html[data-theme-tone='light'] .remote-table-shell,
+html[data-theme-tone='light'] .call-log-section {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.8), transparent 26%),
+    linear-gradient(145deg, var(--surface-raised), var(--surface)) !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+strong,
+legend,
+.page-toolbar-heading,
+.minimal-panel-header,
+.call-log-create-header {
+  color: var(--text-strong);
+}
+
+p,
+small,
+label,
+dt,
+.field-note,
+.brand-subtitle {
+  color: var(--muted);
+}
+
+.brand,
+.brand strong,
+.kpi-value,
+.metric-value,
+.minimal-kicker,
+.nav-heading,
+th,
+.table-heading,
+.user-chip strong,
+.user-chip em,
+.link-accent,
+a.accent-link {
+  color: var(--accent-bright) !important;
+}
+
+.brand {
+  text-shadow:
+    0 2px 0 var(--accent-dark),
+    0 5px 12px var(--panel-shadow),
+    0 0 26px var(--accent-soft) !important;
+}
+
+/* Active navigation and interaction states all use the selected accent. */
+.nav-link:hover,
+.nav-link.active,
+.erp-menu-item:hover,
+.erp-menu-item.active,
+.erp-menu-link:hover,
+.erp-menu-link.active,
+.notch-menu-trigger:hover,
+.notch-menu-trigger.active,
+.mobile-nav-link:hover,
+.mobile-nav-link.active,
+[aria-current='page']:not(.status-badge) {
+  color: var(--accent-bright) !important;
+  border-color: var(--accent-border) !important;
+  box-shadow:
+    inset 3px 4px 10px color-mix(in srgb, var(--bg-deep) 72%, transparent),
+    0 0 0 1px var(--accent-faint),
+    0 10px 24px color-mix(in srgb, var(--accent) 10%, transparent) !important;
+}
+
+.erp-menu-item.active::after,
+.erp-menu-link.active::after,
+.notch-menu-trigger.active::after,
+.mobile-nav-link.active::after,
+[aria-current='page']::after {
+  background: var(--accent) !important;
+  box-shadow: 0 0 14px var(--accent-soft) !important;
+}
+
+/* Primary controls, badges and native focus rings. */
+.button:not(.secondary):not(.danger),
+.badge:not(.danger):not(.success),
+.primary-action,
+.pulse-button:not(.danger),
+.erp-primary-button {
+  color: var(--accent-ink) !important;
+  border-color: color-mix(in srgb, var(--accent-bright) 56%, transparent) !important;
+  background: linear-gradient(180deg, var(--accent-bright), var(--accent) 48%, var(--accent-dark)) !important;
+  text-shadow: 0 1px 0 color-mix(in srgb, white 40%, transparent) !important;
+  box-shadow:
+    0 8px 0 var(--accent-deep),
+    0 16px 28px color-mix(in srgb, var(--accent) 18%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 68%, transparent),
+    inset 0 -2px 0 color-mix(in srgb, black 25%, transparent) !important;
+}
+
+.button:not(.secondary):not(.danger):hover,
+.primary-action:hover,
+.erp-primary-button:hover {
+  box-shadow:
+    0 9px 0 var(--accent-deep),
+    0 20px 34px color-mix(in srgb, var(--accent) 24%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 74%, transparent) !important;
+}
+
+.button.secondary,
+.secondary-action,
+.feature-pill {
+  color: var(--text) !important;
+  border-color: var(--panel-border) !important;
+  background: linear-gradient(180deg, var(--surface-3), var(--surface-2) 54%, var(--surface)) !important;
+}
+
+input,
+select,
+textarea,
+.table-column-filter,
+.command-search input {
+  color: var(--text) !important;
+  border-color: var(--panel-border) !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-input) 88%, black), var(--surface-input)),
+    radial-gradient(circle at top, var(--accent-faint), transparent 54%) !important;
+  box-shadow: var(--shadow-inset) !important;
+}
+
+html[data-theme-tone='light'] input,
+html[data-theme-tone='light'] select,
+html[data-theme-tone='light'] textarea,
+html[data-theme-tone='light'] .table-column-filter,
+html[data-theme-tone='light'] .command-search input {
+  background: linear-gradient(180deg, #ffffff, var(--surface-input)) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--input-placeholder) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  border-color: var(--accent) !important;
+  outline: 2px solid var(--accent-soft) !important;
+  outline-offset: 2px;
+  box-shadow: var(--shadow-inset), var(--accent-glow) !important;
+}
+
+option {
+  color: var(--text);
+  background: var(--surface-raised);
+}
+
+table,
+td {
+  color: var(--text);
+}
+
+th,
+thead,
+.table-header-row {
+  border-color: var(--accent-border) !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--user-theme) 58%, var(--surface-3)), var(--surface-2)) !important;
+}
+
+tr:hover td,
+.table-row:hover {
+  background: var(--accent-faint) !important;
+}
+
+.table-column-resizer,
+.column-resizer,
+.resize-handle {
+  background: var(--accent-border) !important;
+}
+
+/* Shared account menu also follows the user's palette. */
+.dallmayr-account-trigger,
+.dallmayr-account-panel {
+  color: var(--text) !important;
+  border-color: var(--panel-border) !important;
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent) !important;
+  box-shadow: 0 20px 48px var(--panel-shadow) !important;
+}
+
+.dallmayr-account-trigger:hover,
+.dallmayr-account-trigger:focus-visible,
+.dallmayr-account-menu[open] > .dallmayr-account-trigger {
+  border-color: var(--accent-border) !important;
+  background: var(--surface-3) !important;
+  outline-color: var(--accent-soft) !important;
+}
+
+.dallmayr-account-avatar {
+  color: var(--accent-ink) !important;
+  background: linear-gradient(145deg, var(--accent-bright), var(--accent-dark)) !important;
+  box-shadow: 0 0 0 2px var(--accent-soft), 0 6px 14px var(--panel-shadow);
+}
+
+.dallmayr-account-identity strong,
+.dallmayr-account-meta strong {
+  color: var(--text-strong) !important;
+}
+
+.dallmayr-account-identity small,
+.dallmayr-account-meta span,
+.dallmayr-account-meta small,
+.dallmayr-account-chevron {
+  color: var(--muted) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body {
+    transition: none;
+  }
+}
