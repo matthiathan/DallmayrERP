@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { AppShell } from '@/components/layout/AppShell';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
+import { roleLabels } from '@/lib/auth/permissions';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Branch, BusinessRole, BusinessUser, UserDetails } from '@/types/dallmayrerp';
 import { displayDetailsName, isProfileComplete } from '@/types/dallmayrerp';
@@ -96,7 +97,7 @@ export default function UsersPage() {
       return;
     }
 
-    setSuccess('User invite saved. The employee can now use First login → Activate account with the same email, then complete their personal profile.');
+    setSuccess(`User invite saved as ${roleLabels[form.role]}. The employee can now activate the account with the same email and complete their personal profile.`);
     setForm(emptyForm);
     await loadUsers();
   }
@@ -146,7 +147,7 @@ export default function UsersPage() {
 
       <div className="card" style={{ marginBottom: 20 }}>
         <h2>Create access invite</h2>
-        <p>Admin controls email, role and branch. First name, last name, phone number, birthday and emergency contact are completed by the user.</p>
+        <p>Admin controls email, role and branch. Select <strong>Operations Manager</strong> for the dedicated Operations menu, dashboard and planning pages.</p>
         <form className="form-grid" onSubmit={createUserInvite}>
           <label>
             Email
@@ -155,7 +156,7 @@ export default function UsersPage() {
           <label>
             Role
             <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as BusinessRole })}>
-              {roles.map((role) => <option key={role}>{role}</option>)}
+              {roles.map((role) => <option key={role} value={role}>{roleLabels[role]}</option>)}
             </select>
           </label>
           <label>
@@ -205,7 +206,7 @@ export default function UsersPage() {
                   <td>{user.email}</td>
                   <td>{user.details?.phone_number || '-'}</td>
                   <td>{user.details?.birthday || '-'}</td>
-                  <td>{user.details?.role || '-'}</td>
+                  <td>{user.details?.role ? roleLabels[user.details.role] : '-'}</td>
                   <td>{user.details?.branch || '-'}</td>
                   <td>{user.details?.emergency_contact_name || '-'}</td>
                   <td>{complete ? 'Complete' : 'First login required'}</td>
