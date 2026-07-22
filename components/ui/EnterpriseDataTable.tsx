@@ -91,6 +91,7 @@ export function EnterpriseDataTable<T>({
   initialSearch = '',
   getSearchText,
   actions,
+  tableId = 'enterprise',
 }: {
   rows: T[];
   columns: EnterpriseColumn<T>[];
@@ -102,6 +103,7 @@ export function EnterpriseDataTable<T>({
   initialSearch?: string;
   getSearchText?: (row: T) => string;
   actions?: ReactNode;
+  tableId?: string;
 }) {
   const pageSizeChoices = useMemo(() => Array.from(new Set(pageSizeOptions)).sort((a, b) => a - b), [pageSizeOptions]);
   const [search, setSearch] = useState(initialSearch);
@@ -117,7 +119,7 @@ export function EnterpriseDataTable<T>({
     resetWidths,
     startResize,
     totalWidth,
-  } = useResizableColumns(columns, 'enterprise');
+  } = useResizableColumns(columns, tableId);
 
   useEffect(() => {
     setSearch(initialSearch);

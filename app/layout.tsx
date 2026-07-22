@@ -36,6 +36,8 @@ import './desktop-nav-overflow.css';
 import './table-column-filters.css';
 import './monthly-service-planning.css';
 import './operations-manager.css';
+import './admin-user-access-control.css';
+import { AccessStatusGuard } from '@/components/auth/AccessStatusGuard';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { GlobalAccountMenu } from '@/components/layout/GlobalAccountMenu';
 
@@ -55,8 +57,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         <AuthProvider>
-          <GlobalAccountMenu />
-          {children}
+          <AccessStatusGuard>
+            <GlobalAccountMenu />
+            {children}
+          </AccessStatusGuard>
         </AuthProvider>
       </body>
     </html>
