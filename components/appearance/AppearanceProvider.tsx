@@ -202,15 +202,18 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!hydrated || !businessUser?.id) return;
     let active = true;
-    setStatus('loading');
-    setError(null);
 
-    getSupabaseClient()
-      .from('user_appearance_preferences')
-      .select('accent_color, theme_color, background_color, theme_tone, background_style')
-      .eq('user_id', businessUser.id)
-      .maybeSingle()
-      .then(async ({ data, error: loadError }) => {
+    async function loadPreferences() {
+      setStatus('loading');
+      setError(null);
+
+      try {
+        const { data, error: loadError } = await getSupabaseClient()
+          .from('user_appearance_preferences')
+          .select('accent_color, theme_color, background_color, theme_tone, background_style')
+          .eq('user_id', businessUser!.id)
+          .maybeSingle();
+
         if (!active) return;
         if (loadError) {
           setStatus('error');
@@ -229,12 +232,14 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
         }
 
         await persistPreferences(preferencesRef.current);
-      })
-      .catch((loadFailure) => {
+      } catch (loadFailure) {
         if (!active) return;
         setStatus('error');
         setError(loadFailure instanceof Error ? loadFailure.message : 'Could not load appearance preferences.');
-      });
+      }
+    }
+
+    void loadPreferences();
 
     return () => {
       active = false;
