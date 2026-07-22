@@ -16,7 +16,7 @@ export type NavSection = {
 
 export const roleHomePath: Record<BusinessRole, string> = {
   admin: '/workspace',
-  operations: '/operations',
+  operations: '/operations/dashboard',
   sales: '/workspace',
   finance: '/workspace',
   marketing: '/workspace',
@@ -44,7 +44,7 @@ export const navSections: NavSection[] = [
   {
     heading: 'Operations',
     items: [
-      { href: '/operations', label: 'Operations Start Page', code: 'OPH01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Live branch workload, route pressure, service exceptions and daily priorities.' },
+      { href: '/operations/dashboard', label: 'Operations Start Page', code: 'OPH01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Live branch workload, route pressure, service exceptions and daily priorities.' },
       { href: '/operations/service-planning', label: 'Daily Service Planner', code: 'SRP01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Plan clients, drivers, route numbers, stop order and reschedules.' },
       { href: '/operations/service-jobs', label: 'Scheduled Call Log', code: 'SCL21', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Create request-only service work and assign technicians.' },
       { href: '/operations/deliveries', label: 'Delivery Board', code: 'DL01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Control picked, dispatched, delivered and closed delivery orders.' },
@@ -86,7 +86,7 @@ export const navSections: NavSection[] = [
   {
     heading: 'Windows',
     items: [
-      { href: '/operations', label: 'Operations Start Page', code: 'WIN01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Return to the Operations Manager home page.' },
+      { href: '/operations/dashboard', label: 'Operations Start Page', code: 'WIN01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Return to the Operations Manager home page.' },
       { href: '/work', label: 'Action Centre', code: 'WIN02', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Open the Operations action and exception inbox.' },
     ],
   },
