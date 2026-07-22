@@ -37,6 +37,7 @@ import './table-column-filters.css';
 import './monthly-service-planning.css';
 import './operations-manager.css';
 import './admin-user-access-control.css';
+import './call-log-creation.css';
 import { AccessStatusGuard } from '@/components/auth/AccessStatusGuard';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { GlobalAccountMenu } from '@/components/layout/GlobalAccountMenu';

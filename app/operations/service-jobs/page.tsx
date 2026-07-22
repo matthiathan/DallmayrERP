@@ -8,11 +8,11 @@ export default function OperationsServiceJobsPage() {
       <div className="page-header hero-panel spatial-card">
         <div>
           <div className="badge">Operations</div>
-          <h1>Service Jobs</h1>
-          <p>Create, prioritise, assign and manage customer-linked service work across branches and technicians.</p>
+          <h1>Scheduled Call Log</h1>
+          <p>Create complete customer service incidents, assign technicians, track follow-ups and control verified closure.</p>
         </div>
       </div>
-      <Suspense fallback={<div className="neo-card"><h2>Loading service dispatch...</h2></div>}>
+      <Suspense fallback={<div className="neo-card"><h2>Loading service call log...</h2></div>}>
         <EnterpriseServiceJobBoard />
       </Suspense>
     </AppShell>
