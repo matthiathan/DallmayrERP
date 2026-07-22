@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { CustomerSelect, type CustomerOption } from '@/components/ui/CustomerSelect';
 import { getSupabaseClient } from '@/lib/supabase/client';
@@ -34,6 +34,23 @@ type MachineOption = {
   branch: Branch;
   meter_value: number;
   meter_unit: string;
+};
+
+type CustomerDefaults = {
+  customer_id: string;
+  branch: Branch;
+  customer_code: string | null;
+  customer_name: string;
+  contact_name: string | null;
+  telephone: string | null;
+  fax: string | null;
+  mobile: string | null;
+  contact_email: string | null;
+  address: string | null;
+  site_location: string | null;
+  category: string | null;
+  sub_category: string | null;
+  group_3: string | null;
 };
 
 type MaintenanceForm = {
@@ -135,6 +152,25 @@ function initialForm(branch: Branch): MaintenanceForm {
   };
 }
 
+function fallbackDefaults(customer: CustomerOption): CustomerDefaults {
+  return {
+    customer_id: customer.id,
+    branch: customer.branch,
+    customer_code: customer.customer_code,
+    customer_name: customer.customer_name,
+    contact_name: null,
+    telephone: customer.phone,
+    fax: null,
+    mobile: null,
+    contact_email: customer.email,
+    address: customer.address,
+    site_location: null,
+    category: null,
+    sub_category: null,
+    group_3: null,
+  };
+}
+
 function optionalText(value: string) {
   return value.trim() || null;
 }
@@ -152,16 +188,19 @@ function machineLabel(machine: MachineOption) {
 export function CompleteMaintenancePlanCreateForm({ onCreated }: { onCreated: () => Promise<void> }) {
   const { businessProfile, userDetails } = useAuth();
   const defaultBranch = userDetails?.branch ?? 'jhb';
+  const customerLoadRef = useRef(0);
   const [form, setForm] = useState<MaintenanceForm>(() => initialForm(defaultBranch));
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState('');
   const [customerCode, setCustomerCode] = useState('');
+  const [customerDefaults, setCustomerDefaults] = useState<CustomerDefaults | null>(null);
   const [siteId, setSiteId] = useState('');
   const [machineId, setMachineId] = useState('');
   const [sites, setSites] = useState<SiteOption[]>([]);
   const [machines, setMachines] = useState<MachineOption[]>([]);
   const [technicians, setTechnicians] = useState<TechnicianOption[]>([]);
   const [saving, setSaving] = useState(false);
+  const [loadingCustomer, setLoadingCustomer] = useState(false);
   const [loadingTechnicians, setLoadingTechnicians] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -198,17 +237,42 @@ export function CompleteMaintenancePlanCreateForm({ onCreated }: { onCreated: ()
 
   const loggerName = displayProfileName(businessProfile);
 
+  function clearCustomerFields() {
+    setForm((current) => ({
+      ...current,
+      branch: userDetails?.branch ?? current.branch,
+      contactName: '',
+      telephone: '',
+      fax: '',
+      mobile: '',
+      contactEmail: '',
+      address: '',
+      siteLocation: '',
+      category: 'Preventive Maintenance',
+      subCategory: '',
+      group3: '',
+      assignedTo: '',
+    }));
+  }
+
   async function applyCustomer(customer: CustomerOption | null) {
+    const requestId = ++customerLoadRef.current;
     setError(null);
+    setMessage(null);
+    setLoadingCustomer(false);
     setCustomerId(customer?.id ?? null);
     setCustomerName(customer?.customer_name ?? '');
     setCustomerCode(customer?.customer_code ?? '');
+    setCustomerDefaults(null);
     setSiteId('');
     setMachineId('');
     setSites([]);
     setMachines([]);
 
-    if (!customer) return;
+    if (!customer) {
+      clearCustomerFields();
+      return;
+    }
 
     if (userDetails?.role === 'operations'
       && userDetails.branch !== 'national'
@@ -216,24 +280,37 @@ export function CompleteMaintenancePlanCreateForm({ onCreated }: { onCreated: ()
       setCustomerId(null);
       setCustomerName('');
       setCustomerCode('');
+      clearCustomerFields();
       setError(`Select a customer in ${branchLabels[userDetails.branch]}. Your Operations access is branch restricted.`);
       return;
     }
 
+    const initialDefaults = fallbackDefaults(customer);
+    setCustomerDefaults(initialDefaults);
     setForm((current) => ({
       ...current,
       branch: customer.branch,
-      telephone: customer.phone ?? '',
-      contactEmail: customer.email ?? '',
-      address: customer.address ?? '',
+      contactName: '',
+      telephone: initialDefaults.telephone ?? '',
+      fax: '',
+      mobile: '',
+      contactEmail: initialDefaults.contact_email ?? '',
+      address: initialDefaults.address ?? '',
+      siteLocation: '',
+      category: 'Preventive Maintenance',
+      subCategory: '',
+      group3: '',
       assignedTo: '',
     }));
 
+    setLoadingCustomer(true);
     const client = getSupabaseClient();
-    const [siteResult, machineResult] = await Promise.all([
+    const [defaultsResult, siteResult, machineResult] = await Promise.all([
+      client.rpc('get_customer_form_defaults', { p_customer_id: customer.id }),
       client.from('customer_sites')
         .select('id, site_name, address, contact_name, contact_phone')
         .eq('customer_id', customer.id)
+        .eq('status', 'active')
         .order('site_name'),
       client.from('machines')
         .select('id, machine_name, serial_number, machine_barcode, site_id, branch, meter_value, meter_unit')
@@ -242,41 +319,85 @@ export function CompleteMaintenancePlanCreateForm({ onCreated }: { onCreated: ()
         .order('machine_name'),
     ]);
 
-    if (siteResult.error || machineResult.error) {
-      setError(siteResult.error?.message ?? machineResult.error?.message ?? 'Could not load customer sites and machines.');
-      return;
-    }
+    if (requestId !== customerLoadRef.current) return;
 
-    setSites((siteResult.data ?? []) as SiteOption[]);
-    setMachines((machineResult.data ?? []) as MachineOption[]);
+    const defaults = ((defaultsResult.data ?? [])[0] as CustomerDefaults | undefined) ?? initialDefaults;
+    const siteRows = (siteResult.data ?? []) as SiteOption[];
+    const machineRows = (machineResult.data ?? []) as MachineOption[];
+    const onlySite = siteRows.length === 1 ? siteRows[0] : null;
+    const matchingMachines = onlySite
+      ? machineRows.filter((machine) => !machine.site_id || machine.site_id === onlySite.id)
+      : machineRows;
+    const onlyMachine = matchingMachines.length === 1 ? matchingMachines[0] : null;
+
+    setCustomerDefaults(defaults);
+    setCustomerName(defaults.customer_name || customer.customer_name);
+    setCustomerCode(defaults.customer_code ?? customer.customer_code ?? '');
+    setSites(siteRows);
+    setMachines(machineRows);
+    setSiteId(onlySite?.id ?? '');
+    setMachineId(onlyMachine?.id ?? '');
+    setForm((current) => ({
+      ...current,
+      branch: defaults.branch,
+      contactName: onlySite?.contact_name ?? defaults.contact_name ?? '',
+      telephone: onlySite?.contact_phone ?? defaults.telephone ?? '',
+      fax: defaults.fax ?? '',
+      mobile: defaults.mobile ?? '',
+      contactEmail: defaults.contact_email ?? '',
+      address: onlySite?.address ?? defaults.address ?? '',
+      siteLocation: onlySite?.site_name ?? defaults.site_location ?? '',
+      category: defaults.category ?? 'Preventive Maintenance',
+      subCategory: defaults.sub_category ?? '',
+      group3: defaults.group_3 ?? '',
+      assignedTo: '',
+    }));
+
+    const loadError = defaultsResult.error ?? siteResult.error ?? machineResult.error;
+    if (loadError) {
+      setError(`Customer selected, but some linked details could not be loaded: ${loadError.message}`);
+    }
+    setLoadingCustomer(false);
   }
 
   function selectSite(nextSiteId: string) {
     setSiteId(nextSiteId);
-    const site = sites.find((item) => item.id === nextSiteId);
-    if (site) {
-      setForm((current) => ({
-        ...current,
-        siteLocation: site.site_name,
-        address: site.address ?? current.address,
-        contactName: site.contact_name ?? current.contactName,
-        telephone: site.contact_phone ?? current.telephone,
-      }));
-    }
+    const site = sites.find((item) => item.id === nextSiteId) ?? null;
+    setForm((current) => ({
+      ...current,
+      siteLocation: site?.site_name ?? customerDefaults?.site_location ?? '',
+      address: site?.address ?? customerDefaults?.address ?? '',
+      contactName: site?.contact_name ?? customerDefaults?.contact_name ?? '',
+      telephone: site?.contact_phone ?? customerDefaults?.telephone ?? '',
+      fax: customerDefaults?.fax ?? current.fax,
+      mobile: customerDefaults?.mobile ?? current.mobile,
+      contactEmail: customerDefaults?.contact_email ?? current.contactEmail,
+    }));
 
+    const candidates = nextSiteId
+      ? machines.filter((machine) => !machine.site_id || machine.site_id === nextSiteId)
+      : machines;
     const selected = machines.find((machine) => machine.id === machineId);
-    if (selected?.site_id && selected.site_id !== nextSiteId) setMachineId('');
+    const selectedStillValid = !selected?.site_id || !nextSiteId || selected.site_id === nextSiteId;
+    if (!selectedStillValid) {
+      setMachineId(candidates.length === 1 ? candidates[0].id : '');
+    } else if (!machineId && candidates.length === 1) {
+      setMachineId(candidates[0].id);
+    }
   }
 
   function resetForm() {
+    customerLoadRef.current += 1;
     setForm(initialForm(userDetails?.branch ?? 'jhb'));
     setCustomerId(null);
     setCustomerName('');
     setCustomerCode('');
+    setCustomerDefaults(null);
     setSiteId('');
     setMachineId('');
     setSites([]);
     setMachines([]);
+    setLoadingCustomer(false);
   }
 
   async function createPlan(event: FormEvent<HTMLFormElement>) {
@@ -387,7 +508,7 @@ export function CompleteMaintenancePlanCreateForm({ onCreated }: { onCreated: ()
       {message ? <div className="success" role="status">{message}</div> : null}
 
       <form className="call-log-form" onSubmit={createPlan}>
-        <fieldset className="call-log-section call-log-section-wide">
+        <fieldset aria-busy={loadingCustomer} className="call-log-section call-log-section-wide">
           <legend>Incident and customer information</legend>
           <div className="call-log-grid call-log-grid-4">
             <label>Incident ID<input disabled value="Assigned automatically" /></label>
@@ -405,6 +526,13 @@ export function CompleteMaintenancePlanCreateForm({ onCreated }: { onCreated: ()
             <label>Customer code<input disabled value={customerCode || 'Select a customer'} /></label>
             <label>Contact<input value={form.contactName} onChange={(event) => setForm((current) => ({ ...current, contactName: event.target.value }))} /></label>
           </div>
+          <small className="field-note">
+            {loadingCustomer
+              ? 'Loading customer master, contact, site and machine details…'
+              : customerId
+                ? 'Customer fields were populated automatically. Selecting a site applies its contact and address details.'
+                : 'Select a customer to populate all available customer information automatically.'}
+          </small>
 
           <div className="call-log-grid call-log-grid-4">
             <label>Telephone<input inputMode="tel" value={form.telephone} onChange={(event) => setForm((current) => ({ ...current, telephone: event.target.value }))} /></label>
@@ -429,13 +557,13 @@ export function CompleteMaintenancePlanCreateForm({ onCreated }: { onCreated: ()
             <label>Complaint details *<textarea required rows={5} value={form.complaintDetails} onChange={(event) => setForm((current) => ({ ...current, complaintDetails: event.target.value }))} /></label>
             <div className="call-log-grid call-log-grid-2">
               <label>Customer site
-                <select value={siteId} onChange={(event) => selectSite(event.target.value)}>
-                  <option value="">No site selected</option>
+                <select disabled={loadingCustomer || !customerId} value={siteId} onChange={(event) => selectSite(event.target.value)}>
+                  <option value="">{sites.length ? 'No site selected' : 'No active customer sites'}</option>
                   {sites.map((site) => <option key={site.id} value={site.id}>{site.site_name}</option>)}
                 </select>
               </label>
               <label>Machine *
-                <select required value={machineId} onChange={(event) => setMachineId(event.target.value)}>
+                <select disabled={loadingCustomer || !customerId} required value={machineId} onChange={(event) => setMachineId(event.target.value)}>
                   <option value="">{visibleMachines.length ? 'Select machine' : 'No active customer machines'}</option>
                   {visibleMachines.map((machine) => <option key={machine.id} value={machine.id}>{machineLabel(machine)}</option>)}
                 </select>
@@ -522,8 +650,8 @@ export function CompleteMaintenancePlanCreateForm({ onCreated }: { onCreated: ()
 
         <div className="call-log-submit-row call-log-section-wide">
           <div><strong>Incident ID and plan number</strong><span>The ERP generates both identifiers and activates the recurring plan on save.</span></div>
-          <button className="button pulse-button" disabled={saving || !customerId || !machineId || !form.complaintDetails.trim() || !form.category.trim()} type="submit">
-            {saving ? 'Creating maintenance plan…' : 'Create maintenance plan'}
+          <button className="button pulse-button" disabled={saving || loadingCustomer || !customerId || !machineId || !form.complaintDetails.trim() || !form.category.trim()} type="submit">
+            {saving ? 'Creating maintenance plan…' : loadingCustomer ? 'Loading customer details…' : 'Create maintenance plan'}
           </button>
         </div>
       </form>
