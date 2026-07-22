@@ -150,7 +150,7 @@ export function FinanceServiceCoverage() {
     setSaving(true);
     setError(null);
     setMessage(null);
-    const { error: saveError } = await getSupabaseClient().rpc('save_customer_service_plan', {
+    const { data: planId, error: saveError } = await getSupabaseClient().rpc('save_customer_service_plan', {
       p_customer_id: selectedPlan.customer_id,
       p_service_mode: serviceMode,
       p_status: status,
@@ -166,8 +166,20 @@ export function FinanceServiceCoverage() {
       setError(saveError.message);
       return;
     }
-    setMessage(`${selectedPlan.customer_name} service basis saved as ${serviceMode === 'monthly' ? 'monthly' : 'on request'}.`);
-    await loadData();
+
+    setPlans((current) => current.map((plan) => plan.customer_id === selectedPlan.customer_id ? {
+      ...plan,
+      service_plan_id: String(planId ?? plan.service_plan_id ?? ''),
+      service_mode: serviceMode,
+      plan_status: status,
+      monthly_fee: monthlyFee ? Number(monthlyFee) : null,
+      preferred_day_of_month: preferredDay ? Number(preferredDay) : null,
+      service_window_days: windowDays ? Number(windowDays) : 7,
+      notes: planNotes.trim() || null,
+      finance_verified_at: status === 'active' ? new Date().toISOString() : plan.finance_verified_at,
+    } : plan));
+    setPaymentAmount(monthlyFee);
+    setMessage(`${selectedPlan.customer_name} service basis saved as ${serviceMode === 'monthly' ? 'monthly' : 'on request'}. ${status === 'active' && serviceMode === 'monthly' ? 'Payment can now be recorded below.' : ''}`);
   }
 
   async function recordPayment() {
@@ -175,8 +187,8 @@ export function FinanceServiceCoverage() {
       setError('Save and activate the monthly service plan before recording payment.');
       return;
     }
-    if (selectedPlan.service_mode !== 'monthly' && serviceMode !== 'monthly') {
-      setError('Payments can only generate service obligations for monthly plans.');
+    if (serviceMode !== 'monthly' || status !== 'active') {
+      setError('Only an active monthly plan can generate a paid service obligation.');
       return;
     }
     setSaving(true);
@@ -197,6 +209,7 @@ export function FinanceServiceCoverage() {
       return;
     }
     setMessage(`${selectedPlan.customer_name} payment status recorded for ${new Date(`${serviceMonth}T12:00:00`).toLocaleDateString('en-ZA', { month: 'long', year: 'numeric' })}.`);
+    setPlanStatus(status);
     await loadData();
   }
 
@@ -313,7 +326,7 @@ export function FinanceServiceCoverage() {
               <label>Payment reference<input disabled={!selectedPlan?.service_plan_id || saving} value={paymentReference} onChange={(event) => setPaymentReference(event.target.value)} placeholder="Invoice, receipt or debit-order reference" /></label>
             </div>
             <label>Payment notes<textarea disabled={!selectedPlan?.service_plan_id || saving} value={paymentNotes} onChange={(event) => setPaymentNotes(event.target.value)} /></label>
-            <button className="button secondary" disabled={!selectedPlan?.service_plan_id || saving || selectedPlan.plan_status !== 'active'} onClick={recordPayment} type="button">Record payment and generate schedule</button>
+            <button className="button secondary" disabled={!selectedPlan?.service_plan_id || saving || status !== 'active' || serviceMode !== 'monthly'} onClick={recordPayment} type="button">Record payment and generate schedule</button>
           </div>
         </div>
       </section>
