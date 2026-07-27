@@ -16,6 +16,7 @@ create index if not exists task_closures_machine_id_idx
 
 create or replace function public.complete_assigned_service_job(
   p_service_job_id uuid,
+  p_machine_code text,
   p_outcome text,
   p_notes text default null,
   p_photo_bucket text default null,
@@ -32,6 +33,9 @@ declare
   v_job public.service_jobs%rowtype;
   v_closure_id uuid;
   v_machine_barcode text;
+  v_machine_serial text;
+  v_machine_asset_tag text;
+  v_scanned_code text := lower(trim(coalesce(p_machine_code, '')));
   v_customer_name text;
   v_site_address text;
 begin
@@ -42,6 +46,10 @@ begin
 
   if p_outcome not in ('completed', 'follow_up_required', 'parts_required', 'customer_unavailable') then
     raise exception 'Invalid task outcome';
+  end if;
+
+  if v_scanned_code = '' then
+    raise exception 'Scan or enter the linked machine code before completion';
   end if;
 
   select sj.*
@@ -68,17 +76,31 @@ begin
   end if;
 
   select
-    coalesce(nullif(trim(m.machine_barcode), ''), nullif(trim(m.serial_number), ''), nullif(trim(m.asset_tag), '')),
+    nullif(trim(m.machine_barcode), ''),
+    nullif(trim(m.serial_number), ''),
+    nullif(trim(m.asset_tag), ''),
     coalesce(nullif(trim(v_job.customer_name_snapshot), ''), nullif(trim(c.customer_name), '')),
     coalesce(nullif(trim(s.address), ''), nullif(trim(c.address), ''), nullif(trim(v_job.address_snapshot), ''))
-  into v_machine_barcode, v_customer_name, v_site_address
+  into v_machine_barcode, v_machine_serial, v_machine_asset_tag, v_customer_name, v_site_address
   from public.machines m
   left join public.customers c on c.id = v_job.customer_id
   left join public.customer_sites s on s.id = v_job.site_id
   where m.id = v_job.machine_id;
 
-  if v_machine_barcode is null then
+  if not found then
+    raise exception 'The linked machine no longer exists';
+  end if;
+
+  if coalesce(v_machine_barcode, v_machine_serial, v_machine_asset_tag) is null then
     raise exception 'The linked machine needs a barcode, serial number or asset tag before completion';
+  end if;
+
+  if v_scanned_code not in (
+    lower(coalesce(v_machine_barcode, '')),
+    lower(coalesce(v_machine_serial, '')),
+    lower(coalesce(v_machine_asset_tag, ''))
+  ) then
+    raise exception 'The scanned machine does not match the assigned service job';
   end if;
 
   -- Preserve the existing status transition rules. An assigned job is started
@@ -106,7 +128,7 @@ begin
   ) values (
     v_actor_role,
     v_job.branch,
-    v_machine_barcode,
+    coalesce(v_machine_barcode, v_machine_serial, v_machine_asset_tag),
     v_job.machine_id,
     v_job.id,
     v_customer_name,
@@ -128,7 +150,7 @@ begin
     scanned_by,
     notes
   ) values (
-    v_machine_barcode,
+    coalesce(v_machine_barcode, v_machine_serial, v_machine_asset_tag),
     'task_close',
     v_job.branch,
     1,
@@ -171,7 +193,7 @@ begin
     ),
     jsonb_build_object(
       'machine_id', v_job.machine_id,
-      'machine_barcode', v_machine_barcode,
+      'machine_code_scanned', trim(p_machine_code),
       'photo_path', nullif(trim(coalesce(p_photo_path, '')), '')
     )
   );
@@ -181,8 +203,8 @@ begin
 end;
 $$;
 
-revoke all on function public.complete_assigned_service_job(uuid, text, text, text, text) from public;
-grant execute on function public.complete_assigned_service_job(uuid, text, text, text, text) to authenticated;
+revoke all on function public.complete_assigned_service_job(uuid, text, text, text, text, text) from public;
+grant execute on function public.complete_assigned_service_job(uuid, text, text, text, text, text) to authenticated;
 
-comment on function public.complete_assigned_service_job(uuid, text, text, text, text)
-  is 'Atomically completes a service job assigned to the authenticated technician and records closure, scan and audit evidence.';
+comment on function public.complete_assigned_service_job(uuid, text, text, text, text, text)
+  is 'Atomically completes a service job assigned to the authenticated technician after validating the linked machine scan.';
