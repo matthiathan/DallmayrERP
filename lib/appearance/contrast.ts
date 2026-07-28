@@ -37,11 +37,33 @@ export type AppearanceContrastTokens = {
 const DARK_INK = '#000000';
 const LIGHT_INK = '#ffffff';
 const LIGHT_SURFACE = '#ffffff';
-const DARK_SURFACE = '#1f242b';
-const DARK_PANEL_SURFACE = '#111827';
-const DARK_PANEL_RAISED = '#1f2937';
-const LIGHT_PANEL_SURFACE = '#ffffff';
-const LIGHT_PANEL_RAISED = '#f8fafc';
+const DARK_SURFACE = '#20272f';
+
+const SLATE_MODERN = {
+  surface: '#20272f',
+  raised: '#2b343d',
+  text: '#f8fafc',
+  strong: '#ffffff',
+  muted: '#cbd5e1',
+  subtle: '#a8b3bf',
+  border: '#52606d',
+  accentText: '#67e8f9',
+  focus: '#67e8f9',
+  chartTrack: '#111820',
+} as const;
+
+const WARM_SAND = {
+  surface: '#fffaf2',
+  raised: '#f2e5d3',
+  text: '#2b2118',
+  strong: '#1f1812',
+  muted: '#65584a',
+  subtle: '#766858',
+  border: '#bda98a',
+  accentText: '#7a4d13',
+  focus: '#8c5d18',
+  chartTrack: '#ded4c6',
+} as const;
 
 function clampChannel(value: number) {
   return Math.max(0, Math.min(255, Math.round(value)));
@@ -129,37 +151,21 @@ export function ensureContrast(color: string, background: string, minimumRatio =
 }
 
 function createContentSurfaceTokens(preferences: ContrastPreferenceInput) {
-  // Theme tone is a user preference, not proof that a custom colour is light or dark.
-  // Blend the colours that actually shape the page, then establish a controlled panel
-  // surface and its foreground as one inseparable pair.
-  const paletteSurface = mixHex(preferences.themeColor, preferences.backgroundColor, 0.45);
-  const contentTone: ContentTone = readableTextOn(paletteSurface) === LIGHT_INK ? 'dark' : 'light';
-  const contentSurface = contentTone === 'dark'
-    ? mixHex(paletteSurface, DARK_PANEL_SURFACE, 0.78)
-    : mixHex(paletteSurface, LIGHT_PANEL_SURFACE, 0.9);
-  const contentSurfaceRaised = contentTone === 'dark'
-    ? mixHex(paletteSurface, DARK_PANEL_RAISED, 0.8)
-    : mixHex(paletteSurface, LIGHT_PANEL_RAISED, 0.9);
-  const contentText = readableTextOn(contentSurface);
-  const mutedCandidate = contentTone === 'dark' ? '#cbd5e1' : '#475569';
-  const subtleCandidate = contentTone === 'dark' ? '#aeb7c4' : '#64748b';
-  const borderCandidate = contentTone === 'dark' ? '#64748b' : '#64748b';
-  const chartTrack = contentTone === 'dark'
-    ? mixHex(contentSurface, '#000000', 0.46)
-    : mixHex(contentSurface, '#cbd5e1', 0.58);
+  const contentTone: ContentTone = preferences.themeTone;
+  const theme = contentTone === 'dark' ? SLATE_MODERN : WARM_SAND;
 
   return {
     contentTone,
-    contentSurface,
-    contentSurfaceRaised,
-    contentText,
-    contentStrong: contentText,
-    contentMuted: ensureContrast(mutedCandidate, contentSurface, 4.5),
-    contentSubtle: ensureContrast(subtleCandidate, contentSurface, 4.5),
-    contentBorder: ensureContrast(borderCandidate, contentSurface, 3),
-    contentAccentText: ensureContrast(preferences.accentColor, contentSurface, 4.5),
-    contentFocus: ensureContrast(preferences.accentColor, contentSurface, 3),
-    chartTrack,
+    contentSurface: theme.surface,
+    contentSurfaceRaised: theme.raised,
+    contentText: theme.text,
+    contentStrong: theme.strong,
+    contentMuted: ensureContrast(theme.muted, theme.surface, 4.5),
+    contentSubtle: ensureContrast(theme.subtle, theme.surface, 4.5),
+    contentBorder: ensureContrast(theme.border, theme.surface, 3),
+    contentAccentText: ensureContrast(theme.accentText, theme.surface, 4.5),
+    contentFocus: ensureContrast(theme.focus, theme.surface, 3),
+    chartTrack: theme.chartTrack,
   };
 }
 

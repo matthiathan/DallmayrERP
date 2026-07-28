@@ -1,0 +1,647 @@
+/* Curated visual themes
+   Loaded last. Slate Modern is the dark workspace and Warm Sand is the light
+   workspace. Every shared surface owns its foreground, border and interaction
+   colours so legacy component rules cannot recreate dark-on-dark text. */
+
+html[data-visual-theme='slate-modern'] {
+  color-scheme: dark;
+  --design-background: #0f1419;
+  --design-background-raised: #151c22;
+  --design-panel: #20272f;
+  --design-panel-raised: #2b343d;
+  --design-panel-hover: #34404a;
+  --design-input: #141a20;
+  --design-track: #111820;
+  --design-text: #f8fafc;
+  --design-strong: #ffffff;
+  --design-muted: #cbd5e1;
+  --design-subtle: #a8b3bf;
+  --design-border: #52606d;
+  --design-border-strong: #71808e;
+  --design-accent: #22c3dc;
+  --design-accent-hover: #67e8f9;
+  --design-accent-ink: #071318;
+  --design-link: #67e8f9;
+  --design-shadow: 0 18px 48px rgba(0, 0, 0, 0.3);
+  --design-inset-highlight: rgba(255, 255, 255, 0.055);
+}
+
+html[data-visual-theme='warm-sand'] {
+  color-scheme: light;
+  --design-background: #f5efe5;
+  --design-background-raised: #eee3d2;
+  --design-panel: #fffaf2;
+  --design-panel-raised: #f2e5d3;
+  --design-panel-hover: #ead9bd;
+  --design-input: #fffdf8;
+  --design-track: #ded4c6;
+  --design-text: #2b2118;
+  --design-strong: #1f1812;
+  --design-muted: #65584a;
+  --design-subtle: #766858;
+  --design-border: #bda98a;
+  --design-border-strong: #9b8464;
+  --design-accent: #a67828;
+  --design-accent-hover: #8d5d18;
+  --design-accent-ink: #11100d;
+  --design-link: #7a4d13;
+  --design-shadow: 0 16px 38px rgba(78, 56, 31, 0.14);
+  --design-inset-highlight: rgba(255, 255, 255, 0.86);
+}
+
+html[data-visual-theme] body {
+  --user-accent: var(--design-accent);
+  --user-theme: var(--design-panel-raised);
+  --user-background: var(--design-background);
+  --accent: var(--design-accent);
+  --gold: var(--design-accent);
+  --gold-2: var(--design-accent-hover);
+  --primary: var(--design-accent);
+  --primary-color: var(--design-accent);
+  --focus-color: var(--design-accent-hover);
+  --link-color: var(--design-link);
+  --text: var(--design-text);
+  --text-strong: var(--design-strong);
+  --muted: var(--design-muted);
+  --muted-strong: var(--design-text);
+  --nav-text: var(--design-text);
+  --panel-border: var(--design-border);
+  --input-placeholder: var(--design-subtle);
+  --content-surface: var(--design-panel);
+  --content-surface-raised: var(--design-panel-raised);
+  --content-text: var(--design-text);
+  --content-strong: var(--design-strong);
+  --content-muted: var(--design-muted);
+  --content-subtle: var(--design-subtle);
+  --content-border: var(--design-border);
+  --content-accent-text: var(--design-link);
+  --content-focus: var(--design-accent-hover);
+  --content-chart-track: var(--design-track);
+  color: var(--design-text) !important;
+  background-color: var(--design-background) !important;
+}
+
+html[data-visual-theme='slate-modern'] body {
+  background:
+    radial-gradient(circle at 12% 6%, rgba(34, 195, 220, 0.08), transparent 28%),
+    linear-gradient(145deg, #0f1419, #12191f 54%, #0d1216) !important;
+}
+
+html[data-visual-theme='warm-sand'] body {
+  background:
+    radial-gradient(circle at 12% 4%, rgba(166, 120, 40, 0.09), transparent 30%),
+    linear-gradient(145deg, #f7f1e8, #f3eadc 52%, #eee3d2) !important;
+}
+
+html[data-visual-theme] body::before,
+html[data-visual-theme] body::after {
+  opacity: 0 !important;
+}
+
+html[data-visual-theme] body main,
+html[data-visual-theme] body .main,
+html[data-visual-theme] body .top-main {
+  color: var(--design-text) !important;
+}
+
+/* Global page typography. These selectors deliberately carry more specificity
+   than the older themed component files, including their !important rules. */
+html[data-visual-theme] body main :is(h1, h2, h3, h4, h5, h6, legend, dt),
+html[data-visual-theme] body .top-main :is(h1, h2, h3, h4, h5, h6, legend, dt) {
+  color: var(--design-strong) !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body main :is(p, li, dd, label),
+html[data-visual-theme] body .top-main :is(p, li, dd, label) {
+  color: var(--design-text) !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body main :is(small, .muted, .field-note, .helper-text, .description),
+html[data-visual-theme] body .top-main :is(small, .muted, .field-note, .helper-text, .description) {
+  color: var(--design-muted) !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+/* Shared surfaces. Background, text and border are one contract. */
+html[data-visual-theme] body :is(
+  .hero-panel,
+  .page-header,
+  .minimal-page-header,
+  .card,
+  .neo-card,
+  .panel,
+  .spatial-card,
+  .minimal-panel,
+  .minimal-card,
+  .chart-card,
+  .page-toolbar,
+  .table-wrap,
+  .enterprise-table-shell,
+  .remote-table-shell,
+  .data-table-wrapper,
+  .role-workspace-panel,
+  .operations-manager-panel,
+  .monthly-service-panel,
+  .call-log-section,
+  .requested-service-create-card,
+  .record-timeline-item,
+  .record-comment,
+  .ux-empty-state,
+  .global-search-dialog,
+  .dallmayr-account-panel,
+  .appearance-editor,
+  .appearance-control,
+  .scanner-box,
+  .stock-control-centre,
+  .professional-work-card,
+  .role-action-card,
+  .minimal-list-item,
+  .minimal-row,
+  .scanner-match-card,
+  .asset-ticket
+) {
+  color: var(--design-text) !important;
+  border-color: var(--design-border) !important;
+  background:
+    linear-gradient(145deg, var(--design-inset-highlight), transparent 24%),
+    var(--design-panel) !important;
+  box-shadow: var(--design-shadow), inset 0 1px 0 var(--design-inset-highlight) !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body :is(
+  .record-timeline-item,
+  .record-comment,
+  .minimal-list-item,
+  .minimal-row,
+  .professional-work-card,
+  .role-action-card,
+  .scanner-match-card,
+  .appearance-control
+) {
+  background: var(--design-panel-raised) !important;
+}
+
+html[data-visual-theme] body :is(
+  .hero-panel,
+  .page-header,
+  .minimal-page-header,
+  .card,
+  .neo-card,
+  .panel,
+  .spatial-card,
+  .minimal-panel,
+  .minimal-card,
+  .chart-card,
+  .page-toolbar,
+  .enterprise-table-shell,
+  .remote-table-shell,
+  .data-table-wrapper,
+  .role-workspace-panel,
+  .operations-manager-panel,
+  .monthly-service-panel,
+  .call-log-section,
+  .requested-service-create-card,
+  .record-timeline-item,
+  .record-comment,
+  .ux-empty-state,
+  .global-search-dialog,
+  .dallmayr-account-panel,
+  .appearance-editor,
+  .appearance-control
+) :is(h1, h2, h3, h4, h5, h6, legend, dt, strong, .nav-heading, .page-toolbar-heading, .table-heading, .kpi-value, .metric-value, .minimal-kicker) {
+  color: var(--design-strong) !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body :is(
+  .hero-panel,
+  .page-header,
+  .minimal-page-header,
+  .card,
+  .neo-card,
+  .panel,
+  .spatial-card,
+  .minimal-panel,
+  .minimal-card,
+  .chart-card,
+  .page-toolbar,
+  .enterprise-table-shell,
+  .remote-table-shell,
+  .data-table-wrapper,
+  .role-workspace-panel,
+  .operations-manager-panel,
+  .monthly-service-panel,
+  .call-log-section,
+  .requested-service-create-card,
+  .record-timeline-item,
+  .record-comment,
+  .ux-empty-state,
+  .global-search-dialog,
+  .dallmayr-account-panel,
+  .appearance-editor,
+  .appearance-control
+) :is(p, li, dd, label, span:not(.badge):not(.status-badge):not(.button-icon)) {
+  color: var(--design-text) !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body :is(
+  .hero-panel,
+  .page-header,
+  .minimal-page-header,
+  .card,
+  .neo-card,
+  .panel,
+  .spatial-card,
+  .minimal-panel,
+  .minimal-card,
+  .chart-card,
+  .page-toolbar,
+  .enterprise-table-shell,
+  .remote-table-shell,
+  .data-table-wrapper,
+  .global-search-dialog,
+  .dallmayr-account-panel,
+  .appearance-editor,
+  .appearance-control
+) :is(small, .muted, .field-note, .helper-text, .description) {
+  color: var(--design-muted) !important;
+  opacity: 1 !important;
+}
+
+/* Executive and shared chart primitives. */
+html[data-visual-theme] body .chart-card h3,
+html[data-visual-theme] body .chart-card .bar-row > span,
+html[data-visual-theme] body .chart-card .bar-row > strong,
+html[data-visual-theme] body .chart-card .chart-legend,
+html[data-visual-theme] body .chart-card .chart-legend > div,
+html[data-visual-theme] body .chart-card .chart-legend strong,
+html[data-visual-theme] body .chart-card .donut > span {
+  color: var(--design-strong) !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body .chart-card .bar-track {
+  border: 1px solid var(--design-border) !important;
+  background: var(--design-track) !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+html[data-visual-theme] body .chart-card .bar-fill,
+html[data-visual-theme] body .chart-card .legend-dot {
+  background: var(--design-accent) !important;
+}
+
+html[data-visual-theme] body .chart-card .donut {
+  color: var(--design-strong) !important;
+  border-color: var(--design-border-strong) !important;
+}
+
+/* Inputs and neutral controls. */
+html[data-visual-theme] body :is(
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),
+  select,
+  textarea,
+  .table-column-filter,
+  .command-search input
+) {
+  color: var(--design-strong) !important;
+  border-color: var(--design-border) !important;
+  background: var(--design-input) !important;
+  caret-color: var(--design-strong) !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body :is(input, textarea)::placeholder {
+  color: var(--design-subtle) !important;
+  opacity: 1 !important;
+}
+
+html[data-visual-theme] body :is(option, optgroup) {
+  color: var(--design-strong) !important;
+  background: var(--design-input) !important;
+}
+
+html[data-visual-theme] body :is(input[type='checkbox'], input[type='radio'], input[type='range'], progress) {
+  accent-color: var(--design-accent) !important;
+}
+
+/* Primary, secondary and destructive actions. */
+html[data-visual-theme] body :is(
+  .button:not(.secondary):not(.danger),
+  .primary-action,
+  .pulse-button:not(.danger),
+  .erp-primary-button
+) {
+  color: var(--design-accent-ink) !important;
+  border-color: color-mix(in srgb, var(--design-accent) 72%, var(--design-border)) !important;
+  background: var(--design-accent) !important;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--design-accent) 20%, transparent) !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body :is(
+  .button:not(.secondary):not(.danger),
+  .primary-action,
+  .pulse-button:not(.danger),
+  .erp-primary-button
+) :is(span, strong, small) {
+  color: inherit !important;
+}
+
+html[data-visual-theme] body :is(
+  .button.secondary,
+  .secondary-action,
+  .feature-pill,
+  .appearance-reset,
+  .density-toggle
+) {
+  color: var(--design-strong) !important;
+  border-color: var(--design-border) !important;
+  background: var(--design-panel-raised) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body :is(
+  .button.secondary,
+  .secondary-action,
+  .feature-pill,
+  .appearance-reset,
+  .density-toggle
+):hover {
+  color: var(--design-strong) !important;
+  background: var(--design-panel-hover) !important;
+}
+
+html[data-visual-theme] body .button.danger {
+  color: #ffffff !important;
+  border-color: #fca5a5 !important;
+  background: #b91c1c !important;
+}
+
+/* Links and focus states. */
+html[data-visual-theme] body main a:not(.button):not(.badge):not(.status-badge):not(.nav-link):not(.erp-menu-item):not(.mobile-nav-card),
+html[data-visual-theme] body .top-main a:not(.button):not(.badge):not(.status-badge):not(.nav-link):not(.erp-menu-item):not(.mobile-nav-card) {
+  color: var(--design-link) !important;
+  text-decoration-color: color-mix(in srgb, var(--design-link) 62%, transparent) !important;
+  text-underline-offset: 0.18em;
+}
+
+html[data-visual-theme] body :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--design-accent-hover) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 2px var(--design-background), 0 0 0 5px var(--design-accent-hover) !important;
+}
+
+/* Tables use the same mode on every page. */
+html[data-visual-theme] body :is(.enterprise-table-shell, .remote-table-shell, .data-table-wrapper, .table-wrap) table {
+  color: var(--design-text) !important;
+  background: var(--design-panel) !important;
+}
+
+html[data-visual-theme] body :is(.enterprise-table-shell, .remote-table-shell, .data-table-wrapper, .table-wrap) thead th {
+  color: var(--design-strong) !important;
+  border-color: var(--design-border) !important;
+  background: var(--design-panel-raised) !important;
+}
+
+html[data-visual-theme] body :is(.enterprise-table-shell, .remote-table-shell, .data-table-wrapper, .table-wrap) tbody tr,
+html[data-visual-theme] body :is(.enterprise-table-shell, .remote-table-shell, .data-table-wrapper, .table-wrap) tbody td {
+  color: var(--design-text) !important;
+  border-color: color-mix(in srgb, var(--design-border) 68%, transparent) !important;
+  background: var(--design-panel) !important;
+}
+
+html[data-visual-theme] body :is(.enterprise-table-shell, .remote-table-shell, .data-table-wrapper, .table-wrap) tbody tr:nth-child(even) td {
+  background: var(--design-panel-raised) !important;
+}
+
+html[data-visual-theme] body :is(.enterprise-table-shell, .remote-table-shell, .data-table-wrapper, .table-wrap) tbody tr:hover td,
+html[data-visual-theme] body :is(.enterprise-table-shell, .remote-table-shell, .data-table-wrapper, .table-wrap) tbody tr:focus-within td {
+  color: var(--design-strong) !important;
+  background: var(--design-panel-hover) !important;
+}
+
+html[data-visual-theme] body :is(.enterprise-table-shell, .remote-table-shell, .data-table-wrapper, .table-wrap) tbody td :is(span, p, small, strong, label) {
+  color: inherit !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+/* Application shell follows the selected design instead of staying permanently dark. */
+html[data-visual-theme] body .erp-chrome.topbar,
+html[data-visual-theme] body .erp-menu-panel,
+html[data-visual-theme] body .erp-overflow-menu-panel,
+html[data-visual-theme] body .mobile-nav-panel {
+  color: var(--design-text) !important;
+  border-color: var(--design-border) !important;
+  background: var(--design-panel) !important;
+  box-shadow: var(--design-shadow) !important;
+}
+
+html[data-visual-theme] body :is(
+  .erp-brand-button.notch-logo-button,
+  .erp-menu-label,
+  .erp-menu-item,
+  .erp-menu-text strong,
+  .erp-menu-text small,
+  .mobile-nav-card,
+  .mobile-primary-link,
+  .nav-heading
+) {
+  color: var(--design-text) !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body :is(.erp-menu-text small, .mobile-nav-card small, .erp-overflow-section h3) {
+  color: var(--design-muted) !important;
+}
+
+html[data-visual-theme] body :is(
+  .erp-menu-label:hover,
+  .erp-menu-label:focus-visible,
+  .erp-menu[open] .erp-menu-label,
+  .erp-menu.has-active .erp-menu-label,
+  .erp-menu-item:hover,
+  .erp-menu-item:focus-visible,
+  .erp-menu-item.active,
+  .mobile-nav-card:hover,
+  .mobile-nav-card:focus-visible,
+  .mobile-nav-card.active
+) {
+  color: var(--design-strong) !important;
+  border-color: var(--design-border-strong) !important;
+  background: var(--design-panel-hover) !important;
+}
+
+html[data-visual-theme] body .erp-command-area .global-search-trigger,
+html[data-visual-theme] body .dallmayr-account-menu.is-brand .dallmayr-account-trigger,
+html[data-visual-theme] body .hamburger-button.notch-mobile-button {
+  color: var(--design-text) !important;
+  border-color: var(--design-border) !important;
+  background: var(--design-panel-raised) !important;
+}
+
+html[data-visual-theme] body .erp-command-area .global-search-trigger :is(span, kbd),
+html[data-visual-theme] body .dallmayr-account-menu.is-brand .dallmayr-account-trigger :is(span, strong, small) {
+  color: inherit !important;
+}
+
+html[data-visual-theme] body .hamburger-button.notch-mobile-button span {
+  background: var(--design-strong) !important;
+}
+
+/* Curated theme selector. */
+.appearance-theme-choice-grid {
+  display: grid;
+  gap: 10px;
+}
+
+html[data-visual-theme] body .appearance-theme-choice {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 92px;
+  padding: 12px;
+  border: 1px solid var(--design-border) !important;
+  border-radius: 13px;
+  color: var(--design-text) !important;
+  background: var(--design-panel-raised) !important;
+  text-align: left;
+  cursor: pointer;
+}
+
+html[data-visual-theme] body .appearance-theme-choice:hover,
+html[data-visual-theme] body .appearance-theme-choice:focus-visible,
+html[data-visual-theme] body .appearance-theme-choice.is-active {
+  border-color: var(--design-accent) !important;
+  background: var(--design-panel-hover) !important;
+}
+
+.appearance-theme-preview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  width: 76px;
+  height: 58px;
+  overflow: hidden;
+  border: 1px solid rgba(127, 127, 127, 0.42);
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.appearance-theme-preview > span:first-child {
+  grid-row: 1 / 3;
+}
+
+.appearance-theme-copy {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.appearance-theme-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+html[data-visual-theme] body .appearance-theme-title-row strong {
+  color: var(--design-strong) !important;
+  font-size: 13px;
+}
+
+html[data-visual-theme] body .appearance-theme-title-row small,
+html[data-visual-theme] body .appearance-theme-copy > span:last-child,
+html[data-visual-theme] body .appearance-theme-note {
+  color: var(--design-muted) !important;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.appearance-theme-check {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  color: var(--design-accent-ink) !important;
+  background: var(--design-accent) !important;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.appearance-theme-choice:not(.is-active) .appearance-theme-check {
+  background: transparent !important;
+}
+
+.appearance-theme-note {
+  margin: 0;
+  padding: 10px 11px;
+  border-left: 3px solid var(--design-accent);
+  background: var(--design-panel-raised);
+}
+
+/* Semantic feedback remains independent from decorative themes. */
+html[data-visual-theme] body :is(.error, .badge.danger, .status-badge.danger, .status-badge.is-danger) {
+  color: #ffffff !important;
+  border-color: #fca5a5 !important;
+  background: #991b1b !important;
+}
+
+html[data-visual-theme] body :is(.success, .badge.success, .status-badge.success, .status-badge.is-success) {
+  color: #ffffff !important;
+  border-color: #86efac !important;
+  background: #166534 !important;
+}
+
+html[data-visual-theme] body :is(.warning, .badge.warning, .status-badge.warning, .status-badge.is-warning) {
+  color: #1f1812 !important;
+  border-color: #a16207 !important;
+  background: #fde68a !important;
+}
+
+html[data-visual-theme] body :is(.info, .badge.info, .status-badge.info, .status-badge.is-info) {
+  color: #ffffff !important;
+  border-color: #93c5fd !important;
+  background: #1d4ed8 !important;
+}
+
+@media (max-width: 560px) {
+  html[data-visual-theme] body .appearance-theme-choice {
+    grid-template-columns: 64px minmax(0, 1fr) 26px;
+    padding: 10px;
+  }
+
+  .appearance-theme-preview {
+    width: 64px;
+    height: 52px;
+  }
+
+  .appearance-theme-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+@media (forced-colors: active) {
+  html[data-visual-theme] body :is(.card, .neo-card, .panel, .chart-card, .page-toolbar, .table-wrap) {
+    color: CanvasText !important;
+    border-color: CanvasText !important;
+    background: Canvas !important;
+  }
+}
