@@ -11,6 +11,8 @@ type ContrastPreferenceInput = {
   themeTone: 'dark' | 'light';
 };
 
+export type ContentTone = 'dark' | 'light';
+
 export type AppearanceContrastTokens = {
   accentInk: string;
   accentOnLight: string;
@@ -19,14 +21,27 @@ export type AppearanceContrastTokens = {
   focusContrast: string;
   themeInk: string;
   backgroundInk: string;
+  contentTone: ContentTone;
+  contentSurface: string;
+  contentSurfaceRaised: string;
+  contentText: string;
+  contentStrong: string;
+  contentMuted: string;
+  contentSubtle: string;
+  contentBorder: string;
+  contentAccentText: string;
+  contentFocus: string;
+  chartTrack: string;
 };
 
 const DARK_INK = '#000000';
 const LIGHT_INK = '#ffffff';
 const LIGHT_SURFACE = '#ffffff';
 const DARK_SURFACE = '#1f242b';
-const LIGHT_FOCUS_SURFACE = '#f8fafc';
-const DARK_FOCUS_SURFACE = '#111827';
+const DARK_PANEL_SURFACE = '#111827';
+const DARK_PANEL_RAISED = '#1f2937';
+const LIGHT_PANEL_SURFACE = '#ffffff';
+const LIGHT_PANEL_RAISED = '#f8fafc';
 
 function clampChannel(value: number) {
   return Math.max(0, Math.min(255, Math.round(value)));
@@ -70,7 +85,7 @@ export function contrastRatio(foreground: string, background: string) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-function mixHex(source: string, target: string, targetAmount: number) {
+export function mixHex(source: string, target: string, targetAmount: number) {
   const sourceRgb = parseHex(source);
   const targetRgb = parseHex(target);
   const sourceAmount = 1 - targetAmount;
@@ -113,20 +128,56 @@ export function ensureContrast(color: string, background: string, minimumRatio =
   return best;
 }
 
+function createContentSurfaceTokens(preferences: ContrastPreferenceInput) {
+  // Theme tone is a user preference, not proof that a custom colour is light or dark.
+  // Blend the colours that actually shape the page, then establish a controlled panel
+  // surface and its foreground as one inseparable pair.
+  const paletteSurface = mixHex(preferences.themeColor, preferences.backgroundColor, 0.45);
+  const contentTone: ContentTone = readableTextOn(paletteSurface) === LIGHT_INK ? 'dark' : 'light';
+  const contentSurface = contentTone === 'dark'
+    ? mixHex(paletteSurface, DARK_PANEL_SURFACE, 0.78)
+    : mixHex(paletteSurface, LIGHT_PANEL_SURFACE, 0.9);
+  const contentSurfaceRaised = contentTone === 'dark'
+    ? mixHex(paletteSurface, DARK_PANEL_RAISED, 0.8)
+    : mixHex(paletteSurface, LIGHT_PANEL_RAISED, 0.9);
+  const contentText = readableTextOn(contentSurface);
+  const mutedCandidate = contentTone === 'dark' ? '#cbd5e1' : '#475569';
+  const subtleCandidate = contentTone === 'dark' ? '#aeb7c4' : '#64748b';
+  const borderCandidate = contentTone === 'dark' ? '#64748b' : '#64748b';
+  const chartTrack = contentTone === 'dark'
+    ? mixHex(contentSurface, '#000000', 0.46)
+    : mixHex(contentSurface, '#cbd5e1', 0.58);
+
+  return {
+    contentTone,
+    contentSurface,
+    contentSurfaceRaised,
+    contentText,
+    contentStrong: contentText,
+    contentMuted: ensureContrast(mutedCandidate, contentSurface, 4.5),
+    contentSubtle: ensureContrast(subtleCandidate, contentSurface, 4.5),
+    contentBorder: ensureContrast(borderCandidate, contentSurface, 3),
+    contentAccentText: ensureContrast(preferences.accentColor, contentSurface, 4.5),
+    contentFocus: ensureContrast(preferences.accentColor, contentSurface, 3),
+    chartTrack,
+  };
+}
+
 export function createAppearanceContrastTokens(
   preferences: ContrastPreferenceInput,
 ): AppearanceContrastTokens {
   const accentOnLight = ensureContrast(preferences.accentColor, LIGHT_SURFACE, 4.5);
   const accentOnDark = ensureContrast(preferences.accentColor, DARK_SURFACE, 4.5);
-  const focusSurface = preferences.themeTone === 'dark' ? DARK_FOCUS_SURFACE : LIGHT_FOCUS_SURFACE;
+  const contentTokens = createContentSurfaceTokens(preferences);
 
   return {
     accentInk: readableTextOn(preferences.accentColor),
     accentOnLight,
     accentOnDark,
-    accentText: preferences.themeTone === 'dark' ? accentOnDark : accentOnLight,
-    focusContrast: ensureContrast(preferences.accentColor, focusSurface, 3),
+    accentText: contentTokens.contentAccentText,
+    focusContrast: contentTokens.contentFocus,
     themeInk: readableTextOn(preferences.themeColor),
     backgroundInk: readableTextOn(preferences.backgroundColor),
+    ...contentTokens,
   };
 }
