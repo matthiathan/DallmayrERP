@@ -36,6 +36,7 @@ type ScheduleItem = {
 };
 
 const quickActions = [
+  { href: '/operations/dispatch', title: 'Open dispatch overview', helper: 'See route gaps, service exceptions, delivery pressure and technician capacity together.' },
   { href: '/operations/service-planning', title: 'Plan today’s service routes', helper: 'Assign drivers, route numbers, stop order and reschedules.' },
   { href: '/operations/service-jobs', title: 'Open scheduled call log', helper: 'Create request-only service work and dispatch technicians.' },
   { href: '/operations/deliveries', title: 'Review delivery board', helper: 'Track picked, dispatched, delivered and closed orders.' },
@@ -143,7 +144,7 @@ export function OperationsManagerDashboard() {
                 <h2>{new Date(`${todayIso()}T12:00:00`).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h2>
                 <p>Paid monthly obligations and request-only service work due today.</p>
               </div>
-              <Link className="button" href="/operations/service-planning">Open route planner</Link>
+              <Link className="button" href="/operations/dispatch">Open dispatch overview</Link>
             </div>
 
             <div className="operations-route-summary">
