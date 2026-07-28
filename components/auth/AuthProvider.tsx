@@ -39,15 +39,13 @@ async function loadDetails(userId: string): Promise<UserDetails | null> {
 }
 
 async function loadBusinessProfile(authUser: User | null): Promise<BusinessProfile | null> {
-  if (!authUser?.email) return null;
+  if (!authUser?.id) return null;
 
   const client = getSupabaseClient();
-  const email = authUser.email.trim().toLowerCase();
-
   const { data: userRecord, error: userError } = await client
     .from('users')
     .select('*')
-    .eq('email', email)
+    .eq('auth_user_id', authUser.id)
     .maybeSingle();
 
   if (userError) throw userError;
