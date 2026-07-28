@@ -1,5 +1,6 @@
 -- Link internal ERP users to Supabase Auth identities by immutable UUID.
--- Email remains contact/display data and is no longer used for authorization.
+-- Email remains contact/display data and is used only once to claim a pending
+-- access invitation; all ongoing authorization resolves through auth.uid().
 
 create schema if not exists private;
 revoke all on schema private from public;
@@ -29,6 +30,8 @@ create unique index if not exists users_auth_user_id_key
   on public.users (auth_user_id)
   where auth_user_id is not null;
 
+-- When an Administrator adds access after an Auth account already exists,
+-- attach the immutable Auth UUID before the ERP user row is written.
 create or replace function private.assign_auth_identity_to_app_user()
 returns trigger
 language plpgsql
@@ -50,27 +53,7 @@ begin
 end;
 $$;
 
-create or replace function private.link_app_user_after_auth_signup()
-returns trigger
-language plpgsql
-security definer
-set search_path = public, auth, pg_temp
-as $$
-begin
-  if nullif(trim(coalesce(new.email, '')), '') is not null then
-    update public.users u
-    set auth_user_id = new.id,
-        updated_at = now()
-    where u.auth_user_id is null
-      and lower(u.email) = lower(new.email);
-  end if;
-
-  return new;
-end;
-$$;
-
 revoke all on function private.assign_auth_identity_to_app_user() from public, anon, authenticated;
-revoke all on function private.link_app_user_after_auth_signup() from public, anon, authenticated;
 
 drop trigger if exists users_assign_auth_identity on public.users;
 create trigger users_assign_auth_identity
@@ -78,12 +61,7 @@ before insert or update of email on public.users
 for each row
 execute function private.assign_auth_identity_to_app_user();
 
-drop trigger if exists auth_users_link_app_identity on auth.users;
-create trigger auth_users_link_app_identity
-after insert or update of email on auth.users
-for each row
-execute function private.link_app_user_after_auth_signup();
-
+-- Link all existing ERP users to their current Supabase Auth identities.
 update public.users u
 set auth_user_id = au.id,
     updated_at = now()
@@ -102,6 +80,45 @@ begin
     raise exception 'Could not link every matching ERP user to its Supabase Auth identity';
   end if;
 end
+$$;
+
+-- If ERP access was invited before the Auth account was created, the signed-in
+-- user claims that pending row once. The immutable UUID is used thereafter.
+create or replace function public.claim_current_app_user()
+returns uuid
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_auth_user_id uuid := auth.uid();
+  v_email text := lower(trim(coalesce(auth.jwt() ->> 'email', '')));
+  v_app_user_id uuid;
+begin
+  if v_auth_user_id is null or v_email = '' then
+    raise exception 'An authenticated Supabase user is required'
+      using errcode = '42501';
+  end if;
+
+  select u.id
+    into v_app_user_id
+  from public.users u
+  where u.auth_user_id = v_auth_user_id
+  limit 1;
+
+  if v_app_user_id is not null then
+    return v_app_user_id;
+  end if;
+
+  update public.users u
+  set auth_user_id = v_auth_user_id,
+      updated_at = now()
+  where u.auth_user_id is null
+    and lower(u.email) = v_email
+  returning u.id into v_app_user_id;
+
+  return v_app_user_id;
+end;
 $$;
 
 create or replace function public.current_app_user_id()
@@ -132,13 +149,18 @@ as $$
   limit 1;
 $$;
 
+revoke all on function public.claim_current_app_user() from public, anon;
 revoke all on function public.current_app_user_id() from public, anon;
 revoke all on function public.current_app_role() from public, anon;
+grant execute on function public.claim_current_app_user() to authenticated;
 grant execute on function public.current_app_user_id() to authenticated;
 grant execute on function public.current_app_role() to authenticated;
 
 comment on column public.users.auth_user_id
   is 'Stable Supabase Auth identity linked to the internal ERP user record.';
+
+comment on function public.claim_current_app_user()
+  is 'Links a pending ERP access invitation to the authenticated Supabase user once, then returns the internal ERP user ID.';
 
 comment on function public.current_app_user_id()
   is 'Returns the internal ERP user ID linked to the authenticated Supabase user via auth.uid().';
