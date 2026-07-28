@@ -46,6 +46,7 @@ import './customer-360.css';
 import './operations-exceptions.css';
 import './user-first-application-shell.css';
 import './adaptive-contrast.css';
+import './adaptive-contrast-final.css';
 import { AccessStatusGuard } from '@/components/auth/AccessStatusGuard';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { AppearanceProvider } from '@/components/appearance/AppearanceProvider';
