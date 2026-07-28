@@ -1,0 +1,477 @@
+.exception-centre-stage {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.exception-centre-hero {
+  overflow: hidden;
+}
+
+.exception-centre-kpis {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.exception-kpi-button {
+  display: block;
+  min-width: 0;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.exception-kpi-button > * {
+  height: 100%;
+  transition: transform 160ms ease, border-color 160ms ease;
+}
+
+.exception-kpi-button:hover > *,
+.exception-kpi-button:focus-visible > * {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--user-accent, var(--gold)) 62%, transparent);
+}
+
+.exception-queue-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 6px;
+  border: 1px solid rgba(255, 222, 155, 0.14);
+  border-radius: 16px;
+  background: rgba(12, 8, 5, 0.58);
+  scrollbar-width: thin;
+}
+
+.exception-queue-tabs button {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  color: var(--muted);
+  font-weight: 800;
+  text-transform: capitalize;
+  background: transparent;
+  cursor: pointer;
+}
+
+.exception-queue-tabs button:hover,
+.exception-queue-tabs button:focus-visible {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.exception-queue-tabs button.is-active {
+  color: var(--accent-ink, #101318);
+  border-color: color-mix(in srgb, var(--user-accent, var(--gold)) 74%, transparent);
+  background: var(--user-accent, var(--gold));
+}
+
+.exception-centre-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.88fr) minmax(460px, 1.55fr);
+  gap: 18px;
+  align-items: start;
+  min-width: 0;
+}
+
+.exception-case-list {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  max-height: calc(100vh - 230px);
+  min-height: 560px;
+  overflow-y: auto;
+  padding: 14px;
+  border: 1px solid rgba(255, 222, 155, 0.14);
+  border-radius: 20px;
+  background: rgba(10, 7, 4, 0.54);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  scrollbar-width: thin;
+}
+
+.exception-list-heading {
+  position: sticky;
+  top: -14px;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -14px -14px 2px;
+  padding: 15px 14px 12px;
+  background: color-mix(in srgb, var(--surface) 93%, transparent);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(255, 222, 155, 0.1);
+}
+
+.exception-list-heading h2 {
+  margin: 2px 0 0;
+}
+
+.exception-list-heading > span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.exception-case-card {
+  display: grid;
+  gap: 9px;
+  width: 100%;
+  padding: 15px;
+  color: var(--text);
+  text-align: left;
+  border: 1px solid rgba(255, 222, 155, 0.12);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(47, 31, 16, 0.78), rgba(13, 9, 5, 0.84));
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.exception-case-card:hover,
+.exception-case-card:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(248, 220, 122, 0.35);
+}
+
+.exception-case-card.is-selected {
+  border-color: color-mix(in srgb, var(--user-accent, var(--gold)) 72%, transparent);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--user-accent, var(--gold)) 17%, #2f1f10), rgba(13, 9, 5, 0.92));
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22), inset 3px 0 0 var(--user-accent, var(--gold));
+}
+
+.exception-case-card-top,
+.exception-case-card-meta,
+.exception-detail-heading,
+.exception-source-action,
+.exception-owner-row,
+.exception-comments article > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.exception-case-card-top > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.exception-case-card-top > div,
+.exception-detail-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: flex-end;
+}
+
+.exception-case-card strong {
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.exception-case-card p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: var(--muted);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.exception-case-card-meta {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.exception-case-card-meta span:not(:last-child)::after {
+  content: '·';
+  margin-left: 10px;
+  opacity: 0.56;
+}
+
+.exception-case-detail {
+  position: sticky;
+  top: 128px;
+  min-width: 0;
+}
+
+.exception-detail-card {
+  display: grid;
+  gap: 18px;
+  max-height: calc(100vh - 150px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.exception-detail-heading {
+  align-items: flex-start;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 222, 155, 0.13);
+}
+
+.exception-detail-heading h2 {
+  margin: 4px 0 8px;
+  font-size: clamp(22px, 3vw, 32px);
+}
+
+.exception-detail-heading p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--muted);
+}
+
+.exception-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.exception-detail-grid div {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(255, 222, 155, 0.12);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.exception-detail-grid dt {
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.exception-detail-grid dd {
+  overflow-wrap: anywhere;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 780;
+}
+
+.exception-source-action {
+  align-items: flex-start;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--user-accent, var(--gold)) 38%, transparent);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--user-accent, var(--gold)) 8%, transparent);
+}
+
+.exception-source-action p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.exception-action-section {
+  display: grid;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 222, 155, 0.12);
+}
+
+.exception-action-section h3 {
+  margin: 0;
+}
+
+.exception-action-section label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.exception-action-section textarea {
+  min-height: 92px;
+}
+
+.exception-owner-row {
+  align-items: end;
+}
+
+.exception-owner-row label {
+  flex: 1 1 auto;
+}
+
+.exception-owner-row .button,
+.exception-custom-snooze .button {
+  flex: 0 0 auto;
+}
+
+.exception-primary-actions,
+.exception-action-section > .action-row {
+  justify-content: flex-start;
+}
+
+.exception-custom-snooze {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.exception-comments {
+  display: grid;
+  gap: 8px;
+}
+
+.exception-comments > p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.exception-comments article {
+  padding: 12px;
+  border: 1px solid rgba(255, 222, 155, 0.11);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.exception-comments article > div {
+  align-items: baseline;
+}
+
+.exception-comments time {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.exception-comments p {
+  margin: 7px 0 0;
+  white-space: pre-wrap;
+}
+
+.exception-resolve-section {
+  padding: 16px;
+  border: 1px solid rgba(85, 200, 120, 0.26);
+  border-radius: 15px;
+  background: rgba(85, 200, 120, 0.055);
+}
+
+@media (max-width: 1320px) {
+  .exception-centre-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .exception-centre-layout {
+    grid-template-columns: minmax(300px, 0.82fr) minmax(430px, 1.25fr);
+  }
+
+  .exception-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .exception-centre-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .exception-case-list {
+    max-height: 520px;
+    min-height: 360px;
+  }
+
+  .exception-case-detail {
+    position: static;
+  }
+
+  .exception-detail-card {
+    max-height: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .exception-centre-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .exception-case-list {
+    margin-inline: -2px;
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .exception-list-heading {
+    top: -10px;
+    margin: -10px -10px 2px;
+    padding-inline: 10px;
+  }
+
+  .exception-case-card {
+    padding: 13px;
+  }
+
+  .exception-detail-heading,
+  .exception-source-action,
+  .exception-owner-row,
+  .exception-comments article > div {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .exception-detail-badges {
+    justify-content: flex-start;
+  }
+
+  .exception-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .exception-source-action .button,
+  .exception-owner-row .button,
+  .exception-custom-snooze .button {
+    width: 100%;
+  }
+
+  .exception-custom-snooze {
+    grid-template-columns: 1fr;
+  }
+
+  .exception-case-card-meta span:not(:last-child)::after {
+    display: none;
+  }
+
+  .exception-case-card-meta span {
+    width: calc(50% - 5px);
+  }
+}
+
+html[data-theme-tone='light'] .exception-queue-tabs,
+html[data-theme-tone='light'] .exception-case-list {
+  border-color: rgba(30, 41, 59, 0.14);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+html[data-theme-tone='light'] .exception-list-heading {
+  background: rgba(248, 250, 252, 0.94);
+  border-color: rgba(30, 41, 59, 0.1);
+}
+
+html[data-theme-tone='light'] .exception-case-card {
+  border-color: rgba(30, 41, 59, 0.13);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(244, 247, 250, 0.92));
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+}
+
+html[data-theme-tone='light'] .exception-case-card.is-selected {
+  background: color-mix(in srgb, var(--user-accent, #d4af37) 9%, white);
+}
+
+html[data-theme-tone='light'] .exception-detail-grid div,
+html[data-theme-tone='light'] .exception-comments article {
+  border-color: rgba(30, 41, 59, 0.12);
+  background: rgba(15, 23, 42, 0.025);
+}
