@@ -47,9 +47,11 @@ import './operations-exceptions.css';
 import './user-first-application-shell.css';
 import './adaptive-contrast.css';
 import './adaptive-contrast-final.css';
+import './rendered-surface-contrast.css';
 import { AccessStatusGuard } from '@/components/auth/AccessStatusGuard';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { AppearanceProvider } from '@/components/appearance/AppearanceProvider';
+import { RenderedSurfaceContrastSync } from '@/components/appearance/RenderedSurfaceContrastSync';
 import { GlobalAccountMenu } from '@/components/layout/GlobalAccountMenu';
 
 const APPEARANCE_BOOT_SCRIPT = `
@@ -191,6 +193,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <AuthProvider>
           <AppearanceProvider>
+            <RenderedSurfaceContrastSync />
             <AccessStatusGuard>
               <GlobalAccountMenu />
               {children}
