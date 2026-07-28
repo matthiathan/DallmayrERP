@@ -1,0 +1,305 @@
+/* Responsive off-canvas navigation
+   Loaded after the curated themes. Narrow layouts show a hamburger trigger; the
+   navigation itself opens as a readable drawer rather than collapsing into a rail. */
+
+@media (max-width: 980px) {
+  html[data-visual-theme] body .erp-menu-row.notch-menu-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    padding: 10px 116px 10px 12px !important;
+    overflow: visible !important;
+  }
+
+  html[data-visual-theme] body .erp-brand-button.notch-logo-button {
+    flex: 0 1 auto !important;
+    min-width: 0 !important;
+    max-width: min(220px, calc(100vw - 132px)) !important;
+  }
+
+  html[data-visual-theme] body .hamburger-button.notch-mobile-button {
+    position: absolute !important;
+    top: calc(12px + env(safe-area-inset-top, 0px)) !important;
+    right: 62px !important;
+    z-index: 6405 !important;
+    display: inline-grid !important;
+    place-content: center !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    padding: 0 !important;
+  }
+
+  html[data-visual-theme] body .mobile-nav-backdrop {
+    position: fixed !important;
+    inset: var(--user-shell-height) 0 0 !important;
+    z-index: 6390 !important;
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: rgba(2, 6, 12, 0.68) !important;
+    box-shadow: none !important;
+    backdrop-filter: blur(4px) !important;
+  }
+
+  html[data-visual-theme] body .mobile-nav-panel {
+    position: fixed !important;
+    inset: var(--user-shell-height) 0 0 auto !important;
+    z-index: 6400 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    width: min(420px, 100vw) !important;
+    min-width: min(320px, 100vw) !important;
+    max-width: 100vw !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 20px 18px max(24px, env(safe-area-inset-bottom, 0px)) !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    border: 0 !important;
+    border-left: 1px solid var(--design-border) !important;
+    border-radius: 0 !important;
+    background: var(--design-panel) !important;
+    color: var(--design-text) !important;
+    box-shadow: -24px 0 64px rgba(0, 0, 0, 0.42) !important;
+    scrollbar-gutter: stable !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  html[data-visual-theme] body .mobile-nav-panel[hidden] {
+    display: none !important;
+  }
+
+  html[data-visual-theme] body .mobile-nav-panel::before {
+    content: 'Menu';
+    display: block;
+    margin: 0 0 14px !important;
+    color: var(--design-strong) !important;
+    font-size: 1.25rem !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    letter-spacing: -0.02em !important;
+    writing-mode: horizontal-tb !important;
+  }
+
+  html[data-visual-theme] body .mobile-nav-panel .mobile-user-chip {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 0 12px !important;
+  }
+
+  html[data-visual-theme] body .mobile-nav-panel .mobile-primary-link {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 0 18px !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    writing-mode: horizontal-tb !important;
+  }
+
+  html[data-visual-theme] body .mobile-nav-panel > nav {
+    display: block !important;
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
+
+  html[data-visual-theme] body .mobile-nav-panel .nav-section {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 0 20px !important;
+    padding: 0 !important;
+  }
+
+  html[data-visual-theme] body .mobile-nav-panel .nav-heading {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 0 8px !important;
+    color: var(--design-muted) !important;
+    font-size: 0.75rem !important;
+    font-weight: 800 !important;
+    line-height: 1.35 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    white-space: normal !important;
+    writing-mode: horizontal-tb !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+  }
+
+  html[data-visual-theme] body .mobile-nav-panel .mobile-nav-card {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: center !important;
+    justify-content: stretch !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 58px !important;
+    margin: 0 0 8px !important;
+    padding: 12px 14px !important;
+    border: 1px solid transparent !important;
+    border-radius: 12px !important;
+    background: transparent !important;
+    color: var(--design-text) !important;
+    text-align: left !important;
+    white-space: normal !important;
+    writing-mode: horizontal-tb !important;
+  }
+
+  html[data-visual-theme] body .mobile-nav-panel .mobile-nav-card:hover,
+  html[data-visual-theme] body .mobile-nav-panel .mobile-nav-card:focus-visible,
+  html[data-visual-theme] body .mobile-nav-panel .mobile-nav-card.active,
+  html[data-visual-theme] body .mobile-nav-panel .mobile-nav-card[aria-current='page'] {
+    border-color: var(--design-border-strong) !important;
+    background: var(--design-panel-hover) !important;
+    color: var(--design-strong) !important;
+  }
+
+  html[data-visual-theme] body .mobile-nav-panel .nav-card-copy {
+    display: grid !important;
+    gap: 4px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  html[data-visual-theme] body .mobile-nav-panel .nav-card-copy strong,
+  html[data-visual-theme] body .mobile-nav-panel .nav-card-copy small {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+    writing-mode: horizontal-tb !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+  }
+
+  html[data-visual-theme] body .mobile-nav-panel .nav-card-copy strong {
+    color: var(--design-strong) !important;
+    font-size: 0.96rem !important;
+    font-weight: 760 !important;
+    line-height: 1.35 !important;
+  }
+
+  html[data-visual-theme] body .mobile-nav-panel .nav-card-copy small {
+    color: var(--design-muted) !important;
+    font-size: 0.78rem !important;
+    line-height: 1.4 !important;
+  }
+
+  html[data-visual-theme] body .mobile-nav-panel .sign-out {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: auto 0 0 !important;
+  }
+}
+
+@media (max-width: 560px) {
+  html[data-visual-theme] body .erp-menu-row.notch-menu-row {
+    padding: 10px 68px 10px 10px !important;
+  }
+
+  html[data-visual-theme] body .erp-brand-button.notch-logo-button {
+    max-width: calc(100vw - 82px) !important;
+  }
+
+  html[data-visual-theme] body .erp-brand-button.notch-logo-button span:not(.notch-logo-mark) {
+    display: none !important;
+  }
+
+  html[data-visual-theme] body .hamburger-button.notch-mobile-button {
+    right: 12px !important;
+  }
+
+  /* Account actions move into the open drawer on compact screens, leaving a
+     single clear hamburger affordance in the header. */
+  html[data-visual-theme] body .dallmayr-account-menu.is-brand {
+    display: none !important;
+  }
+
+  html[data-visual-theme] body .mobile-menu-open .dallmayr-account-menu.is-brand {
+    position: fixed !important;
+    top: calc(var(--user-shell-height) + 14px) !important;
+    right: 14px !important;
+    left: auto !important;
+    z-index: 6410 !important;
+    display: block !important;
+    width: auto !important;
+    max-width: calc(100vw - 28px) !important;
+  }
+
+  html[data-visual-theme] body .mobile-nav-panel {
+    inset: var(--user-shell-height) 0 0 0 !important;
+    width: 100vw !important;
+    min-width: 0 !important;
+    max-width: 100vw !important;
+    padding: 20px 14px max(22px, env(safe-area-inset-bottom, 0px)) !important;
+    border-left: 0 !important;
+    box-shadow: none !important;
+  }
+
+  html[data-visual-theme] body .mobile-menu-open .mobile-nav-panel {
+    padding-top: 78px !important;
+  }
+
+  html[data-visual-theme] body .mobile-nav-panel::before {
+    position: absolute !important;
+    top: 22px !important;
+    left: 14px !important;
+    margin: 0 !important;
+  }
+}
+
+@media (max-width: 340px) {
+  html[data-visual-theme] body .mobile-nav-panel .mobile-nav-card {
+    padding-inline: 12px !important;
+  }
+
+  html[data-visual-theme] body .mobile-nav-panel .nav-card-copy strong {
+    font-size: 0.9rem !important;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) and (max-width: 980px) {
+  html[data-visual-theme] body .mobile-nav-panel {
+    animation: mobile-drawer-enter 180ms ease-out both;
+  }
+
+  html[data-visual-theme] body .mobile-nav-backdrop {
+    animation: mobile-backdrop-enter 160ms ease-out both;
+  }
+}
+
+@keyframes mobile-drawer-enter {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes mobile-backdrop-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media print {
+  .mobile-nav-panel,
+  .mobile-nav-backdrop,
+  .hamburger-button.notch-mobile-button {
+    display: none !important;
+  }
+}
