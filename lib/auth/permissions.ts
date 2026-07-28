@@ -45,6 +45,7 @@ export const navSections: NavSection[] = [
     heading: 'Operations',
     items: [
       { href: '/operations/dashboard', label: 'Operations Start Page', code: 'OPH01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Live branch workload, route pressure, service exceptions and daily priorities.' },
+      { href: '/operations/dispatch', label: 'Dispatch Overview', code: 'DSP01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Combined route gaps, service exceptions, delivery pressure and technician capacity.' },
       { href: '/operations/service-planning', label: 'Daily Service Planner', code: 'SRP01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Plan clients, drivers, route numbers, stop order and reschedules.' },
       { href: '/operations/service-jobs', label: 'Scheduled Call Log', code: 'SCL21', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Create request-only service work and assign technicians.' },
       { href: '/operations/deliveries', label: 'Delivery Board', code: 'DL01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Control picked, dispatched, delivered and closed delivery orders.' },
@@ -123,6 +124,7 @@ export const navSections: NavSection[] = [
       { href: '/work', label: 'Action Centre', code: 'ACT01', roles: 'all', description: 'Assigned work, approvals, exceptions and operational requests.' },
       { href: '/work/execution', label: 'Work Execution', code: 'WEX01', roles: ['admin', 'operations', 'technician', 'road_technician'], description: 'Checklists, comments, parts used and controlled job closure.' },
       { href: '/operations', label: 'Operations Control', code: 'OPS01', roles: ['admin', 'operations'], description: 'Operations overview, exceptions and management controls.' },
+      { href: '/operations/dispatch', label: 'Dispatch Overview', code: 'DSP01', roles: ['admin', 'operations'], description: 'Unified route, service, delivery and technician workload pressure.' },
       { href: '/operations/service-planning', label: 'Service Route Planner', code: 'SRP01', roles: ['admin', 'operations'], description: 'Plan daily driver routes from paid monthly obligations and requested service work.' },
       { href: '/operations/service-jobs', label: 'Scheduled Call Log', code: 'SCL21', roles: ['admin', 'operations'], description: 'Create requested service jobs, dispatch priorities and technician assignments.' },
       { href: '/operations/deliveries', label: 'Delivery Board', code: 'DL01', roles: ['admin', 'operations'], description: 'Picked, dispatched, delivered and closed delivery orders.' },
