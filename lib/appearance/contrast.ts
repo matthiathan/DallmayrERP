@@ -21,7 +21,7 @@ export type AppearanceContrastTokens = {
   backgroundInk: string;
 };
 
-const DARK_INK = '#111827';
+const DARK_INK = '#000000';
 const LIGHT_INK = '#ffffff';
 const LIGHT_SURFACE = '#ffffff';
 const DARK_SURFACE = '#1f242b';
@@ -93,7 +93,7 @@ export function ensureContrast(color: string, background: string, minimumRatio =
 
   const darkRatio = contrastRatio(DARK_INK, background);
   const lightRatio = contrastRatio(LIGHT_INK, background);
-  const target = darkRatio >= lightRatio ? '#000000' : '#ffffff';
+  const target = darkRatio >= lightRatio ? DARK_INK : LIGHT_INK;
   let lower = 0;
   let upper = 1;
   let best = target;
