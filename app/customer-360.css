@@ -1,0 +1,734 @@
+.customer360-stage {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.customer360-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 360px);
+  gap: clamp(22px, 4vw, 56px);
+  align-items: end;
+  overflow: hidden;
+  padding: clamp(24px, 4vw, 48px);
+  border: 1px solid rgba(212, 175, 55, 0.24);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 82% 10%, rgba(212, 175, 55, 0.18), transparent 32%),
+    linear-gradient(135deg, rgba(48, 31, 15, 0.96), rgba(12, 8, 5, 0.96));
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.28);
+}
+
+.customer360-hero::after {
+  content: '';
+  position: absolute;
+  right: -80px;
+  bottom: -120px;
+  width: 320px;
+  height: 320px;
+  border: 1px solid rgba(212, 175, 55, 0.14);
+  border-radius: 50%;
+  box-shadow: 0 0 0 42px rgba(212, 175, 55, 0.035), 0 0 0 86px rgba(212, 175, 55, 0.025);
+  pointer-events: none;
+}
+
+.customer360-hero-copy,
+.customer360-hero-summary {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.customer360-eyebrow-row,
+.customer360-record-heading,
+.customer360-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.customer360-hero h1 {
+  max-width: 920px;
+  margin: 10px 0 8px;
+  font-size: clamp(34px, 5vw, 68px);
+  line-height: 0.98;
+  letter-spacing: -0.052em;
+}
+
+.customer360-identity {
+  margin: 0;
+  color: var(--gold-2);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.customer360-address {
+  max-width: 780px;
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.customer360-contact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.customer360-contact-actions .button {
+  width: auto;
+}
+
+.customer360-hero-summary {
+  display: grid;
+  gap: 10px;
+  align-content: end;
+  min-height: 180px;
+  padding: 22px;
+  border: 1px solid rgba(255, 231, 174, 0.18);
+  border-radius: 20px;
+  background: rgba(7, 5, 3, 0.48);
+  backdrop-filter: blur(16px);
+}
+
+.customer360-hero-summary span {
+  color: var(--gold-2);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.customer360-hero-summary strong {
+  font-size: clamp(22px, 2.6vw, 34px);
+  line-height: 1.08;
+}
+
+.customer360-hero-summary small {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.customer360-metrics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.customer360-metrics button {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  min-height: 132px;
+  padding: 18px;
+  border: 1px solid rgba(255, 222, 147, 0.16);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(49, 33, 18, 0.9), rgba(15, 10, 6, 0.92));
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.2);
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.customer360-metrics button:hover,
+.customer360-metrics button:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(212, 175, 55, 0.55);
+  background: linear-gradient(145deg, rgba(61, 42, 23, 0.96), rgba(19, 12, 7, 0.96));
+}
+
+.customer360-metrics span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.customer360-metrics strong {
+  font-size: clamp(28px, 3vw, 42px);
+  line-height: 1;
+}
+
+.customer360-metrics small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.customer360-tabs {
+  position: sticky;
+  top: var(--erp-fixed-header-height, 0px);
+  z-index: 15;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 7px;
+  border: 1px solid rgba(255, 222, 147, 0.16);
+  border-radius: 16px;
+  background: rgba(10, 7, 4, 0.9);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(16px);
+  scrollbar-width: thin;
+}
+
+.customer360-tabs button {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.customer360-tabs button:hover,
+.customer360-tabs button:focus-visible {
+  color: var(--text);
+  background: rgba(212, 175, 55, 0.08);
+}
+
+.customer360-tabs button.is-active {
+  border-color: rgba(212, 175, 55, 0.35);
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.22), rgba(122, 75, 34, 0.28));
+  color: var(--text);
+}
+
+.customer360-panel {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.customer360-overview-grid,
+.customer360-commercial-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+}
+
+.customer360-section-heading {
+  margin-bottom: 18px;
+}
+
+.customer360-section-heading h2 {
+  margin: 4px 0 0;
+}
+
+.customer360-section-heading p {
+  max-width: 720px;
+  margin: 7px 0 0;
+  color: var(--muted);
+}
+
+.customer360-section-heading > strong {
+  color: var(--gold-2);
+  font-size: 28px;
+}
+
+.customer360-details-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.customer360-details-list > div {
+  display: grid;
+  grid-template-columns: minmax(105px, 0.32fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 13px 0;
+  border-bottom: 1px solid rgba(255, 222, 147, 0.1);
+}
+
+.customer360-details-list > div:last-child {
+  border-bottom: 0;
+}
+
+.customer360-details-list dt,
+.customer360-record-card dt {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.customer360-details-list dd,
+.customer360-record-card dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.customer360-risk-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.customer360-risk-item {
+  display: grid;
+  gap: 7px;
+  min-height: 130px;
+  padding: 16px;
+  border: 1px solid rgba(255, 222, 147, 0.14);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.customer360-risk-item:hover,
+.customer360-risk-item:focus-visible {
+  border-color: rgba(212, 175, 55, 0.45);
+}
+
+.customer360-risk-item span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.customer360-risk-item strong {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.customer360-risk-item small {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.customer360-risk-item.tone-critical {
+  border-color: rgba(233, 91, 82, 0.36);
+  background: rgba(233, 91, 82, 0.08);
+}
+
+.customer360-risk-item.tone-warning {
+  border-color: rgba(248, 184, 72, 0.35);
+  background: rgba(248, 184, 72, 0.07);
+}
+
+.customer360-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.customer360-record-card {
+  display: grid;
+  align-content: start;
+  gap: 13px;
+  min-width: 0;
+  min-height: 190px;
+  padding: 18px;
+  border: 1px solid rgba(255, 222, 147, 0.14);
+  border-radius: 17px;
+  background: linear-gradient(145deg, rgba(40, 27, 15, 0.78), rgba(14, 9, 5, 0.84));
+}
+
+.customer360-linked-card {
+  transition: transform 160ms ease, border-color 160ms ease;
+}
+
+.customer360-linked-card:hover,
+.customer360-linked-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(212, 175, 55, 0.52);
+}
+
+.customer360-record-heading strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 17px;
+}
+
+.customer360-record-card > p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.customer360-record-card dl {
+  display: grid;
+  gap: 9px;
+  margin: auto 0 0;
+}
+
+.customer360-record-card dl > div {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.customer360-inline-warning {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(248, 184, 72, 0.32);
+  border-radius: 12px;
+  background: rgba(248, 184, 72, 0.07);
+  color: #ffe2a4;
+  font-size: 13px;
+}
+
+.customer360-service-list,
+.customer360-stack-list {
+  display: grid;
+  gap: 10px;
+}
+
+.customer360-service-row,
+.customer360-contract-row,
+.customer360-delivery-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 0.34fr);
+  gap: 18px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid rgba(255, 222, 147, 0.13);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.customer360-service-row,
+.customer360-delivery-row {
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.customer360-service-row:hover,
+.customer360-service-row:focus-visible,
+.customer360-delivery-row:hover,
+.customer360-delivery-row:focus-visible {
+  border-color: rgba(212, 175, 55, 0.48);
+  background: rgba(212, 175, 55, 0.055);
+}
+
+.customer360-service-row.is-overdue {
+  border-color: rgba(233, 91, 82, 0.38);
+  background: rgba(233, 91, 82, 0.055);
+}
+
+.customer360-service-main,
+.customer360-service-meta,
+.customer360-contract-row > div,
+.customer360-delivery-row > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.customer360-service-main > span {
+  color: var(--gold-2);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.customer360-service-main strong,
+.customer360-contract-row strong,
+.customer360-delivery-row strong {
+  overflow-wrap: anywhere;
+  font-size: 15px;
+}
+
+.customer360-service-main small,
+.customer360-service-meta small,
+.customer360-contract-row small,
+.customer360-delivery-row small,
+.customer360-contract-row span,
+.customer360-delivery-row span {
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.customer360-service-meta,
+.customer360-contract-row > div:last-child,
+.customer360-delivery-row > div:last-child {
+  justify-items: end;
+  text-align: right;
+}
+
+.customer360-contract-row em {
+  color: #ffd98a;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.customer360-contract-row em.is-critical {
+  color: #ff9891;
+}
+
+.customer360-timeline {
+  position: relative;
+  display: grid;
+  gap: 0;
+}
+
+.customer360-timeline::before {
+  content: '';
+  position: absolute;
+  top: 22px;
+  bottom: 22px;
+  left: 10px;
+  width: 1px;
+  background: linear-gradient(rgba(212, 175, 55, 0.45), rgba(212, 175, 55, 0.08));
+}
+
+.customer360-timeline-entry {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  min-width: 0;
+  padding: 13px 0;
+  border-bottom: 1px solid rgba(255, 222, 147, 0.09);
+}
+
+.customer360-timeline-entry:last-child {
+  border-bottom: 0;
+}
+
+.customer360-timeline-entry[href]:hover .customer360-timeline-copy strong,
+.customer360-timeline-entry[href]:focus-visible .customer360-timeline-copy strong {
+  color: var(--gold-2);
+}
+
+.customer360-timeline-marker {
+  position: relative;
+  z-index: 1;
+  width: 12px;
+  height: 12px;
+  margin: 4px 0 0 5px;
+  border: 2px solid #120b06;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.14);
+}
+
+.customer360-timeline-marker.type-service {
+  background: #74b9ff;
+}
+
+.customer360-timeline-marker.type-delivery {
+  background: #55c878;
+}
+
+.customer360-timeline-marker.type-contract {
+  background: #f8b848;
+}
+
+.customer360-timeline-marker.type-machine {
+  background: #c98cff;
+}
+
+.customer360-timeline-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.customer360-timeline-copy strong,
+.customer360-timeline-copy p {
+  overflow-wrap: anywhere;
+}
+
+.customer360-timeline-copy p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.customer360-timeline-copy small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.customer360-loading {
+  display: grid;
+  gap: 16px;
+  min-height: 420px;
+}
+
+.customer360-loading-hero,
+.customer360-loading-card {
+  overflow: hidden;
+  border: 1px solid rgba(255, 222, 147, 0.1);
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0.03) 20%, rgba(212, 175, 55, 0.1) 45%, rgba(255, 255, 255, 0.03) 70%);
+  background-size: 220% 100%;
+  animation: customer360-shimmer 1.4s linear infinite;
+}
+
+.customer360-loading-hero {
+  min-height: 240px;
+  border-radius: 24px;
+}
+
+.customer360-loading-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.customer360-loading-card {
+  min-height: 130px;
+  border-radius: 18px;
+}
+
+.customer360-loading > span {
+  color: var(--muted);
+}
+
+.customer360-not-found {
+  max-width: 720px;
+  margin: 40px auto;
+  text-align: center;
+}
+
+.customer360-not-found .button {
+  width: auto;
+}
+
+@keyframes customer360-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+html[data-theme-tone='light'] .customer360-hero {
+  border-color: rgba(122, 75, 34, 0.2);
+  background:
+    radial-gradient(circle at 82% 10%, rgba(212, 175, 55, 0.2), transparent 32%),
+    linear-gradient(135deg, rgba(255, 252, 244, 0.98), rgba(239, 228, 208, 0.98));
+  box-shadow: 0 20px 44px rgba(77, 50, 21, 0.13);
+}
+
+html[data-theme-tone='light'] .customer360-hero-summary,
+html[data-theme-tone='light'] .customer360-tabs {
+  background: rgba(255, 252, 245, 0.88);
+}
+
+html[data-theme-tone='light'] .customer360-metrics button,
+html[data-theme-tone='light'] .customer360-record-card {
+  background: linear-gradient(145deg, rgba(255, 253, 248, 0.98), rgba(242, 234, 219, 0.96));
+  box-shadow: 0 12px 28px rgba(77, 50, 21, 0.08);
+}
+
+@media (max-width: 1280px) {
+  .customer360-metrics,
+  .customer360-loading-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .customer360-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .customer360-hero,
+  .customer360-overview-grid,
+  .customer360-commercial-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .customer360-hero-summary {
+    min-height: 0;
+  }
+
+  .customer360-tabs {
+    top: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .customer360-stage {
+    gap: 14px;
+  }
+
+  .customer360-hero {
+    padding: 20px;
+    border-radius: 19px;
+  }
+
+  .customer360-hero h1 {
+    font-size: clamp(31px, 12vw, 48px);
+  }
+
+  .customer360-contact-actions,
+  .customer360-contact-actions .button {
+    width: 100%;
+  }
+
+  .customer360-metrics,
+  .customer360-loading-grid,
+  .customer360-card-grid,
+  .customer360-risk-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .customer360-metrics button {
+    min-height: 104px;
+  }
+
+  .customer360-service-row,
+  .customer360-contract-row,
+  .customer360-delivery-row {
+    grid-template-columns: 1fr;
+  }
+
+  .customer360-service-meta,
+  .customer360-contract-row > div:last-child,
+  .customer360-delivery-row > div:last-child {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .customer360-details-list > div,
+  .customer360-record-card dl > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .customer360-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .customer360-section-heading .button {
+    width: 100%;
+  }
+
+  .customer360-timeline-entry {
+    grid-template-columns: 22px minmax(0, 1fr);
+  }
+
+  .customer360-timeline-entry > .status-badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .customer360-loading-hero,
+  .customer360-loading-card,
+  .customer360-metrics button,
+  .customer360-linked-card {
+    animation: none;
+    transition: none;
+  }
+}
