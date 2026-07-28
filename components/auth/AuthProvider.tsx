@@ -42,6 +42,9 @@ async function loadBusinessProfile(authUser: User | null): Promise<BusinessProfi
   if (!authUser?.id) return null;
 
   const client = getSupabaseClient();
+  const { error: claimError } = await client.rpc('claim_current_app_user');
+  if (claimError) throw claimError;
+
   const { data: userRecord, error: userError } = await client
     .from('users')
     .select('*')
