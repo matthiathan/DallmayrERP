@@ -46,6 +46,17 @@ Page titles, descriptions, filters and actions must use operational language rat
 - Respect reduced-motion preferences.
 - Maintain readable contrast in both light and dark themes.
 
+## Adaptive colour and contrast
+
+- User-selected accent, theme and background colours must never be used directly as text without a contrast calculation.
+- Normal text and interactive labels must maintain at least a 4.5:1 contrast ratio against their rendered surface.
+- Focus indicators and essential graphical boundaries must maintain at least a 3:1 contrast ratio.
+- Text placed on an accent-coloured control must automatically switch between black and white according to the stronger contrast ratio.
+- Accent-coloured links must be adjusted toward black or white until they remain readable on the active light or dark surface.
+- Form controls and data tables use neutral tone-matched surfaces so arbitrary palette choices cannot reduce legibility.
+- Semantic danger, warning, success and information states use fixed accessible colour pairs and must not inherit the decorative accent.
+- Colour changes must apply before hydration to avoid a flash of unreadable text.
+
 ## Responsive behaviour
 
 - Design for the smallest supported screen first.
@@ -64,3 +75,4 @@ Before a pull request is approved, verify:
 - Loading, empty, error and success states are present.
 - The workflow remains usable at phone, tablet and desktop widths.
 - Light and dark themes both remain legible.
+- Every accent preset and custom black, white and mid-tone colour keeps buttons, links, focus rings, inputs and table text readable.
