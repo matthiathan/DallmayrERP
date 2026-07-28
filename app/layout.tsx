@@ -42,6 +42,7 @@ import './appearance-panel.css';
 import './appearance-customization.css';
 import './field-service-workflow.css';
 import './operations-dispatch.css';
+import './customer-360.css';
 import { AccessStatusGuard } from '@/components/auth/AccessStatusGuard';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { AppearanceProvider } from '@/components/appearance/AppearanceProvider';
