@@ -141,20 +141,20 @@ export function GlobalSearch() {
 
   return (
     <>
-      <button aria-haspopup="dialog" className="global-search-trigger" onClick={() => setOpen(true)} type="button"><span>Search ERP</span><kbd>Ctrl K</kbd></button>
+      <button aria-haspopup="dialog" className="global-search-trigger" onClick={() => setOpen(true)} type="button"><span>Search records</span><kbd>Ctrl K</kbd></button>
       {open ? (
         <div className="global-search-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeSearch(); }}>
-          <section aria-label="Search DallmayrERP" aria-modal="true" className="global-search-dialog" role="dialog">
+          <section aria-label="Find a record or task" aria-modal="true" className="global-search-dialog" role="dialog">
             <div className="global-search-input-row">
-              <input aria-label="Search work, customers, machines, stock, delivery orders and service jobs" onChange={(event) => setQuery(event.target.value)} placeholder="Search work number, customer, serial, barcode, order or job..." ref={inputRef} type="search" value={query} />
+              <input aria-label="Search by customer, work number, machine, barcode, order or service job" onChange={(event) => setQuery(event.target.value)} placeholder="Search customer, job, serial, barcode or order..." ref={inputRef} type="search" value={query} />
               <button aria-label="Close search" className="button secondary" onClick={closeSearch} type="button">Close</button>
             </div>
-            <div className="global-search-quick-actions"><Link href="/work" onClick={closeSearch}>Action Centre</Link><Link href="/customers" onClick={closeSearch}>Customer directory</Link><Link href="/operations/service-jobs" onClick={closeSearch}>Service jobs</Link><Link href="/warehouse/stock" onClick={closeSearch}>Stock control</Link><Link href="/operations/assets" onClick={closeSearch}>Machine assets</Link></div>
+            <div className="global-search-quick-actions"><Link href="/work" onClick={closeSearch}>Review actions</Link><Link href="/customers" onClick={closeSearch}>Find a customer</Link><Link href="/operations/service-jobs" onClick={closeSearch}>Find a service job</Link><Link href="/warehouse/stock" onClick={closeSearch}>Check stock</Link><Link href="/operations/assets" onClick={closeSearch}>Find a machine</Link></div>
             <div aria-live="polite" className="global-search-results">
-              {loading ? <div className="global-search-state">Searching enterprise records...</div> : null}
+              {loading ? <div className="global-search-state">Searching records…</div> : null}
               {error ? <div className="error">{error}</div> : null}
-              {!loading && !error && query.trim().length < 2 ? <div className="global-search-state">Enter at least two characters. Press Esc to close.</div> : null}
-              {!loading && !error && query.trim().length >= 2 && results.length === 0 ? <div className="global-search-state">No matching records were found.</div> : null}
+              {!loading && !error && query.trim().length < 2 ? <div className="global-search-state">Type at least two characters. Press Esc to close.</div> : null}
+              {!loading && !error && query.trim().length >= 2 && results.length === 0 ? <div className="global-search-state">No matching records found. Check the spelling or try a different identifier.</div> : null}
               {results.map((result) => <Link className="global-search-result" href={result.href} key={`${result.type}-${result.id}`} onClick={closeSearch}><span className="global-search-result-type">{result.type}</span><strong>{result.title}</strong><span>{result.subtitle}</span></Link>)}
             </div>
           </section>
