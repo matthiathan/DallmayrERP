@@ -116,12 +116,12 @@ const APPEARANCE_BOOT_SCRIPT = `
     }
 
     function readableText(surface) {
-      return contrast('#111827', surface) >= contrast('#ffffff', surface) ? '#111827' : '#ffffff';
+      return contrast('#000000', surface) >= contrast('#ffffff', surface) ? '#000000' : '#ffffff';
     }
 
     function ensureContrast(colour, surface, minimum) {
       if (contrast(colour, surface) >= minimum) return colour;
-      var target = contrast('#111827', surface) >= contrast('#ffffff', surface) ? '#000000' : '#ffffff';
+      var target = contrast('#000000', surface) >= contrast('#ffffff', surface) ? '#000000' : '#ffffff';
       var lower = 0;
       var upper = 1;
       var best = target;
