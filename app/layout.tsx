@@ -40,6 +40,7 @@ import './admin-user-access-control.css';
 import './call-log-creation.css';
 import './appearance-panel.css';
 import './appearance-customization.css';
+import './field-service-workflow.css';
 import { AccessStatusGuard } from '@/components/auth/AccessStatusGuard';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { AppearanceProvider } from '@/components/appearance/AppearanceProvider';
