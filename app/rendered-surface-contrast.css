@@ -1,0 +1,322 @@
+/* Rendered surface contrast contract
+   Loaded after every legacy theme layer. A content surface and its text colours
+   are applied together, so custom palette colours cannot leave dark text on a
+   dark card or light text on a light card. */
+
+:root {
+  --content-surface: #111827;
+  --content-surface-raised: #1f2937;
+  --content-text: #ffffff;
+  --content-strong: #ffffff;
+  --content-muted: #cbd5e1;
+  --content-subtle: #aeb7c4;
+  --content-border: #64748b;
+  --content-accent-text: #f0cf65;
+  --content-focus: #f0cf65;
+  --content-chart-track: #070b12;
+}
+
+/* Establish the visual surface instead of allowing older brown, navy or gold
+   component rules to choose a background independently from the foreground. */
+:where(
+  .hero-panel,
+  .card,
+  .neo-card,
+  .panel,
+  .spatial-card,
+  .minimal-panel,
+  .minimal-card,
+  .chart-card,
+  .page-toolbar,
+  .enterprise-table-shell,
+  .remote-table-shell,
+  .data-table-wrapper,
+  .role-workspace-panel,
+  .operations-manager-panel,
+  .monthly-service-panel,
+  .call-log-section,
+  .requested-service-create-card,
+  .record-timeline-item,
+  .record-comment,
+  .ux-empty-state,
+  .global-search-dialog,
+  .dallmayr-account-panel,
+  .appearance-editor,
+  .appearance-control,
+  .scanner-box,
+  .stock-control-centre,
+  .professional-work-card,
+  .role-action-card,
+  .minimal-list-item,
+  .minimal-row,
+  .scanner-match-card,
+  .asset-ticket
+) {
+  color: var(--content-text) !important;
+  border-color: var(--content-border) !important;
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--user-theme, #7a4b22) 5%, transparent),
+      transparent 34%
+    ),
+    var(--content-surface) !important;
+  text-shadow: none !important;
+}
+
+:where(
+  .record-timeline-item,
+  .record-comment,
+  .minimal-list-item,
+  .minimal-row,
+  .professional-work-card,
+  .role-action-card,
+  .scanner-match-card,
+  .asset-ticket,
+  .appearance-control
+) {
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--user-theme, #7a4b22) 4%, transparent),
+      transparent 38%
+    ),
+    var(--content-surface-raised) !important;
+}
+
+/* Strong identity and numerical information. */
+:where(
+  .hero-panel,
+  .card,
+  .neo-card,
+  .panel,
+  .spatial-card,
+  .minimal-panel,
+  .minimal-card,
+  .chart-card,
+  .page-toolbar,
+  .enterprise-table-shell,
+  .remote-table-shell,
+  .data-table-wrapper,
+  .role-workspace-panel,
+  .operations-manager-panel,
+  .monthly-service-panel,
+  .call-log-section,
+  .requested-service-create-card,
+  .record-timeline-item,
+  .record-comment,
+  .ux-empty-state,
+  .global-search-dialog,
+  .dallmayr-account-panel,
+  .appearance-editor,
+  .appearance-control
+) :where(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  legend,
+  dt,
+  .nav-heading,
+  .page-toolbar-heading,
+  .table-heading,
+  .kpi-value,
+  .metric-value,
+  .minimal-kicker
+) {
+  color: var(--content-strong) !important;
+  text-shadow: none !important;
+}
+
+/* Body copy remains readable but subordinate. Lists are operational content,
+   so they use the normal text colour rather than a faint decorative colour. */
+:where(
+  .hero-panel,
+  .card,
+  .neo-card,
+  .panel,
+  .spatial-card,
+  .minimal-panel,
+  .minimal-card,
+  .chart-card,
+  .page-toolbar,
+  .enterprise-table-shell,
+  .remote-table-shell,
+  .data-table-wrapper,
+  .role-workspace-panel,
+  .operations-manager-panel,
+  .monthly-service-panel,
+  .call-log-section,
+  .requested-service-create-card,
+  .record-timeline-item,
+  .record-comment,
+  .ux-empty-state,
+  .global-search-dialog,
+  .dallmayr-account-panel,
+  .appearance-editor,
+  .appearance-control
+) :where(p, dd, label, small, .field-note, .muted) {
+  color: var(--content-muted) !important;
+  text-shadow: none !important;
+}
+
+:where(
+  .hero-panel,
+  .card,
+  .neo-card,
+  .panel,
+  .spatial-card,
+  .minimal-panel,
+  .minimal-card,
+  .chart-card
+) :where(ul, ol, li) {
+  color: var(--content-text) !important;
+  text-shadow: none !important;
+}
+
+/* Executive reporting charts shown in the supplied screenshot. */
+.chart-card h3,
+.chart-card .bar-row > span,
+.chart-card .bar-row > strong,
+.chart-card .chart-legend,
+.chart-card .chart-legend > div,
+.chart-card .chart-legend strong,
+.chart-card .donut > span {
+  color: var(--content-strong) !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+.chart-card .chart-legend {
+  color: var(--content-text) !important;
+}
+
+.chart-card .bar-track {
+  border: 1px solid color-mix(in srgb, var(--content-border) 72%, transparent) !important;
+  background: var(--content-chart-track) !important;
+  box-shadow: none !important;
+}
+
+.chart-card .bar-fill,
+.chart-card .legend-dot {
+  background: var(--user-accent) !important;
+}
+
+.chart-card .donut {
+  color: var(--content-strong) !important;
+  border-color: var(--content-border) !important;
+}
+
+/* Links use an accent that was calculated against this exact content surface,
+   not against the selected light/dark mode label. */
+:where(
+  .hero-panel,
+  .card,
+  .neo-card,
+  .panel,
+  .spatial-card,
+  .minimal-panel,
+  .minimal-card,
+  .chart-card,
+  .page-toolbar,
+  .enterprise-table-shell,
+  .remote-table-shell,
+  .data-table-wrapper,
+  .global-search-dialog,
+  .dallmayr-account-panel
+) a:not(.button):not(.badge):not(.status-badge) {
+  color: var(--content-accent-text) !important;
+  text-decoration-color: color-mix(in srgb, var(--content-accent-text) 62%, transparent) !important;
+}
+
+/* Keep self-contained controls on their own proven colour pair. */
+:where(
+  .hero-panel,
+  .card,
+  .neo-card,
+  .panel,
+  .spatial-card,
+  .minimal-panel,
+  .minimal-card,
+  .chart-card,
+  .page-toolbar,
+  .enterprise-table-shell,
+  .remote-table-shell,
+  .data-table-wrapper
+) :where(button, .button, .badge, .status-badge) :where(span, strong, small) {
+  color: inherit !important;
+}
+
+/* Tables inside a controlled panel use the same pair before and after hover. */
+:where(.enterprise-table-shell, .remote-table-shell, .data-table-wrapper, .table-wrap) table {
+  color: var(--content-text) !important;
+  background: var(--content-surface) !important;
+}
+
+:where(.enterprise-table-shell, .remote-table-shell, .data-table-wrapper, .table-wrap) thead th {
+  color: var(--content-strong) !important;
+  border-color: var(--content-border) !important;
+  background: var(--content-surface-raised) !important;
+}
+
+:where(.enterprise-table-shell, .remote-table-shell, .data-table-wrapper, .table-wrap) tbody tr,
+:where(.enterprise-table-shell, .remote-table-shell, .data-table-wrapper, .table-wrap) tbody td {
+  color: var(--content-text) !important;
+  border-color: color-mix(in srgb, var(--content-border) 68%, transparent) !important;
+  background: var(--content-surface) !important;
+}
+
+:where(.enterprise-table-shell, .remote-table-shell, .data-table-wrapper, .table-wrap) tbody tr:nth-child(even) td {
+  background: var(--content-surface-raised) !important;
+}
+
+:where(.enterprise-table-shell, .remote-table-shell, .data-table-wrapper, .table-wrap) tbody tr:hover td,
+:where(.enterprise-table-shell, .remote-table-shell, .data-table-wrapper, .table-wrap) tbody tr:focus-within td {
+  color: var(--content-strong) !important;
+  background: color-mix(in srgb, var(--content-surface-raised) 92%, var(--content-focus)) !important;
+}
+
+:where(.enterprise-table-shell, .remote-table-shell, .data-table-wrapper, .table-wrap) tbody td :where(span, p, small, strong, label) {
+  color: inherit !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+/* Focus remains visible against the actual card colour. */
+:where(
+  .hero-panel,
+  .card,
+  .neo-card,
+  .panel,
+  .spatial-card,
+  .minimal-panel,
+  .minimal-card,
+  .chart-card,
+  .page-toolbar,
+  .enterprise-table-shell,
+  .remote-table-shell,
+  .data-table-wrapper,
+  .global-search-dialog,
+  .dallmayr-account-panel
+) :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline-color: var(--content-focus) !important;
+}
+
+@media (forced-colors: active) {
+  :where(
+    .hero-panel,
+    .card,
+    .neo-card,
+    .panel,
+    .spatial-card,
+    .minimal-panel,
+    .minimal-card,
+    .chart-card
+  ) {
+    color: CanvasText !important;
+    border-color: CanvasText !important;
+    background: Canvas !important;
+  }
+}
