@@ -11,6 +11,7 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { createAppearanceContrastTokens } from '@/lib/appearance/contrast';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 export type ThemeTone = 'dark' | 'light';
@@ -104,23 +105,24 @@ function preferencesFromRow(row: AppearanceRow): AppearancePreferences {
   });
 }
 
-function accentInk(hex: string) {
-  const red = Number.parseInt(hex.slice(1, 3), 16);
-  const green = Number.parseInt(hex.slice(3, 5), 16);
-  const blue = Number.parseInt(hex.slice(5, 7), 16);
-  const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
-  return luminance > 0.58 ? '#101318' : '#ffffff';
-}
-
 export function applyAppearance(preferences: AppearancePreferences) {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
+  const contrastTokens = createAppearanceContrastTokens(preferences);
+
   root.dataset.themeTone = preferences.themeTone;
   root.dataset.backgroundStyle = preferences.backgroundStyle;
+  root.dataset.contrastGuard = 'active';
   root.style.setProperty('--user-accent', preferences.accentColor);
   root.style.setProperty('--user-theme', preferences.themeColor);
   root.style.setProperty('--user-background', preferences.backgroundColor);
-  root.style.setProperty('--accent-ink', accentInk(preferences.accentColor));
+  root.style.setProperty('--accent-ink', contrastTokens.accentInk);
+  root.style.setProperty('--accent-on-light', contrastTokens.accentOnLight);
+  root.style.setProperty('--accent-on-dark', contrastTokens.accentOnDark);
+  root.style.setProperty('--accent-text', contrastTokens.accentText);
+  root.style.setProperty('--focus-contrast', contrastTokens.focusContrast);
+  root.style.setProperty('--theme-ink', contrastTokens.themeInk);
+  root.style.setProperty('--background-ink', contrastTokens.backgroundInk);
   root.style.colorScheme = preferences.themeTone;
 }
 
