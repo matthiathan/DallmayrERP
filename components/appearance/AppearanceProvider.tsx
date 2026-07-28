@@ -25,6 +25,14 @@ export type AppearancePreferences = {
   backgroundStyle: BackgroundStyle;
 };
 
+export type CuratedAppearanceTheme = AppearancePreferences & {
+  id: 'slate-modern' | 'warm-sand';
+  name: string;
+  modeLabel: string;
+  description: string;
+  preview: readonly [string, string, string];
+};
+
 type AppearanceStatus = 'idle' | 'loading' | 'saving' | 'saved' | 'error';
 
 type AppearanceContextValue = {
@@ -44,74 +52,101 @@ type AppearanceRow = {
 };
 
 const STORAGE_KEY = 'dallmayrerp-appearance-v1';
-const HEX_PATTERN = /^#[0-9a-f]{6}$/i;
 const THEME_TONES: ThemeTone[] = ['dark', 'light'];
-const BACKGROUND_STYLES: BackgroundStyle[] = ['aurora', 'mesh', 'dots', 'solid'];
+
+export const CURATED_APPEARANCE_THEMES: readonly CuratedAppearanceTheme[] = [
+  {
+    id: 'slate-modern',
+    name: 'Slate Modern',
+    modeLabel: 'Dark mode',
+    description: 'Calm charcoal surfaces, cyan actions and bright neutral text.',
+    accentColor: '#22c3dc',
+    themeColor: '#2b343d',
+    backgroundColor: '#0f1419',
+    themeTone: 'dark',
+    backgroundStyle: 'solid',
+    preview: ['#0f1419', '#2b343d', '#22c3dc'],
+  },
+  {
+    id: 'warm-sand',
+    name: 'Warm Sand',
+    modeLabel: 'Light mode',
+    description: 'Warm ivory workspaces, bronze actions and dark espresso text.',
+    accentColor: '#a67828',
+    themeColor: '#e6d7bf',
+    backgroundColor: '#f5efe5',
+    themeTone: 'light',
+    backgroundStyle: 'solid',
+    preview: ['#f5efe5', '#fffaf2', '#a67828'],
+  },
+] as const;
 
 export const DEFAULT_APPEARANCE: AppearancePreferences = {
-  accentColor: '#d4af37',
-  themeColor: '#7a4b22',
-  backgroundColor: '#0d0905',
-  themeTone: 'dark',
-  backgroundStyle: 'aurora',
+  accentColor: CURATED_APPEARANCE_THEMES[0].accentColor,
+  themeColor: CURATED_APPEARANCE_THEMES[0].themeColor,
+  backgroundColor: CURATED_APPEARANCE_THEMES[0].backgroundColor,
+  themeTone: CURATED_APPEARANCE_THEMES[0].themeTone,
+  backgroundStyle: CURATED_APPEARANCE_THEMES[0].backgroundStyle,
 };
 
-export const ACCENT_PRESETS = [
-  { name: 'Dallmayr Gold', value: '#d4af37' },
-  { name: 'Electric Blue', value: '#3b82f6' },
-  { name: 'Emerald', value: '#10b981' },
-  { name: 'Violet', value: '#8b5cf6' },
-  { name: 'Coral', value: '#f97360' },
-  { name: 'Hot Pink', value: '#ec4899' },
-] as const;
+// Retained as compatibility exports for any older components. The application UI
+// now exposes the two curated themes instead of independent colour combinations.
+export const ACCENT_PRESETS = CURATED_APPEARANCE_THEMES.map((theme) => ({
+  name: theme.name,
+  value: theme.accentColor,
+})) as readonly { name: string; value: string }[];
 
-export const THEME_PRESETS = [
-  { name: 'Espresso', value: '#7a4b22', tone: 'dark' as const },
-  { name: 'Midnight', value: '#1e3a5f', tone: 'dark' as const },
-  { name: 'Forest', value: '#24543b', tone: 'dark' as const },
-  { name: 'Berry', value: '#5b2b68', tone: 'dark' as const },
-  { name: 'Cloud', value: '#dbe7f3', tone: 'light' as const },
-  { name: 'Sand', value: '#ead9bd', tone: 'light' as const },
-] as const;
+export const THEME_PRESETS = CURATED_APPEARANCE_THEMES.map((theme) => ({
+  name: theme.name,
+  value: theme.themeColor,
+  tone: theme.themeTone,
+})) as readonly { name: string; value: string; tone: ThemeTone }[];
 
 const AppearanceContext = createContext<AppearanceContextValue | undefined>(undefined);
 
-function validHex(value: unknown, fallback: string) {
-  return typeof value === 'string' && HEX_PATTERN.test(value) ? value.toLowerCase() : fallback;
+export function appearanceForTone(tone: ThemeTone): AppearancePreferences {
+  const selected = CURATED_APPEARANCE_THEMES.find((theme) => theme.themeTone === tone)
+    ?? CURATED_APPEARANCE_THEMES[0];
+
+  return {
+    accentColor: selected.accentColor,
+    themeColor: selected.themeColor,
+    backgroundColor: selected.backgroundColor,
+    themeTone: selected.themeTone,
+    backgroundStyle: selected.backgroundStyle,
+  };
 }
 
 function normalizePreferences(value: unknown): AppearancePreferences {
   const source = value && typeof value === 'object' ? value as Partial<AppearancePreferences> : {};
-  return {
-    accentColor: validHex(source.accentColor, DEFAULT_APPEARANCE.accentColor),
-    themeColor: validHex(source.themeColor, DEFAULT_APPEARANCE.themeColor),
-    backgroundColor: validHex(source.backgroundColor, DEFAULT_APPEARANCE.backgroundColor),
-    themeTone: THEME_TONES.includes(source.themeTone as ThemeTone)
-      ? source.themeTone as ThemeTone
-      : DEFAULT_APPEARANCE.themeTone,
-    backgroundStyle: BACKGROUND_STYLES.includes(source.backgroundStyle as BackgroundStyle)
-      ? source.backgroundStyle as BackgroundStyle
-      : DEFAULT_APPEARANCE.backgroundStyle,
-  };
+  const tone = THEME_TONES.includes(source.themeTone as ThemeTone)
+    ? source.themeTone as ThemeTone
+    : DEFAULT_APPEARANCE.themeTone;
+
+  return appearanceForTone(tone);
 }
 
 function preferencesFromRow(row: AppearanceRow): AppearancePreferences {
-  return normalizePreferences({
-    accentColor: row.accent_color,
-    themeColor: row.theme_color,
-    backgroundColor: row.background_color,
-    themeTone: row.theme_tone,
-    backgroundStyle: row.background_style,
-  });
+  return normalizePreferences({ themeTone: row.theme_tone });
+}
+
+function rowMatchesPreferences(row: AppearanceRow, preferences: AppearancePreferences) {
+  return row.accent_color.toLowerCase() === preferences.accentColor
+    && row.theme_color.toLowerCase() === preferences.themeColor
+    && row.background_color.toLowerCase() === preferences.backgroundColor
+    && row.theme_tone === preferences.themeTone
+    && row.background_style === preferences.backgroundStyle;
 }
 
 export function applyAppearance(preferences: AppearancePreferences) {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
   const contrastTokens = createAppearanceContrastTokens(preferences);
+  const visualTheme = preferences.themeTone === 'dark' ? 'slate-modern' : 'warm-sand';
 
   root.dataset.themeTone = preferences.themeTone;
-  root.dataset.backgroundStyle = preferences.backgroundStyle;
+  root.dataset.visualTheme = visualTheme;
+  root.dataset.backgroundStyle = 'solid';
   root.dataset.contrastGuard = 'active';
   root.style.setProperty('--user-accent', preferences.accentColor);
   root.style.setProperty('--user-theme', preferences.themeColor);
@@ -198,7 +233,7 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
         setStatus('error');
         setError(saveError instanceof Error ? saveError.message : 'Could not save appearance preferences.');
       });
-    }, 500);
+    }, 300);
   }, [persistPreferences]);
 
   useEffect(() => {
@@ -224,12 +259,18 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
         }
 
         if (data) {
-          const databasePreferences = preferencesFromRow(data as AppearanceRow);
+          const row = data as AppearanceRow;
+          const databasePreferences = preferencesFromRow(row);
           preferencesRef.current = databasePreferences;
           setPreferences(databasePreferences);
           storeLocally(databasePreferences);
           applyAppearance(databasePreferences);
-          setStatus('saved');
+
+          if (!rowMatchesPreferences(row, databasePreferences)) {
+            await persistPreferences(databasePreferences);
+          } else {
+            setStatus('saved');
+          }
           return;
         }
 
