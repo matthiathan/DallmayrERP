@@ -13,6 +13,7 @@ export type Branch = 'jhb' | 'cpt' | 'kzn' | 'national';
 
 export interface BusinessUser {
   id: string;
+  auth_user_id: string | null;
   email: string;
   is_active: boolean;
   access_note: string | null;
