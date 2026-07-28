@@ -44,6 +44,7 @@ import './field-service-workflow.css';
 import './operations-dispatch.css';
 import './customer-360.css';
 import './operations-exceptions.css';
+import './user-first-application-shell.css';
 import { AccessStatusGuard } from '@/components/auth/AccessStatusGuard';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { AppearanceProvider } from '@/components/appearance/AppearanceProvider';

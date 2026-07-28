@@ -1,0 +1,663 @@
+/* User-first application shell
+   Loaded last. This layer intentionally removes ornamental ERP chrome and
+   prioritises task discovery, orientation, readable language and accessible controls. */
+
+:root {
+  --user-shell-height: 72px;
+  --user-shell-page-gap: 20px;
+  --user-shell-max-width: 1680px;
+  --user-shell-surface: rgba(20, 23, 28, 0.97);
+  --user-shell-surface-raised: #252a31;
+  --user-shell-surface-hover: rgba(255, 255, 255, 0.08);
+  --user-shell-border: rgba(255, 255, 255, 0.13);
+  --user-shell-text: #f8fafc;
+  --user-shell-muted: #c1c8d2;
+  --user-shell-subtle: #939dab;
+  --user-shell-accent: var(--user-accent, #d4af37);
+  --user-shell-focus: color-mix(in srgb, var(--user-shell-accent) 68%, white);
+  --user-shell-shadow: 0 10px 28px rgba(3, 7, 18, 0.2);
+  --user-content-surface: color-mix(in srgb, var(--user-theme, #7a4b22) 8%, transparent);
+  --erp-fixed-nav-offset: var(--user-shell-height);
+  --erp-fixed-nav-gap: var(--user-shell-page-gap);
+}
+
+html {
+  scroll-padding-top: calc(var(--user-shell-height) + var(--user-shell-page-gap));
+}
+
+body {
+  text-rendering: optimizeLegibility;
+}
+
+.app-shell.top-shell {
+  min-height: 100dvh;
+  padding-top: var(--user-shell-height) !important;
+}
+
+/* One quiet, stable navigation surface. */
+.erp-chrome.topbar {
+  position: fixed !important;
+  inset: 0 0 auto 0 !important;
+  z-index: 5000 !important;
+  width: 100% !important;
+  min-height: var(--user-shell-height) !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--user-shell-border) !important;
+  background: var(--user-shell-surface) !important;
+  color: var(--user-shell-text) !important;
+  box-shadow: var(--user-shell-shadow) !important;
+  backdrop-filter: blur(18px) saturate(120%);
+}
+
+.notch-navbar-frame,
+.notch-navbar-shell,
+.notch-navbar-center {
+  width: 100% !important;
+  max-width: none !important;
+  height: var(--user-shell-height) !important;
+  min-height: var(--user-shell-height) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.notch-navbar-shell::before,
+.notch-navbar-shell::after,
+.notch-navbar-center::before,
+.notch-navbar-center::after,
+.notch-rail,
+.notch-corner {
+  display: none !important;
+}
+
+.erp-menu-row.notch-menu-row {
+  display: grid !important;
+  grid-template-columns: minmax(170px, 220px) minmax(0, 1fr) auto;
+  align-items: center !important;
+  gap: clamp(12px, 1.5vw, 24px) !important;
+  width: min(100%, var(--user-shell-max-width)) !important;
+  min-height: var(--user-shell-height) !important;
+  margin: 0 auto !important;
+  padding: 10px 82px 10px 20px !important;
+  overflow: visible !important;
+  background: transparent !important;
+}
+
+/* Brand is a home affordance, not a decorative object. */
+.erp-brand-button.notch-logo-button,
+.erp-menu-row.notch-menu-row > .erp-brand-button.notch-logo-button {
+  align-self: center !important;
+  justify-self: start !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 44px !important;
+  margin: 0 !important;
+  padding: 5px 9px 5px 5px !important;
+  border: 1px solid transparent !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  color: var(--user-shell-text) !important;
+  box-shadow: none !important;
+  font-size: 16px !important;
+  font-weight: 780 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.erp-brand-button.notch-logo-button:hover,
+.erp-brand-button.notch-logo-button:focus-visible {
+  border-color: var(--user-shell-border) !important;
+  background: var(--user-shell-surface-hover) !important;
+  outline: 3px solid color-mix(in srgb, var(--user-shell-focus) 38%, transparent) !important;
+  outline-offset: 1px !important;
+}
+
+.notch-logo-mark {
+  display: grid !important;
+  place-items: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  border: 1px solid color-mix(in srgb, var(--user-shell-accent) 72%, transparent) !important;
+  border-radius: 10px !important;
+  background: color-mix(in srgb, var(--user-shell-accent) 15%, transparent) !important;
+  color: var(--user-shell-focus) !important;
+  box-shadow: none !important;
+  font-size: 16px !important;
+  font-weight: 850 !important;
+}
+
+/* Navigation exposes user goals in plain language. */
+.erp-menubar.notch-menubar {
+  align-self: center !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+.erp-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.erp-menu-label {
+  display: inline-flex !important;
+  align-items: center !important;
+  min-height: 44px !important;
+  padding: 8px 12px !important;
+  border: 1px solid transparent !important;
+  border-radius: 10px !important;
+  color: var(--user-shell-muted) !important;
+  font-size: 14px !important;
+  font-weight: 680 !important;
+  letter-spacing: 0 !important;
+  text-shadow: none !important;
+  cursor: pointer;
+}
+
+.erp-menu-label::before,
+.erp-menu-label::after {
+  display: none !important;
+}
+
+.erp-menu-label:hover,
+.erp-menu-label:focus-visible,
+.erp-menu[open] .erp-menu-label,
+.erp-menu.has-active .erp-menu-label {
+  border-color: var(--user-shell-border) !important;
+  background: var(--user-shell-surface-hover) !important;
+  color: var(--user-shell-text) !important;
+  outline: none !important;
+}
+
+.erp-menu-label:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--user-shell-focus) 36%, transparent) !important;
+}
+
+.erp-menu-panel,
+.erp-overflow-menu-panel {
+  top: calc(100% + 8px) !important;
+  min-width: min(380px, calc(100vw - 24px)) !important;
+  max-width: min(460px, calc(100vw - 24px)) !important;
+  max-height: min(72vh, 650px) !important;
+  padding: 8px !important;
+  overflow-y: auto !important;
+  border: 1px solid var(--user-shell-border) !important;
+  border-radius: 14px !important;
+  background: var(--user-shell-surface-raised) !important;
+  color: var(--user-shell-text) !important;
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.34) !important;
+}
+
+.erp-overflow-menu-panel {
+  min-width: min(760px, calc(100vw - 24px)) !important;
+  max-width: min(920px, calc(100vw - 24px)) !important;
+}
+
+.erp-overflow-section {
+  padding: 8px !important;
+}
+
+.erp-overflow-section h3 {
+  margin: 0 0 6px !important;
+  color: var(--user-shell-subtle) !important;
+  font-size: 12px !important;
+  font-weight: 760 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase;
+}
+
+.erp-menu-item {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 3px !important;
+  min-height: 54px !important;
+  padding: 10px 12px !important;
+  border: 1px solid transparent !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  color: var(--user-shell-text) !important;
+  text-decoration: none !important;
+}
+
+.erp-menu-code {
+  display: none !important;
+}
+
+.erp-menu-text {
+  display: grid !important;
+  gap: 3px !important;
+}
+
+.erp-menu-text strong {
+  color: var(--user-shell-text) !important;
+  font-size: 14px !important;
+  font-weight: 720 !important;
+  line-height: 1.3 !important;
+}
+
+.erp-menu-text small {
+  color: var(--user-shell-muted) !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+.erp-menu-item:hover,
+.erp-menu-item:focus-visible,
+.erp-menu-item.active,
+.erp-menu-item[aria-current='page'] {
+  border-color: color-mix(in srgb, var(--user-shell-accent) 38%, transparent) !important;
+  background: color-mix(in srgb, var(--user-shell-accent) 11%, transparent) !important;
+  outline: none !important;
+}
+
+.erp-menu-item:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--user-shell-focus) 32%, transparent) !important;
+}
+
+/* Search is the primary cross-module escape hatch. */
+.erp-command-area.notch-command-area {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+}
+
+.erp-command-area .global-search-trigger {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: clamp(190px, 19vw, 300px) !important;
+  min-height: 44px !important;
+  padding: 7px 9px 7px 12px !important;
+  border: 1px solid var(--user-shell-border) !important;
+  border-radius: 11px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  color: var(--user-shell-muted) !important;
+  box-shadow: none !important;
+  text-align: left !important;
+}
+
+.erp-command-area .global-search-trigger::before {
+  content: '⌕' !important;
+  color: var(--user-shell-muted) !important;
+  font-size: 21px !important;
+  line-height: 1 !important;
+}
+
+.erp-command-area .global-search-trigger:hover,
+.erp-command-area .global-search-trigger:focus-visible {
+  border-color: color-mix(in srgb, var(--user-shell-accent) 46%, transparent) !important;
+  background: var(--user-shell-surface-hover) !important;
+  color: var(--user-shell-text) !important;
+  outline: 3px solid color-mix(in srgb, var(--user-shell-focus) 30%, transparent) !important;
+  outline-offset: 1px !important;
+}
+
+.erp-command-area .global-search-trigger > span {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  color: inherit !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.erp-command-area .global-search-trigger kbd {
+  flex: 0 0 auto !important;
+  padding: 3px 6px !important;
+  border: 1px solid var(--user-shell-border) !important;
+  border-radius: 6px !important;
+  background: rgba(0, 0, 0, 0.2) !important;
+  color: var(--user-shell-subtle) !important;
+  box-shadow: none !important;
+  font-size: 11px !important;
+}
+
+.erp-command-area .erp-signout {
+  display: none !important;
+}
+
+.erp-command-area .density-toggle {
+  min-height: 44px !important;
+}
+
+/* Account actions live in one predictable place. */
+.dallmayr-account-menu.is-brand {
+  position: absolute !important;
+  top: 14px !important;
+  right: 18px !important;
+  left: auto !important;
+  z-index: 5200 !important;
+  width: auto !important;
+  max-width: min(260px, calc(100vw - 96px)) !important;
+}
+
+.dallmayr-account-menu.is-brand .dallmayr-account-trigger {
+  min-height: 44px !important;
+  padding: 5px 8px 5px 5px !important;
+  border: 1px solid var(--user-shell-border) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  color: var(--user-shell-text) !important;
+  box-shadow: none !important;
+}
+
+.dallmayr-account-menu.is-brand .dallmayr-account-trigger:hover,
+.dallmayr-account-menu.is-brand .dallmayr-account-trigger:focus-visible {
+  border-color: color-mix(in srgb, var(--user-shell-accent) 46%, transparent) !important;
+  background: var(--user-shell-surface-hover) !important;
+  outline: 3px solid color-mix(in srgb, var(--user-shell-focus) 30%, transparent) !important;
+  outline-offset: 1px !important;
+}
+
+.dallmayr-account-menu.is-brand .dallmayr-account-avatar {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 12px !important;
+}
+
+.dallmayr-account-menu.is-brand .dallmayr-account-identity {
+  display: none !important;
+}
+
+.dallmayr-account-menu.is-brand .dallmayr-account-panel {
+  top: calc(100% + 8px) !important;
+  right: 0 !important;
+  left: auto !important;
+  width: min(430px, calc(100vw - 24px)) !important;
+  max-height: calc(100dvh - 92px) !important;
+  overflow-y: auto !important;
+}
+
+/* Remove system-centric duplicate chrome. Breadcrumbs and page headers remain. */
+.erp-tab-row.notch-tab-row,
+.erp-active-titlebar.notch-titlebar {
+  display: none !important;
+}
+
+.top-main {
+  width: min(100%, var(--user-shell-max-width)) !important;
+  margin-inline: auto !important;
+  padding: var(--user-shell-page-gap) clamp(14px, 2vw, 28px) 44px !important;
+}
+
+.breadcrumbs {
+  margin-bottom: 14px !important;
+}
+
+.page-header,
+.minimal-page-header {
+  gap: 18px !important;
+  margin-bottom: 20px !important;
+  padding: clamp(18px, 2vw, 28px) !important;
+  border-radius: 16px !important;
+}
+
+.page-header h1,
+.minimal-page-header h1 {
+  margin-top: 5px !important;
+  font-size: clamp(1.55rem, 2vw, 2.25rem) !important;
+  line-height: 1.12 !important;
+  letter-spacing: -0.035em !important;
+}
+
+.page-header p,
+.minimal-page-header p {
+  max-width: 76ch !important;
+  margin-bottom: 0 !important;
+  font-size: clamp(0.94rem, 1vw, 1.04rem) !important;
+  line-height: 1.55 !important;
+}
+
+/* Universal interaction safeguards. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--user-shell-focus) 70%, transparent) !important;
+  outline-offset: 2px !important;
+}
+
+.skip-link:focus {
+  top: 10px !important;
+  left: 10px !important;
+  z-index: 9000 !important;
+}
+
+.error,
+.success,
+.warning,
+[role='alert'],
+[role='status'] {
+  border-radius: 10px;
+}
+
+.mobile-nav-backdrop {
+  top: var(--user-shell-height) !important;
+  background: rgba(3, 7, 18, 0.58) !important;
+  backdrop-filter: blur(3px);
+}
+
+.mobile-nav-panel {
+  top: var(--user-shell-height) !important;
+  height: calc(100dvh - var(--user-shell-height)) !important;
+  max-height: calc(100dvh - var(--user-shell-height)) !important;
+  padding: 18px !important;
+  border-left: 1px solid var(--user-shell-border) !important;
+  background: var(--user-shell-surface-raised) !important;
+  color: var(--user-shell-text) !important;
+  box-shadow: -20px 0 48px rgba(0, 0, 0, 0.32) !important;
+}
+
+.mobile-nav-panel .user-chip {
+  padding: 12px !important;
+  border: 1px solid var(--user-shell-border) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.mobile-primary-link {
+  display: flex !important;
+  align-items: center !important;
+  min-height: 48px !important;
+  margin: 12px 0 18px !important;
+  padding: 10px 12px !important;
+  border: 1px solid color-mix(in srgb, var(--user-shell-accent) 38%, transparent) !important;
+  border-radius: 11px !important;
+  background: color-mix(in srgb, var(--user-shell-accent) 11%, transparent) !important;
+  color: var(--user-shell-text) !important;
+  font-weight: 720 !important;
+  text-decoration: none !important;
+}
+
+.mobile-nav-panel .nav-section {
+  margin-bottom: 18px !important;
+}
+
+.mobile-nav-panel .nav-heading {
+  margin-bottom: 6px !important;
+  color: var(--user-shell-subtle) !important;
+  font-size: 12px !important;
+  font-weight: 760 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase;
+}
+
+.mobile-nav-card {
+  min-height: 56px !important;
+  margin-bottom: 5px !important;
+  padding: 10px 12px !important;
+  border: 1px solid transparent !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  color: var(--user-shell-text) !important;
+}
+
+.mobile-nav-card:hover,
+.mobile-nav-card:focus-visible,
+.mobile-nav-card.active,
+.mobile-nav-card[aria-current='page'] {
+  border-color: color-mix(in srgb, var(--user-shell-accent) 38%, transparent) !important;
+  background: color-mix(in srgb, var(--user-shell-accent) 11%, transparent) !important;
+}
+
+.mobile-nav-card small {
+  color: var(--user-shell-muted) !important;
+}
+
+.hamburger-button.notch-mobile-button {
+  position: absolute !important;
+  top: 14px !important;
+  right: 66px !important;
+  z-index: 4 !important;
+  width: 44px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  border: 1px solid var(--user-shell-border) !important;
+  border-radius: 11px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+}
+
+.hamburger-button.notch-mobile-button span {
+  background: var(--user-shell-text) !important;
+}
+
+@media (max-width: 1260px) {
+  .erp-menu-row.notch-menu-row {
+    grid-template-columns: minmax(155px, 190px) minmax(0, 1fr) auto;
+    gap: 10px !important;
+  }
+
+  .erp-menu-label {
+    padding-inline: 9px !important;
+  }
+
+  .erp-command-area .global-search-trigger {
+    width: 180px !important;
+  }
+
+  .erp-command-area .density-toggle {
+    display: none !important;
+  }
+}
+
+@media (max-width: 980px) {
+  :root {
+    --user-shell-height: calc(68px + env(safe-area-inset-top, 0px));
+    --user-shell-page-gap: 14px;
+  }
+
+  .erp-chrome.topbar {
+    padding-top: env(safe-area-inset-top, 0px) !important;
+  }
+
+  .erp-menu-row.notch-menu-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding: 10px 116px 10px 12px !important;
+  }
+
+  .erp-menubar.notch-menubar,
+  .erp-command-area.notch-command-area {
+    display: none !important;
+  }
+
+  .erp-brand-button.notch-logo-button {
+    max-width: min(100%, 220px) !important;
+  }
+
+  .dallmayr-account-menu.is-brand {
+    top: calc(12px + env(safe-area-inset-top, 0px)) !important;
+    right: 12px !important;
+  }
+
+  .hamburger-button.notch-mobile-button {
+    top: calc(12px + env(safe-area-inset-top, 0px)) !important;
+    right: 62px !important;
+    display: inline-grid !important;
+  }
+
+  .mobile-nav-panel {
+    width: min(92vw, 430px) !important;
+    max-width: min(92vw, 430px) !important;
+  }
+
+  .top-main {
+    padding-inline: 12px !important;
+  }
+}
+
+@media (min-width: 981px) {
+  .hamburger-button.notch-mobile-button {
+    display: none !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .erp-menu-row.notch-menu-row {
+    padding-right: 112px !important;
+  }
+
+  .erp-brand-button.notch-logo-button span:not(.notch-logo-mark) {
+    display: inline !important;
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap !important;
+  }
+
+  .notch-logo-mark {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .page-header,
+  .minimal-page-header {
+    padding: 16px !important;
+    border-radius: 13px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  .erp-chrome.topbar,
+  .mobile-nav-backdrop,
+  .mobile-nav-panel {
+    display: none !important;
+  }
+
+  .app-shell.top-shell {
+    padding-top: 0 !important;
+  }
+
+  .top-main {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+  }
+}
