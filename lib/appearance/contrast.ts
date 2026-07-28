@@ -1,9 +1,14 @@
-import type { AppearancePreferences } from '@/components/appearance/AppearanceProvider';
-
 type Rgb = {
   red: number;
   green: number;
   blue: number;
+};
+
+type ContrastPreferenceInput = {
+  accentColor: string;
+  themeColor: string;
+  backgroundColor: string;
+  themeTone: 'dark' | 'light';
 };
 
 export type AppearanceContrastTokens = {
@@ -109,7 +114,7 @@ export function ensureContrast(color: string, background: string, minimumRatio =
 }
 
 export function createAppearanceContrastTokens(
-  preferences: Pick<AppearancePreferences, 'accentColor' | 'themeColor' | 'backgroundColor' | 'themeTone'>,
+  preferences: ContrastPreferenceInput,
 ): AppearanceContrastTokens {
   const accentOnLight = ensureContrast(preferences.accentColor, LIGHT_SURFACE, 4.5);
   const accentOnDark = ensureContrast(preferences.accentColor, DARK_SURFACE, 4.5);
