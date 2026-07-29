@@ -54,10 +54,12 @@ import './mobile-data-views.css';
 import './mobile-application-layout.css';
 import './mobile-application-layout-final.css';
 import './mobile-master-detail-actions.css';
+import './mobile-offline-field-work.css';
 import { AccessStatusGuard } from '@/components/auth/AccessStatusGuard';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { AppearanceProvider } from '@/components/appearance/AppearanceProvider';
 import { RenderedSurfaceContrastSync } from '@/components/appearance/RenderedSurfaceContrastSync';
+import { FieldServiceOfflineManager } from '@/components/features/FieldServiceOfflineManager';
 import { GlobalAccountMenu } from '@/components/layout/GlobalAccountMenu';
 import { MobileWorkflowEnhancer } from '@/components/ui/MobileWorkflowEnhancer';
 
@@ -171,6 +173,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <AppearanceProvider>
             <RenderedSurfaceContrastSync />
             <AccessStatusGuard>
+              <FieldServiceOfflineManager />
               <MobileWorkflowEnhancer />
               <GlobalAccountMenu />
               {children}
