@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">DallmayrERP</title>
+  <rect width="512" height="512" fill="#0f1419"/>
+  <circle cx="256" cy="256" r="196" fill="#20272f" stroke="#67e8f9" stroke-width="16"/>
+  <path d="M164 134h92c90 0 154 47 154 122s-64 122-154 122h-92V134zm88 188c54 0 87-23 87-66s-33-66-87-66h-18v132h18z" fill="#f8fafc"/>
+  <circle cx="382" cy="132" r="26" fill="#22c3dc"/>
+</svg>

@@ -55,11 +55,13 @@ import './mobile-application-layout.css';
 import './mobile-application-layout-final.css';
 import './mobile-master-detail-actions.css';
 import './mobile-offline-field-work.css';
+import './mobile-notifications-pwa.css';
 import { AccessStatusGuard } from '@/components/auth/AccessStatusGuard';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { AppearanceProvider } from '@/components/appearance/AppearanceProvider';
 import { RenderedSurfaceContrastSync } from '@/components/appearance/RenderedSurfaceContrastSync';
 import { FieldServiceOfflineManager } from '@/components/features/FieldServiceOfflineManager';
+import { MobileAppExperience } from '@/components/features/MobileAppExperience';
 import { GlobalAccountMenu } from '@/components/layout/GlobalAccountMenu';
 import { MobileWorkflowEnhancer } from '@/components/ui/MobileWorkflowEnhancer';
 
@@ -147,12 +149,23 @@ const APPEARANCE_BOOT_SCRIPT = `
 export const metadata = {
   title: 'DallmayrERP',
   description: 'Dallmayr South Africa internal operations ERP',
+  applicationName: 'DallmayrERP',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent' as const,
+    title: 'DallmayrERP',
+  },
+  icons: {
+    icon: '/icons/dallmayr-app.svg',
+    apple: '/icons/dallmayr-app.svg',
+  },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  themeColor: '#0f1419',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -174,6 +187,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <RenderedSurfaceContrastSync />
             <AccessStatusGuard>
               <FieldServiceOfflineManager />
+              <MobileAppExperience />
               <MobileWorkflowEnhancer />
               <GlobalAccountMenu />
               {children}
