@@ -56,6 +56,7 @@ import './mobile-application-layout-final.css';
 import './mobile-master-detail-actions.css';
 import './mobile-offline-field-work.css';
 import './mobile-notifications-pwa.css';
+import './navigation-spacing-final.css';
 import { AccessStatusGuard } from '@/components/auth/AccessStatusGuard';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { AppearanceProvider } from '@/components/appearance/AppearanceProvider';
