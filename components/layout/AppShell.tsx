@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { MobileNavigationDrawer, MobileQuickBar } from '@/components/layout/MobileNavigation';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { DensityToggle } from '@/components/ui/DensityToggle';
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
@@ -279,6 +280,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const userName = displayProfileName(businessProfile);
   const environmentName = process.env.NEXT_PUBLIC_APP_ENVIRONMENT || 'Production';
   const tabsToRender = openTabs.length > 0 ? openTabs : [{ href: homePath, label: 'Start Page', code: 'STP01' }];
+  const visibleHrefs = new Set(visibleSections.flatMap((section) => section.items.map((item) => item.href)));
+  const taskCandidates = userDetails.role === 'technician'
+    ? ['/technician', '/work']
+    : userDetails.role === 'road_technician'
+      ? ['/road-tech', '/work']
+      : userDetails.role === 'operations'
+        ? ['/operations/exceptions', '/work']
+        : ['/work', '/operations/exceptions'];
+  const mobileTaskPath = taskCandidates.find((href) => visibleHrefs.has(href)) ?? homePath;
+  const mobileScanPath = ['/warehouse/stock', '/operations/assets', mobileTaskPath]
+    .find((href) => visibleHrefs.has(href)) ?? mobileTaskPath;
 
   function closeTab(tabHref: string) {
     const next = openTabs.filter((item) => item.href !== tabHref);
@@ -391,7 +403,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <button
                   aria-controls="mobile-navigation"
                   aria-expanded={menuOpen}
-                  aria-label={menuOpen ? 'Close quick navigation menu' : 'Open quick navigation menu'}
+                  aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
                   className="hamburger-button notch-mobile-button"
                   onClick={() => setMenuOpen((current) => !current)}
                   type="button"
@@ -441,43 +453,28 @@ export function AppShell({ children }: { children: ReactNode }) {
           <strong className="erp-context-strip">{environmentName} | {activeBranch} | {roleLabels[userDetails.role]} | {userName}</strong>
         </div>
 
-        <div aria-modal="true" className="mobile-nav-panel" hidden={!menuOpen} id="mobile-navigation" role="dialog">
-          <div className="user-chip mobile-user-chip">
-            <span>{userName}</span>
-            <strong>{roleLabels[userDetails.role]}</strong>
-            {!profileComplete ? <em>Profile setup required</em> : null}
-          </div>
-          <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} className="mobile-primary-link" href={homePath}>
-            Start Page
-          </Link>
-          <nav aria-label="Mobile navigation">
-            {visibleSections.map((section) => (
-              <div className="nav-section" key={section.heading}>
-                <div className="nav-heading">{section.heading}</div>
-                {section.items.map((item) => {
-                  const active = isActivePath(pathname, item.href);
-                  return (
-                    <Link
-                      aria-current={active ? 'page' : undefined}
-                      key={item.href}
-                      className={`nav-link mobile-nav-card ${active ? 'active' : ''}`}
-                      href={item.href}
-                    >
-                      <span className="nav-card-copy">
-                        <strong>{item.code} — {item.label}</strong>
-                        {item.description ? <small>{item.description}</small> : null}
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            ))}
-          </nav>
-          <button className="button secondary sign-out" onClick={signOut} type="button">
-            Sign out
-          </button>
-        </div>
+        <MobileNavigationDrawer
+          activeTitle={activeTitle}
+          homePath={homePath}
+          open={menuOpen}
+          pathname={pathname}
+          profileComplete={profileComplete}
+          recentPages={openTabs.map((tab) => ({ href: tab.href, label: tab.label }))}
+          roleLabel={roleLabels[userDetails.role]}
+          sections={visibleSections}
+          setOpen={setMenuOpen}
+          userName={userName}
+        />
       </header>
+
+      <MobileQuickBar
+        homePath={homePath}
+        menuOpen={menuOpen}
+        pathname={pathname}
+        scanPath={mobileScanPath}
+        setMenuOpen={setMenuOpen}
+        taskPath={mobileTaskPath}
+      />
 
       <main className="main top-main" id="main-content" tabIndex={-1}>
         {!allowedPath ? (
