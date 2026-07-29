@@ -1,0 +1,335 @@
+/* Mobile-only offline field-work queue. Desktop workflow presentation is unchanged. */
+
+.field-offline-indicator,
+.field-offline-toast,
+.field-offline-backdrop,
+.field-offline-sheet {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .field-offline-indicator {
+    position: fixed;
+    right: 12px;
+    bottom: calc(var(--mobile-quick-bar-height, 66px) + 10px);
+    z-index: 6320;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    max-width: calc(100vw - 24px);
+    padding: 8px 12px;
+    border: 1px solid var(--design-border);
+    border-radius: 999px;
+    background: var(--design-panel);
+    color: var(--design-text);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+    font: inherit;
+  }
+
+  .field-offline-indicator > span {
+    width: 9px;
+    height: 9px;
+    flex: 0 0 9px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 4px color-mix(in srgb, #22c55e 18%, transparent);
+  }
+
+  .field-offline-indicator.is-offline > span {
+    background: #f59e0b;
+    box-shadow: 0 0 0 4px color-mix(in srgb, #f59e0b 20%, transparent);
+  }
+
+  .field-offline-indicator.has-failure > span {
+    background: #ef4444;
+    box-shadow: 0 0 0 4px color-mix(in srgb, #ef4444 20%, transparent);
+  }
+
+  .field-offline-indicator strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.78rem;
+  }
+
+  .field-offline-toast {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(var(--mobile-quick-bar-height, 66px) + 58px);
+    z-index: 6480;
+    display: block;
+    padding: 12px 14px;
+    border: 1px solid var(--design-border);
+    border-radius: 14px;
+    background: var(--design-panel-raised, var(--design-panel));
+    color: var(--design-text);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.34);
+    font-weight: 700;
+  }
+
+  .field-offline-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 6460;
+    display: block;
+    width: auto;
+    height: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: rgba(2, 6, 12, 0.72);
+    backdrop-filter: blur(4px);
+  }
+
+  .field-offline-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 6470;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: min(88dvh, 760px);
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--design-border);
+    border-bottom: 0;
+    border-radius: 24px 24px 0 0;
+    background: var(--design-panel);
+    color: var(--design-text);
+    box-shadow: 0 -24px 70px rgba(0, 0, 0, 0.42);
+  }
+
+  .field-offline-sheet > header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .field-offline-sheet > header > div {
+    min-width: 0;
+  }
+
+  .field-offline-sheet > header span,
+  .field-offline-item > div:first-child > span {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--design-accent-text, var(--content-accent-text));
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .field-offline-sheet h2,
+  .field-offline-sheet h3,
+  .field-offline-sheet p {
+    margin: 0;
+  }
+
+  .field-offline-sheet > header h2 {
+    font-size: 1.35rem;
+  }
+
+  .field-offline-sheet > header p {
+    margin-top: 6px;
+    color: var(--design-text-muted);
+    line-height: 1.45;
+  }
+
+  .field-offline-sheet > header > button {
+    display: grid;
+    place-content: center;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0;
+    border: 1px solid var(--design-border);
+    border-radius: 50%;
+    background: var(--design-panel-raised, var(--design-panel));
+    color: var(--design-text);
+    font: inherit;
+    font-size: 1.45rem;
+  }
+
+  .field-connectivity-state {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2px 10px;
+    align-items: center;
+    padding: 12px 14px;
+    border: 1px solid var(--design-border);
+    border-radius: 14px;
+    background: var(--design-panel-raised, var(--design-panel));
+  }
+
+  .field-connectivity-state::before {
+    grid-row: 1 / span 2;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #22c55e;
+    content: '';
+  }
+
+  .field-connectivity-state.is-offline::before {
+    background: #f59e0b;
+  }
+
+  .field-connectivity-state span {
+    color: var(--design-text-muted);
+    font-size: 0.82rem;
+  }
+
+  .field-offline-empty {
+    padding: 24px 16px;
+    border: 1px dashed var(--design-border);
+    border-radius: 16px;
+    text-align: center;
+  }
+
+  .field-offline-empty p {
+    margin-top: 6px;
+    color: var(--design-text-muted);
+  }
+
+  .field-offline-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .field-offline-item {
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--design-border);
+    border-radius: 16px;
+    background: var(--design-panel-raised, var(--design-panel));
+  }
+
+  .field-offline-item.status-failed {
+    border-color: color-mix(in srgb, #ef4444 62%, var(--design-border));
+  }
+
+  .field-offline-item.status-syncing {
+    border-color: color-mix(in srgb, var(--design-accent-text, #22c3dc) 62%, var(--design-border));
+  }
+
+  .field-offline-item h3 {
+    font-size: 1rem;
+  }
+
+  .field-offline-item > div:first-child > p {
+    margin-top: 4px;
+    color: var(--design-text-muted);
+    font-size: 0.82rem;
+  }
+
+  .field-offline-error {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: color-mix(in srgb, #ef4444 14%, transparent);
+    color: var(--design-text);
+    font-size: 0.84rem;
+    line-height: 1.4;
+  }
+
+  .field-offline-item dl {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0;
+  }
+
+  .field-offline-item dl > div {
+    min-width: 0;
+    padding: 10px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--design-panel) 76%, transparent);
+  }
+
+  .field-offline-item dt {
+    color: var(--design-text-muted);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .field-offline-item dd {
+    margin: 4px 0 0;
+    overflow-wrap: anywhere;
+    font-weight: 700;
+  }
+
+  .field-offline-sheet > footer {
+    position: sticky;
+    bottom: calc(-18px - env(safe-area-inset-bottom, 0px));
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    margin: 0 -16px calc(-18px - env(safe-area-inset-bottom, 0px));
+    padding: 12px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--design-border);
+    background: var(--design-panel);
+  }
+
+  .field-job-card[data-offline-queued='true'] {
+    position: relative;
+    padding-bottom: 44px !important;
+    opacity: 0.82;
+  }
+
+  .field-job-card[data-offline-queued='true']::after {
+    position: absolute;
+    right: 12px;
+    bottom: 10px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 25px;
+    padding: 3px 9px;
+    border: 1px solid var(--design-border);
+    border-radius: 999px;
+    background: var(--design-panel);
+    color: var(--design-accent-text, var(--content-accent-text));
+    content: 'Queued offline';
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}
+
+@media (max-width: 380px) {
+  .field-offline-sheet > footer {
+    grid-template-columns: 1fr;
+  }
+
+  .field-offline-item dl {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field-offline-sheet,
+  .field-offline-toast,
+  .field-offline-indicator {
+    scroll-behavior: auto;
+    transition: none !important;
+  }
+}
+
+@media print {
+  .field-offline-indicator,
+  .field-offline-toast,
+  .field-offline-backdrop,
+  .field-offline-sheet {
+    display: none !important;
+  }
+}
