@@ -22,10 +22,6 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 const MOBILE_QUERY = '(max-width: 760px)';
 const validOutcomes = new Set<FieldOutcome>(['completed', 'follow_up_required', 'parts_required', 'customer_unavailable']);
 
-function isFieldRoute(pathname: string) {
-  return pathname === '/technician' || pathname.startsWith('/technician/') || pathname === '/road-tech' || pathname.startsWith('/road-tech/');
-}
-
 function taskTypeForPath(pathname: string): FieldTaskType {
   return pathname.startsWith('/road-tech') ? 'road_technician' : 'technician';
 }
@@ -126,7 +122,7 @@ export function FieldServiceOfflineManager() {
 
     try {
       const queue = await listFieldQueue(userId);
-      const candidates = queue.filter((item) => includeFailed ? item.status !== 'syncing' : item.status !== 'failed');
+      const candidates = queue.filter((item) => includeFailed || item.status !== 'failed');
       const client = getSupabaseClient();
 
       for (const item of candidates) {
@@ -153,7 +149,7 @@ export function FieldServiceOfflineManager() {
             const { error: uploadError } = await client.storage
               .from('dallmayrerp-task-photos')
               .upload(uploadedPath, item.photo, {
-                contentType: item.photoType ?? item.photo.type || undefined,
+                contentType: item.photoType || item.photo.type || undefined,
                 upsert: false,
               });
             if (uploadError) throw uploadError;
@@ -175,7 +171,11 @@ export function FieldServiceOfflineManager() {
           document.querySelector<HTMLButtonElement>('.field-queue-refresh')?.click();
         } catch (error) {
           if (uploadedPath) {
-            await client.storage.from('dallmayrerp-task-photos').remove([uploadedPath]).catch(() => undefined);
+            try {
+              await client.storage.from('dallmayrerp-task-photos').remove([uploadedPath]);
+            } catch {
+              // The queue retains the original item and will report the primary synchronization error.
+            }
           }
           if (!navigator.onLine) {
             await updateFieldQueueItem(item.id, { status: 'pending', lastError: 'Waiting for a connection.' });
@@ -214,7 +214,7 @@ export function FieldServiceOfflineManager() {
   }, [fieldRole, refreshQueue, synchronize]);
 
   useEffect(() => {
-    if (!fieldRole || !userId || !online || items.every((item) => item.status === 'failed')) return;
+    if (!fieldRole || !userId || !online || items.length === 0 || items.every((item) => item.status === 'failed')) return;
     void synchronize(false);
   }, [fieldRole, items, online, synchronize, userId]);
 
@@ -271,7 +271,7 @@ export function FieldServiceOfflineManager() {
       }, 180);
     }
 
-    function handleSubmit(event: SubmitEvent) {
+    function handleSubmit(event: Event) {
       if (!media.matches || !(event.target instanceof HTMLFormElement) || !event.target.matches('.field-completion-form')) return;
       const form = event.target;
       const jobNumber = jobNumberFromForm(form);
@@ -381,7 +381,6 @@ export function FieldServiceOfflineManager() {
   }, [open]);
 
   const counts = useMemo(() => ({
-    pending: items.filter((item) => item.status === 'pending').length,
     syncing: items.filter((item) => item.status === 'syncing').length,
     failed: items.filter((item) => item.status === 'failed').length,
   }), [items]);
