@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import {
   normaliseTableFilter,
@@ -8,6 +8,12 @@ import {
   type EnterpriseColumn,
   type TableColumnFilters,
 } from '@/components/ui/EnterpriseDataTable';
+import {
+  MobileFilterChips,
+  MobileFilterSheet,
+  MobileRecordList,
+  type MobileFilterChip,
+} from '@/components/ui/MobileDataViews';
 import { TableScrollFrame } from '@/components/ui/TableScrollFrame';
 import { useResizableColumns } from '@/components/ui/useResizableColumns';
 
@@ -27,6 +33,8 @@ type RemoteDataTableProps<T> = {
   filters?: ReactNode;
   tableId?: string;
   columnFilters?: TableColumnFilters;
+  mobileFilterChips?: MobileFilterChip[];
+  onClearMobileFilters?: () => void;
   onColumnFiltersChange?: (filters: TableColumnFilters) => void;
   onSearchChange: (value: string) => void;
   onPageChange: (page: number) => void;
@@ -72,12 +80,15 @@ export function RemoteDataTable<T>({
   filters,
   tableId = 'remote',
   columnFilters,
+  mobileFilterChips = [],
+  onClearMobileFilters,
   onColumnFiltersChange,
   onSearchChange,
   onPageChange,
   onPageSizeChange,
 }: RemoteDataTableProps<T>) {
   const [localColumnFilters, setLocalColumnFilters] = useState<TableColumnFilters>({});
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const effectiveColumnFilters = columnFilters ?? localColumnFilters;
   const hasColumnFilters = Object.values(effectiveColumnFilters).some((value) => normaliseTableFilter(value));
   const visibleRows = useMemo(
@@ -106,10 +117,33 @@ export function RemoteDataTable<T>({
     else setLocalColumnFilters(next);
   }
 
-  function clearColumnFilters() {
+  const clearColumnFilters = useCallback(() => {
     if (onColumnFiltersChange) onColumnFiltersChange({});
     else setLocalColumnFilters({});
-  }
+  }, [onColumnFiltersChange]);
+
+  const closeMobileFilters = useCallback(() => setMobileFiltersOpen(false), []);
+  const clearAllMobileFilters = useCallback(() => {
+    clearColumnFilters();
+    onClearMobileFilters?.();
+  }, [clearColumnFilters, onClearMobileFilters]);
+
+  const columnFilterChips = useMemo<MobileFilterChip[]>(() => Object.entries(effectiveColumnFilters)
+    .filter(([, value]) => normaliseTableFilter(value))
+    .map(([columnId, value]) => {
+      const column = columns.find((item) => item.id === columnId);
+      return {
+        id: `column-${columnId}`,
+        label: `${column?.header ?? columnId}: ${value}`,
+        onRemove: () => updateColumnFilter(columnId, ''),
+      };
+    }), [columns, effectiveColumnFilters]);
+
+  const allMobileFilterChips = useMemo(
+    () => [...mobileFilterChips, ...columnFilterChips],
+    [columnFilterChips, mobileFilterChips],
+  );
+  const filterableColumns = columns.filter((column) => column.filterable !== false);
 
   return (
     <section className="enterprise-table-shell remote-table-shell">
@@ -127,76 +161,121 @@ export function RemoteDataTable<T>({
           <strong>{totalRows.toLocaleString()}</strong> matching record(s)
         </div>
         {actions ? <div className="enterprise-table-actions">{actions}</div> : null}
-        {hasColumnFilters ? <button className="button secondary" disabled={loading} onClick={clearColumnFilters} type="button">Clear column filters</button> : null}
+        {hasColumnFilters ? <button className="button secondary enterprise-table-desktop-filter-clear" disabled={loading} onClick={clearColumnFilters} type="button">Clear column filters</button> : null}
         <button className="button secondary column-width-reset" onClick={resetWidths} type="button">Reset columns</button>
+        <button className="mobile-table-filter-button" disabled={loading} onClick={() => setMobileFiltersOpen(true)} type="button">
+          <span>Filters</span><span>{allMobileFilterChips.length}</span>
+        </button>
       </div>
 
       {filters ? <div className="remote-table-filters">{filters}</div> : null}
+      <MobileFilterChips chips={allMobileFilterChips} />
 
-      <TableScrollFrame totalWidth={totalWidth}>
-        <table className="resizable-enterprise-table" style={{ minWidth: `${totalWidth}px`, width: `${totalWidth}px` }}>
-          <colgroup>
-            {columns.map((column) => <col key={column.id} style={{ width: `${getColumnWidth(column.id)}px` }} />)}
-          </colgroup>
-          <thead>
-            <tr>
-              {columns.map((column) => {
-                const columnWidth = getColumnWidth(column.id);
-                const filterable = column.filterable !== false;
-                return (
-                  <th className={column.className} key={column.id} style={{ width: `${columnWidth}px` }}>
-                    <div className="resizable-th-stack">
-                      <div className="resizable-th-content">
-                        <span className="table-header-label">{column.header}</span>
-                      </div>
-                      {filterable ? (
-                        <input
-                          aria-label={`Filter ${column.header} column`}
-                          autoComplete="off"
-                          className="table-column-filter-input"
-                          disabled={loading}
-                          onChange={(event) => updateColumnFilter(column.id, event.target.value)}
-                          placeholder={column.filterPlaceholder ?? `Filter ${column.header}`}
-                          spellCheck={false}
-                          type="search"
-                          value={effectiveColumnFilters[column.id] ?? ''}
-                        />
-                      ) : <span aria-hidden="true" className="table-column-filter-spacer" />}
-                      <button
-                        aria-label={`Resize ${column.header} column. Drag, use arrow keys, or double click to reset.`}
-                        aria-valuenow={columnWidth}
-                        className="table-column-resizer"
-                        data-active={activeColumnId === column.id ? 'true' : undefined}
-                        onDoubleClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          resetColumn(column.id);
-                        }}
-                        onKeyDown={(event) => handleColumnResizeKey(event, column.id, nudgeColumn, resetColumn)}
-                        onPointerDown={(event) => startResize(column.id, event)}
-                        title="Drag to resize. Arrow keys resize. Double-click or Enter resets this column."
-                        type="button"
-                      />
-                    </div>
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {visibleRows.length === 0 ? (
-              <tr><td colSpan={columns.length}>{loading ? 'Loading records...' : emptyMessage}</td></tr>
-            ) : visibleRows.map((row) => (
-              <tr key={rowKey(row)}>
+      <div className="enterprise-table-desktop-view">
+        <TableScrollFrame totalWidth={totalWidth}>
+          <table className="resizable-enterprise-table" style={{ minWidth: `${totalWidth}px`, width: `${totalWidth}px` }}>
+            <colgroup>
+              {columns.map((column) => <col key={column.id} style={{ width: `${getColumnWidth(column.id)}px` }} />)}
+            </colgroup>
+            <thead>
+              <tr>
                 {columns.map((column) => {
                   const columnWidth = getColumnWidth(column.id);
-                  return <td className={column.className} key={column.id} style={{ width: `${columnWidth}px` }}>{column.render ? column.render(row) : column.value(row) ?? '-'}</td>;
+                  const filterable = column.filterable !== false;
+                  return (
+                    <th className={column.className} key={column.id} style={{ width: `${columnWidth}px` }}>
+                      <div className="resizable-th-stack">
+                        <div className="resizable-th-content">
+                          <span className="table-header-label">{column.header}</span>
+                        </div>
+                        {filterable ? (
+                          <input
+                            aria-label={`Filter ${column.header} column`}
+                            autoComplete="off"
+                            className="table-column-filter-input"
+                            disabled={loading}
+                            onChange={(event) => updateColumnFilter(column.id, event.target.value)}
+                            placeholder={column.filterPlaceholder ?? `Filter ${column.header}`}
+                            spellCheck={false}
+                            type="search"
+                            value={effectiveColumnFilters[column.id] ?? ''}
+                          />
+                        ) : <span aria-hidden="true" className="table-column-filter-spacer" />}
+                        <button
+                          aria-label={`Resize ${column.header} column. Drag, use arrow keys, or double click to reset.`}
+                          aria-valuenow={columnWidth}
+                          className="table-column-resizer"
+                          data-active={activeColumnId === column.id ? 'true' : undefined}
+                          onDoubleClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            resetColumn(column.id);
+                          }}
+                          onKeyDown={(event) => handleColumnResizeKey(event, column.id, nudgeColumn, resetColumn)}
+                          onPointerDown={(event) => startResize(column.id, event)}
+                          title="Drag to resize. Arrow keys resize. Double-click or Enter resets this column."
+                          type="button"
+                        />
+                      </div>
+                    </th>
+                  );
                 })}
               </tr>
+            </thead>
+            <tbody>
+              {visibleRows.length === 0 ? (
+                <tr><td colSpan={columns.length}>{loading ? 'Loading records...' : emptyMessage}</td></tr>
+              ) : visibleRows.map((row) => (
+                <tr key={rowKey(row)}>
+                  {columns.map((column) => {
+                    const columnWidth = getColumnWidth(column.id);
+                    return <td className={column.className} key={column.id} style={{ width: `${columnWidth}px` }}>{column.render ? column.render(row) : column.value(row) ?? '-'}</td>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TableScrollFrame>
+      </div>
+
+      <MobileRecordList columns={columns} emptyMessage={emptyMessage} loading={loading} rowKey={rowKey} rows={visibleRows} />
+
+      <MobileFilterSheet activeCount={allMobileFilterChips.length} onClear={clearAllMobileFilters} onClose={closeMobileFilters} open={mobileFiltersOpen} title="Filter records">
+        {filters ? (
+          <section className="mobile-filter-group">
+            <h3>Quick filters</h3>
+            <div className="mobile-filter-field-grid">{filters}</div>
+          </section>
+        ) : null}
+
+        <section className="mobile-filter-group">
+          <h3>Column filters</h3>
+          <div className="mobile-filter-column-grid">
+            {filterableColumns.map((column) => (
+              <label key={column.id}>{column.header}
+                <input
+                  autoComplete="off"
+                  disabled={loading}
+                  onChange={(event) => updateColumnFilter(column.id, event.target.value)}
+                  placeholder={column.filterPlaceholder ?? `Contains ${column.header.toLowerCase()}`}
+                  spellCheck={false}
+                  type="search"
+                  value={effectiveColumnFilters[column.id] ?? ''}
+                />
+              </label>
             ))}
-          </tbody>
-        </table>
-      </TableScrollFrame>
+          </div>
+        </section>
+
+        <section className="mobile-filter-group">
+          <h3>Records per page</h3>
+          <label>Rows
+            <select value={pageSize} onChange={(event) => onPageSizeChange(Number(event.target.value))}>
+              {pageSizeOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>
+        </section>
+      </MobileFilterSheet>
 
       <div className="enterprise-table-pagination">
         <div>{loading ? 'Refreshing...' : `Showing ${firstVisible.toLocaleString()}-${lastVisible.toLocaleString()} of ${totalRows.toLocaleString()}`}</div>
