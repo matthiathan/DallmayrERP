@@ -52,6 +52,7 @@ import './slate-sand-themes.css';
 import './mobile-navigation-drawer.css';
 import './mobile-data-views.css';
 import './mobile-application-layout.css';
+import './mobile-application-layout-final.css';
 import { AccessStatusGuard } from '@/components/auth/AccessStatusGuard';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { AppearanceProvider } from '@/components/appearance/AppearanceProvider';
