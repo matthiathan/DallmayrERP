@@ -238,7 +238,7 @@ export function MobileNavigationDrawer({
         {sections.map((section) => {
           const sectionActive = section.items.some((item) => isActivePath(pathname, item.href));
           return (
-            <details className="mobile-nav-section" defaultOpen={sectionActive} key={`${section.heading}-${pathname}`}>
+            <details className="mobile-nav-section" key={`${section.heading}-${pathname}`} open={sectionActive || undefined}>
               <summary>
                 <span>{section.heading}</span>
                 <span>{section.items.length}</span>
