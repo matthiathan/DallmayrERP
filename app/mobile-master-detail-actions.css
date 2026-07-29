@@ -1,0 +1,241 @@
+/* Mobile-only master-detail workflows and reachable primary actions.
+   Desktop layout and interaction remain unchanged above 760px. */
+
+.mobile-workflow-context-bar {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  html.mobile-workflow-detail-open .top-main {
+    padding-top: 76px !important;
+  }
+
+  .mobile-workflow-context-bar {
+    position: fixed;
+    top: var(--user-shell-height, 64px);
+    left: 0;
+    right: 0;
+    z-index: 6310;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    min-height: 60px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--design-border, var(--content-border));
+    background: color-mix(in srgb, var(--design-panel, var(--content-surface)) 94%, transparent);
+    color: var(--design-text, var(--content-text));
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(14px);
+  }
+
+  .mobile-workflow-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: auto !important;
+    min-width: 82px;
+    min-height: 44px;
+    margin: 0;
+    padding: 8px 12px;
+    border: 1px solid var(--design-border-strong, var(--content-border));
+    border-radius: 12px;
+    background: var(--design-panel-raised, var(--content-surface-raised));
+    color: var(--design-strong, var(--content-strong));
+    font-size: 0.9rem;
+    font-weight: 850;
+  }
+
+  .mobile-workflow-back span:first-child {
+    font-size: 1.2rem;
+    line-height: 1;
+  }
+
+  .mobile-workflow-context-copy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .mobile-workflow-context-copy small {
+    color: var(--design-muted, var(--content-muted));
+    font-size: 0.68rem;
+    font-weight: 850;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .mobile-workflow-context-copy strong {
+    overflow: hidden;
+    color: var(--design-strong, var(--content-strong));
+    font-size: 0.95rem;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .exception-centre-layout:not([data-mobile-workflow='detail']) > .exception-case-detail,
+  .field-service-layout:not([data-mobile-workflow='detail']) > .field-execution,
+  .admin-access-stage:not([data-mobile-workflow='detail']) > .admin-access-editor {
+    display: none !important;
+  }
+
+  .exception-centre-layout[data-mobile-workflow='detail'] > .exception-case-list,
+  .field-service-layout[data-mobile-workflow='detail'] > .field-job-queue {
+    display: none !important;
+  }
+
+  .exception-centre-layout[data-mobile-workflow='detail'] > .exception-case-detail,
+  .field-service-layout[data-mobile-workflow='detail'] > .field-execution,
+  .admin-access-stage[data-mobile-workflow='detail'] > .admin-access-editor {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    animation: mobile-detail-enter 160ms ease-out;
+  }
+
+  .exception-centre-stage[data-mobile-workflow='detail'] > .page-toolbar,
+  .exception-centre-stage[data-mobile-workflow='detail'] > .exception-centre-kpis,
+  .exception-centre-stage[data-mobile-workflow='detail'] > .exception-queue-tabs,
+  .field-service-workspace[data-mobile-workflow='detail'] > .field-service-summary {
+    display: none !important;
+  }
+
+  .admin-access-stage[data-mobile-workflow='detail'] > :not(.admin-access-editor):not(.error):not(.success) {
+    display: none !important;
+  }
+
+  .exception-centre-layout,
+  .field-service-layout {
+    display: block !important;
+    min-width: 0 !important;
+  }
+
+  .exception-case-list,
+  .field-job-queue,
+  .exception-case-detail,
+  .field-execution,
+  .admin-access-editor {
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .exception-case-card,
+  .field-job-card,
+  .mobile-record-card .compact-action {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .exception-case-card::after,
+  .field-job-card::after {
+    content: 'Open';
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    justify-self: end;
+    min-height: 30px;
+    margin-top: 4px;
+    padding: 4px 9px;
+    border: 1px solid var(--design-border, var(--content-border));
+    border-radius: 999px;
+    color: var(--design-link, var(--content-accent-text));
+    font-size: 0.72rem;
+    font-weight: 850;
+  }
+
+  .exception-queue-tabs,
+  .field-job-filter-row,
+  .customer360-tabs {
+    position: sticky;
+    top: calc(var(--user-shell-height, 64px) + 6px);
+    z-index: 80;
+    background: color-mix(in srgb, var(--design-background, var(--content-surface)) 92%, transparent);
+    backdrop-filter: blur(12px);
+  }
+
+  .field-submit-bar,
+  .exception-primary-actions,
+  .admin-access-editor .action-row {
+    position: sticky !important;
+    bottom: calc(var(--mobile-quick-bar-height, 66px) + 8px) !important;
+    z-index: 130 !important;
+    margin-inline: -4px !important;
+    padding: 10px !important;
+    border: 1px solid var(--design-border-strong, var(--content-border)) !important;
+    border-radius: 15px !important;
+    background: color-mix(in srgb, var(--design-panel-raised, var(--content-surface-raised)) 96%, transparent) !important;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.3) !important;
+    backdrop-filter: blur(16px);
+  }
+
+  .exception-primary-actions,
+  .admin-access-editor .action-row {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .field-submit-bar {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .field-submit-bar > div {
+    display: none !important;
+  }
+
+  .field-submit-bar .button,
+  .exception-primary-actions .button,
+  .admin-access-editor .action-row .button {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+
+  .exception-detail-card,
+  .field-execution,
+  .admin-access-editor {
+    padding-bottom: calc(92px + var(--mobile-quick-bar-height, 66px)) !important;
+  }
+
+  .exception-detail-heading,
+  .field-execution-header,
+  .admin-access-editor > .minimal-panel-header {
+    scroll-margin-top: calc(var(--user-shell-height, 64px) + 76px);
+  }
+
+  @keyframes mobile-detail-enter {
+    from {
+      opacity: 0;
+      transform: translateX(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
+
+@media (max-width: 380px) {
+  .mobile-workflow-context-copy strong {
+    font-size: 0.86rem;
+  }
+
+  .exception-primary-actions,
+  .admin-access-editor .action-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exception-centre-layout[data-mobile-workflow='detail'] > .exception-case-detail,
+  .field-service-layout[data-mobile-workflow='detail'] > .field-execution,
+  .admin-access-stage[data-mobile-workflow='detail'] > .admin-access-editor {
+    animation: none !important;
+  }
+}
