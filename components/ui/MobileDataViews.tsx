@@ -20,6 +20,12 @@ export type MobileFilterChip = {
   onRemove: () => void;
 };
 
+const utilityColumnPattern = /^(action|actions|control|controls|manage|select|selection)$/i;
+
+function isUtilityColumn<T>(column: MobileRecordColumn<T>) {
+  return utilityColumnPattern.test(column.id) || utilityColumnPattern.test(column.header);
+}
+
 function renderColumnValue<T>(column: MobileRecordColumn<T>, row: T) {
   return column.render ? column.render(row) : column.value(row) ?? '-';
 }
@@ -43,14 +49,18 @@ export function MobileRecordList<T>({
     () => columns.filter((column) => !column.mobileHidden),
     [columns],
   );
-  const titleColumn = visibleColumns.find((column) => column.mobileTitle) ?? visibleColumns[0];
+  const titleColumn = visibleColumns.find((column) => column.mobileTitle)
+    ?? visibleColumns.find((column) => !isUtilityColumn(column))
+    ?? visibleColumns[0];
   const detailColumns = useMemo(
     () => visibleColumns
       .filter((column) => column.id !== titleColumn?.id)
       .map((column, index) => ({ column, index }))
       .sort((left, right) => {
-        const leftPriority = left.column.mobilePriority ?? left.index + 100;
-        const rightPriority = right.column.mobilePriority ?? right.index + 100;
+        const leftPriority = left.column.mobilePriority
+          ?? (isUtilityColumn(left.column) ? 0 : left.index + 100);
+        const rightPriority = right.column.mobilePriority
+          ?? (isUtilityColumn(right.column) ? 0 : right.index + 100);
         return leftPriority - rightPriority;
       })
       .slice(0, maxDetails)
