@@ -13,6 +13,10 @@
     display: block;
   }
 
+  .grid.grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
   .mobile-record-card-details > div:has(.button),
   .mobile-record-card-details > div:has(select),
   .mobile-record-card-details > div:has(textarea) {
