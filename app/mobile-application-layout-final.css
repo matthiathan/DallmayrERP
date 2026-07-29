@@ -1,0 +1,75 @@
+/* Final cascade for the mobile application layer.
+   Desktop keeps the original PageToolbar visual structure even though controls use a disclosure in the DOM. */
+
+@media (min-width: 761px) {
+  .page-toolbar-controls-disclosure,
+  .page-toolbar-controls-body {
+    display: contents;
+  }
+}
+
+@media (max-width: 760px) {
+  .page-toolbar-controls-disclosure {
+    display: block;
+  }
+
+  .mobile-record-card-details > div:has(.button),
+  .mobile-record-card-details > div:has(select),
+  .mobile-record-card-details > div:has(textarea) {
+    grid-column: 1 / -1;
+  }
+
+  .mobile-record-card-details > div:has(.button) dd,
+  .mobile-record-card-details > div:has(select) dd,
+  .mobile-record-card-details > div:has(textarea) dd {
+    width: 100%;
+  }
+
+  .mobile-record-card-details select,
+  .mobile-record-card-details textarea,
+  .mobile-record-card-details .button {
+    width: 100%;
+  }
+
+  .mobile-record-card-details strong,
+  .mobile-record-card-title strong {
+    display: grid;
+    gap: 3px;
+  }
+
+  .mobile-record-card-details strong small,
+  .mobile-record-card-title strong small {
+    color: var(--design-muted, var(--content-muted));
+    font-size: 0.76rem;
+    font-weight: 650;
+  }
+
+  .mobile-record-card .status-badge,
+  .mobile-record-card .badge {
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .mobile-record-card a,
+  .role-action-card,
+  .operations-attention-card a,
+  .low-stock-card {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .low-stock-alerts > .grid,
+  .document-grid,
+  .asset-grid,
+  .campaign-grid,
+  .segment-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .low-stock-card,
+  .document-card,
+  .asset-card,
+  .campaign-card,
+  .segment-card {
+    min-height: 0;
+  }
+}
