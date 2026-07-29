@@ -44,7 +44,6 @@ type InstallPromptEvent = Event & {
 };
 
 const POLL_INTERVAL_MS = 120_000;
-const MOBILE_QUERY = '(max-width: 760px)';
 const READ_KEY_PREFIX = 'dallmayr-mobile-alerts-read-v1';
 const exceptionRoles = new Set(['admin', 'operations', 'executive', 'warehouse_staff', 'finance']);
 const fieldRoles = new Set(['technician', 'road_technician']);
@@ -67,14 +66,12 @@ function writeIds(userId: string, ids: Set<string>) {
 function formatRelative(value: string) {
   const timestamp = new Date(value).getTime();
   if (!Number.isFinite(timestamp)) return 'Recently';
-  const elapsed = Date.now() - timestamp;
-  const minutes = Math.max(0, Math.floor(elapsed / 60_000));
+  const minutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60_000));
   if (minutes < 1) return 'Just now';
   if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return `${Math.floor(hours / 24)}d ago`;
 }
 
 function dueLabel(value: string | null) {
@@ -87,13 +84,9 @@ function dueLabel(value: string | null) {
   return hours < 24 ? `Due in ${Math.max(1, hours)}h` : `Due in ${Math.round(hours / 24)}d`;
 }
 
-function isStandalone() {
-  const navigatorWithStandalone = navigator as Navigator & { standalone?: boolean };
-  return window.matchMedia('(display-mode: standalone)').matches || navigatorWithStandalone.standalone === true;
-}
-
-function isIos() {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+function standaloneMode() {
+  const mobileNavigator = navigator as Navigator & { standalone?: boolean };
+  return window.matchMedia('(display-mode: standalone)').matches || mobileNavigator.standalone === true;
 }
 
 export function MobileAppExperience() {
@@ -108,6 +101,7 @@ export function MobileAppExperience() {
   const [online, setOnline] = useState(true);
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
+  const [ios, setIos] = useState(false);
   const [updateReady, setUpdateReady] = useState(false);
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const [error, setError] = useState('');
@@ -136,7 +130,7 @@ export function MobileAppExperience() {
         if (jobError) throw jobError;
 
         const jobRoute = role === 'road_technician' ? '/road-tech' : '/technician';
-        (data as ServiceJobRow[] | null ?? []).forEach((job) => {
+        ((data ?? []) as ServiceJobRow[]).forEach((job) => {
           const dueTime = job.due_at ? new Date(job.due_at).getTime() : Number.POSITIVE_INFINITY;
           const overdue = Number.isFinite(dueTime) && dueTime < Date.now();
           const priority = job.priority.toLowerCase();
@@ -161,7 +155,7 @@ export function MobileAppExperience() {
         });
         if (exceptionError) throw exceptionError;
 
-        (data as ExceptionRow[] | null ?? [])
+        ((data ?? []) as ExceptionRow[])
           .filter((item) => item.status !== 'resolved' && item.status !== 'snoozed')
           .sort((left, right) => (severityOrder[left.severity] ?? 9) - (severityOrder[right.severity] ?? 9))
           .slice(0, 40)
@@ -179,7 +173,7 @@ export function MobileAppExperience() {
       }
 
       next.sort((left, right) => {
-        const toneOrder = { critical: 0, warning: 1, info: 2 } as const;
+        const toneOrder: Record<AlertTone, number> = { critical: 0, warning: 1, info: 2 };
         const toneDifference = toneOrder[left.tone] - toneOrder[right.tone];
         if (toneDifference) return toneDifference;
         return new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime();
@@ -194,7 +188,7 @@ export function MobileAppExperience() {
 
   useEffect(() => {
     if (!userId) {
-      setRead(new Set());
+      setRead(new Set<string>());
       setAlerts([]);
       return;
     }
@@ -233,7 +227,8 @@ export function MobileAppExperience() {
   }, [loadAlerts]);
 
   useEffect(() => {
-    setInstalled(isStandalone());
+    setInstalled(standaloneMode());
+    setIos(/iphone|ipad|ipod/i.test(navigator.userAgent));
     const handlePrompt = (event: Event) => {
       event.preventDefault();
       setInstallPrompt(event as InstallPromptEvent);
@@ -311,9 +306,7 @@ export function MobileAppExperience() {
     };
   }, [open]);
 
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
+  useEffect(() => setOpen(false), [pathname]);
 
   function markRead(id: string) {
     if (!userId) return;
@@ -347,7 +340,7 @@ export function MobileAppExperience() {
   if (!userId || !userDetails) return null;
 
   const showInstall = !installed && Boolean(installPrompt);
-  const showIosHelp = !installed && !installPrompt && isIos();
+  const showIosHelp = !installed && !installPrompt && ios;
 
   return (
     <>
