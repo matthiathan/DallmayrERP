@@ -32,26 +32,38 @@ export function GlobalAccountMenu() {
     updatePreferences,
     resetPreferences,
   } = useAppearance();
-  const [brandTarget, setBrandTarget] = useState<Element | null>(null);
+  const [portalTarget, setPortalTarget] = useState<Element | null>(null);
+  const [mobilePlacement, setMobilePlacement] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
 
   useEffect(() => {
     if (loading || !authUser) {
-      setBrandTarget(null);
+      setPortalTarget(null);
+      setMobilePlacement(false);
       return;
     }
 
+    const mobileMedia = window.matchMedia('(max-width: 980px)');
+
     function syncTarget() {
-      setBrandTarget(document.querySelector('.erp-menu-row.notch-menu-row'));
+      const brandTarget = document.querySelector('.erp-menu-row.notch-menu-row');
+      const mobileTarget = document.querySelector('#mobile-account-menu-target');
+      const useMobile = mobileMedia.matches && Boolean(mobileTarget);
+      setMobilePlacement(useMobile);
+      setPortalTarget(useMobile ? mobileTarget : brandTarget ?? mobileTarget);
     }
 
     syncTarget();
 
     const observer = new MutationObserver(syncTarget);
     observer.observe(document.body, { childList: true, subtree: true });
+    mobileMedia.addEventListener('change', syncTarget);
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      mobileMedia.removeEventListener('change', syncTarget);
+    };
   }, [authUser, loading]);
 
   useEffect(() => {
@@ -90,7 +102,7 @@ export function GlobalAccountMenu() {
   const userName = displayProfileName(businessProfile);
   const userInitials = useMemo(() => initialsFor(userName), [userName]);
 
-  if (loading || !authUser || !businessProfile || !userDetails || !brandTarget) return null;
+  if (loading || !authUser || !businessProfile || !userDetails || !portalTarget) return null;
 
   const userEmail = businessProfile.user.email;
   const roleLabel = roleLabels[userDetails.role];
@@ -125,7 +137,7 @@ export function GlobalAccountMenu() {
   }
 
   return createPortal(
-    <details className="dallmayr-account-menu is-brand">
+    <details className={`dallmayr-account-menu ${mobilePlacement ? 'is-mobile' : 'is-brand'}`}>
       <summary
         aria-label={`Open account menu for ${userName}`}
         className="dallmayr-account-trigger"
@@ -223,6 +235,6 @@ export function GlobalAccountMenu() {
         </button>
       </div>
     </details>,
-    brandTarget,
+    portalTarget,
   );
 }
