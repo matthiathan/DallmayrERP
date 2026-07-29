@@ -284,12 +284,13 @@ export function MobileScannerCentre() {
               const site = firstRelation(job.customer_sites);
               const address = site?.address ?? job.address_snapshot ?? customer?.address ?? '';
               const customerName = job.customer_name_snapshot ?? customer?.customer_name ?? 'Customer not set';
+              const siteName = site?.site_name ?? (address || 'Not recorded');
               return (
                 <article className={styles.resultCard} key={job.id}>
                   <div className={styles.resultHeader}><div><span className={styles.resultType}>Assigned job</span><h3>{job.job_number}</h3><p>{job.summary}</p></div><StatusBadge value={job.status} /></div>
                   <dl className={styles.resultMeta}>
                     <div><dt>Customer</dt><dd>{customerName}</dd></div>
-                    <div><dt>Site</dt><dd>{site?.site_name ?? address || 'Not recorded'}</dd></div>
+                    <div><dt>Site</dt><dd>{siteName}</dd></div>
                     <div><dt>Priority</dt><dd>{job.priority.replace(/_/g, ' ')}</dd></div>
                     <div><dt>Due</dt><dd>{formatDue(job.due_at)}</dd></div>
                   </dl>
