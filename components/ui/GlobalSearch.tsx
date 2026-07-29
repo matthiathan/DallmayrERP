@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { createPortal } from 'react-dom';
 import { useEffect, useRef, useState } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
@@ -12,11 +13,23 @@ type SearchResult = {
   href: string;
 };
 
+type GlobalSearchProps = {
+  enableShortcut?: boolean;
+  showShortcut?: boolean;
+  triggerClassName?: string;
+  triggerLabel?: string;
+};
+
 function safeFilterTerm(value: string) {
   return value.trim().replace(/[(),]/g, ' ').replace(/\s+/g, ' ');
 }
 
-export function GlobalSearch() {
+export function GlobalSearch({
+  enableShortcut = true,
+  showShortcut = true,
+  triggerClassName = '',
+  triggerLabel = 'Search records',
+}: GlobalSearchProps = {}) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -27,7 +40,7 @@ export function GlobalSearch() {
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      if (enableShortcut && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
         setOpen(true);
       }
@@ -35,7 +48,7 @@ export function GlobalSearch() {
     }
     window.addEventListener('keydown', handleShortcut);
     return () => window.removeEventListener('keydown', handleShortcut);
-  }, []);
+  }, [enableShortcut]);
 
   useEffect(() => {
     if (!open) return;
@@ -139,27 +152,38 @@ export function GlobalSearch() {
     setError(null);
   }
 
+  const dialog = open ? createPortal(
+    <div className="global-search-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeSearch(); }}>
+      <section aria-label="Find a record or task" aria-modal="true" className="global-search-dialog" role="dialog">
+        <div className="global-search-input-row">
+          <input aria-label="Search by customer, work number, machine, barcode, order or service job" onChange={(event) => setQuery(event.target.value)} placeholder="Search customer, job, serial, barcode or order..." ref={inputRef} type="search" value={query} />
+          <button aria-label="Close search" className="button secondary" onClick={closeSearch} type="button">Close</button>
+        </div>
+        <div className="global-search-quick-actions"><Link href="/work" onClick={closeSearch}>Review actions</Link><Link href="/customers" onClick={closeSearch}>Find a customer</Link><Link href="/operations/service-jobs" onClick={closeSearch}>Find a service job</Link><Link href="/warehouse/stock" onClick={closeSearch}>Check stock</Link><Link href="/operations/assets" onClick={closeSearch}>Find a machine</Link></div>
+        <div aria-live="polite" className="global-search-results">
+          {loading ? <div className="global-search-state">Searching records…</div> : null}
+          {error ? <div className="error">{error}</div> : null}
+          {!loading && !error && query.trim().length < 2 ? <div className="global-search-state">Type at least two characters. Press Esc to close.</div> : null}
+          {!loading && !error && query.trim().length >= 2 && results.length === 0 ? <div className="global-search-state">No matching records found. Check the spelling or try a different identifier.</div> : null}
+          {results.map((result) => <Link className="global-search-result" href={result.href} key={`${result.type}-${result.id}`} onClick={closeSearch}><span className="global-search-result-type">{result.type}</span><strong>{result.title}</strong><span>{result.subtitle}</span></Link>)}
+        </div>
+      </section>
+    </div>,
+    document.body,
+  ) : null;
+
   return (
     <>
-      <button aria-haspopup="dialog" className="global-search-trigger" onClick={() => setOpen(true)} type="button"><span>Search records</span><kbd>Ctrl K</kbd></button>
-      {open ? (
-        <div className="global-search-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeSearch(); }}>
-          <section aria-label="Find a record or task" aria-modal="true" className="global-search-dialog" role="dialog">
-            <div className="global-search-input-row">
-              <input aria-label="Search by customer, work number, machine, barcode, order or service job" onChange={(event) => setQuery(event.target.value)} placeholder="Search customer, job, serial, barcode or order..." ref={inputRef} type="search" value={query} />
-              <button aria-label="Close search" className="button secondary" onClick={closeSearch} type="button">Close</button>
-            </div>
-            <div className="global-search-quick-actions"><Link href="/work" onClick={closeSearch}>Review actions</Link><Link href="/customers" onClick={closeSearch}>Find a customer</Link><Link href="/operations/service-jobs" onClick={closeSearch}>Find a service job</Link><Link href="/warehouse/stock" onClick={closeSearch}>Check stock</Link><Link href="/operations/assets" onClick={closeSearch}>Find a machine</Link></div>
-            <div aria-live="polite" className="global-search-results">
-              {loading ? <div className="global-search-state">Searching records…</div> : null}
-              {error ? <div className="error">{error}</div> : null}
-              {!loading && !error && query.trim().length < 2 ? <div className="global-search-state">Type at least two characters. Press Esc to close.</div> : null}
-              {!loading && !error && query.trim().length >= 2 && results.length === 0 ? <div className="global-search-state">No matching records found. Check the spelling or try a different identifier.</div> : null}
-              {results.map((result) => <Link className="global-search-result" href={result.href} key={`${result.type}-${result.id}`} onClick={closeSearch}><span className="global-search-result-type">{result.type}</span><strong>{result.title}</strong><span>{result.subtitle}</span></Link>)}
-            </div>
-          </section>
-        </div>
-      ) : null}
+      <button
+        aria-haspopup="dialog"
+        className={`global-search-trigger ${triggerClassName}`.trim()}
+        onClick={() => setOpen(true)}
+        type="button"
+      >
+        <span>{triggerLabel}</span>
+        {showShortcut ? <kbd>Ctrl K</kbd> : null}
+      </button>
+      {dialog}
     </>
   );
 }
