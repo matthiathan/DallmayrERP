@@ -1,7 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
+import {
+  MobileFilterChips,
+  MobileFilterSheet,
+  MobileRecordList,
+  type MobileFilterChip,
+} from '@/components/ui/MobileDataViews';
 import { TableScrollFrame } from '@/components/ui/TableScrollFrame';
 import { useResizableColumns } from '@/components/ui/useResizableColumns';
 
@@ -19,6 +25,10 @@ export type EnterpriseColumn<T> = {
   minWidth?: number;
   defaultWidth?: number;
   maxWidth?: number;
+  mobileHidden?: boolean;
+  mobileLabel?: string;
+  mobilePriority?: number;
+  mobileTitle?: boolean;
 };
 
 type SortState = { columnId: string; direction: 'asc' | 'desc' } | null;
@@ -111,6 +121,7 @@ export function EnterpriseDataTable<T>({
   const [sort, setSort] = useState<SortState>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => normalisePageSize(defaultPageSize, pageSizeChoices));
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const {
     activeColumnId,
     getColumnWidth,
@@ -186,10 +197,43 @@ export function EnterpriseDataTable<T>({
     });
   }
 
+  const closeMobileFilters = useCallback(() => setMobileFiltersOpen(false), []);
+  const clearMobileFilters = useCallback(() => {
+    setColumnFilters({});
+    setSort(null);
+  }, []);
+
+  const mobileFilterChips = useMemo<MobileFilterChip[]>(() => {
+    const chips = Object.entries(columnFilters)
+      .filter(([, value]) => normaliseTableFilter(value))
+      .map(([columnId, value]) => {
+        const column = columns.find((item) => item.id === columnId);
+        const label = `${column?.header ?? columnId}: ${value}`;
+        return {
+          id: `column-${columnId}`,
+          label,
+          onRemove: () => updateColumnFilter(columnId, ''),
+        };
+      });
+
+    if (sort) {
+      const column = columns.find((item) => item.id === sort.columnId);
+      chips.push({
+        id: 'sort',
+        label: `Sort: ${column?.header ?? sort.columnId} ${sort.direction === 'asc' ? 'ascending' : 'descending'}`,
+        onRemove: () => setSort(null),
+      });
+    }
+
+    return chips;
+  }, [columnFilters, columns, sort]);
+
   const hasColumnFilters = Object.values(columnFilters).some((value) => normaliseTableFilter(value));
   const firstVisible = sortedRows.length === 0 ? 0 : (page - 1) * pageSize + 1;
   const lastVisible = Math.min(page * pageSize, sortedRows.length);
   const totalPagesLabel = pageCount.toLocaleString();
+  const sortableColumns = columns.filter((column) => column.sortable);
+  const filterableColumns = columns.filter((column) => column.filterable !== false);
 
   return (
     <section className="enterprise-table-shell">
@@ -202,79 +246,141 @@ export function EnterpriseDataTable<T>({
           <strong>{filteredRows.length.toLocaleString()}</strong> of {rows.length.toLocaleString()} record(s)
         </div>
         {actions ? <div className="enterprise-table-actions">{actions}</div> : null}
-        {hasColumnFilters ? <button className="button secondary" onClick={() => setColumnFilters({})} type="button">Clear column filters</button> : null}
+        {hasColumnFilters ? <button className="button secondary enterprise-table-desktop-filter-clear" onClick={() => setColumnFilters({})} type="button">Clear column filters</button> : null}
         <button className="button secondary column-width-reset" onClick={resetWidths} type="button">Reset columns</button>
+        <button className="mobile-table-filter-button" onClick={() => setMobileFiltersOpen(true)} type="button">
+          <span>Filters</span><span>{mobileFilterChips.length}</span>
+        </button>
       </div>
 
-      <TableScrollFrame totalWidth={totalWidth}>
-        <table className="resizable-enterprise-table" style={{ minWidth: `${totalWidth}px`, width: `${totalWidth}px` }}>
-          <colgroup>
-            {columns.map((column) => <col key={column.id} style={{ width: `${getColumnWidth(column.id)}px` }} />)}
-          </colgroup>
-          <thead>
-            <tr>
-              {columns.map((column) => {
-                const activeSort = sort?.columnId === column.id ? sort.direction : null;
-                const columnWidth = getColumnWidth(column.id);
-                const filterable = column.filterable !== false;
-                return (
-                  <th aria-sort={activeSort === 'asc' ? 'ascending' : activeSort === 'desc' ? 'descending' : 'none'} className={column.className} key={column.id} style={{ width: `${columnWidth}px` }}>
-                    <div className="resizable-th-stack">
-                      <div className="resizable-th-content">
-                        {column.sortable ? (
-                          <button className="table-sort-button" onClick={() => toggleSort(column)} type="button">
-                            <span>{column.header}</span>
-                            <span aria-hidden="true">{activeSort === 'asc' ? '↑' : activeSort === 'desc' ? '↓' : '↕'}</span>
-                          </button>
-                        ) : <span className="table-header-label">{column.header}</span>}
-                      </div>
-                      {filterable ? (
-                        <input
-                          aria-label={`Filter ${column.header} column`}
-                          autoComplete="off"
-                          className="table-column-filter-input"
-                          onChange={(event) => updateColumnFilter(column.id, event.target.value)}
-                          placeholder={column.filterPlaceholder ?? `Filter ${column.header}`}
-                          spellCheck={false}
-                          type="search"
-                          value={columnFilters[column.id] ?? ''}
-                        />
-                      ) : <span aria-hidden="true" className="table-column-filter-spacer" />}
-                      <button
-                        aria-label={`Resize ${column.header} column. Drag, use arrow keys, or double click to reset.`}
-                        aria-valuenow={columnWidth}
-                        className="table-column-resizer"
-                        data-active={activeColumnId === column.id ? 'true' : undefined}
-                        onDoubleClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          resetColumn(column.id);
-                        }}
-                        onKeyDown={(event) => handleColumnResizeKey(event, column.id, nudgeColumn, resetColumn)}
-                        onPointerDown={(event) => startResize(column.id, event)}
-                        title="Drag to resize. Arrow keys resize. Double-click or Enter resets this column."
-                        type="button"
-                      />
-                    </div>
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {visibleRows.length === 0 ? (
-              <tr><td colSpan={columns.length}>{emptyMessage}</td></tr>
-            ) : visibleRows.map((row) => (
-              <tr key={rowKey(row)}>
+      <MobileFilterChips chips={mobileFilterChips} />
+
+      <div className="enterprise-table-desktop-view">
+        <TableScrollFrame totalWidth={totalWidth}>
+          <table className="resizable-enterprise-table" style={{ minWidth: `${totalWidth}px`, width: `${totalWidth}px` }}>
+            <colgroup>
+              {columns.map((column) => <col key={column.id} style={{ width: `${getColumnWidth(column.id)}px` }} />)}
+            </colgroup>
+            <thead>
+              <tr>
                 {columns.map((column) => {
+                  const activeSort = sort?.columnId === column.id ? sort.direction : null;
                   const columnWidth = getColumnWidth(column.id);
-                  return <td className={column.className} key={column.id} style={{ width: `${columnWidth}px` }}>{column.render ? column.render(row) : column.value(row) ?? '-'}</td>;
+                  const filterable = column.filterable !== false;
+                  return (
+                    <th aria-sort={activeSort === 'asc' ? 'ascending' : activeSort === 'desc' ? 'descending' : 'none'} className={column.className} key={column.id} style={{ width: `${columnWidth}px` }}>
+                      <div className="resizable-th-stack">
+                        <div className="resizable-th-content">
+                          {column.sortable ? (
+                            <button className="table-sort-button" onClick={() => toggleSort(column)} type="button">
+                              <span>{column.header}</span>
+                              <span aria-hidden="true">{activeSort === 'asc' ? '↑' : activeSort === 'desc' ? '↓' : '↕'}</span>
+                            </button>
+                          ) : <span className="table-header-label">{column.header}</span>}
+                        </div>
+                        {filterable ? (
+                          <input
+                            aria-label={`Filter ${column.header} column`}
+                            autoComplete="off"
+                            className="table-column-filter-input"
+                            onChange={(event) => updateColumnFilter(column.id, event.target.value)}
+                            placeholder={column.filterPlaceholder ?? `Filter ${column.header}`}
+                            spellCheck={false}
+                            type="search"
+                            value={columnFilters[column.id] ?? ''}
+                          />
+                        ) : <span aria-hidden="true" className="table-column-filter-spacer" />}
+                        <button
+                          aria-label={`Resize ${column.header} column. Drag, use arrow keys, or double click to reset.`}
+                          aria-valuenow={columnWidth}
+                          className="table-column-resizer"
+                          data-active={activeColumnId === column.id ? 'true' : undefined}
+                          onDoubleClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            resetColumn(column.id);
+                          }}
+                          onKeyDown={(event) => handleColumnResizeKey(event, column.id, nudgeColumn, resetColumn)}
+                          onPointerDown={(event) => startResize(column.id, event)}
+                          title="Drag to resize. Arrow keys resize. Double-click or Enter resets this column."
+                          type="button"
+                        />
+                      </div>
+                    </th>
+                  );
                 })}
               </tr>
+            </thead>
+            <tbody>
+              {visibleRows.length === 0 ? (
+                <tr><td colSpan={columns.length}>{emptyMessage}</td></tr>
+              ) : visibleRows.map((row) => (
+                <tr key={rowKey(row)}>
+                  {columns.map((column) => {
+                    const columnWidth = getColumnWidth(column.id);
+                    return <td className={column.className} key={column.id} style={{ width: `${columnWidth}px` }}>{column.render ? column.render(row) : column.value(row) ?? '-'}</td>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TableScrollFrame>
+      </div>
+
+      <MobileRecordList columns={columns} emptyMessage={emptyMessage} rowKey={rowKey} rows={visibleRows} />
+
+      <MobileFilterSheet activeCount={mobileFilterChips.length} onClear={clearMobileFilters} onClose={closeMobileFilters} open={mobileFiltersOpen} title="Filter and sort records">
+        {sortableColumns.length > 0 ? (
+          <section className="mobile-filter-group">
+            <h3>Sort records</h3>
+            <div className="mobile-filter-sort-row">
+              <label>Sort by
+                <select
+                  onChange={(event) => {
+                    const columnId = event.target.value;
+                    setSort(columnId ? { columnId, direction: sort?.direction ?? 'asc' } : null);
+                  }}
+                  value={sort?.columnId ?? ''}
+                >
+                  <option value="">Default order</option>
+                  {sortableColumns.map((column) => <option key={column.id} value={column.id}>{column.header}</option>)}
+                </select>
+              </label>
+              <div aria-label="Sort direction" className="mobile-filter-sort-direction" role="group">
+                <button aria-pressed={sort?.direction === 'asc'} disabled={!sort} onClick={() => setSort((current) => current ? { ...current, direction: 'asc' } : current)} type="button">A–Z</button>
+                <button aria-pressed={sort?.direction === 'desc'} disabled={!sort} onClick={() => setSort((current) => current ? { ...current, direction: 'desc' } : current)} type="button">Z–A</button>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        <section className="mobile-filter-group">
+          <h3>Column filters</h3>
+          <div className="mobile-filter-column-grid">
+            {filterableColumns.map((column) => (
+              <label key={column.id}>{column.header}
+                <input
+                  autoComplete="off"
+                  onChange={(event) => updateColumnFilter(column.id, event.target.value)}
+                  placeholder={column.filterPlaceholder ?? `Contains ${column.header.toLowerCase()}`}
+                  spellCheck={false}
+                  type="search"
+                  value={columnFilters[column.id] ?? ''}
+                />
+              </label>
             ))}
-          </tbody>
-        </table>
-      </TableScrollFrame>
+          </div>
+        </section>
+
+        <section className="mobile-filter-group">
+          <h3>Records per page</h3>
+          <label>Rows
+            <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>
+              {pageSizeChoices.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>
+        </section>
+      </MobileFilterSheet>
 
       <div className="enterprise-table-pagination">
         <div>Showing {firstVisible.toLocaleString()}-{lastVisible.toLocaleString()} of {sortedRows.length.toLocaleString()}</div>

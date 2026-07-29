@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { type EnterpriseColumn, type TableColumnFilters } from '@/components/ui/EnterpriseDataTable';
+import type { MobileFilterChip } from '@/components/ui/MobileDataViews';
 import { PageToolbar } from '@/components/ui/PageToolbar';
 import { RemoteDataTable } from '@/components/ui/RemoteDataTable';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -33,7 +34,7 @@ export default function CustomerDirectoryPage() {
   const [branch, setBranch] = useState<(typeof branches)[number]>('all');
   const [status, setStatus] = useState<(typeof statuses)[number]>('all');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(100);
+  const [pageSize, setPageSize] = useState(25);
   const [totalRows, setTotalRows] = useState(0);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -127,14 +128,39 @@ export default function CustomerDirectoryPage() {
   }
 
   const columns = useMemo<EnterpriseColumn<CustomerRecord>[]>(() => [
-    { id: 'name', header: 'Customer', value: (row) => row.customer_name, render: (row) => <Link href={`/customers/${row.id}`}><strong>{row.customer_name}</strong></Link> },
-    { id: 'code', header: 'Account code', value: (row) => row.customer_code ?? '' },
-    { id: 'branch', header: 'Branch', value: (row) => row.branch.toUpperCase() },
-    { id: 'phone', header: 'Phone', value: (row) => row.phone ?? '' },
-    { id: 'email', header: 'Email', value: (row) => row.email ?? '' },
-    { id: 'address', header: 'Address', value: (row) => row.address ?? '' },
-    { id: 'status', header: 'Status', value: (row) => row.status ?? 'unknown', render: (row) => <StatusBadge value={row.status ?? 'unknown'} /> },
+    {
+      id: 'name',
+      header: 'Customer',
+      value: (row) => row.customer_name,
+      render: (row) => <Link href={`/customers/${row.id}`}><strong>{row.customer_name}</strong></Link>,
+      mobileTitle: true,
+    },
+    { id: 'code', header: 'Account code', value: (row) => row.customer_code ?? '', mobilePriority: 1 },
+    { id: 'branch', header: 'Branch', value: (row) => row.branch.toUpperCase(), mobilePriority: 3 },
+    { id: 'phone', header: 'Phone', value: (row) => row.phone ?? '', mobilePriority: 4 },
+    { id: 'email', header: 'Email', value: (row) => row.email ?? '', mobileHidden: true },
+    { id: 'address', header: 'Address', value: (row) => row.address ?? '', mobileHidden: true },
+    {
+      id: 'status',
+      header: 'Status',
+      value: (row) => row.status ?? 'unknown',
+      render: (row) => <StatusBadge value={row.status ?? 'unknown'} />,
+      mobilePriority: 2,
+    },
   ], []);
+
+  const mobileFilterChips = useMemo<MobileFilterChip[]>(() => {
+    const chips: MobileFilterChip[] = [];
+    if (branch !== 'all') chips.push({ id: 'branch', label: `Branch: ${branch.toUpperCase()}`, onRemove: () => updateBranch('all') });
+    if (status !== 'all') chips.push({ id: 'status', label: `Status: ${status}`, onRemove: () => updateStatus('all') });
+    return chips;
+  }, [branch, status]);
+
+  function clearMobileFilters() {
+    setBranch('all');
+    setStatus('all');
+    setPage(1);
+  }
 
   return (
     <AppShell>
@@ -153,12 +179,15 @@ export default function CustomerDirectoryPage() {
           </>
         )}
         loading={loading}
+        mobileFilterChips={mobileFilterChips}
+        onClearMobileFilters={clearMobileFilters}
         onColumnFiltersChange={(filters) => { setColumnFilters(filters); setPage(1); }}
         onPageChange={setPage}
         onPageSizeChange={updatePageSize}
         onSearchChange={updateSearch}
         page={page}
         pageSize={pageSize}
+        pageSizeOptions={[25, 50, 100, 250]}
         rowKey={(row) => row.id}
         rows={customers}
         search={search}

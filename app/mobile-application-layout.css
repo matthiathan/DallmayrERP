@@ -1,0 +1,956 @@
+/* Mobile application layout system.
+   Every rule that changes application layout is limited to the mobile breakpoint.
+   Desktop and large-tablet presentation remains owned by the existing desktop stylesheets. */
+
+.mobile-page-navigation,
+.mobile-section-index,
+.page-toolbar-controls-disclosure > summary {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  :root {
+    --mobile-app-gap: 12px;
+    --mobile-app-radius: 16px;
+    --mobile-app-control-height: 48px;
+    --mobile-app-content-bottom: calc(var(--mobile-quick-bar-height, 72px) + env(safe-area-inset-bottom, 0px) + 18px);
+  }
+
+  html {
+    scroll-padding-top: 76px;
+  }
+
+  body {
+    background: var(--design-background, var(--user-background));
+  }
+
+  .top-main,
+  .main.top-main {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 10px 12px var(--mobile-app-content-bottom);
+  }
+
+  .top-main > *,
+  .main.top-main > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Mobile page context replaces the long desktop breadcrumb trail. */
+  .breadcrumbs {
+    display: none !important;
+  }
+
+  .mobile-page-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 46px;
+    margin: 0 0 10px;
+    padding: 4px 2px;
+  }
+
+  .mobile-page-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    min-height: 42px;
+    padding: 8px 10px;
+    border: 1px solid var(--design-border, var(--content-border));
+    border-radius: 12px;
+    background: var(--design-panel, var(--content-surface));
+    color: var(--design-strong, var(--content-strong));
+    font-size: 0.86rem;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .mobile-page-back > span:first-child {
+    flex: 0 0 auto;
+    font-size: 1.15rem;
+    line-height: 1;
+  }
+
+  .mobile-page-back > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-page-current {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--design-muted, var(--content-muted));
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-section-index {
+    display: flex;
+    gap: 8px;
+    width: calc(100% + 24px);
+    margin: 0 -12px 12px;
+    padding: 0 12px 4px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .mobile-section-index::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-section-index a {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    min-height: 38px;
+    max-width: 220px;
+    padding: 7px 11px;
+    border: 1px solid var(--design-border, var(--content-border));
+    border-radius: 999px;
+    background: var(--design-panel, var(--content-surface));
+    color: var(--design-text, var(--content-text));
+    font-size: 0.78rem;
+    font-weight: 800;
+    overflow: hidden;
+    text-decoration: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-section-index a:focus-visible,
+  .mobile-section-index a:hover,
+  .mobile-page-back:focus-visible,
+  .mobile-page-back:hover {
+    border-color: var(--design-accent, var(--content-focus));
+    outline: 2px solid color-mix(in srgb, var(--design-accent, var(--content-focus)) 35%, transparent);
+    outline-offset: 2px;
+  }
+
+  /* Page headers become compact app title blocks instead of desktop hero panels. */
+  .page-header,
+  .page-header.hero-panel,
+  .minimal-page-header,
+  .field-service-page-header {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    min-height: 0;
+    margin: 0 0 12px;
+    padding: 14px 15px;
+    border: 1px solid var(--design-border, var(--content-border));
+    border-radius: var(--mobile-app-radius);
+    background: var(--design-panel, var(--content-surface));
+    color: var(--design-text, var(--content-text));
+    box-shadow: none;
+  }
+
+  .page-header::before,
+  .page-header::after,
+  .hero-panel::before,
+  .hero-panel::after,
+  .minimal-page-header::before,
+  .minimal-page-header::after {
+    display: none !important;
+  }
+
+  .page-header > div,
+  .minimal-page-header > div {
+    min-width: 0;
+  }
+
+  .page-header h1,
+  .minimal-page-header h1,
+  .field-service-page-header h1 {
+    margin: 4px 0 0;
+    color: var(--design-strong, var(--content-strong));
+    font-size: clamp(1.45rem, 7vw, 1.8rem);
+    line-height: 1.12;
+    overflow-wrap: anywhere;
+  }
+
+  .page-header p,
+  .minimal-page-header p,
+  .field-service-page-header p {
+    display: -webkit-box;
+    margin: 6px 0 0;
+    overflow: hidden;
+    color: var(--design-muted, var(--content-muted));
+    font-size: 0.88rem;
+    line-height: 1.45;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .page-header .badge,
+  .minimal-page-header .minimal-kicker,
+  .field-service-page-header .badge {
+    width: fit-content;
+    max-width: 100%;
+    min-height: 24px;
+    padding: 4px 8px;
+    font-size: 0.68rem;
+  }
+
+  .page-header .action-row {
+    width: 100%;
+    margin-top: 2px;
+  }
+
+  /* Page controls collapse into one touch-friendly disclosure on phones. */
+  .page-toolbar {
+    gap: 0;
+    margin: 0 0 12px;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--design-border, var(--content-border));
+    border-radius: var(--mobile-app-radius);
+    background: var(--design-panel, var(--content-surface));
+    color: var(--design-text, var(--content-text));
+    box-shadow: none;
+  }
+
+  .page-toolbar-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 10px;
+    padding: 13px 14px;
+  }
+
+  .page-toolbar-heading > div {
+    min-width: 0;
+  }
+
+  .page-toolbar-heading .nav-heading {
+    display: none;
+  }
+
+  .page-toolbar-heading h2 {
+    margin: 0;
+    color: var(--design-strong, var(--content-strong));
+    font-size: 1.08rem;
+    line-height: 1.25;
+  }
+
+  .page-toolbar-heading p {
+    display: -webkit-box;
+    margin: 5px 0 0;
+    overflow: hidden;
+    color: var(--design-muted, var(--content-muted));
+    font-size: 0.82rem;
+    line-height: 1.4;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .page-toolbar-updated {
+    align-self: start;
+    padding: 4px 7px;
+    border-radius: 999px;
+    background: var(--design-panel-raised, var(--content-surface-raised));
+    color: var(--design-muted, var(--content-muted));
+    font-size: 0.68rem;
+    white-space: nowrap;
+  }
+
+  .page-toolbar-controls-disclosure {
+    border-top: 1px solid var(--design-border, var(--content-border));
+  }
+
+  .page-toolbar-controls-disclosure > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 48px;
+    padding: 10px 14px;
+    color: var(--design-strong, var(--content-strong));
+    cursor: pointer;
+    font-size: 0.86rem;
+    font-weight: 850;
+    list-style: none;
+  }
+
+  .page-toolbar-controls-disclosure > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .page-toolbar-controls-disclosure > summary::after {
+    content: '+';
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: var(--design-panel-raised, var(--content-surface-raised));
+    color: var(--design-link, var(--content-accent-text));
+    font-size: 1rem;
+  }
+
+  .page-toolbar-controls-disclosure[open] > summary::after {
+    content: '−';
+  }
+
+  .page-toolbar-controls-body {
+    display: grid;
+    gap: 12px;
+    padding: 0 14px 14px;
+  }
+
+  .page-toolbar-filters,
+  .page-toolbar-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .page-toolbar-filters > *,
+  .page-toolbar-actions > * {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .page-toolbar-filters label,
+  .page-toolbar-actions label {
+    display: grid;
+    gap: 6px;
+    color: var(--design-text, var(--content-text));
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+
+  /* Shared surface and rhythm system. */
+  .card,
+  .neo-card,
+  .minimal-panel,
+  .spatial-card {
+    max-width: 100%;
+    min-width: 0;
+    border-radius: var(--mobile-app-radius);
+    box-shadow: none;
+  }
+
+  .neo-card,
+  .minimal-panel,
+  section.card,
+  article.card {
+    padding: 14px;
+  }
+
+  .neo-card + .neo-card,
+  .page-toolbar + .neo-card,
+  .grid + .neo-card,
+  .neo-card + .page-toolbar,
+  .minimal-panel + .minimal-panel {
+    margin-top: 12px;
+  }
+
+  .minimal-panel-header,
+  .workspace-section-heading,
+  .field-section-header,
+  .exception-detail-heading,
+  .exception-list-heading,
+  .operations-attention-card,
+  .page-toolbar-heading {
+    min-width: 0;
+  }
+
+  .minimal-panel-header,
+  .workspace-section-heading,
+  .field-section-header,
+  .exception-detail-heading {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 10px;
+  }
+
+  .minimal-panel-header h2,
+  .workspace-section-heading h2,
+  .neo-card > h2,
+  .card > h2 {
+    margin: 0;
+    font-size: 1.18rem;
+    line-height: 1.25;
+  }
+
+  .minimal-panel-header p,
+  .workspace-section-heading p,
+  .neo-card > p,
+  .card > p {
+    margin-top: 6px;
+    color: var(--design-muted, var(--content-muted));
+    font-size: 0.84rem;
+    line-height: 1.45;
+  }
+
+  /* Metrics stay scannable as a two-column mobile dashboard. */
+  .grid.grid-3,
+  .grid.grid-4,
+  .grid.grid-5,
+  .grid.grid-6,
+  .spatial-kpi-grid,
+  .operations-manager-kpis,
+  .admin-access-kpis,
+  .exception-centre-kpis,
+  .minimal-metric-grid,
+  .role-metric-grid,
+  .field-service-summary {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px !important;
+  }
+
+  .grid.grid-3 > .chart-card,
+  .grid.grid-4 > .chart-card,
+  .grid.grid-5 > .chart-card,
+  .grid.grid-6 > .chart-card,
+  .grid.grid-3 > .neo-card:not(.kpi-card),
+  .grid.grid-4 > .neo-card:not(.kpi-card),
+  .grid.grid-5 > .neo-card:not(.kpi-card),
+  .grid.grid-6 > .neo-card:not(.kpi-card) {
+    grid-column: 1 / -1;
+  }
+
+  .kpi-card,
+  .minimal-metric,
+  .role-metric-card,
+  .field-service-metric {
+    display: grid;
+    align-content: start;
+    gap: 5px;
+    min-height: 112px;
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .kpi-card .nav-heading,
+  .minimal-metric > span,
+  .role-metric-card > span,
+  .field-service-metric > span {
+    color: var(--design-muted, var(--content-muted));
+    font-size: 0.68rem;
+    line-height: 1.25;
+  }
+
+  .kpi-value,
+  .minimal-metric > strong,
+  .role-metric-card > strong,
+  .field-service-metric > strong {
+    color: var(--design-strong, var(--content-strong));
+    font-size: clamp(1.45rem, 8vw, 2rem);
+    line-height: 1;
+    overflow-wrap: anywhere;
+  }
+
+  .kpi-card p,
+  .minimal-metric > small,
+  .role-metric-card > small,
+  .field-service-metric > small {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    color: var(--design-muted, var(--content-muted));
+    font-size: 0.7rem;
+    line-height: 1.35;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  /* Buttons use compact app patterns instead of every action becoming a full-width row. */
+  .button {
+    width: auto;
+    min-height: 44px;
+    padding: 10px 13px;
+    border-radius: 12px;
+    font-size: 0.88rem;
+  }
+
+  .action-row,
+  .page-header .action-row,
+  .exception-primary-actions,
+  .appearance-editor-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  .action-row > *,
+  .exception-primary-actions > *,
+  .appearance-editor-actions > * {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .action-row > :only-child,
+  .exception-primary-actions > :only-child,
+  .appearance-editor-actions > :only-child {
+    grid-column: 1 / -1;
+  }
+
+  form > .button:last-child,
+  .page-toolbar-actions .button,
+  .field-submit-bar .button,
+  .mobile-record-card .button,
+  .exception-source-action .button,
+  .admin-access-create-grid > .button {
+    width: 100%;
+  }
+
+  /* Forms become one clear vertical task flow with native touch controls. */
+  .form-grid,
+  .admin-access-create-grid,
+  .admin-access-editor-grid,
+  .exception-owner-row,
+  .exception-custom-snooze,
+  .field-job-details,
+  .field-outcome-grid,
+  .field-photo-preview,
+  .customer-360-layout,
+  .customer-360-header-grid,
+  .dispatch-workspace,
+  .dispatch-layout,
+  .operations-dispatch-layout,
+  .operations-manager-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  form,
+  .form-grid,
+  [class*='-form-grid'],
+  [class*='-create-grid'],
+  [class*='-editor-grid'] {
+    min-width: 0;
+  }
+
+  label {
+    min-width: 0;
+  }
+
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: var(--mobile-app-control-height);
+    border-radius: 12px;
+    font-size: 16px;
+  }
+
+  textarea {
+    min-height: 112px;
+  }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    width: auto;
+    min-height: 0;
+  }
+
+  .feature-list,
+  .field-job-filter-row,
+  .exception-queue-tabs,
+  .workspace-context-row,
+  .role-rights-preview > div {
+    display: flex;
+    gap: 8px;
+    width: calc(100% + 8px);
+    margin-right: -8px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+
+  .feature-list::-webkit-scrollbar,
+  .field-job-filter-row::-webkit-scrollbar,
+  .exception-queue-tabs::-webkit-scrollbar,
+  .workspace-context-row::-webkit-scrollbar,
+  .role-rights-preview > div::-webkit-scrollbar {
+    display: none;
+  }
+
+  .feature-pill,
+  .field-job-filter-row button,
+  .exception-queue-tabs button,
+  .workspace-context-row > span,
+  .role-rights-preview > div > span {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 260px;
+    min-height: 38px;
+  }
+
+  /* Role start pages feel like application launchers. */
+  .role-workspace-stage,
+  .operations-manager-stage,
+  .admin-access-stage,
+  .exception-centre-stage,
+  .field-service-workspace {
+    display: grid;
+    gap: 12px;
+  }
+
+  .workspace-profile-panel {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+    padding: 14px;
+    border-radius: var(--mobile-app-radius);
+  }
+
+  .workspace-profile-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 0.9rem;
+  }
+
+  .workspace-profile-copy h2 {
+    margin: 1px 0 4px;
+    font-size: 1.18rem;
+  }
+
+  .workspace-profile-copy p {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    font-size: 0.82rem;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .workspace-context-row {
+    grid-column: 1 / -1;
+    margin-top: 10px;
+  }
+
+  .workspace-context-row > span {
+    display: grid;
+    gap: 2px;
+    padding: 8px 10px;
+    border: 1px solid var(--design-border, var(--content-border));
+    border-radius: 12px;
+    background: var(--design-panel-raised, var(--content-surface-raised));
+    font-size: 0.74rem;
+  }
+
+  .workspace-refresh-block {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .workspace-refresh-block .button {
+    width: 100%;
+  }
+
+  .role-action-grid,
+  .operations-manager-actions {
+    display: grid;
+    grid-template-columns: 1fr !important;
+    gap: 9px;
+  }
+
+  .role-action-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    min-height: 76px;
+    padding: 13px 42px 13px 14px;
+    border-radius: 14px;
+  }
+
+  .role-action-card::after {
+    content: '›';
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+    color: var(--design-link, var(--content-accent-text));
+    font-size: 1.55rem;
+    line-height: 1;
+  }
+
+  .role-action-card h3 {
+    margin: 0;
+    font-size: 0.98rem;
+  }
+
+  .role-action-card p {
+    margin: 4px 0 0;
+    color: var(--design-muted, var(--content-muted));
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  /* Operations, administration and exception workspaces. */
+  .operations-route-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .operations-attention-list,
+  .exception-case-list,
+  .exception-comments {
+    display: grid;
+    gap: 9px;
+  }
+
+  .operations-attention-card,
+  .exception-case-card {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 9px;
+    min-height: 0;
+    padding: 13px;
+    border-radius: 14px;
+  }
+
+  .exception-centre-layout {
+    display: grid;
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .exception-case-list {
+    max-height: none;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .exception-case-detail,
+  .field-job-queue {
+    position: static;
+    top: auto;
+    max-height: none;
+  }
+
+  .exception-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-access-section,
+  .admin-access-editor-panel,
+  .role-rights-preview {
+    min-width: 0;
+  }
+
+  .admin-access-create-grid,
+  .admin-access-editor-grid {
+    display: grid;
+    gap: 12px;
+  }
+
+  .role-rights-preview {
+    padding: 13px;
+    border-radius: 14px;
+  }
+
+  /* Field workflows retain one-thumb progress and avoid a very tall step list. */
+  .field-service-layout {
+    display: grid;
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .field-stepper {
+    display: flex;
+    gap: 8px;
+    width: calc(100% + 12px);
+    margin-right: -12px;
+    overflow-x: auto;
+    padding: 2px 12px 5px 0;
+    scrollbar-width: none;
+  }
+
+  .field-stepper::-webkit-scrollbar {
+    display: none;
+  }
+
+  .field-stepper li {
+    flex: 0 0 168px;
+    min-height: 64px;
+  }
+
+  .field-submit-bar {
+    bottom: calc(var(--mobile-quick-bar-height, 72px) + env(safe-area-inset-bottom, 0px) + 8px);
+    z-index: 1400;
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  /* Charts and media fit one readable column. */
+  .chart-card,
+  .spatial-chart-grid > *,
+  .executive-chart-grid > * {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .bar-row {
+    grid-template-columns: 64px minmax(0, 1fr) 48px;
+    gap: 7px;
+  }
+
+  .donut-wrap {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Feedback stays visible without covering application controls. */
+  .error,
+  .success,
+  .info,
+  .empty-state,
+  .compact-empty-state {
+    max-width: 100%;
+    border-radius: 14px;
+    font-size: 0.84rem;
+    line-height: 1.45;
+  }
+
+  .empty-state,
+  .compact-empty-state {
+    min-height: 110px;
+    padding: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-main,
+  .main.top-main {
+    padding-inline: 10px;
+  }
+
+  .mobile-section-index {
+    width: calc(100% + 20px);
+    margin-inline: -10px;
+    padding-inline: 10px;
+  }
+
+  .page-toolbar-filters,
+  .page-toolbar-actions,
+  .action-row,
+  .page-header .action-row,
+  .exception-primary-actions,
+  .appearance-editor-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .grid.grid-3,
+  .grid.grid-4,
+  .grid.grid-5,
+  .grid.grid-6,
+  .spatial-kpi-grid,
+  .operations-manager-kpis,
+  .admin-access-kpis,
+  .exception-centre-kpis,
+  .minimal-metric-grid,
+  .role-metric-grid,
+  .field-service-summary {
+    gap: 8px !important;
+  }
+
+  .kpi-card,
+  .minimal-metric,
+  .role-metric-card,
+  .field-service-metric {
+    min-height: 104px;
+    padding: 10px;
+  }
+
+  .exception-detail-grid,
+  .operations-route-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .bar-row {
+    grid-template-columns: 1fr;
+  }
+
+  .bar-row > span,
+  .bar-row > strong {
+    text-align: left;
+  }
+}
+
+@media (max-width: 360px) {
+  .top-main,
+  .main.top-main {
+    padding-inline: 8px;
+  }
+
+  .mobile-page-current {
+    display: none;
+  }
+
+  .mobile-section-index {
+    width: calc(100% + 16px);
+    margin-inline: -8px;
+    padding-inline: 8px;
+  }
+
+  .page-header,
+  .page-header.hero-panel,
+  .minimal-page-header,
+  .field-service-page-header,
+  .neo-card,
+  .minimal-panel {
+    padding: 12px;
+  }
+
+  .workspace-profile-panel {
+    grid-template-columns: 42px minmax(0, 1fr);
+    padding: 12px;
+  }
+
+  .workspace-profile-avatar {
+    width: 42px;
+    height: 42px;
+  }
+
+  .kpi-card p,
+  .minimal-metric > small,
+  .role-metric-card > small,
+  .field-service-metric > small {
+    -webkit-line-clamp: 1;
+  }
+}
+
+@media print {
+  .mobile-page-navigation,
+  .mobile-section-index,
+  .page-toolbar-controls-disclosure > summary {
+    display: none !important;
+  }
+}
