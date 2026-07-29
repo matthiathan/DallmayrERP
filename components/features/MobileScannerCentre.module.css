@@ -1,0 +1,244 @@
+.stage {
+  display: grid;
+  gap: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.intro,
+.scannerPanel,
+.resultsSection,
+.shortcutSection {
+  border: 1px solid var(--design-border, var(--content-border));
+  border-radius: 20px;
+  background: var(--design-panel, var(--content-surface));
+  color: var(--design-text, var(--content-text));
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.16);
+}
+
+.intro {
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+}
+
+.intro span,
+.sectionHeading span,
+.resultType {
+  color: var(--design-muted, var(--content-muted));
+  font-size: 0.74rem;
+  font-weight: 850;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.intro h1,
+.sectionHeading h2,
+.resultCard h3 {
+  margin: 0;
+  color: var(--design-strong, var(--content-strong));
+}
+
+.intro p,
+.sectionHeading p,
+.resultCard p {
+  margin: 0;
+  color: var(--design-muted, var(--content-muted));
+  line-height: 1.55;
+}
+
+.scannerPanel,
+.resultsSection,
+.shortcutSection {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.lookupActions,
+.resultActions,
+.shortcutGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.lookupActions button,
+.resultActions a,
+.shortcutGrid a {
+  min-height: 46px;
+}
+
+.interpretedCode {
+  display: grid;
+  gap: 3px;
+  padding: 12px 14px;
+  border: 1px solid var(--design-border, var(--content-border));
+  border-radius: 14px;
+  background: var(--design-panel-raised, var(--content-surface-raised));
+}
+
+.interpretedCode span {
+  color: var(--design-muted, var(--content-muted));
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.interpretedCode strong {
+  overflow-wrap: anywhere;
+  color: var(--design-strong, var(--content-strong));
+}
+
+.status {
+  min-height: 48px;
+  padding: 13px 14px;
+  border: 1px dashed var(--design-border, var(--content-border));
+  border-radius: 14px;
+  color: var(--design-muted, var(--content-muted));
+  text-align: center;
+}
+
+.statusError {
+  border-style: solid;
+  border-color: rgba(239, 68, 68, 0.55);
+  color: var(--danger-text, #fecaca);
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sectionHeading > div {
+  display: grid;
+  gap: 4px;
+}
+
+.sectionHeading strong {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--design-accent, var(--content-focus));
+  color: var(--accent-ink, #071318);
+}
+
+.resultList {
+  display: grid;
+  gap: 12px;
+}
+
+.resultCard {
+  display: grid;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid var(--design-border, var(--content-border));
+  border-radius: 16px;
+  background: var(--design-panel-raised, var(--content-surface-raised));
+}
+
+.resultHeader {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.resultHeader > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.resultMeta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.resultMeta > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.resultMeta dt {
+  color: var(--design-muted, var(--content-muted));
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.resultMeta dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--design-text, var(--content-text));
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.shortcutGrid a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 13px;
+  border: 1px solid var(--design-border, var(--content-border));
+  border-radius: 13px;
+  background: var(--design-panel-raised, var(--content-surface-raised));
+  color: var(--design-link, var(--content-accent-text));
+  font-weight: 850;
+  text-align: center;
+  text-decoration: none;
+}
+
+@media (max-width: 760px) {
+  .stage {
+    gap: 12px;
+    padding-bottom: calc(20px + var(--mobile-quick-bar-height, 0px));
+  }
+
+  .intro {
+    padding: 16px;
+  }
+
+  .intro h1 {
+    font-size: clamp(1.55rem, 8vw, 2.1rem);
+  }
+
+  .scannerPanel,
+  .resultsSection,
+  .shortcutSection {
+    padding: 14px;
+    border-radius: 17px;
+  }
+
+  .lookupActions,
+  .resultActions,
+  .shortcutGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .resultActions a:last-child:nth-child(odd),
+  .shortcutGrid a:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 380px) {
+  .lookupActions,
+  .resultActions,
+  .shortcutGrid,
+  .resultMeta {
+    grid-template-columns: 1fr;
+  }
+
+  .resultActions a:last-child:nth-child(odd),
+  .shortcutGrid a:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+}

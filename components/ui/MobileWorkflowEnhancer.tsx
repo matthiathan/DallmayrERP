@@ -76,6 +76,12 @@ function setElementInert(element: HTMLElement | null, inert: boolean) {
   else element.removeAttribute('aria-hidden');
 }
 
+function scannerDestination(href: string | null) {
+  if (href === '/warehouse/stock') return '/warehouse/stock/scan';
+  if (href === '/operations/assets') return '/operations/assets/scan';
+  return null;
+}
+
 export function MobileWorkflowEnhancer() {
   const pathname = usePathname();
   const activeRef = useRef<ActiveWorkflow | null>(null);
@@ -163,9 +169,40 @@ export function MobileWorkflowEnhancer() {
 
   useEffect(() => {
     const media = window.matchMedia(MOBILE_QUERY);
+    let requestedJob = ['/technician', '/road-tech'].includes(pathname)
+      ? new URLSearchParams(window.location.search).get('job')?.trim() ?? ''
+      : '';
+
+    function clearRequestedJobParameter() {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('job');
+      window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    }
+
+    function tryOpenRequestedJob() {
+      if (!media.matches || !requestedJob || activeRef.current) return;
+      const card = Array.from(document.querySelectorAll<HTMLElement>('.field-job-card')).find((item) => (
+        cleanText(item.querySelector<HTMLElement>('.field-job-card-top strong')?.textContent, '') === requestedJob
+      ));
+      if (!card) return;
+      requestedJob = '';
+      clearRequestedJobParameter();
+      card.click();
+    }
 
     function handleDocumentClick(event: MouseEvent) {
       if (!media.matches || !(event.target instanceof Element)) return;
+
+      const quickBarLink = event.target.closest<HTMLAnchorElement>('.mobile-quick-bar a');
+      if (quickBarLink && cleanText(quickBarLink.textContent, '').includes('Scan')) {
+        const destination = scannerDestination(quickBarLink.getAttribute('href'));
+        if (destination) {
+          event.preventDefault();
+          event.stopPropagation();
+          window.location.assign(destination);
+          return;
+        }
+      }
 
       for (const config of workflowConfigs) {
         const trigger = event.target.closest<HTMLElement>(config.triggerSelector);
@@ -184,6 +221,7 @@ export function MobileWorkflowEnhancer() {
     }
 
     const observer = new MutationObserver(() => {
+      tryOpenRequestedJob();
       const active = activeRef.current;
       if (!active) return;
 
@@ -200,19 +238,21 @@ export function MobileWorkflowEnhancer() {
       }
     });
 
-    document.addEventListener('click', handleDocumentClick);
+    document.addEventListener('click', handleDocumentClick, true);
     window.addEventListener('popstate', handlePopState);
     media.addEventListener('change', handleViewportChange);
     observer.observe(document.body, { childList: true, subtree: true });
+    const requestedFrame = window.requestAnimationFrame(tryOpenRequestedJob);
 
     return () => {
-      document.removeEventListener('click', handleDocumentClick);
+      window.cancelAnimationFrame(requestedFrame);
+      document.removeEventListener('click', handleDocumentClick, true);
       window.removeEventListener('popstate', handlePopState);
       media.removeEventListener('change', handleViewportChange);
       observer.disconnect();
       closeWorkflow(false);
     };
-  }, [closeWorkflow, openWorkflow]);
+  }, [closeWorkflow, openWorkflow, pathname]);
 
   if (!activeSummary) return null;
 
