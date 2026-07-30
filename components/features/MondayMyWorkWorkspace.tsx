@@ -215,7 +215,7 @@ function readPreferences(userId: string): WorkspacePreferences {
     if (!raw) return preferenceDefaults;
     const parsed = JSON.parse(raw) as Partial<WorkspacePreferences>;
     return {
-      mode: isWorkspaceMode(parsed.mode ?? null) ? parsed.mode : preferenceDefaults.mode,
+      mode: isWorkspaceMode(parsed.mode ?? null) ? (parsed.mode as WorkspaceMode) : preferenceDefaults.mode,
       groupBy: parsed.groupBy === 'source' || parsed.groupBy === 'status' || parsed.groupBy === 'urgency' ? parsed.groupBy : preferenceDefaults.groupBy,
       density: parsed.density === 'compact' ? 'compact' : 'comfortable',
       hiddenSources: Array.isArray(parsed.hiddenSources) ? parsed.hiddenSources.filter((value): value is WorkSource => sources.includes(value as WorkSource)) : [],
