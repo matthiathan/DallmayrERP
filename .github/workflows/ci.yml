@@ -1,39 +1,30 @@
-name: DallmayrERP Monday Shell Bootstrap
+name: DallmayrERP CI
 
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: monday-shell-bootstrap-${{ github.event.pull_request.number }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  apply:
-    name: Apply and validate Monday shell phase 1
-    if: github.event.pull_request.head.repo.full_name == github.repository
+  build:
+    name: Typecheck and build Next.js app
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://egbiiizxsqlarqpnzxxs.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-build-key
 
     steps:
-      - name: Checkout Monday shell branch
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 0
-
-      - name: Apply staged Monday shell patch
-        run: |
-          cat monday-patch/part-*.patch > /tmp/monday-shell.patch
-          git apply --check /tmp/monday-shell.patch
-          git apply /tmp/monday-shell.patch
-          rm -rf monday-patch
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -43,9 +34,6 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Check patch whitespace
-        run: git diff --check
-
       - name: Check stylesheet architecture
         run: npm run stylecheck
 
@@ -54,12 +42,3 @@ jobs:
 
       - name: Build application
         run: npm run build
-
-      - name: Commit validated Monday shell source
-        run: |
-          rm -rf node_modules .next tsconfig.tsbuildinfo
-          git config user.name 'DallmayrERP CI'
-          git config user.email 'actions@users.noreply.github.com'
-          git add -A
-          git commit -m 'Introduce Monday-style application shell and Inbox'
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
