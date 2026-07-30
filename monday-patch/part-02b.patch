@@ -1,0 +1,237 @@
++    display: grid;
++    grid-template-columns: 34px minmax(0, 1fr) 20px;
++    align-items: center;
++    gap: 9px;
++    min-height: 46px;
++    padding: 5px 7px;
++    border: 1px solid transparent;
++    border-radius: 8px;
++    cursor: pointer;
++    list-style: none;
++  }
++
++  .monday-workspace-switcher > summary::-webkit-details-marker {
++    display: none;
++  }
++
++  .monday-workspace-switcher > summary:hover,
++  .monday-workspace-switcher > summary:focus-visible,
++  .monday-workspace-switcher[open] > summary {
++    border-color: var(--monday-divider);
++    background: var(--monday-hover);
++  }
++
++  .monday-workspace-icon {
++    display: grid;
++    place-items: center;
++    width: 32px;
++    height: 32px;
++    border-radius: 8px;
++    background: color-mix(in srgb, var(--monday-accent) 16%, var(--monday-shell-raised));
++    color: var(--monday-accent);
++    font-size: 0.82rem;
++    font-weight: 900;
++  }
++
++  .monday-workspace-switcher > summary > span:nth-child(2) {
++    display: grid;
++    gap: 1px;
++    min-width: 0;
++  }
++
++  .monday-workspace-switcher small {
++    color: var(--monday-subtle);
++    font-size: 0.64rem;
++    font-weight: 760;
++    letter-spacing: 0.05em;
++    text-transform: uppercase;
++  }
++
++  .monday-workspace-switcher strong {
++    overflow: hidden;
++    color: var(--monday-strong);
++    font-size: 0.8rem;
++    text-overflow: ellipsis;
++    white-space: nowrap;
++  }
++
++  .monday-workspace-chevron {
++    color: var(--monday-muted);
++    transition: transform var(--ds-duration-fast) var(--ds-ease-standard);
++  }
++
++  .monday-workspace-switcher[open] .monday-workspace-chevron {
++    transform: rotate(180deg);
++  }
++
++  .monday-workspace-menu {
++    position: absolute;
++    top: calc(100% + 5px);
++    left: 0;
++    z-index: 40;
++    display: grid;
++    gap: 3px;
++    width: 226px;
++    padding: 6px;
++    border: 1px solid var(--monday-border);
++    border-radius: 10px;
++    background: var(--monday-shell-raised);
++    box-shadow: var(--ds-shadow-md);
++  }
++
++  .monday-workspace-menu > :is(a, button) {
++    display: grid;
++    grid-template-columns: 28px minmax(0, 1fr);
++    align-items: center;
++    gap: 8px;
++    width: 100%;
++    min-height: 46px;
++    padding: 6px 8px;
++    border: 0;
++    border-radius: 7px;
++    background: transparent;
++    color: var(--monday-text);
++    text-align: left;
++    text-decoration: none;
++  }
++
++  .monday-workspace-menu > :is(a, button):hover,
++  .monday-workspace-menu > :is(a, button):focus-visible {
++    background: var(--monday-hover);
++  }
++
++  .monday-workspace-menu > :is(a, button) > span:last-child {
++    display: grid;
++    gap: 2px;
++    min-width: 0;
++  }
++
++  .monday-primary-navigation {
++    display: grid;
++    gap: 2px;
++  }
++
++  .monday-primary-navigation > :is(a, button) {
++    position: relative;
++    display: grid;
++    grid-template-columns: 30px minmax(0, 1fr);
++    align-items: center;
++    gap: 8px;
++    min-height: 48px;
++    width: 100%;
++    padding: 6px 8px;
++    border: 0;
++    border-radius: 7px;
++    background: transparent;
++    color: var(--monday-muted);
++    text-align: left;
++    text-decoration: none;
++  }
++
++  .monday-primary-navigation > :is(a, button)::before,
++  .monday-navigation-rail .desktop-rail-item-row > a::before {
++    content: '';
++    position: absolute;
++    inset: 8px auto 8px -8px;
++    width: 3px;
++    border-radius: 0 3px 3px 0;
++    background: transparent;
++  }
++
++  .monday-primary-navigation > :is(a, button):hover,
++  .monday-primary-navigation > :is(a, button):focus-visible,
++  .monday-primary-navigation > a[aria-current='page'] {
++    background: var(--monday-selected);
++    color: var(--monday-strong);
++  }
++
++  .monday-primary-navigation > a[aria-current='page']::before,
++  .monday-navigation-rail .desktop-rail-item-row > a[aria-current='page']::before {
++    background: var(--monday-accent);
++  }
++
++  .monday-primary-navigation > :is(a, button) > span:last-child {
++    display: grid;
++    gap: 1px;
++    min-width: 0;
++  }
++
++  .monday-primary-navigation strong {
++    color: inherit;
++    font-size: 0.8rem;
++  }
++
++  .monday-primary-navigation small {
++    overflow: hidden;
++    color: var(--monday-subtle);
++    font-size: 0.67rem;
++    text-overflow: ellipsis;
++    white-space: nowrap;
++  }
++
++  .monday-navigation-rail .desktop-rail-navigation {
++    gap: 12px;
++    padding-top: 8px;
++  }
++
++  .monday-navigation-rail .desktop-rail-shortcuts,
++  .monday-navigation-rail .desktop-rail-directory,
++  .monday-navigation-rail .desktop-rail-recent {
++    gap: 3px;
++  }
++
++  .monday-navigation-rail .desktop-rail-section-label {
++    padding: 6px 8px 4px;
++    color: var(--monday-subtle);
++    font-size: 0.65rem;
++    letter-spacing: 0.05em;
++  }
++
++  .monday-directory-label {
++    margin-top: 2px;
++  }
++
++  .monday-navigation-rail .desktop-rail-section,
++  .monday-navigation-rail .desktop-rail-section[open] {
++    border: 0 !important;
++    border-radius: 7px;
++    background: transparent !important;
++  }
++
++  .monday-navigation-rail .desktop-rail-section > summary {
++    min-height: 38px;
++    padding: 7px 8px;
++    border-radius: 7px;
++    color: var(--monday-muted);
++    font-size: 0.73rem;
++  }
++
++  .monday-navigation-rail .desktop-rail-section > summary:hover,
++  .monday-navigation-rail .desktop-rail-section > summary:focus-visible,
++  .monday-navigation-rail .desktop-rail-section[open] > summary {
++    background: var(--monday-hover);
++    color: var(--monday-strong);
++  }
++
++  .monday-navigation-rail .desktop-rail-section-links {
++    gap: 2px;
++    padding: 2px 0 4px 8px;
++  }
++
++  .monday-navigation-rail .desktop-rail-item-row {
++    grid-template-columns: minmax(0, 1fr) 30px;
++    gap: 2px;
++  }
++
++  .monday-navigation-rail .desktop-rail-item-row > a {
++    position: relative;
++    grid-template-columns: 28px minmax(0, 1fr);
++    min-height: 43px;
++    padding: 5px 6px;
++    border: 0 !important;
++    border-radius: 7px;
++  }
++
++  .monday-navigation-rail .desktop-rail-item-row > a:hover,
++  .monday-navigation-rail .desktop-rail-item-row > a:focus-visible,
++  .monday-navigation-rail .desktop-rail-item-row > a[aria-current='page'] {
