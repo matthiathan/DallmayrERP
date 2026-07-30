@@ -1,0 +1,51 @@
+.shared-dashboard-shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+  padding: 13px 15px;
+  border: 1px solid var(--monday-divider);
+  border-radius: 11px;
+  background: var(--monday-shell-bg);
+}
+
+.shared-dashboard-shortcut > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.shared-dashboard-shortcut span {
+  color: var(--monday-muted);
+  font-size: .66rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.shared-dashboard-shortcut strong {
+  color: var(--monday-strong);
+}
+
+.shared-dashboard-shortcut p {
+  margin: 0;
+  color: var(--monday-muted);
+  font-size: .76rem;
+  line-height: 1.4;
+}
+
+.shared-dashboard-shortcut .button {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 600px) {
+  .shared-dashboard-shortcut {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .shared-dashboard-shortcut .button {
+    width: 100%;
+  }
+}
