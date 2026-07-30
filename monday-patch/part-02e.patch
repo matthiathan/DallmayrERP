@@ -1,0 +1,103 @@
++.mobile-primary-actions > :is(a, button):focus-visible {
++  border-color: color-mix(in srgb, var(--monday-accent) 55%, var(--monday-divider));
++  background: var(--monday-selected);
++  color: var(--monday-strong);
++}
++
++@media (max-width: 1180px) and (min-width: 981px) {
++  .monday-shell-phase-1 .application-header-inner {
++    grid-template-columns: 185px minmax(260px, 1fr) auto !important;
++  }
++
++  .monday-shell-phase-1 .application-header-actions .density-toggle {
++    display: none !important;
++  }
++}
++
++@media (max-width: 980px) {
++  :root {
++    --application-header-height: calc(60px + env(safe-area-inset-top, 0px));
++  }
++
++  .monday-shell-phase-1 .application-header-inner {
++    grid-template-columns: 44px minmax(0, 1fr) 44px !important;
++    gap: 9px !important;
++    min-height: 60px !important;
++    padding: 7px 10px !important;
++  }
++
++  .monday-shell-phase-1 .application-brand {
++    width: 44px;
++    padding: 5px;
++  }
++
++  .monday-shell-phase-1 .application-brand > span:last-child,
++  .monday-shell-phase-1 .application-header-search,
++  .monday-shell-phase-1 .application-header-actions,
++  .monday-navigation-rail {
++    display: none !important;
++  }
++
++  .monday-shell-phase-1 .application-page-context {
++    display: grid;
++    grid-column: 2;
++    grid-row: 1;
++    text-align: center;
++  }
++
++  .monday-shell-phase-1 .application-page-context > span,
++  .monday-shell-phase-1 .application-page-context > small {
++    display: none;
++  }
++
++  .monday-shell-phase-1 .application-mobile-menu-button {
++    grid-column: 3;
++    grid-row: 1;
++  }
++
++  html[data-visual-theme] body .monday-shell-phase-1 .application-main {
++    overflow: visible !important;
++  }
++
++  .notification-inbox-trigger {
++    display: none !important;
++  }
++
++  .notification-inbox-backdrop {
++    inset: var(--application-header-height) 0 0;
++  }
++
++  .notification-inbox-panel {
++    inset: var(--application-header-height) 0 0 0;
++    width: 100%;
++    padding: 16px 14px calc(20px + env(safe-area-inset-bottom, 0px));
++    border: 0;
++    border-radius: 0;
++    box-shadow: none;
++  }
++}
++
++@media (max-width: 440px) {
++  .notification-inbox-toolbar {
++    align-items: stretch;
++    flex-direction: column;
++  }
++
++  .notification-inbox-toolbar > div:last-child,
++  .notification-inbox-toolbar button {
++    width: 100%;
++  }
++
++  .notification-inbox-toolbar > div:last-child {
++    display: grid;
++    grid-template-columns: repeat(2, minmax(0, 1fr));
++  }
++}
++
++@media print {
++  .notification-inbox-trigger,
++  .notification-inbox-backdrop,
++  .notification-inbox-panel {
++    display: none !important;
++  }
++}
