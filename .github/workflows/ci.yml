@@ -26,6 +26,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Package source snapshot for audit
+        run: |
+          git ls-files -z | tar --null -T - -czf /tmp/dallmayrerp-source.tgz
+
+      - name: Upload source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: repository-audit-source
+          path: /tmp/dallmayrerp-source.tgz
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
