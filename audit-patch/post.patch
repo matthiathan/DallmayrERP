@@ -1,0 +1,13 @@
+diff --git a/components/features/OperationsManagerDashboard.tsx b/components/features/OperationsManagerDashboard.tsx
+index d7a5d06..69eceba 100644
+--- a/components/features/OperationsManagerDashboard.tsx
++++ b/components/features/OperationsManagerDashboard.tsx
+@@ -138,7 +138,7 @@ export function OperationsManagerDashboard() {
+             <div className="minimal-panel-header">
+               <div>
+                 <span className="minimal-kicker">Today’s service pressure</span>
+-                <h2>{new Date(`${todayIso()}T12:00:00`).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h2>
++                <h2>{new Date(`${formatLocalDate()}T12:00:00`).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h2>
+                 <p>Paid monthly obligations and request-only service work due today.</p>
+               </div>
+               <Link className="button" href="/operations/dispatch">Open dispatch overview</Link>
