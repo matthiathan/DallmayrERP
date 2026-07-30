@@ -1,0 +1,296 @@
++  display: grid;
++  place-items: center;
++  width: 38px;
++  height: 38px;
++  flex: 0 0 38px;
++  padding: 0;
++  border: 1px solid transparent;
++  border-radius: 8px;
++  background: transparent;
++  color: var(--monday-muted);
++  font-size: 1.35rem;
++}
++
++.notification-inbox-close:hover,
++.notification-inbox-close:focus-visible {
++  border-color: var(--monday-divider);
++  background: var(--monday-hover);
++  color: var(--monday-strong);
++}
++
++.notification-inbox-status {
++  display: flex;
++  align-items: center;
++  flex-wrap: wrap;
++  gap: 6px;
++  padding: 12px 0;
++}
++
++.notification-inbox-status > :is(div, button) {
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++  min-height: 30px;
++  padding: 5px 9px;
++  border: 1px solid var(--monday-divider);
++  border-radius: 999px;
++  background: var(--monday-shell-raised);
++  color: var(--monday-muted);
++  font: inherit;
++  font-size: 0.67rem;
++}
++
++.notification-inbox-status > div > span {
++  width: 7px;
++  height: 7px;
++  border-radius: 50%;
++  background: #00c875;
++}
++
++.notification-inbox-status > .is-offline > span {
++  background: #fdab3d;
++}
++
++.notification-inbox-toolbar {
++  display: flex;
++  align-items: flex-end;
++  justify-content: space-between;
++  gap: 12px;
++  padding: 10px 0 14px;
++}
++
++.notification-inbox-toolbar > div:first-child {
++  display: grid;
++  gap: 2px;
++}
++
++.notification-inbox-toolbar > div:first-child strong {
++  color: var(--monday-strong);
++  font-size: 0.86rem;
++}
++
++.notification-inbox-toolbar > div:first-child span {
++  color: var(--monday-subtle);
++  font-size: 0.7rem;
++}
++
++.notification-inbox-toolbar > div:last-child {
++  display: flex;
++  gap: 5px;
++}
++
++.notification-inbox-toolbar button {
++  min-height: 34px;
++  padding: 6px 9px;
++  border: 1px solid var(--monday-divider);
++  border-radius: 7px;
++  background: transparent;
++  color: var(--monday-muted);
++  font: inherit;
++  font-size: 0.69rem;
++  font-weight: 760;
++}
++
++.notification-inbox-toolbar button:hover:not(:disabled),
++.notification-inbox-toolbar button:focus-visible:not(:disabled) {
++  background: var(--monday-hover);
++  color: var(--monday-strong);
++}
++
++.notification-inbox-toolbar button:disabled {
++  opacity: 0.45;
++}
++
++.notification-inbox-content {
++  display: grid;
++  gap: 18px;
++}
++
++.notification-inbox-group {
++  display: grid;
++  gap: 7px;
++}
++
++.notification-inbox-group-heading {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 10px;
++  color: var(--monday-subtle);
++  font-size: 0.7rem;
++  letter-spacing: 0.04em;
++  text-transform: uppercase;
++}
++
++.notification-inbox-group-heading span {
++  display: grid;
++  place-items: center;
++  min-width: 21px;
++  height: 21px;
++  padding: 0 5px;
++  border-radius: 999px;
++  background: var(--monday-shell-raised);
++  color: var(--monday-muted);
++}
++
++.notification-inbox-list {
++  display: grid;
++  gap: 4px;
++}
++
++.notification-card {
++  display: grid;
++  grid-template-columns: 8px minmax(0, 1fr);
++  gap: 9px;
++  min-width: 0;
++  padding: 11px 10px;
++  border: 1px solid transparent;
++  border-radius: 8px;
++  background: transparent;
++  color: var(--monday-text);
++  text-decoration: none;
++}
++
++.notification-card:hover,
++.notification-card:focus-visible {
++  border-color: var(--monday-divider);
++  background: var(--monday-hover);
++}
++
++.notification-card.is-unread {
++  background: var(--monday-selected);
++}
++
++.notification-card-dot {
++  width: 7px;
++  height: 7px;
++  margin-top: 5px;
++  border-radius: 50%;
++  background: var(--monday-accent);
++}
++
++.notification-card.tone-critical .notification-card-dot {
++  background: #e2445c;
++}
++
++.notification-card.tone-warning .notification-card-dot {
++  background: #fdab3d;
++}
++
++.notification-card-content {
++  display: grid;
++  gap: 5px;
++  min-width: 0;
++}
++
++.notification-card-heading {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 10px;
++  min-width: 0;
++}
++
++.notification-card-heading time {
++  flex: 0 0 auto;
++  color: var(--monday-subtle);
++  font-size: 0.66rem;
++}
++
++.notification-card-content > strong {
++  color: var(--monday-strong);
++  font-size: 0.84rem;
++  line-height: 1.35;
++}
++
++.notification-card-content > p {
++  margin: 0;
++  color: var(--monday-muted);
++  font-size: 0.76rem;
++  line-height: 1.45;
++}
++
++.notification-card-content > small {
++  color: var(--monday-accent);
++  font-size: 0.68rem;
++  font-weight: 760;
++}
++
++.notification-inbox-error,
++.notification-inbox-empty,
++.notification-install-card {
++  padding: 14px;
++  border: 1px solid var(--monday-divider);
++  border-radius: 9px;
++  background: var(--monday-shell-raised);
++}
++
++.notification-inbox-error {
++  margin-bottom: 12px;
++  border-color: #e2445c;
++}
++
++.notification-inbox-empty {
++  display: grid;
++  justify-items: center;
++  gap: 6px;
++  margin-top: 18px;
++  padding-block: 28px;
++  text-align: center;
++}
++
++.notification-inbox-empty > span {
++  display: grid;
++  place-items: center;
++  width: 38px;
++  height: 38px;
++  border-radius: 50%;
++  background: color-mix(in srgb, #00c875 18%, var(--monday-shell-raised));
++  color: #00c875;
++}
++
++.notification-inbox-empty p,
++.notification-install-card p {
++  margin: 0;
++  color: var(--monday-muted);
++  font-size: 0.76rem;
++  line-height: 1.45;
++}
++
++.notification-install-card {
++  display: grid;
++  gap: 10px;
++  margin-top: auto;
++}
++
++.notification-install-card strong {
++  display: block;
++  margin-top: 3px;
++  color: var(--monday-strong);
++  font-size: 0.8rem;
++}
++
++/* Mobile navigation receives the same Today / My Work / Inbox hierarchy. */
++.mobile-primary-actions {
++  display: grid;
++  grid-template-columns: repeat(3, minmax(0, 1fr));
++  gap: 7px;
++}
++
++.mobile-primary-actions > :is(a, button) {
++  display: grid;
++  justify-items: center;
++  gap: 5px;
++  min-height: 58px;
++  padding: 8px 6px;
++  border: 1px solid var(--monday-divider);
++  border-radius: 9px;
++  background: var(--monday-shell-raised);
++  color: var(--monday-muted);
++  font: inherit;
++  font-size: 0.72rem;
++  text-decoration: none;
++}
++
++.mobile-primary-actions > :is(a, button)[aria-current='page'],
++.mobile-primary-actions > :is(a, button):hover,
