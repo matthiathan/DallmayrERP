@@ -1,0 +1,159 @@
+/* Compatibility overrides retained after the design-system consolidation.
+   These rules are intentionally grouped in one final file while legacy feature
+   styles are progressively migrated to shared primitives. */
+
+/* Contrast edge cases for selected navigation and nested status content. */
+main .nav-link.active,
+main .nav-link[aria-current='page'] {
+  color: var(--accent-text) !important;
+}
+
+main [role='tab'][aria-selected='true'] {
+  color: var(--accent-ink) !important;
+  background: var(--user-accent) !important;
+  border-color: color-mix(in srgb, var(--accent-ink) 32%, var(--user-accent)) !important;
+  text-shadow: none !important;
+}
+
+main [role='tab'][aria-selected='true'] * {
+  color: inherit !important;
+}
+
+.error *,
+.badge.danger *,
+.status-badge.danger *,
+.status-badge.is-danger *,
+[role='alert'].danger * {
+  color: inherit !important;
+}
+
+.success *,
+.badge.success *,
+.status-badge.success *,
+.status-badge.is-success * {
+  color: inherit !important;
+}
+
+.warning *,
+.badge.warning *,
+.status-badge.warning *,
+.status-badge.is-warning * {
+  color: inherit !important;
+}
+
+.info *,
+.badge.info *,
+.status-badge.info *,
+.status-badge.is-info * {
+  color: inherit !important;
+}
+
+.appearance-save-state.is-saved {
+  color: var(--adaptive-success-text) !important;
+  background: var(--adaptive-success-bg) !important;
+  border: 1px solid var(--adaptive-success-border) !important;
+}
+
+.appearance-save-state.is-error,
+.appearance-sync-error {
+  color: var(--adaptive-danger-text) !important;
+  background: var(--adaptive-danger-bg) !important;
+  border-color: var(--adaptive-danger-border) !important;
+}
+
+.appearance-save-state.is-saving,
+.appearance-save-state.is-loading {
+  color: var(--adaptive-warning-text) !important;
+  background: var(--adaptive-warning-bg) !important;
+  border: 1px solid var(--adaptive-warning-border) !important;
+}
+
+.global-search-result {
+  color: var(--adaptive-text) !important;
+}
+
+.global-search-result strong {
+  color: var(--adaptive-strong) !important;
+}
+
+.global-search-result > span:not(.global-search-result-type) {
+  color: var(--adaptive-muted) !important;
+}
+
+/* Mobile application cascade retained from the previous final override. */
+@media (min-width: 761px) {
+  .page-toolbar-controls-disclosure,
+  .page-toolbar-controls-body {
+    display: contents;
+  }
+}
+
+@media (max-width: 760px) {
+  .page-toolbar-controls-disclosure {
+    display: block;
+  }
+
+  .grid.grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .mobile-record-card-details > div:has(.button),
+  .mobile-record-card-details > div:has(select),
+  .mobile-record-card-details > div:has(textarea) {
+    grid-column: 1 / -1;
+  }
+
+  .mobile-record-card-details > div:has(.button) dd,
+  .mobile-record-card-details > div:has(select) dd,
+  .mobile-record-card-details > div:has(textarea) dd {
+    width: 100%;
+  }
+
+  .mobile-record-card-details select,
+  .mobile-record-card-details textarea,
+  .mobile-record-card-details .button {
+    width: 100%;
+  }
+
+  .mobile-record-card-details strong,
+  .mobile-record-card-title strong {
+    display: grid;
+    gap: 3px;
+  }
+
+  .mobile-record-card-details strong small,
+  .mobile-record-card-title strong small {
+    color: var(--design-muted, var(--content-muted));
+    font-size: 0.76rem;
+    font-weight: 650;
+  }
+
+  .mobile-record-card .status-badge,
+  .mobile-record-card .badge {
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .mobile-record-card a,
+  .role-action-card,
+  .operations-attention-card a,
+  .low-stock-card {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .low-stock-alerts > .grid,
+  .document-grid,
+  .asset-grid,
+  .campaign-grid,
+  .segment-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .low-stock-card,
+  .document-card,
+  .asset-card,
+  .campaign-card,
+  .segment-card {
+    min-height: 0;
+  }
+}

@@ -1,10 +1,10 @@
-/* Final navigation spacing contract.
-   This layer is loaded last so the header, drawer, quick bar and mobile status
-   controls all use the same edge, height and safe-area measurements. */
+/* Navigation spacing contract.
+   The header, drawer, quick bar and mobile status controls share the same edge,
+   height and safe-area measurements. */
 
 :root {
   --navigation-desktop-height: 72px;
-  --navigation-mobile-bar-height: 68px;
+  --navigation-mobile-bar-height: var(--ds-mobile-bar-height, 68px);
   --navigation-edge: clamp(12px, 1.6vw, 20px);
 }
 
@@ -22,7 +22,7 @@
     grid-template-columns: minmax(170px, 210px) minmax(0, 1fr) auto !important;
     align-items: center !important;
     gap: clamp(10px, 1.2vw, 18px) !important;
-    width: min(100%, var(--user-shell-max-width, 1680px)) !important;
+    width: min(100%, var(--user-shell-max-width, var(--ds-page-max, 1680px))) !important;
     margin-inline: auto !important;
     padding: 8px 78px 8px var(--navigation-edge) !important;
   }
@@ -37,7 +37,7 @@
   }
 
   html[data-visual-theme] body .erp-menu-label {
-    min-height: 44px !important;
+    min-height: var(--ds-control-md, 44px) !important;
     padding: 8px 10px !important;
   }
 
@@ -94,17 +94,17 @@
   html[data-visual-theme] body .erp-brand-button.notch-logo-button {
     align-self: center !important;
     max-width: calc(100vw - 92px) !important;
-    min-height: 44px !important;
+    min-height: var(--ds-control-md, 44px) !important;
     margin: 0 !important;
   }
 
   html[data-visual-theme] body .hamburger-button.notch-mobile-button {
     top: calc(env(safe-area-inset-top, 0px) + 12px) !important;
     right: 12px !important;
-    width: 44px !important;
-    height: 44px !important;
-    min-width: 44px !important;
-    min-height: 44px !important;
+    width: var(--ds-touch-target, 44px) !important;
+    height: var(--ds-touch-target, 44px) !important;
+    min-width: var(--ds-touch-target, 44px) !important;
+    min-height: var(--ds-touch-target, 44px) !important;
     margin: 0 !important;
   }
 
@@ -141,7 +141,7 @@
   }
 
   html[data-visual-theme] body .mobile-nav-item-row {
-    grid-template-columns: minmax(0, 1fr) 44px !important;
+    grid-template-columns: minmax(0, 1fr) var(--ds-touch-target, 44px) !important;
     gap: 6px !important;
   }
 
@@ -151,8 +151,8 @@
   }
 
   html[data-visual-theme] body .mobile-nav-pin {
-    width: 44px !important;
-    min-width: 44px !important;
+    width: var(--ds-touch-target, 44px) !important;
+    min-width: var(--ds-touch-target, 44px) !important;
   }
 
   html[data-visual-theme] body .mobile-nav-footer {

@@ -1,0 +1,257 @@
+/* Reusable layout and component foundations.
+   New UI should prefer these primitives over page-specific spacing rules. */
+
+.ds-stack,
+.workspace-template-frame {
+  display: grid;
+  gap: var(--ds-space-6);
+}
+
+.ds-stack[data-gap='sm'] {
+  gap: var(--ds-space-3);
+}
+
+.ds-stack[data-gap='lg'] {
+  gap: var(--ds-space-8);
+}
+
+.ds-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-3);
+}
+
+.ds-cluster[data-justify='between'] {
+  justify-content: space-between;
+}
+
+.ds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: var(--ds-space-4);
+}
+
+.ds-surface {
+  min-width: 0;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-lg);
+  color: var(--ds-text);
+  background: var(--ds-surface);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.ds-surface[data-elevation='raised'] {
+  background: var(--ds-surface-raised);
+  box-shadow: var(--ds-shadow-md);
+}
+
+.ds-surface[data-padding='sm'] {
+  padding: var(--ds-space-3);
+}
+
+.ds-surface[data-padding='md'] {
+  padding: var(--ds-space-4);
+}
+
+.ds-surface[data-padding='lg'] {
+  padding: var(--ds-space-6);
+}
+
+.ds-page-header,
+.minimal-page-header,
+.workspace-template-frame > .page-header,
+.workspace-template-frame > .hero-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ds-space-4);
+}
+
+.ds-page-header h1,
+.minimal-page-header h1,
+.workspace-template-frame > .page-header h1,
+.workspace-template-frame > .hero-panel h1 {
+  margin: 0;
+  font-size: var(--ds-font-2xl);
+  line-height: var(--ds-line-tight);
+}
+
+.ds-page-header p,
+.minimal-page-header p,
+.workspace-template-frame > .page-header p,
+.workspace-template-frame > .hero-panel p {
+  max-width: var(--ds-readable-max);
+  margin: var(--ds-space-2) 0 0;
+  color: var(--ds-muted);
+  line-height: var(--ds-line-normal);
+}
+
+.ds-section-header,
+.workspace-section-heading,
+.minimal-panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ds-space-4);
+}
+
+.ds-section-header h2,
+.ds-section-header h3,
+.workspace-section-heading h2,
+.minimal-panel-header h2 {
+  margin: 0;
+  color: var(--ds-strong);
+  line-height: var(--ds-line-tight);
+}
+
+.ds-section-header p,
+.workspace-section-heading p,
+.minimal-panel-header p {
+  max-width: var(--ds-readable-max);
+  margin: var(--ds-space-2) 0 0;
+  color: var(--ds-muted);
+}
+
+.ds-command-bar,
+.workspace-command-bar,
+.page-toolbar {
+  min-width: 0;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-surface);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.ds-command-bar__heading,
+.workspace-command-heading,
+.page-toolbar-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ds-space-4);
+}
+
+.ds-command-bar__body,
+.workspace-command-body,
+.page-toolbar-controls-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ds-space-4);
+}
+
+.ds-filter-bar,
+.workspace-filter-bar,
+.page-toolbar-filters,
+.ds-action-bar,
+.workspace-command-actions,
+.page-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--ds-space-3);
+}
+
+.ds-filter-bar,
+.workspace-filter-bar,
+.page-toolbar-filters {
+  flex: 1 1 520px;
+}
+
+.ds-action-bar,
+.workspace-command-actions,
+.page-toolbar-actions {
+  flex: 0 1 auto;
+  justify-content: flex-end;
+}
+
+.ds-scroll-region {
+  min-width: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.ds-readable {
+  max-width: var(--ds-readable-max);
+}
+
+.ds-form-layout {
+  width: min(100%, var(--ds-form-max));
+  margin-inline: auto;
+}
+
+.ds-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ds-space-4);
+}
+
+.ds-visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+:where(.button, button, input, select, textarea, summary, [role='button']) {
+  transition:
+    background-color var(--ds-duration-fast) var(--ds-ease-standard),
+    border-color var(--ds-duration-fast) var(--ds-ease-standard),
+    color var(--ds-duration-fast) var(--ds-ease-standard),
+    transform var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+:where(.button, button, input, select, textarea, summary, [role='button']):focus-visible {
+  outline: 3px solid var(--ds-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .ds-stack,
+  .workspace-template-frame {
+    gap: var(--ds-space-4);
+  }
+
+  .ds-page-header,
+  .minimal-page-header,
+  .workspace-template-frame > .page-header,
+  .workspace-template-frame > .hero-panel,
+  .ds-section-header,
+  .workspace-section-heading,
+  .minimal-panel-header,
+  .ds-command-bar__heading,
+  .workspace-command-heading,
+  .page-toolbar-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ds-command-bar__body,
+  .workspace-command-body,
+  .page-toolbar-controls-body,
+  .ds-filter-bar,
+  .workspace-filter-bar,
+  .page-toolbar-filters,
+  .ds-action-bar,
+  .workspace-command-actions,
+  .page-toolbar-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .ds-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
