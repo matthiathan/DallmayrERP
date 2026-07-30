@@ -35,19 +35,27 @@ export function PageToolbar({
   }, [isMobile]);
 
   return (
-    <section className="page-toolbar" aria-label={`${title} controls`}>
-      <div className="page-toolbar-heading">
+    <section
+      aria-label={`${title} controls`}
+      className="page-toolbar workspace-command-bar"
+      data-has-controls={hasControls ? 'true' : 'false'}
+    >
+      <div className="page-toolbar-heading workspace-command-heading">
         <div>
-          <div className="nav-heading">Workspace controls</div>
+          <div className="nav-heading">Workspace</div>
           <h2>{title}</h2>
           {description ? <p>{description}</p> : null}
         </div>
-        {lastUpdated ? <span className="page-toolbar-updated">Updated {lastUpdated.toLocaleTimeString()}</span> : null}
+        {lastUpdated ? (
+          <time className="page-toolbar-updated" dateTime={lastUpdated.toISOString()}>
+            Updated {lastUpdated.toLocaleTimeString()}
+          </time>
+        ) : null}
       </div>
 
       {hasControls ? (
         <details
-          className="page-toolbar-controls-disclosure"
+          className="page-toolbar-controls-disclosure workspace-command-controls"
           onToggle={(event) => {
             if (isMobile) setControlsOpen(event.currentTarget.open);
           }}
@@ -55,10 +63,11 @@ export function PageToolbar({
         >
           <summary>
             <span>Filters and actions</span>
+            <small>Refine this workspace</small>
           </summary>
-          <div className="page-toolbar-controls-body">
-            {children ? <div className="page-toolbar-filters">{children}</div> : null}
-            {actions ? <div className="page-toolbar-actions">{actions}</div> : null}
+          <div className="page-toolbar-controls-body workspace-command-body">
+            {children ? <div className="page-toolbar-filters workspace-filter-bar">{children}</div> : null}
+            {actions ? <div className="page-toolbar-actions workspace-command-actions">{actions}</div> : null}
           </div>
         </details>
       ) : null}
