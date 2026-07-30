@@ -1,13 +1,59 @@
 'use client';
 
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BoardHeader } from '@/components/boards/BoardWorkspace';
 import { CustomerBoardControls } from '@/components/boards/CustomerBoardControls';
 import { CustomerBoardTable } from '@/components/boards/CustomerBoardTable';
+import { CustomerItemCard } from '@/components/boards/CustomerItemCard';
 import { useCustomerBoard } from '@/components/boards/useCustomerBoard';
 import { AppShell } from '@/components/layout/AppShell';
+import type { CustomerRecord } from '@/types/enterprise-records';
 
 export function CustomerBoardWorkspace() {
   const board = useCustomerBoard();
+  const [activeCustomerId, setActiveCustomerId] = useState<string | null>(null);
+  const [activeCustomerSnapshot, setActiveCustomerSnapshot] = useState<CustomerRecord | null>(null);
+
+  useEffect(() => {
+    function syncRecordFromUrl() {
+      const recordId = new URL(window.location.href).searchParams.get('record');
+      setActiveCustomerId(recordId);
+      if (!recordId) setActiveCustomerSnapshot(null);
+    }
+
+    syncRecordFromUrl();
+    window.addEventListener('popstate', syncRecordFromUrl);
+    return () => window.removeEventListener('popstate', syncRecordFromUrl);
+  }, []);
+
+  const activeCustomer = useMemo(
+    () => activeCustomerSnapshot?.id === activeCustomerId
+      ? activeCustomerSnapshot
+      : board.customers.find((customer) => customer.id === activeCustomerId) ?? null,
+    [activeCustomerId, activeCustomerSnapshot, board.customers],
+  );
+
+  const openCustomer = useCallback((customer: CustomerRecord) => {
+    setActiveCustomerId(customer.id);
+    setActiveCustomerSnapshot(customer);
+    const url = new URL(window.location.href);
+    url.searchParams.set('record', customer.id);
+    const currentState = window.history.state && typeof window.history.state === 'object' ? window.history.state : {};
+    window.history.pushState({ ...currentState, dallmayrCustomerCard: customer.id }, '', url);
+  }, []);
+
+  const closeCustomer = useCallback(() => {
+    if (!activeCustomerId) return;
+    if (window.history.state?.dallmayrCustomerCard === activeCustomerId) {
+      window.history.back();
+      return;
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.delete('record');
+    window.history.replaceState(window.history.state, '', url);
+    setActiveCustomerId(null);
+    setActiveCustomerSnapshot(null);
+  }, [activeCustomerId]);
 
   return (
     <AppShell>
@@ -19,7 +65,7 @@ export function CustomerBoardWorkspace() {
               <button className="button" disabled={board.customers.length === 0} onClick={board.exportRows} type="button">{board.selectedCount > 0 ? `Export selected (${board.selectedCount})` : 'Export visible'}</button>
             </>
           )}
-          description="Customer accounts, contact details and operational records across authorised branches."
+          description="Customer accounts, contact details and operational records across authorised branches. Select a customer to open its item card without leaving the board."
           eyebrow="Customer workspace"
           meta={<span>{board.totalRows.toLocaleString()} records</span>}
           title="Customers"
@@ -47,6 +93,7 @@ export function CustomerBoardWorkspace() {
           <CustomerBoardTable
             groupBy={board.groupBy}
             loading={board.loading}
+            onOpenCustomer={openCustomer}
             onSelectedIdsChange={board.setSelectedIds}
             onSort={board.handleSort}
             rows={board.customers}
@@ -69,6 +116,13 @@ export function CustomerBoardWorkspace() {
           </footer>
         </section>
       </div>
+
+      <CustomerItemCard
+        customerId={activeCustomerId}
+        initialCustomer={activeCustomer}
+        onClose={closeCustomer}
+        open={Boolean(activeCustomerId)}
+      />
     </AppShell>
   );
 }
