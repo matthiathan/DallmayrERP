@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { BoardHeader } from '@/components/boards/BoardWorkspace';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
@@ -236,7 +237,7 @@ export function SharedDashboardWorkspace() {
         <section
           aria-label={selectedDashboard?.name ?? 'Shared dashboard metrics'}
           className="shared-dashboard-grid"
-          style={{ '--shared-dashboard-columns': config.columns ?? 3 } as React.CSSProperties}
+          style={{ '--shared-dashboard-columns': config.columns ?? 3 } as CSSProperties}
         >
           {config.widgets.map((widget) => {
             const value = Number(summary[widget.metric] ?? 0);
