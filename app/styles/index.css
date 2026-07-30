@@ -59,7 +59,6 @@
 @import '../mobile-application-layout.css';
 @import '../mobile-master-detail-actions.css';
 @import '../mobile-offline-field-work.css';
-@import '../mobile-notifications-pwa.css';
 
 /* 3. Shared primitives and current application layout systems. */
 @import './foundations.css';
@@ -70,3 +69,6 @@
 /* 4. Explicit final contracts and compatibility rules. */
 @import './navigation-contract.css';
 @import './compatibility-overrides.css';
+
+/* 5. Monday-style application shell programme. */
+@import '../monday-shell-phase-1.css';

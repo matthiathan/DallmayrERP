@@ -525,58 +525,6 @@
     color: var(--application-shell-accent);
   }
 
-  /* The notification component remains globally mounted but is visually anchored
-     into the reserved alert slot beside the account control. */
-  html[data-visual-theme] body .mobile-app-alert-trigger {
-    position: fixed !important;
-    top: 10px !important;
-    right: 68px !important;
-    bottom: auto !important;
-    left: auto !important;
-    z-index: 7250 !important;
-    display: inline-grid !important;
-    place-items: center !important;
-    width: 44px !important;
-    height: 44px !important;
-    min-width: 44px !important;
-    min-height: 44px !important;
-    padding: 0 !important;
-    border-radius: 12px !important;
-    background: var(--application-shell-raised) !important;
-    color: var(--application-shell-text) !important;
-    box-shadow: none !important;
-  }
-
-  html[data-visual-theme] body .mobile-app-alert-trigger > span {
-    font-size: 1.2rem !important;
-  }
-
-  html[data-visual-theme] body .mobile-app-alert-trigger > strong {
-    display: none !important;
-  }
-
-  html[data-visual-theme] body .mobile-app-alert-trigger > em {
-    position: absolute !important;
-    top: -5px !important;
-    right: -5px !important;
-  }
-
-  html[data-visual-theme] body .mobile-app-alert-backdrop {
-    position: fixed !important;
-    inset: 0 !important;
-    z-index: 7290 !important;
-    display: block !important;
-  }
-
-  html[data-visual-theme] body .mobile-app-alert-sheet {
-    position: fixed !important;
-    inset: calc(var(--application-header-height) + 10px) 14px 14px auto !important;
-    z-index: 7300 !important;
-    display: flex !important;
-    width: min(430px, calc(100vw - 28px)) !important;
-    max-height: calc(100dvh - var(--application-header-height) - 24px) !important;
-    border-radius: 20px !important;
-  }
 }
 
 @media (max-width: 1180px) and (min-width: 981px) {
@@ -674,14 +622,12 @@
     max-height: calc(100dvh - var(--application-header-height)) !important;
   }
 
-  /* Bottom-bar actions replace the two floating status pills. The original
-     buttons remain mounted as event targets for the existing dialogs. */
-  html[data-visual-theme] body .mobile-app-alert-trigger,
+  /* Bottom-bar actions replace the floating offline status pill. The original
+     button remains mounted as the event target for the existing queue dialog. */
   html[data-visual-theme] body .field-offline-indicator {
     display: none !important;
   }
 
-  html[data-visual-theme] body .mobile-app-alert-backdrop,
   html[data-visual-theme] body .field-offline-backdrop {
     position: fixed !important;
     inset: 0 !important;
@@ -689,7 +635,6 @@
     display: block !important;
   }
 
-  html[data-visual-theme] body .mobile-app-alert-sheet,
   html[data-visual-theme] body .field-offline-sheet {
     position: fixed !important;
     inset: auto 0 0 0 !important;

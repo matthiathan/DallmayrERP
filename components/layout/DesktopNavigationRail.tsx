@@ -33,6 +33,10 @@ function navigationGlyph(label: string) {
   return glyph.toUpperCase();
 }
 
+function openInbox() {
+  window.dispatchEvent(new Event('dallmayr-open-alerts'));
+}
+
 export function DesktopNavigationRail({
   collapsed,
   homePath,
@@ -45,35 +49,44 @@ export function DesktopNavigationRail({
   sections,
 }: DesktopNavigationRailProps) {
   useEffect(() => {
-    function openAlerts() {
-      document.querySelector<HTMLButtonElement>('.mobile-app-alert-trigger')?.click();
-    }
-
     function openFieldQueue() {
       document.querySelector<HTMLButtonElement>('.field-offline-indicator')?.click();
     }
 
-    window.addEventListener('dallmayr-open-alerts', openAlerts);
     window.addEventListener('dallmayr-open-field-queue', openFieldQueue);
-    return () => {
-      window.removeEventListener('dallmayr-open-alerts', openAlerts);
-      window.removeEventListener('dallmayr-open-field-queue', openFieldQueue);
-    };
+    return () => window.removeEventListener('dallmayr-open-field-queue', openFieldQueue);
   }, []);
 
-  const allItems = sections.flatMap((section) => section.items);
+  const directorySections = sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => item.href !== homePath && item.href !== '/work'),
+    }))
+    .filter((section) => section.items.length > 0);
+  const visiblePinnedItems = pinnedItems.filter((item) => item.href !== homePath && item.href !== '/work');
+  const allItems = directorySections.flatMap((section) => section.items);
   const collapsedItems = [
-    ...pinnedItems,
+    ...visiblePinnedItems,
     ...allItems.filter((item) => !pinnedItems.some((pinned) => pinned.href === item.href)),
   ];
 
   return (
-    <aside aria-label="Application navigation" className={`desktop-navigation-rail ${collapsed ? 'is-collapsed' : ''}`}>
+    <aside aria-label="Application navigation" className={`desktop-navigation-rail monday-navigation-rail ${collapsed ? 'is-collapsed' : ''}`}>
       <div className="desktop-rail-heading">
-        <div>
-          <span>Workspace</span>
-          <strong>{roleLabel}</strong>
-        </div>
+        {!collapsed ? (
+          <details className="monday-workspace-switcher">
+            <summary>
+              <span aria-hidden="true" className="monday-workspace-icon">D</span>
+              <span><small>Workspace</small><strong>{roleLabel}</strong></span>
+              <span aria-hidden="true" className="monday-workspace-chevron">⌄</span>
+            </summary>
+            <div className="monday-workspace-menu">
+              <Link href={homePath}><span aria-hidden="true">⌂</span><span><strong>Today</strong><small>Priorities and recent work</small></span></Link>
+              <Link href="/work"><span aria-hidden="true">✓</span><span><strong>My Work</strong><small>Assigned work and approvals</small></span></Link>
+              <button onClick={openInbox} type="button"><span aria-hidden="true">♢</span><span><strong>Inbox</strong><small>Operational notifications</small></span></button>
+            </div>
+          </details>
+        ) : null}
         <button
           aria-label={collapsed ? 'Expand application navigation' : 'Collapse application navigation'}
           className="desktop-rail-collapse"
@@ -86,57 +99,54 @@ export function DesktopNavigationRail({
 
       {collapsed ? (
         <nav aria-label="Collapsed application navigation" className="desktop-rail-collapsed-links">
-          <Link
-            aria-current={isActivePath(pathname, homePath) ? 'page' : undefined}
-            className="desktop-rail-glyph-link"
-            href={homePath}
-            title="Today"
-          >
-            <span aria-hidden="true">⌂</span>
-            <span className="sr-only">Today</span>
+          <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} className="desktop-rail-glyph-link" href={homePath} title="Today">
+            <span aria-hidden="true">⌂</span><span className="sr-only">Today</span>
           </Link>
-          {collapsedItems.map((item) => (
-            <Link
-              aria-current={isActivePath(pathname, item.href) ? 'page' : undefined}
-              className="desktop-rail-glyph-link"
-              href={item.href}
-              key={item.href}
-              title={item.label}
-            >
-              <span aria-hidden="true">{navigationGlyph(item.label)}</span>
-              <span className="sr-only">{item.label}</span>
+          <Link aria-current={isActivePath(pathname, '/work') ? 'page' : undefined} className="desktop-rail-glyph-link" href="/work" title="My Work">
+            <span aria-hidden="true">✓</span><span className="sr-only">My Work</span>
+          </Link>
+          <button aria-label="Open Inbox" className="desktop-rail-glyph-link" onClick={openInbox} title="Inbox" type="button">
+            <span aria-hidden="true">♢</span>
+          </button>
+          {collapsedItems.slice(0, 10).map((item) => (
+            <Link aria-current={isActivePath(pathname, item.href) ? 'page' : undefined} className="desktop-rail-glyph-link" href={item.href} key={item.href} title={item.label}>
+              <span aria-hidden="true">{navigationGlyph(item.label)}</span><span className="sr-only">{item.label}</span>
             </Link>
           ))}
         </nav>
       ) : (
         <>
           <nav aria-label="Role navigation" className="desktop-rail-navigation">
-            <Link
-              aria-current={isActivePath(pathname, homePath) ? 'page' : undefined}
-              className="desktop-rail-home"
-              href={homePath}
-            >
-              <span aria-hidden="true">⌂</span>
-              <span><strong>Today</strong><small>Your role workspace and priorities</small></span>
-            </Link>
+            <div className="monday-primary-navigation">
+              <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} href={homePath}>
+                <span aria-hidden="true">⌂</span><span><strong>Today</strong><small>Your role workspace</small></span>
+              </Link>
+              <Link aria-current={isActivePath(pathname, '/work') ? 'page' : undefined} href="/work">
+                <span aria-hidden="true">✓</span><span><strong>My Work</strong><small>Assigned tasks and approvals</small></span>
+              </Link>
+              <button onClick={openInbox} type="button">
+                <span aria-hidden="true">♢</span><span><strong>Inbox</strong><small>Notifications and exceptions</small></span>
+              </button>
+            </div>
 
-            {pinnedItems.length > 0 ? (
-              <section aria-label="Pinned pages" className="desktop-rail-shortcuts">
-                <div className="desktop-rail-section-label"><strong>Pinned</strong><span>{pinnedItems.length}</span></div>
-                {pinnedItems.map((item) => (
+            {visiblePinnedItems.length > 0 ? (
+              <section aria-label="Favourite boards" className="desktop-rail-shortcuts monday-favourites">
+                <div className="desktop-rail-section-label"><strong>Favourites</strong><span>{visiblePinnedItems.length}</span></div>
+                {visiblePinnedItems.map((item) => (
                   <div className="desktop-rail-item-row" key={item.href}>
                     <Link aria-current={isActivePath(pathname, item.href) ? 'page' : undefined} href={item.href}>
                       <span aria-hidden="true" className="desktop-rail-item-glyph">{navigationGlyph(item.label)}</span>
                       <span><strong>{item.label}</strong><small>{item.description}</small></span>
                     </Link>
-                    <button aria-label={`Unpin ${item.label}`} onClick={() => onToggleFavorite(item.href)} type="button">★</button>
+                    <button aria-label={`Remove ${item.label} from favourites`} onClick={() => onToggleFavorite(item.href)} type="button">★</button>
                   </div>
                 ))}
               </section>
             ) : null}
 
             <div className="desktop-rail-directory">
-              {sections.map((section) => {
+              <div className="desktop-rail-section-label monday-directory-label"><strong>Boards and tools</strong></div>
+              {directorySections.map((section) => {
                 const active = section.items.some((item) => isActivePath(pathname, item.href));
                 return (
                   <details className="desktop-rail-section" key={section.heading} open={active || undefined}>
@@ -150,12 +160,7 @@ export function DesktopNavigationRail({
                               <span aria-hidden="true" className="desktop-rail-item-glyph">{navigationGlyph(item.label)}</span>
                               <span><strong>{item.label}</strong><small>{item.description}</small></span>
                             </Link>
-                            <button
-                              aria-label={pinned ? `Unpin ${item.label}` : `Pin ${item.label}`}
-                              aria-pressed={pinned}
-                              onClick={() => onToggleFavorite(item.href)}
-                              type="button"
-                            >
+                            <button aria-label={pinned ? `Remove ${item.label} from favourites` : `Add ${item.label} to favourites`} aria-pressed={pinned} onClick={() => onToggleFavorite(item.href)} type="button">
                               {pinned ? '★' : '☆'}
                             </button>
                           </div>
@@ -169,7 +174,7 @@ export function DesktopNavigationRail({
           </nav>
 
           {recentPages.length > 0 ? (
-            <section aria-label="Recent pages" className="desktop-rail-recent">
+            <section aria-label="Recently opened pages" className="desktop-rail-recent">
               <div className="desktop-rail-section-label"><strong>Recent</strong></div>
               {recentPages.slice(0, 4).map((page) => (
                 <Link aria-current={isActivePath(pathname, page.href) ? 'page' : undefined} href={page.href} key={page.href}>

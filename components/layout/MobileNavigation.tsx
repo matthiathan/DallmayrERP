@@ -180,13 +180,17 @@ export function MobileNavigationDrawer({
         {!profileComplete ? <em>Profile setup required</em> : null}
       </div>
 
-      <Link
-        aria-current={isActivePath(pathname, homePath) ? 'page' : undefined}
-        className="mobile-primary-link"
-        href={homePath}
-      >
-        Today
-      </Link>
+      <div className="mobile-primary-actions">
+        <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} href={homePath}>
+          <span aria-hidden="true">⌂</span><strong>Today</strong>
+        </Link>
+        <Link aria-current={isActivePath(pathname, '/work') ? 'page' : undefined} href="/work">
+          <span aria-hidden="true">✓</span><strong>My Work</strong>
+        </Link>
+        <button onClick={() => window.dispatchEvent(new Event('dallmayr-open-alerts'))} type="button">
+          <span aria-hidden="true">♢</span><strong>Inbox</strong>
+        </button>
+      </div>
 
       {favoriteItems.length > 0 ? (
         <section aria-label="Pinned pages" className="mobile-nav-shortcuts">
