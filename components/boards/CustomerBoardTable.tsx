@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useMemo, useRef } from 'react';
 import type { KeyboardEvent } from 'react';
 import { BoardGroupHeader } from '@/components/boards/BoardWorkspace';
@@ -43,13 +42,13 @@ function valueForColumn(row: CustomerRecord, columnId: CustomerColumnId) {
   }
 }
 
-function renderCell(row: CustomerRecord, columnId: CustomerColumnId) {
+function renderCell(row: CustomerRecord, columnId: CustomerColumnId, onOpenCustomer: (customer: CustomerRecord) => void) {
   if (columnId === 'name') {
     return (
-      <Link className="monday-board-record-link" href={`/customers/${row.id}`}>
+      <button className="monday-board-record-link" onClick={() => onOpenCustomer(row)} type="button">
         <strong>{row.customer_name}</strong>
         <small>{row.customer_code || 'No account code'}</small>
-      </Link>
+      </button>
     );
   }
   if (columnId === 'status') return <StatusBadge value={row.status ?? 'unknown'} />;
@@ -92,6 +91,7 @@ export function CustomerBoardTable({
   sortDirection,
   onSort,
   onSelectedIdsChange,
+  onOpenCustomer,
 }: {
   rows: CustomerRecord[];
   loading: boolean;
@@ -102,6 +102,7 @@ export function CustomerBoardTable({
   sortDirection: CustomerSortDirection;
   onSort: (columnId: CustomerColumnId) => void;
   onSelectedIdsChange: (next: Set<string>) => void;
+  onOpenCustomer: (customer: CustomerRecord) => void;
 }) {
   const selectionRef = useRef<HTMLInputElement | null>(null);
   const visibleColumns = useMemo(
@@ -203,7 +204,7 @@ export function CustomerBoardTable({
                 {group.rows.map((row) => (
                   <tr className={selectedIds.has(row.id) ? 'is-selected' : undefined} key={row.id}>
                     <td className="monday-board-selection-column"><input aria-label={`Select ${row.customer_name}`} checked={selectedIds.has(row.id)} onChange={() => toggleOne(row.id)} type="checkbox" /></td>
-                    {visibleColumns.map((column) => <td key={column.id}>{renderCell(row, column.id)}</td>)}
+                    {visibleColumns.map((column) => <td key={column.id}>{renderCell(row, column.id, onOpenCustomer)}</td>)}
                   </tr>
                 ))}
               </tbody>
@@ -221,7 +222,7 @@ export function CustomerBoardTable({
               <article className={selectedIds.has(row.id) ? 'monday-board-mobile-card is-selected' : 'monday-board-mobile-card'} key={row.id}>
                 <div className="monday-board-mobile-card-heading">
                   <input aria-label={`Select ${row.customer_name}`} checked={selectedIds.has(row.id)} onChange={() => toggleOne(row.id)} type="checkbox" />
-                  <Link href={`/customers/${row.id}`}><strong>{row.customer_name}</strong><small>{row.customer_code || 'No account code'}</small></Link>
+                  <button className="monday-board-record-link" onClick={() => onOpenCustomer(row)} type="button"><strong>{row.customer_name}</strong><small>{row.customer_code || 'No account code'}</small></button>
                   <StatusBadge value={row.status ?? 'unknown'} />
                 </div>
                 <dl>
