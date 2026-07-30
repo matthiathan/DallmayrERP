@@ -1,1 +1,0 @@
-Temporary CI staging payload. Removed automatically after validation.
