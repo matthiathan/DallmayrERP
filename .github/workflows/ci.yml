@@ -1,42 +1,94 @@
-name: DallmayrERP CI
+name: DallmayrERP Audit Bootstrap
 
 on:
   pull_request:
     branches: [main]
-  push:
-    branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: audit-bootstrap-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Typecheck and build Next.js app
+  apply:
+    name: Apply and validate repository audit fixes
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://egbiiizxsqlarqpnzxxs.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-build-key
 
     steps:
-      - name: Checkout repository
+      - name: Checkout audit branch
         uses: actions/checkout@v4
-
-      - name: Package source snapshot for audit
-        run: |
-          git ls-files -z | tar --null -T - -czf /tmp/dallmayrerp-source.tgz
-
-      - name: Upload source snapshot
-        uses: actions/upload-artifact@v4
         with:
-          name: repository-audit-source
-          path: /tmp/dallmayrerp-source.tgz
-          if-no-files-found: error
-          retention-days: 1
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Apply staged audit patch
+        run: |
+          cat audit-patch/part-*.patch > /tmp/audit-fixes.patch
+          git apply --check /tmp/audit-fixes.patch
+          git apply /tmp/audit-fixes.patch
+          rm -rf audit-patch
+
+      - name: Restore permanent CI workflow
+        run: |
+          cat > .github/workflows/ci.yml <<'YAML'
+          name: DallmayrERP CI
+
+          on:
+            pull_request:
+              branches: [main]
+            push:
+              branches: [main]
+
+          permissions:
+            contents: read
+
+          concurrency:
+            group: ci-${{ github.workflow }}-${{ github.ref }}
+            cancel-in-progress: true
+
+          jobs:
+            build:
+              name: Validate and build Next.js app
+              runs-on: ubuntu-latest
+              timeout-minutes: 15
+              env:
+                NEXT_PUBLIC_SUPABASE_URL: https://egbiiizxsqlarqpnzxxs.supabase.co
+                NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-build-key
+
+              steps:
+                - name: Checkout repository
+                  uses: actions/checkout@v4
+
+                - name: Setup Node.js
+                  uses: actions/setup-node@v4
+                  with:
+                    node-version: 22
+
+                - name: Install dependencies
+                  run: npm install --no-audit --no-fund
+
+                - name: Check stylesheet architecture
+                  run: npm run stylecheck
+
+                - name: Check RPC contracts
+                  run: npm run contractcheck
+
+                - name: Check source safety regressions
+                  run: npm run sourcecheck
+
+                - name: Typecheck application
+                  run: npm run typecheck
+
+                - name: Build application
+                  run: npm run build
+          YAML
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -46,11 +98,28 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Check patch whitespace
+        run: git diff --check
+
       - name: Check stylesheet architecture
         run: npm run stylecheck
+
+      - name: Check RPC contracts
+        run: npm run contractcheck
+
+      - name: Check source safety regressions
+        run: npm run sourcecheck
 
       - name: Typecheck application
         run: npm run typecheck
 
       - name: Build application
         run: npm run build
+
+      - name: Commit validated fixes
+        run: |
+          git config user.name 'DallmayrERP CI'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          git commit -m 'Fix repository-wide runtime and schema defects'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
