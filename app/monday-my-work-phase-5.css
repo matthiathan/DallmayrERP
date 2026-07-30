@@ -1,0 +1,587 @@
+/* Monday-style My Work workspace: cross-module personal queue and role dashboard. */
+
+.monday-my-work {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.monday-my-work .monday-board-header {
+  margin-bottom: 0;
+}
+
+.monday-my-work-create,
+.monday-my-work-empty,
+.monday-my-work-calendar,
+.monday-my-work-dashboard-grid > section {
+  border: 1px solid var(--monday-divider);
+  border-radius: 10px;
+  background: var(--monday-shell-bg);
+}
+
+.monday-my-work-create {
+  overflow: hidden;
+}
+
+.monday-my-work-create > header,
+.monday-my-work-calendar > header,
+.monday-my-work-dashboard-grid > section > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--monday-divider);
+}
+
+.monday-my-work-create > header > div,
+.monday-my-work-calendar > header > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.monday-my-work-create > header span,
+.monday-my-work-calendar > header span {
+  color: var(--monday-muted);
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.monday-my-work-create h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.monday-my-work-create form {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.monday-my-work-form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.monday-my-work-create label,
+.monday-my-work-settings > label {
+  display: grid;
+  gap: 5px;
+  color: var(--monday-muted);
+  font-size: .72rem;
+  font-weight: 760;
+}
+
+.monday-my-work-create input,
+.monday-my-work-create select,
+.monday-my-work-create textarea,
+.monday-my-work-settings select {
+  width: 100%;
+}
+
+.monday-my-work-create textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.monday-my-work-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.monday-my-work-form-actions .checkbox-field {
+  display: inline-flex;
+  align-items: center;
+  grid-auto-flow: column;
+  justify-content: start;
+}
+
+.monday-my-work-search {
+  flex: 1 1 300px;
+  min-width: min(100%, 240px);
+}
+
+.monday-my-work-search input {
+  width: 100%;
+}
+
+.monday-my-work-empty {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 42px 18px;
+  text-align: center;
+}
+
+.monday-my-work-empty h2,
+.monday-my-work-empty p {
+  margin: 0;
+}
+
+.monday-my-work-empty p {
+  color: var(--monday-muted);
+}
+
+.monday-my-work-list {
+  display: grid;
+  gap: 14px;
+}
+
+.monday-my-work-list > section {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.monday-my-work-list > section > header,
+.monday-my-work-board > section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+  padding: 8px 11px;
+  border: 1px solid var(--monday-divider);
+  border-radius: 8px;
+  background: var(--monday-page-bg);
+}
+
+.monday-my-work-list > section > header > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.monday-my-work-list > section > header small {
+  color: var(--monday-muted);
+  font-size: .66rem;
+  text-transform: capitalize;
+}
+
+.monday-my-work-list > section > header > span,
+.monday-my-work-board > section > header > span {
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  padding-inline: 7px;
+  border-radius: 999px;
+  background: var(--monday-shell-raised);
+  color: var(--monday-muted);
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+.monday-my-work-list > section > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 9px;
+}
+
+.monday-my-work-card {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid var(--monday-divider);
+  border-radius: 9px;
+  background: var(--monday-shell-bg);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+
+.monday-my-work-card:hover,
+.monday-my-work-card:focus-visible {
+  border-color: color-mix(in srgb, var(--monday-accent) 48%, var(--monday-divider));
+  background: var(--monday-hover);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.monday-my-work-card.is-compact {
+  gap: 6px;
+  padding: 10px;
+}
+
+.monday-my-work-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.monday-my-work-card-heading > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.monday-my-work-card-heading span {
+  color: var(--monday-muted);
+  font-size: .65rem;
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.monday-my-work-card-heading strong {
+  overflow-wrap: anywhere;
+}
+
+.monday-my-work-card > p {
+  margin: 0;
+  color: var(--monday-text);
+  font-size: .82rem;
+  line-height: 1.42;
+}
+
+.monday-my-work-card.is-compact > p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: .76rem;
+}
+
+.monday-my-work-card-meta,
+.monday-my-work-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.monday-my-work-card-meta span {
+  min-width: 0;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: var(--monday-page-bg);
+  color: var(--monday-muted);
+  font-size: .67rem;
+  overflow-wrap: anywhere;
+}
+
+.monday-my-work-board {
+  display: grid;
+  grid-auto-columns: minmax(290px, 340px);
+  grid-auto-flow: column;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scroll-snap-type: x proximity;
+}
+
+.monday-my-work-board > section {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  min-height: 430px;
+  padding: 9px;
+  border: 1px solid var(--monday-divider);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--monday-page-bg) 76%, var(--monday-shell-bg));
+  scroll-snap-align: start;
+}
+
+.monday-my-work-board > section > div {
+  display: grid;
+  gap: 8px;
+}
+
+.monday-my-work-board > section > div > p {
+  margin: 0;
+  padding: 28px 10px;
+  color: var(--monday-muted);
+  text-align: center;
+}
+
+.monday-my-work-calendar {
+  overflow: hidden;
+}
+
+.monday-my-work-calendar > header {
+  align-items: center;
+}
+
+.monday-my-work-calendar > header > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.monday-my-work-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(160px, 1fr));
+  min-width: 1120px;
+}
+
+.monday-my-work-calendar {
+  overflow-x: auto;
+}
+
+.monday-my-work-calendar-grid > section {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 480px;
+  padding: 9px;
+  border-right: 1px solid var(--monday-divider);
+}
+
+.monday-my-work-calendar-grid > section:last-child {
+  border-right: 0;
+}
+
+.monday-my-work-calendar-grid > section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 38px;
+  padding: 5px 3px 8px;
+  border-bottom: 1px solid var(--monday-divider);
+}
+
+.monday-my-work-calendar-grid > section > header span {
+  color: var(--monday-muted);
+  font-size: .72rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.monday-my-work-calendar-grid > section > header strong {
+  font-size: 1.15rem;
+}
+
+.monday-my-work-calendar-grid > section > div {
+  display: grid;
+  gap: 7px;
+}
+
+.monday-my-work-calendar-grid > section > div > p {
+  margin: 0;
+  padding: 16px 4px;
+  color: var(--monday-muted);
+  font-size: .72rem;
+  text-align: center;
+}
+
+.monday-my-work-dashboard {
+  display: grid;
+  gap: 12px;
+}
+
+.monday-my-work-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(135px, 1fr));
+  gap: 10px;
+}
+
+.monday-my-work-kpis button {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--monday-divider);
+  border-radius: 9px;
+  background: var(--monday-shell-bg);
+  color: var(--monday-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.monday-my-work-kpis button:hover,
+.monday-my-work-kpis button:focus-visible {
+  border-color: color-mix(in srgb, var(--monday-accent) 45%, var(--monday-divider));
+  background: var(--monday-hover);
+  outline: none;
+}
+
+.monday-my-work-kpis span,
+.monday-my-work-kpis small {
+  color: var(--monday-muted);
+}
+
+.monday-my-work-kpis strong {
+  color: var(--monday-strong);
+  font-size: clamp(1.65rem, 3vw, 2.5rem);
+  line-height: 1;
+}
+
+.monday-my-work-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, .8fr) minmax(380px, 1.2fr);
+  gap: 12px;
+}
+
+.monday-my-work-dashboard-grid > section {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding-bottom: 14px;
+  overflow: hidden;
+}
+
+.monday-my-work-dashboard-grid > section > header {
+  padding: 12px 14px;
+}
+
+.monday-my-work-dashboard-grid > section > header span {
+  color: var(--monday-muted);
+  font-size: .72rem;
+}
+
+.monday-my-work-distribution {
+  display: grid;
+  grid-template-columns: 105px minmax(70px, 1fr) 36px;
+  align-items: center;
+  gap: 8px;
+  padding-inline: 14px;
+}
+
+.monday-my-work-distribution > span {
+  color: var(--monday-text);
+  font-size: .76rem;
+}
+
+.monday-my-work-distribution > div {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--monday-page-bg);
+}
+
+.monday-my-work-distribution i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--monday-accent);
+}
+
+.monday-my-work-attention {
+  display: grid;
+  gap: 7px;
+  padding-inline: 14px;
+}
+
+.monday-my-work-settings {
+  display: grid;
+  gap: 14px;
+}
+
+.monday-my-work-settings fieldset {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--monday-divider);
+  border-radius: 8px;
+}
+
+.monday-my-work-settings legend {
+  padding-inline: 5px;
+  color: var(--monday-strong);
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.monday-my-work-settings fieldset label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 34px;
+  color: var(--monday-text);
+  font-size: .78rem;
+}
+
+.monday-my-work-settings fieldset input {
+  width: auto;
+}
+
+@media (max-width: 1260px) {
+  .monday-my-work-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .monday-my-work-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .monday-my-work-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .monday-my-work-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .monday-my-work-list > section > div {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .monday-my-work {
+    gap: 12px;
+  }
+
+  .monday-my-work-create > header,
+  .monday-my-work-calendar > header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .monday-my-work-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .monday-my-work-form-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .monday-my-work-board {
+    grid-auto-columns: minmax(86vw, 1fr);
+  }
+
+  .monday-my-work-calendar > header > div:last-child {
+    justify-content: stretch;
+  }
+
+  .monday-my-work-calendar > header .button {
+    flex: 1 1 100px;
+  }
+}
+
+@media (max-width: 430px) {
+  .monday-my-work-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .monday-my-work-card-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .monday-my-work-card-heading .status-badge {
+    align-self: flex-start;
+  }
+
+  .monday-my-work-card-meta {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .monday-my-work-card-meta span {
+    border-radius: 7px;
+  }
+}
