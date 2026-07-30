@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import { WorkspaceCommandBar, WorkspaceSectionHeader } from '@/components/ui/WorkspacePrimitives';
 
 const MOBILE_QUERY = '(max-width: 760px)';
 
@@ -34,24 +35,25 @@ export function PageToolbar({
     if (!isMobile) setControlsOpen(false);
   }, [isMobile]);
 
+  const updatedTime = lastUpdated ? (
+    <time className="page-toolbar-updated" dateTime={lastUpdated.toISOString()}>
+      Updated {lastUpdated.toLocaleTimeString()}
+    </time>
+  ) : null;
+
   return (
-    <section
-      aria-label={`${title} controls`}
+    <WorkspaceCommandBar
+      ariaLabel={`${title} controls`}
       className="page-toolbar workspace-command-bar"
-      data-has-controls={hasControls ? 'true' : 'false'}
+      hasControls={hasControls}
     >
-      <div className="page-toolbar-heading workspace-command-heading">
-        <div>
-          <div className="nav-heading">Workspace</div>
-          <h2>{title}</h2>
-          {description ? <p>{description}</p> : null}
-        </div>
-        {lastUpdated ? (
-          <time className="page-toolbar-updated" dateTime={lastUpdated.toISOString()}>
-            Updated {lastUpdated.toLocaleTimeString()}
-          </time>
-        ) : null}
-      </div>
+      <WorkspaceSectionHeader
+        className="page-toolbar-heading workspace-command-heading"
+        description={description}
+        eyebrow="Workspace"
+        meta={updatedTime}
+        title={title}
+      />
 
       {hasControls ? (
         <details
@@ -65,12 +67,12 @@ export function PageToolbar({
             <span>Filters and actions</span>
             <small>Refine this workspace</small>
           </summary>
-          <div className="page-toolbar-controls-body workspace-command-body">
-            {children ? <div className="page-toolbar-filters workspace-filter-bar">{children}</div> : null}
-            {actions ? <div className="page-toolbar-actions workspace-command-actions">{actions}</div> : null}
+          <div className="page-toolbar-controls-body workspace-command-body ds-command-bar__body">
+            {children ? <div className="page-toolbar-filters workspace-filter-bar ds-filter-bar">{children}</div> : null}
+            {actions ? <div className="page-toolbar-actions workspace-command-actions ds-action-bar">{actions}</div> : null}
           </div>
         </details>
       ) : null}
-    </section>
+    </WorkspaceCommandBar>
   );
 }
