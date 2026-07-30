@@ -1,0 +1,6 @@
++            <small>{activeBranch} · {roleLabels[userDetails.role]}</small>
++          </div>
++
+           <button
+             aria-controls="mobile-navigation"
+             aria-expanded={menuOpen}
