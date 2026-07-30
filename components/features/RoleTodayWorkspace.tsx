@@ -6,6 +6,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { isNavItemAllowed, navSections, roleLabels } from '@/lib/auth/permissions';
+import { readLocalStorage } from '@/lib/browser/safe-storage';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { displayProfileName } from '@/types/dallmayrerp';
 import type { BusinessRole } from '@/types/dallmayrerp';
@@ -323,8 +324,8 @@ export function RoleTodayWorkspace() {
 
   useEffect(() => {
     const loadLocalNavigation = () => {
-      setFavoriteHrefs(safeFavorites(window.localStorage.getItem(FAVORITES_KEY)));
-      setRecentPages(safeRecent(window.localStorage.getItem(RECENT_KEY)).slice(-9));
+      setFavoriteHrefs(safeFavorites(readLocalStorage(FAVORITES_KEY)));
+      setRecentPages(safeRecent(readLocalStorage(RECENT_KEY)).slice(-9));
     };
     loadLocalNavigation();
     window.addEventListener('storage', loadLocalNavigation);

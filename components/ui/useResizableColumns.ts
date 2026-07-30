@@ -43,6 +43,7 @@ export function useResizableColumns(columns: ResizableColumnDefinition[], tableI
   const pathname = usePathname() || 'app';
   const key = useMemo(() => storageKey(pathname, tableId, columns), [columns, pathname, tableId]);
   const resizeState = useRef<ResizeState | null>(null);
+  const resizeCleanupRef = useRef<(() => void) | null>(null);
   const [widths, setWidths] = useState<Record<string, number>>({});
   const [activeColumnId, setActiveColumnId] = useState<string | null>(null);
 
@@ -83,6 +84,15 @@ export function useResizableColumns(columns: ResizableColumnDefinition[], tableI
       // Local storage can be unavailable in private/restricted browser modes.
     }
   }, [key, widths]);
+
+  useEffect(() => {
+    return () => {
+      resizeState.current = null;
+      resizeCleanupRef.current?.();
+      resizeCleanupRef.current = null;
+      document.body.classList.remove('is-resizing-table-column');
+    };
+  }, []);
 
   const totalWidth = useMemo(() => {
     return columns.reduce((total, column) => total + (widths[column.id] ?? defaults[column.id] ?? DEFAULT_COLUMN_WIDTH), 0);
@@ -138,15 +148,21 @@ export function useResizableColumns(columns: ResizableColumnDefinition[], tableI
       setColumnWidth(current.columnId, current.startWidth + moveEvent.clientX - current.startX);
     };
 
-    const handleEnd = () => {
-      resizeState.current = null;
-      setActiveColumnId(null);
+    resizeCleanupRef.current?.();
+    const cleanup = () => {
       window.removeEventListener('pointermove', handleMove);
       window.removeEventListener('pointerup', handleEnd);
       window.removeEventListener('pointercancel', handleEnd);
       document.body.classList.remove('is-resizing-table-column');
+      if (resizeCleanupRef.current === cleanup) resizeCleanupRef.current = null;
+    };
+    const handleEnd = () => {
+      resizeState.current = null;
+      setActiveColumnId(null);
+      cleanup();
     };
 
+    resizeCleanupRef.current = cleanup;
     document.body.classList.add('is-resizing-table-column');
     window.addEventListener('pointermove', handleMove);
     window.addEventListener('pointerup', handleEnd);

@@ -20,6 +20,7 @@ import {
   type NavItem,
   type NavSection,
 } from '@/lib/auth/permissions';
+import { readLocalStorage, writeLocalStorage } from '@/lib/browser/safe-storage';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { BusinessRole } from '@/types/dallmayrerp';
 import { displayProfileName, isProfileComplete } from '@/types/dallmayrerp';
@@ -178,9 +179,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
-    setOpenTabs(safeTabList(window.localStorage.getItem('dallmayr-open-tabs')));
-    setFavoriteHrefs(safeFavoriteList(window.localStorage.getItem(FAVORITES_KEY)));
-    setRailCollapsed(window.localStorage.getItem(RAIL_COLLAPSED_KEY) === 'true');
+    setOpenTabs(safeTabList(readLocalStorage('dallmayr-open-tabs')));
+    setFavoriteHrefs(safeFavoriteList(readLocalStorage(FAVORITES_KEY)));
+    setRailCollapsed(readLocalStorage(RAIL_COLLAPSED_KEY) === 'true');
   }, []);
 
   useEffect(() => {
@@ -203,7 +204,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
     setOpenTabs((current) => {
       const next = [...current.filter((item) => item.href !== nextTab.href), nextTab].slice(-9);
-      window.localStorage.setItem('dallmayr-open-tabs', JSON.stringify(next));
+      writeLocalStorage('dallmayr-open-tabs', JSON.stringify(next));
       return next;
     });
   }, [pathname, userDetails?.role]);
@@ -311,7 +312,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         : current.length >= MAX_FAVORITES
           ? current
           : [...current, href];
-      window.localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
+      writeLocalStorage(FAVORITES_KEY, JSON.stringify(next));
       return next;
     });
   }
@@ -319,7 +320,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   function toggleRail() {
     setRailCollapsed((current) => {
       const next = !current;
-      window.localStorage.setItem(RAIL_COLLAPSED_KEY, String(next));
+      writeLocalStorage(RAIL_COLLAPSED_KEY, String(next));
       return next;
     });
   }

@@ -111,13 +111,14 @@ export function EnterpriseServiceJobBoard() {
   }
 
   async function assignJob(job: JobRow, technicianId: string) {
-    if (!technicianId || job.assigned_to === technicianId) return;
+    const nextAssignee = technicianId || null;
+    if (job.assigned_to === nextAssignee) return;
     setUpdatingId(job.id);
     setError(null);
-    const { error: assignmentError } = await getSupabaseClient().rpc('assign_service_job', { job_id: job.id, assignee_id: technicianId });
+    const { error: assignmentError } = await getSupabaseClient().rpc('assign_service_job', { job_id: job.id, assignee_id: nextAssignee });
     setUpdatingId(null);
     if (assignmentError) { setError(assignmentError.message); return; }
-    setMessage(`${job.job_number} assigned.`);
+    setMessage(nextAssignee ? `${job.job_number} assigned.` : `${job.job_number} returned to the unassigned queue.`);
     await loadBoard();
   }
 
@@ -192,7 +193,7 @@ export function EnterpriseServiceJobBoard() {
                     {job.assignment_notes ? <p className="service-call-log-note"><strong>Assignment notes:</strong> {job.assignment_notes}</p> : null}
                     {job.due_at ? <p>{overdue ? <StatusBadge value="overdue" /> : null} Follow up {formatDateTime(job.due_at)}</p> : null}
                     {job.closed_at ? <p><strong>Closed:</strong> {formatDateTime(job.closed_at)}{job.closing_remarks ? ` — ${job.closing_remarks}` : ''}</p> : null}
-                    <label>Technician<select disabled={updatingId === job.id || ['closed', 'cancelled'].includes(job.status)} value={job.assigned_to ?? ''} onChange={(event) => assignJob(job, event.target.value)}><option value="">Unassigned</option>{technicians.map((technician) => <option key={technician.user_id} value={technician.user_id}>{technician.display_name || technician.role}</option>)}</select></label>
+                    <label>Technician<select disabled={updatingId === job.id || ['completed', 'verified', 'closed', 'cancelled'].includes(job.status)} value={job.assigned_to ?? ''} onChange={(event) => assignJob(job, event.target.value)}><option disabled={job.status === 'in_progress'} value="">Unassigned</option>{technicians.map((technician) => <option key={technician.user_id} value={technician.user_id}>{technician.display_name || technician.role}</option>)}</select></label>
                     <label>Next status<select disabled={updatingId === job.id} value={job.status} onChange={(event) => updateStatus(job, event.target.value as ServiceJobStatus)}>{nextStatuses(job.status).map((status) => <option key={status}>{status}</option>)}</select></label>
                     {assignedTechnician ? <small>Assigned to {assignedTechnician.display_name}</small> : null}
                   </article>

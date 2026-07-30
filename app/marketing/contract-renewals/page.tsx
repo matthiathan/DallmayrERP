@@ -7,6 +7,7 @@ import { PageToolbar } from '@/components/ui/PageToolbar';
 import { RemoteDataTable } from '@/components/ui/RemoteDataTable';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import type { EnterpriseColumn } from '@/components/ui/EnterpriseDataTable';
+import { formatLocalDate } from '@/lib/dates/local-date';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type BranchFilter = 'all' | 'jhb' | 'cpt' | 'kzn' | 'national';
@@ -143,7 +144,7 @@ export default function ContractRenewalsPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `contract-renewals-${branch}-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `contract-renewals-${branch}-${formatLocalDate()}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   }

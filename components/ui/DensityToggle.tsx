@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { readLocalStorage, writeLocalStorage } from '@/lib/browser/safe-storage';
 
 type Density = 'comfortable' | 'standard' | 'compact';
 
@@ -10,7 +11,7 @@ export function DensityToggle() {
   const [density, setDensity] = useState<Density>('standard');
 
   useEffect(() => {
-    const saved = window.localStorage.getItem('dallmayr-density') as Density | null;
+    const saved = readLocalStorage('dallmayr-density') as Density | null;
     const nextDensity = saved && densities.includes(saved) ? saved : 'standard';
     setDensity(nextDensity);
     document.documentElement.dataset.density = nextDensity;
@@ -19,7 +20,7 @@ export function DensityToggle() {
   function changeDensity(nextDensity: Density) {
     setDensity(nextDensity);
     document.documentElement.dataset.density = nextDensity;
-    window.localStorage.setItem('dallmayr-density', nextDensity);
+    writeLocalStorage('dallmayr-density', nextDensity);
   }
 
   return (

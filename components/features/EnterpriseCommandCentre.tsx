@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { downloadCsv, toCsv } from '@/lib/data/export';
+import { formatLocalDate } from '@/lib/dates/local-date';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type Metrics = {
@@ -87,7 +88,7 @@ export function EnterpriseCommandCentre() {
       { metric: 'Inventory movements', value: metrics.inventoryMovements },
       { metric: 'Enterprise risk score', value: branchRiskScore },
     ], ['metric', 'value']);
-    downloadCsv(`dallmayrerp-command-centre-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    downloadCsv(`dallmayrerp-command-centre-${formatLocalDate()}.csv`, csv);
   }
 
   if (loading) return <div className="neo-card spatial-card"><h2>Loading command centre...</h2><p>Preparing enterprise management metrics.</p></div>;

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { readLocalStorage, writeLocalStorage } from '@/lib/browser/safe-storage';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type AlertTone = 'critical' | 'warning' | 'info';
@@ -51,7 +52,7 @@ const severityOrder: Record<string, number> = { critical: 0, high: 1, warning: 2
 
 function readIds(userId: string) {
   try {
-    const raw = window.localStorage.getItem(`${READ_KEY_PREFIX}:${userId}`);
+    const raw = readLocalStorage(`${READ_KEY_PREFIX}:${userId}`);
     const parsed = raw ? JSON.parse(raw) as unknown : [];
     return new Set(Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []);
   } catch {
@@ -60,7 +61,7 @@ function readIds(userId: string) {
 }
 
 function writeIds(userId: string, ids: Set<string>) {
-  window.localStorage.setItem(`${READ_KEY_PREFIX}:${userId}`, JSON.stringify(Array.from(ids).slice(-250)));
+  writeLocalStorage(`${READ_KEY_PREFIX}:${userId}`, JSON.stringify(Array.from(ids).slice(-250)));
 }
 
 function formatRelative(value: string) {
@@ -247,25 +248,44 @@ export function MobileAppExperience() {
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
+    let cancelled = false;
     let controllerChanged = false;
-    navigator.serviceWorker.register('/sw.js', { scope: '/' }).then((nextRegistration) => {
-      setRegistration(nextRegistration);
-      if (nextRegistration.waiting) setUpdateReady(true);
-      nextRegistration.addEventListener('updatefound', () => {
-        const worker = nextRegistration.installing;
-        worker?.addEventListener('statechange', () => {
-          if (worker.state === 'installed' && navigator.serviceWorker.controller) setUpdateReady(true);
-        });
-      });
-    }).catch(() => setError('Installable-app support could not be initialized.'));
+    let nextRegistration: ServiceWorkerRegistration | null = null;
+    let installingWorker: ServiceWorker | null = null;
 
+    const handleWorkerStateChange = () => {
+      if (!cancelled && installingWorker?.state === 'installed' && navigator.serviceWorker.controller) {
+        setUpdateReady(true);
+      }
+    };
+    const handleUpdateFound = () => {
+      installingWorker?.removeEventListener('statechange', handleWorkerStateChange);
+      installingWorker = nextRegistration?.installing ?? null;
+      installingWorker?.addEventListener('statechange', handleWorkerStateChange);
+    };
     const handleControllerChange = () => {
       if (controllerChanged) return;
       controllerChanged = true;
       window.location.reload();
     };
+
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).then((registered) => {
+      if (cancelled) return;
+      nextRegistration = registered;
+      setRegistration(registered);
+      if (registered.waiting) setUpdateReady(true);
+      registered.addEventListener('updatefound', handleUpdateFound);
+    }).catch(() => {
+      if (!cancelled) setError('Installable-app support could not be initialized.');
+    });
+
     navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
-    return () => navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
+    return () => {
+      cancelled = true;
+      installingWorker?.removeEventListener('statechange', handleWorkerStateChange);
+      nextRegistration?.removeEventListener('updatefound', handleUpdateFound);
+      navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
+    };
   }, []);
 
   useEffect(() => {

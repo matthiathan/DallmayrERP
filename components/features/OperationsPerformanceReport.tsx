@@ -6,6 +6,7 @@ import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { PageToolbar } from '@/components/ui/PageToolbar';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { formatLocalDate } from '@/lib/dates/local-date';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type ReportSummary = {
@@ -35,10 +36,6 @@ function firstDayOfMonth() {
   return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 function completionRate(completed: number, total: number) {
   if (total <= 0) return '0%';
   return `${Math.round((completed / total) * 100)}%`;
@@ -47,7 +44,7 @@ function completionRate(completed: number, total: number) {
 export function OperationsPerformanceReport() {
   const { userDetails } = useAuth();
   const [dateFrom, setDateFrom] = useState(firstDayOfMonth());
-  const [dateTo, setDateTo] = useState(todayIso());
+  const [dateTo, setDateTo] = useState(formatLocalDate());
   const [branch, setBranch] = useState('all');
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [loading, setLoading] = useState(true);

@@ -7,6 +7,7 @@ import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { PageToolbar } from '@/components/ui/PageToolbar';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { formatLocalDate } from '@/lib/dates/local-date';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
  type OperationsSummary = {
@@ -45,10 +46,6 @@ const quickActions = [
   { href: '/operations/reports', title: 'Open Operations reports', helper: 'Review service, route and delivery performance.' },
 ];
 
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 function branchLabel(value: string) {
   if (value === 'jhb') return 'Johannesburg';
   if (value === 'cpt') return 'Cape Town';
@@ -74,7 +71,7 @@ export function OperationsManagerDashboard() {
     const [summaryResult, scheduleResult] = await Promise.all([
       client.rpc('get_role_workspace_summary'),
       client.rpc('list_daily_service_schedule', {
-        p_schedule_date: todayIso(),
+        p_schedule_date: formatLocalDate(),
         p_branch: branch,
       }),
     ]);
@@ -141,7 +138,7 @@ export function OperationsManagerDashboard() {
             <div className="minimal-panel-header">
               <div>
                 <span className="minimal-kicker">Today’s service pressure</span>
-                <h2>{new Date(`${todayIso()}T12:00:00`).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h2>
+                <h2>{new Date(`${formatLocalDate()}T12:00:00`).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h2>
                 <p>Paid monthly obligations and request-only service work due today.</p>
               </div>
               <Link className="button" href="/operations/dispatch">Open dispatch overview</Link>
