@@ -1,0 +1,72 @@
+/* DallmayrERP stylesheet entry point.
+   Import order is intentional. New global CSS must be registered here rather
+   than imported directly from app/layout.tsx. */
+
+/* 1. Stable design-system contract. */
+@import './tokens.css';
+
+/* 2. Legacy foundations and feature styles, preserved in their established order. */
+@import '../globals.css';
+@import '../hamster-loader.css';
+@import '../feature-widgets.css';
+@import '../navigation.css';
+@import '../spatial-desktop.css';
+@import '../enterprise-ui.css';
+@import '../stock-control.css';
+@import '../professional-ops.css';
+@import '../minimalist-ui.css';
+@import '../minimalist-operations.css';
+@import '../minimalist-ui-polish.css';
+@import '../ux-polish.css';
+@import '../density.css';
+@import '../ultrawide.css';
+@import '../mobile.css';
+@import '../erp-classic-navigation.css';
+@import '../notch-nav-fixes.css';
+@import '../ribbon-background.css';
+@import '../asset-ticket.css';
+@import '../text-visibility-polish.css';
+@import '../contrast-pairing.css';
+@import '../professional-nowrap-layout.css';
+@import '../resizable-tables.css';
+@import '../account-menu.css';
+@import '../account-menu-brand-placement.css';
+@import '../professional-layout-system.css';
+@import '../user-first-layout.css';
+@import '../scanner-feedback-fix.css';
+@import '../dark-bezel-navigation.css';
+@import '../fixed-top-navigation.css';
+@import '../role-workspace-details.css';
+@import '../reliability-machine-search.css';
+@import '../desktop-nav-overflow.css';
+@import '../table-column-filters.css';
+@import '../monthly-service-planning.css';
+@import '../operations-manager.css';
+@import '../admin-user-access-control.css';
+@import '../call-log-creation.css';
+@import '../appearance-panel.css';
+@import '../appearance-customization.css';
+@import '../field-service-workflow.css';
+@import '../operations-dispatch.css';
+@import '../customer-360.css';
+@import '../operations-exceptions.css';
+@import '../user-first-application-shell.css';
+@import '../adaptive-contrast.css';
+@import '../rendered-surface-contrast.css';
+@import '../slate-sand-themes.css';
+@import '../mobile-navigation-drawer.css';
+@import '../mobile-data-views.css';
+@import '../mobile-application-layout.css';
+@import '../mobile-master-detail-actions.css';
+@import '../mobile-offline-field-work.css';
+@import '../mobile-notifications-pwa.css';
+
+/* 3. Shared primitives and current application layout systems. */
+@import './foundations.css';
+@import '../application-shell-phase-1.css';
+@import '../page-templates-phase-2.css';
+@import '../role-today-workspaces.css';
+
+/* 4. Explicit final contracts and compatibility rules. */
+@import './navigation-contract.css';
+@import './compatibility-overrides.css';
