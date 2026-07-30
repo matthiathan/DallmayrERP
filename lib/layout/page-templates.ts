@@ -22,6 +22,7 @@ const operationalPrefixes = [
   '/work',
   '/technician',
   '/road-tech',
+  '/admin/users',
   '/operations/dispatch',
   '/operations/exceptions',
   '/operations/service-planning',
@@ -52,7 +53,6 @@ const listPaths = new Set([
 
 const formPaths = new Set([
   '/onboarding',
-  '/admin/users',
 ]);
 
 const recordRoots = [
@@ -78,8 +78,8 @@ function isRecordRoute(pathname: string) {
 export function getPageTemplate(pathname: string): PageTemplate {
   if (dashboardPaths.has(pathname)) return 'dashboard';
   if (operationalPrefixes.some((route) => startsWithRoute(pathname, route))) return 'operational';
-  if (isRecordRoute(pathname)) return 'record';
   if (listPaths.has(pathname)) return 'list';
+  if (isRecordRoute(pathname)) return 'record';
   if (formPaths.has(pathname)) return 'form';
   return 'default';
 }
