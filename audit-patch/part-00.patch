@@ -153,5 +153,5 @@ index e920e49..b5f3d5a 100644
        { metric: 'Inventory movements', value: metrics.inventoryMovements },
        { metric: 'Enterprise risk score', value: branchRiskScore },
      ], ['metric', 'value']);
--    downloadCsv(`dallmayr-command-centre-${new Date().toISOString().slice(0, 10)}.csv`, csv);
-+    downloadCsv(`dallmayr-command-centre-${formatLocalDate()}.csv`, csv);
+-    downloadCsv(`dallmayrerp-command-centre-${new Date().toISOString().slice(0, 10)}.csv`, csv);
++    downloadCsv(`dallmayrerp-command-centre-${formatLocalDate()}.csv`, csv);
