@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -105,11 +106,33 @@ export function MobileAppExperience() {
   const [updateReady, setUpdateReady] = useState(false);
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const [error, setError] = useState('');
+  const [triggerTarget, setTriggerTarget] = useState<Element | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
 
   const unreadCount = useMemo(() => alerts.filter((item) => !read.has(item.id)).length, [alerts, read]);
+
+
+  useEffect(() => {
+    function syncTarget() {
+      setTriggerTarget(document.querySelector('#desktop-alerts-target'));
+    }
+
+    syncTarget();
+    const observer = new MutationObserver(syncTarget);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    function openInbox() {
+      setOpen(true);
+    }
+
+    window.addEventListener('dallmayr-open-alerts', openInbox);
+    return () => window.removeEventListener('dallmayr-open-alerts', openInbox);
+  }, []);
 
   const loadAlerts = useCallback(async () => {
     if (!userId || !userDetails || !navigator.onLine) return;
@@ -342,79 +365,100 @@ export function MobileAppExperience() {
   const showInstall = !installed && Boolean(installPrompt);
   const showIosHelp = !installed && !installPrompt && ios;
 
+  const unreadAlerts = alerts.filter((item) => !read.has(item.id));
+  const earlierAlerts = alerts.filter((item) => read.has(item.id));
+  const trigger = triggerTarget ? createPortal(
+    <button
+      aria-expanded={open}
+      aria-haspopup="dialog"
+      aria-label={`Open Inbox${unreadCount ? `, ${unreadCount} unread` : ''}`}
+      className={`notification-inbox-trigger ${unreadCount ? 'has-unread' : ''}`}
+      onClick={() => setOpen(true)}
+      type="button"
+    >
+      <span aria-hidden="true">♢</span>
+      <span className="sr-only">Inbox</span>
+      {unreadCount ? <em>{unreadCount > 99 ? '99+' : unreadCount}</em> : null}
+    </button>,
+    triggerTarget,
+  ) : null;
+
+  function renderAlertGroup(title: string, items: AppAlert[]) {
+    if (!items.length) return null;
+    return (
+      <section className="notification-inbox-group">
+        <div className="notification-inbox-group-heading"><strong>{title}</strong><span>{items.length}</span></div>
+        <div className="notification-inbox-list">
+          {items.map((item) => {
+            const unread = !read.has(item.id);
+            return (
+              <Link
+                className={`notification-card tone-${item.tone} ${unread ? 'is-unread' : ''}`}
+                href={item.href}
+                key={item.id}
+                onClick={() => markRead(item.id)}
+              >
+                <span aria-hidden="true" className="notification-card-dot" />
+                <div className="notification-card-content">
+                  <div className="notification-card-heading"><span>{item.source}</span><time>{formatRelative(item.occurredAt)}</time></div>
+                  <strong>{item.title}</strong>
+                  <p>{item.body}</p>
+                  <small>{unread ? 'New · Open record' : 'Open record'}</small>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <>
-      <button
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        aria-label={`Open notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}
-        className={`mobile-app-alert-trigger ${unreadCount ? 'has-unread' : ''}`}
-        onClick={() => setOpen(true)}
-        type="button"
-      >
-        <span aria-hidden="true">♢</span>
-        <strong>Alerts</strong>
-        {unreadCount ? <em>{unreadCount > 99 ? '99+' : unreadCount}</em> : null}
-      </button>
-
-      {open ? <button aria-label="Close notifications" className="mobile-app-alert-backdrop" onClick={() => setOpen(false)} type="button" /> : null}
-
+      {trigger}
+      {open ? <button aria-label="Close Inbox" className="notification-inbox-backdrop" onClick={() => setOpen(false)} type="button" /> : null}
       {open ? (
-        <div aria-labelledby="mobile-alert-title" aria-modal="true" className="mobile-app-alert-sheet" ref={panelRef} role="dialog">
-          <header>
+        <div aria-labelledby="notification-inbox-title" aria-modal="true" className="notification-inbox-panel" ref={panelRef} role="dialog">
+          <header className="notification-inbox-header">
             <div>
-              <span>Mobile inbox</span>
-              <h2 id="mobile-alert-title">Notifications</h2>
-              <p>{online ? 'Live operational updates for your role.' : 'Showing the last notifications loaded on this device.'}</p>
+              <span>Inbox</span>
+              <h2 id="notification-inbox-title">Notifications</h2>
+              <p>{online ? 'Live operational updates for your role.' : 'Showing the latest notifications saved on this device.'}</p>
             </div>
-            <button aria-label="Close notifications" className="mobile-app-alert-close" onClick={() => setOpen(false)} ref={closeRef} type="button">×</button>
+            <button aria-label="Close Inbox" className="notification-inbox-close" onClick={() => setOpen(false)} ref={closeRef} type="button">×</button>
           </header>
 
-          <div className="mobile-app-status-strip">
+          <div className="notification-inbox-status">
             <div className={online ? 'is-online' : 'is-offline'}><span /> <strong>{online ? 'Online' : 'Offline'}</strong></div>
             <div><strong>{installed ? 'Installed app' : 'Browser mode'}</strong></div>
             {updateReady ? <button onClick={applyUpdate} type="button">Update ready</button> : null}
           </div>
 
-          {showInstall || showIosHelp ? (
-            <section className="mobile-install-card">
-              <div><span>Install DallmayrERP</span><strong>Open it like a mobile application</strong></div>
-              {showInstall ? <button className="button" onClick={installApplication} type="button">Install application</button> : null}
-              {showIosHelp ? <p>On iPhone or iPad, use Share and choose Add to Home Screen.</p> : null}
-            </section>
-          ) : null}
-
-          <div className="mobile-alert-toolbar">
-            <div><strong>{unreadCount} unread</strong><span>{alerts.length} current alerts</span></div>
+          <div className="notification-inbox-toolbar">
+            <div><strong>{unreadCount} unread</strong><span>{alerts.length} current notifications</span></div>
             <div>
               <button disabled={loading || !online} onClick={() => void loadAlerts()} type="button">{loading ? 'Refreshing…' : 'Refresh'}</button>
               <button disabled={!unreadCount} onClick={markAllRead} type="button">Mark all read</button>
             </div>
           </div>
 
-          {error ? <div className="mobile-alert-error" role="alert">{error}</div> : null}
+          {error ? <div className="notification-inbox-error" role="alert">{error}</div> : null}
           {!error && alerts.length === 0 ? (
-            <div className="mobile-alert-empty"><strong>No urgent updates</strong><p>New assigned jobs and operational exceptions will appear here.</p></div>
+            <div className="notification-inbox-empty"><span aria-hidden="true">✓</span><strong>You're up to date</strong><p>New assigned jobs and operational exceptions will appear here.</p></div>
           ) : null}
 
-          <div className="mobile-alert-list">
-            {alerts.map((item) => {
-              const unread = !read.has(item.id);
-              return (
-                <Link
-                  className={`mobile-alert-card tone-${item.tone} ${unread ? 'is-unread' : ''}`}
-                  href={item.href}
-                  key={item.id}
-                  onClick={() => markRead(item.id)}
-                >
-                  <div className="mobile-alert-card-heading"><span>{item.source}</span><time>{formatRelative(item.occurredAt)}</time></div>
-                  <strong>{item.title}</strong>
-                  <p>{item.body}</p>
-                  <small>{unread ? 'New · Open record' : 'Open record'}</small>
-                </Link>
-              );
-            })}
+          <div className="notification-inbox-content">
+            {renderAlertGroup('Unread', unreadAlerts)}
+            {renderAlertGroup('Earlier', earlierAlerts)}
           </div>
+
+          {showInstall || showIosHelp ? (
+            <section className="notification-install-card">
+              <div><span>Install DallmayrERP</span><strong>Open it like a dedicated application</strong></div>
+              {showInstall ? <button className="button" onClick={installApplication} type="button">Install application</button> : null}
+              {showIosHelp ? <p>On iPhone or iPad, use Share and choose Add to Home Screen.</p> : null}
+            </section>
+          ) : null}
         </div>
       ) : null}
     </>

@@ -325,7 +325,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className={`app-shell top-shell application-shell-v2 ${railCollapsed ? 'desktop-rail-collapsed' : ''} ${menuOpen ? 'mobile-menu-open' : ''}`}>
+    <div className={`app-shell top-shell application-shell-v2 monday-shell-phase-1 ${railCollapsed ? 'desktop-rail-collapsed' : ''} ${menuOpen ? 'mobile-menu-open' : ''}`}>
       <a className="skip-link" href="#main-content">Skip to main content</a>
 
       {menuOpen ? <button aria-label="Close navigation menu" className="mobile-nav-backdrop" onClick={() => setMenuOpen(false)} type="button" /> : null}
@@ -337,17 +337,20 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span>DallmayrERP</span>
           </Link>
 
+          <div className="application-header-search">
+            <GlobalSearch />
+          </div>
+
+          <div className="application-header-actions">
+            <DensityToggle />
+            <div className="desktop-alerts-target" id="desktop-alerts-target" />
+            <div className="desktop-account-menu-target" id="desktop-account-menu-target" />
+          </div>
+
           <div className="application-page-context">
             <span>{activeSection?.heading ?? roleLabels[userDetails.role]}</span>
             <strong>{activeTitle}</strong>
             <small>{activeBranch} · {roleLabels[userDetails.role]}</small>
-          </div>
-
-          <div className="application-header-actions">
-            <GlobalSearch />
-            <DensityToggle />
-            <div className="desktop-alerts-target" id="desktop-alerts-target" />
-            <div className="desktop-account-menu-target" id="desktop-account-menu-target" />
           </div>
 
           <button
