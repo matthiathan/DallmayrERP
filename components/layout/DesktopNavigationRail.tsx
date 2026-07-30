@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
 import type { NavItem, NavSection } from '@/lib/auth/permissions';
 
 type RecentPage = {
@@ -43,6 +44,23 @@ export function DesktopNavigationRail({
   roleLabel,
   sections,
 }: DesktopNavigationRailProps) {
+  useEffect(() => {
+    function openAlerts() {
+      document.querySelector<HTMLButtonElement>('.mobile-app-alert-trigger')?.click();
+    }
+
+    function openFieldQueue() {
+      document.querySelector<HTMLButtonElement>('.field-offline-indicator')?.click();
+    }
+
+    window.addEventListener('dallmayr-open-alerts', openAlerts);
+    window.addEventListener('dallmayr-open-field-queue', openFieldQueue);
+    return () => {
+      window.removeEventListener('dallmayr-open-alerts', openAlerts);
+      window.removeEventListener('dallmayr-open-field-queue', openFieldQueue);
+    };
+  }, []);
+
   const allItems = sections.flatMap((section) => section.items);
   const collapsedItems = [
     ...pinnedItems,
