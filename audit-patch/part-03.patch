@@ -1,0 +1,158 @@
++import { formatLocalDate } from '@/lib/dates/local-date';
+ import { getSupabaseClient } from '@/lib/supabase/client';
+ 
+ type ReportSummary = {
+@@ -35,10 +36,6 @@ function firstDayOfMonth() {
+   return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-01`;
+ }
+ 
+-function todayIso() {
+-  return new Date().toISOString().slice(0, 10);
+-}
+-
+ function completionRate(completed: number, total: number) {
+   if (total <= 0) return '0%';
+   return `${Math.round((completed / total) * 100)}%`;
+@@ -47,7 +44,7 @@ function completionRate(completed: number, total: number) {
+ export function OperationsPerformanceReport() {
+   const { userDetails } = useAuth();
+   const [dateFrom, setDateFrom] = useState(firstDayOfMonth());
+-  const [dateTo, setDateTo] = useState(todayIso());
++  const [dateTo, setDateTo] = useState(formatLocalDate());
+   const [branch, setBranch] = useState('all');
+   const [summary, setSummary] = useState<ReportSummary | null>(null);
+   const [loading, setLoading] = useState(true);
+diff --git a/components/features/ProfessionalSignalsPanel.tsx b/components/features/ProfessionalSignalsPanel.tsx
+index 67920c2..4d3840e 100644
+--- a/components/features/ProfessionalSignalsPanel.tsx
++++ b/components/features/ProfessionalSignalsPanel.tsx
+@@ -4,6 +4,7 @@ import Link from 'next/link';
+ import { useEffect, useMemo, useState } from 'react';
+ import { useAuth } from '@/components/auth/AuthProvider';
+ import { StatusBadge } from '@/components/ui/StatusBadge';
++import { localDateAfterDays } from '@/lib/dates/local-date';
+ import { getSupabaseClient } from '@/lib/supabase/client';
+ 
+ type MachineRelation = { machine_name: string | null; serial_number: string | null; meter_value: number; meter_unit: string };
+@@ -28,7 +29,7 @@ export function ProfessionalSignalsPanel() {
+   async function loadSignals() {
+     setError(null);
+     const client = getSupabaseClient();
+-    const horizon = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10);
++    const horizon = localDateAfterDays(60);
+     const [maintenanceResult, lotResult, assetResult] = await Promise.all([
+       client.from('maintenance_plans').select('id, title, next_due_at, next_due_meter, machine_id, is_active, machines(machine_name, serial_number, meter_value, meter_unit)').eq('is_active', true).order('next_due_at', { ascending: true, nullsFirst: false }).limit(200),
+       client.from('stock_lots').select('id, stock_item_id, lot_number, expiry_date, quantity_items, quantity_boxes, status, stock_items(stock_name)').eq('status', 'active').not('expiry_date', 'is', null).lte('expiry_date', horizon).order('expiry_date').limit(100),
+diff --git a/components/features/RoleTodayWorkspace.tsx b/components/features/RoleTodayWorkspace.tsx
+index b265a3d..b208de7 100644
+--- a/components/features/RoleTodayWorkspace.tsx
++++ b/components/features/RoleTodayWorkspace.tsx
+@@ -6,6 +6,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
+ import { EmptyState } from '@/components/ui/EmptyState';
+ import { HamsterLoader } from '@/components/ui/HamsterLoader';
+ import { isNavItemAllowed, navSections, roleLabels } from '@/lib/auth/permissions';
++import { readLocalStorage } from '@/lib/browser/safe-storage';
+ import { getSupabaseClient } from '@/lib/supabase/client';
+ import { displayProfileName } from '@/types/dallmayrerp';
+ import type { BusinessRole } from '@/types/dallmayrerp';
+@@ -323,8 +324,8 @@ export function RoleTodayWorkspace() {
+ 
+   useEffect(() => {
+     const loadLocalNavigation = () => {
+-      setFavoriteHrefs(safeFavorites(window.localStorage.getItem(FAVORITES_KEY)));
+-      setRecentPages(safeRecent(window.localStorage.getItem(RECENT_KEY)).slice(-9));
++      setFavoriteHrefs(safeFavorites(readLocalStorage(FAVORITES_KEY)));
++      setRecentPages(safeRecent(readLocalStorage(RECENT_KEY)).slice(-9));
+     };
+     loadLocalNavigation();
+     window.addEventListener('storage', loadLocalNavigation);
+diff --git a/components/layout/AppShell.tsx b/components/layout/AppShell.tsx
+index 982b260..9aa725e 100644
+--- a/components/layout/AppShell.tsx
++++ b/components/layout/AppShell.tsx
+@@ -20,6 +20,7 @@ import {
+   type NavItem,
+   type NavSection,
+ } from '@/lib/auth/permissions';
++import { readLocalStorage, writeLocalStorage } from '@/lib/browser/safe-storage';
+ import { getSupabaseClient } from '@/lib/supabase/client';
+ import type { BusinessRole } from '@/types/dallmayrerp';
+ import { displayProfileName, isProfileComplete } from '@/types/dallmayrerp';
+@@ -178,9 +179,9 @@ export function AppShell({ children }: { children: ReactNode }) {
+   }, [pathname]);
+ 
+   useEffect(() => {
+-    setOpenTabs(safeTabList(window.localStorage.getItem('dallmayr-open-tabs')));
+-    setFavoriteHrefs(safeFavoriteList(window.localStorage.getItem(FAVORITES_KEY)));
+-    setRailCollapsed(window.localStorage.getItem(RAIL_COLLAPSED_KEY) === 'true');
++    setOpenTabs(safeTabList(readLocalStorage('dallmayr-open-tabs')));
++    setFavoriteHrefs(safeFavoriteList(readLocalStorage(FAVORITES_KEY)));
++    setRailCollapsed(readLocalStorage(RAIL_COLLAPSED_KEY) === 'true');
+   }, []);
+ 
+   useEffect(() => {
+@@ -203,7 +204,7 @@ export function AppShell({ children }: { children: ReactNode }) {
+ 
+     setOpenTabs((current) => {
+       const next = [...current.filter((item) => item.href !== nextTab.href), nextTab].slice(-9);
+-      window.localStorage.setItem('dallmayr-open-tabs', JSON.stringify(next));
++      writeLocalStorage('dallmayr-open-tabs', JSON.stringify(next));
+       return next;
+     });
+   }, [pathname, userDetails?.role]);
+@@ -311,7 +312,7 @@ export function AppShell({ children }: { children: ReactNode }) {
+         : current.length >= MAX_FAVORITES
+           ? current
+           : [...current, href];
+-      window.localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
++      writeLocalStorage(FAVORITES_KEY, JSON.stringify(next));
+       return next;
+     });
+   }
+@@ -319,7 +320,7 @@ export function AppShell({ children }: { children: ReactNode }) {
+   function toggleRail() {
+     setRailCollapsed((current) => {
+       const next = !current;
+-      window.localStorage.setItem(RAIL_COLLAPSED_KEY, String(next));
++      writeLocalStorage(RAIL_COLLAPSED_KEY, String(next));
+       return next;
+     });
+   }
+diff --git a/components/ui/DensityToggle.tsx b/components/ui/DensityToggle.tsx
+index cf56948..0d3c839 100644
+--- a/components/ui/DensityToggle.tsx
++++ b/components/ui/DensityToggle.tsx
+@@ -1,6 +1,7 @@
+ 'use client';
+ 
+ import { useEffect, useState } from 'react';
++import { readLocalStorage, writeLocalStorage } from '@/lib/browser/safe-storage';
+ 
+ type Density = 'comfortable' | 'standard' | 'compact';
+ 
+@@ -10,7 +11,7 @@ export function DensityToggle() {
+   const [density, setDensity] = useState<Density>('standard');
+ 
+   useEffect(() => {
+-    const saved = window.localStorage.getItem('dallmayr-density') as Density | null;
++    const saved = readLocalStorage('dallmayr-density') as Density | null;
+     const nextDensity = saved && densities.includes(saved) ? saved : 'standard';
+     setDensity(nextDensity);
+     document.documentElement.dataset.density = nextDensity;
+@@ -19,7 +20,7 @@ export function DensityToggle() {
+   function changeDensity(nextDensity: Density) {
+     setDensity(nextDensity);
+     document.documentElement.dataset.density = nextDensity;
+-    window.localStorage.setItem('dallmayr-density', nextDensity);
++    writeLocalStorage('dallmayr-density', nextDensity);
+   }
+ 
+   return (
+diff --git a/components/ui/useResizableColumns.ts b/components/ui/useResizableColumns.ts
+index 8751c3d..cb591bc 100644
+--- a/components/ui/useResizableColumns.ts
++++ b/components/ui/useResizableColumns.ts
+@@ -43,6 +43,7 @@ export function useResizableColumns(columns: ResizableColumnDefinition[], tableI
+   const pathname = usePathname() || 'app';
+   const key = useMemo(() => storageKey(pathname, tableId, columns), [columns, pathname, tableId]);
+   const resizeState = useRef<ResizeState | null>(null);
