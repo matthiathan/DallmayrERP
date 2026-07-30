@@ -61,15 +61,16 @@ export function PageTemplateFrame() {
   const pathname = usePathname();
 
   useEffect(() => {
-    const root = document.querySelector<HTMLElement>('.application-main');
-    if (!root) return;
-
     const routeTemplate = getPageTemplate(pathname);
-    const updateTemplate = () => applyTemplate(root, routeTemplate);
-    updateTemplate();
 
-    const observer = new MutationObserver(updateTemplate);
-    observer.observe(root, { childList: true, subtree: true });
+    function synchronizeTemplate() {
+      const root = document.querySelector<HTMLElement>('.application-main');
+      if (root) applyTemplate(root, routeTemplate);
+    }
+
+    synchronizeTemplate();
+    const observer = new MutationObserver(synchronizeTemplate);
+    observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, [pathname]);
 
