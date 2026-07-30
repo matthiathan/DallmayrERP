@@ -13,7 +13,7 @@ import type { BusinessRole } from '@/types/dallmayrerp';
 const FAVORITES_KEY = 'dallmayr-mobile-favorites-v1';
 const RECENT_KEY = 'dallmayr-open-tabs';
 
-type WorkspaceMetricKey =
+type MetricKey =
   | 'my_active_work'
   | 'my_overdue_work'
   | 'my_high_priority_work'
@@ -38,39 +38,23 @@ type WorkspaceMetricKey =
   | 'active_campaigns'
   | 'marketing_segments';
 
-type WorkspaceSummary = Partial<Record<WorkspaceMetricKey, number>> & {
+type WorkspaceSummary = Partial<Record<MetricKey, number>> & {
   user_id: string;
   role: BusinessRole;
   branch: string;
 };
 
-type TodayLink = {
-  href: string;
-  label: string;
-  helper: string;
-  badge?: WorkspaceMetricKey;
-};
-
-type TodayMetric = {
-  key: WorkspaceMetricKey;
-  label: string;
-  helper: string;
-};
-
-type RoleTodayDefinition = {
+type TodayLink = { href: string; label: string; helper: string; badge?: MetricKey };
+type TodayMetric = { key: MetricKey; label: string; helper: string };
+type TodayDefinition = {
   description: string;
   attention: TodayLink[];
   work: TodayLink[];
   metrics: TodayMetric[];
 };
+type RecentPage = { href: string; label: string };
 
-type RecentPage = {
-  href: string;
-  label: string;
-  code?: string;
-};
-
-const roleTodayDefinitions: Record<BusinessRole, RoleTodayDefinition> = {
+const definitions: Record<BusinessRole, TodayDefinition> = {
   admin: {
     description: 'System access, national exceptions, approvals and operational control.',
     attention: [
@@ -81,7 +65,7 @@ const roleTodayDefinitions: Record<BusinessRole, RoleTodayDefinition> = {
     ],
     work: [
       { href: '/work', label: 'Open Action Centre', helper: 'Review approvals, exceptions and unassigned work.', badge: 'pending_approvals' },
-      { href: '/admin/users', label: 'Manage user access', helper: 'Invite users and maintain roles, branches and permissions.', badge: 'business_users' },
+      { href: '/admin/users', label: 'Manage user access', helper: 'Maintain invitations, roles, branches and permissions.', badge: 'business_users' },
       { href: '/operations/exceptions', label: 'Review Exception Centre', helper: 'Assign, escalate, snooze or resolve persistent cases.', badge: 'branch_overdue_work' },
       { href: '/warehouse/stock', label: 'Open Stock Control', helper: 'Receive, issue, transfer, adjust and count inventory.', badge: 'stock_alerts' },
     ],
@@ -118,7 +102,7 @@ const roleTodayDefinitions: Record<BusinessRole, RoleTodayDefinition> = {
     attention: [
       { href: '/warehouse/planning', label: 'Stock alerts', helper: 'Items require replenishment or branch redistribution.', badge: 'stock_alerts' },
       { href: '/warehouse/purchasing', label: 'Purchase orders open', helper: 'Orders remain partially received or outstanding.', badge: 'open_purchase_orders' },
-      { href: '/operations/deliveries', label: 'Deliveries open', helper: 'Picked or dispatched orders still require closure.', badge: 'open_deliveries' },
+      { href: '/work', label: 'Delivery work open', helper: 'Warehouse-related delivery work still requires action.', badge: 'open_deliveries' },
       { href: '/work', label: 'Assigned work', helper: 'Warehouse tasks are assigned directly to you.', badge: 'my_active_work' },
     ],
     work: [
@@ -130,7 +114,7 @@ const roleTodayDefinitions: Record<BusinessRole, RoleTodayDefinition> = {
     metrics: [
       { key: 'stock_alerts', label: 'Stock alerts', helper: 'Inventory exceptions requiring review.' },
       { key: 'open_purchase_orders', label: 'Purchase orders', helper: 'Orders not fully received or closed.' },
-      { key: 'open_deliveries', label: 'Deliveries', helper: 'Delivery orders not yet closed.' },
+      { key: 'open_deliveries', label: 'Delivery work', helper: 'Delivery-related work not yet closed.' },
       { key: 'my_active_work', label: 'My work', helper: 'Open tasks assigned directly to you.' },
     ],
   },
@@ -177,21 +161,21 @@ const roleTodayDefinitions: Record<BusinessRole, RoleTodayDefinition> = {
     ],
   },
   sales: {
-    description: 'Customer coverage, opportunities, renewals and assigned account work.',
+    description: 'Customer coverage, opportunities and assigned account work.',
     attention: [
       { href: '/sales', label: 'Open opportunities', helper: 'Pipeline items require follow-up or quotation.', badge: 'open_opportunities' },
-      { href: '/marketing/contract-renewals', label: 'Renewals due', helper: 'Contracts are expired or due within 90 days.', badge: 'renewals_due_90' },
+      { href: '/sales', label: 'Contract exposure', helper: 'Contract records indicate upcoming renewal pressure.', badge: 'renewals_due_90' },
       { href: '/work', label: 'Assigned requests', helper: 'Open requests or tasks are assigned to you.', badge: 'my_active_work' },
     ],
     work: [
       { href: '/sales', label: 'Open sales workspace', helper: 'Review pipeline, account work and opportunities.', badge: 'open_opportunities' },
       { href: '/customers', label: 'Find a customer', helper: 'Search account, branch, phone, email or address.', badge: 'customer_count' },
-      { href: '/marketing/contract-renewals', label: 'Review renewals', helper: 'Prioritize accounts with upcoming contract exposure.', badge: 'renewals_due_90' },
+      { href: '/sales', label: 'Review account follow-up', helper: 'Prioritize opportunities and contract-related account work.', badge: 'renewals_due_90' },
       { href: '/work', label: 'Track my requests', helper: 'Review your assigned tasks and operational requests.', badge: 'my_active_work' },
     ],
     metrics: [
       { key: 'customer_count', label: 'Customers', helper: 'Customer records in your branch scope.' },
-      { key: 'contract_records', label: 'Contracts', helper: 'Contract-renewal records in scope.' },
+      { key: 'contract_records', label: 'Contracts', helper: 'Contract records in scope.' },
       { key: 'open_opportunities', label: 'Opportunities', helper: 'Open or follow-up pipeline items.' },
       { key: 'my_active_work', label: 'My work', helper: 'Open requests or tasks assigned to you.' },
     ],
@@ -266,54 +250,42 @@ function formatBranch(branch: string) {
 }
 
 function initialsFor(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase() || 'U';
+  return name.split(/\s+/).filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'U';
 }
 
-function metricNumber(summary: WorkspaceSummary | null, key: WorkspaceMetricKey) {
+function metricNumber(summary: WorkspaceSummary | null, key: MetricKey) {
   return Number(summary?.[key] ?? 0);
 }
 
-function metricValue(summary: WorkspaceSummary | null, key: WorkspaceMetricKey) {
+function metricValue(summary: WorkspaceSummary | null, key: MetricKey) {
   return metricNumber(summary, key).toLocaleString('en-ZA');
 }
 
 function greetingFor(date: Date) {
-  const hour = date.getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
+  if (date.getHours() < 12) return 'Good morning';
+  if (date.getHours() < 18) return 'Good afternoon';
   return 'Good evening';
 }
 
-function safeStringList(value: string | null) {
+function safeFavorites(value: string | null) {
   if (!value) return [];
   try {
     const parsed = JSON.parse(value) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item): item is string => typeof item === 'string');
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string').slice(0, 4) : [];
   } catch {
     return [];
   }
 }
 
-function safeRecentPages(value: string | null) {
+function safeRecent(value: string | null) {
   if (!value) return [];
   try {
     const parsed = JSON.parse(value) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item): item is RecentPage => Boolean(
-      item
-      && typeof item === 'object'
-      && 'href' in item
-      && 'label' in item
-      && typeof item.href === 'string'
-      && typeof item.label === 'string',
-    ));
+    return parsed.flatMap((item): RecentPage[] => {
+      if (!item || typeof item !== 'object' || !('href' in item) || !('label' in item)) return [];
+      return typeof item.href === 'string' && typeof item.label === 'string' ? [{ href: item.href, label: item.label }] : [];
+    });
   } catch {
     return [];
   }
@@ -333,13 +305,10 @@ export function RoleTodayWorkspace() {
     if (!businessUser?.id || !role) return;
     setLoading(true);
     setError(null);
-
     try {
       const { data, error: summaryError } = await getSupabaseClient().rpc('get_role_workspace_summary');
       if (summaryError) throw summaryError;
-      if (!data || typeof data !== 'object' || Array.isArray(data)) {
-        throw new Error('The Today summary returned an invalid response.');
-      }
+      if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('The Today summary returned an invalid response.');
       setSummary(data as WorkspaceSummary);
       setLastUpdated(new Date());
     } catch (loadError) {
@@ -350,16 +319,13 @@ export function RoleTodayWorkspace() {
     }
   }, [businessUser?.id, role]);
 
-  useEffect(() => {
-    void loadSummary();
-  }, [loadSummary]);
+  useEffect(() => { void loadSummary(); }, [loadSummary]);
 
   useEffect(() => {
-    function loadLocalNavigation() {
-      setFavoriteHrefs(safeStringList(window.localStorage.getItem(FAVORITES_KEY)).slice(0, 4));
-      setRecentPages(safeRecentPages(window.localStorage.getItem(RECENT_KEY)).slice(-9));
-    }
-
+    const loadLocalNavigation = () => {
+      setFavoriteHrefs(safeFavorites(window.localStorage.getItem(FAVORITES_KEY)));
+      setRecentPages(safeRecent(window.localStorage.getItem(RECENT_KEY)).slice(-9));
+    };
     loadLocalNavigation();
     window.addEventListener('storage', loadLocalNavigation);
     window.addEventListener('focus', loadLocalNavigation);
@@ -369,11 +335,10 @@ export function RoleTodayWorkspace() {
     };
   }, []);
 
-  const allowedNavigationItems = useMemo(() => {
+  const allowedItems = useMemo(() => {
     if (!role) return [];
     const seen = new Set<string>();
-    return navSections
-      .flatMap((section) => section.items)
+    return navSections.flatMap((section) => section.items)
       .filter((item) => isNavItemAllowed(role, item))
       .filter((item) => {
         if (seen.has(item.href)) return false;
@@ -382,22 +347,14 @@ export function RoleTodayWorkspace() {
       });
   }, [role]);
 
-  const allowedByHref = useMemo(
-    () => new Map(allowedNavigationItems.map((item) => [item.href, item])),
-    [allowedNavigationItems],
-  );
-
-  const pinnedPages = useMemo(
-    () => favoriteHrefs
-      .map((href) => allowedByHref.get(href))
-      .filter((item): item is NonNullable<typeof item> => Boolean(item)),
-    [allowedByHref, favoriteHrefs],
-  );
-
-  const visibleRecentPages = useMemo(() => {
+  const allowedByHref = useMemo(() => new Map(allowedItems.map((item) => [item.href, item])), [allowedItems]);
+  const pinnedPages = useMemo(() => favoriteHrefs.flatMap((href) => {
+    const item = allowedByHref.get(href);
+    return item ? [item] : [];
+  }), [allowedByHref, favoriteHrefs]);
+  const visibleRecent = useMemo(() => {
     const seen = new Set<string>();
-    return [...recentPages]
-      .reverse()
+    return [...recentPages].reverse()
       .filter((page) => page.href !== '/workspace' && allowedByHref.has(page.href))
       .filter((page) => {
         if (seen.has(page.href)) return false;
@@ -411,16 +368,13 @@ export function RoleTodayWorkspace() {
     return <EmptyState title="Today workspace unavailable" message="Your role and profile details are still loading. Refresh the page if this does not update." />;
   }
 
-  const definition = roleTodayDefinitions[role];
+  const definition = definitions[role];
   const userName = displayProfileName(businessProfile);
   const now = new Date();
-  const dateLabel = new Intl.DateTimeFormat('en-ZA', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(now);
-  const attentionItems = definition.attention.filter((item) => item.badge && metricNumber(summary, item.badge) > 0);
+  const dateLabel = new Intl.DateTimeFormat('en-ZA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(now);
+  const accessibleAttention = definition.attention.filter((item) => allowedByHref.has(item.href));
+  const accessibleWork = definition.work.filter((item) => allowedByHref.has(item.href));
+  const attentionItems = accessibleAttention.filter((item) => item.badge && metricNumber(summary, item.badge) > 0);
 
   return (
     <div className="today-workspace-stage">
@@ -430,26 +384,15 @@ export function RoleTodayWorkspace() {
           <span>{dateLabel}</span>
           <h1>{greetingFor(now)}, {userName}</h1>
           <p>{definition.description}</p>
-          <div className="today-context-row">
-            <span>{roleLabels[role]}</span>
-            <span>{formatBranch(summary?.branch ?? userDetails.branch)}</span>
-          </div>
+          <div className="today-context-row"><span>{roleLabels[role]}</span><span>{formatBranch(summary?.branch ?? userDetails.branch)}</span></div>
         </div>
         <div className="today-refresh-block">
-          <button className="button secondary" disabled={loading} onClick={() => void loadSummary()} type="button">
-            {loading ? 'Refreshing…' : 'Refresh Today'}
-          </button>
+          <button className="button secondary" disabled={loading} onClick={() => void loadSummary()} type="button">{loading ? 'Refreshing…' : 'Refresh Today'}</button>
           <small>{lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}` : 'Live role data'}</small>
         </div>
       </header>
 
-      {error ? (
-        <div className="error today-workspace-error" role="alert">
-          <strong>Today could not be refreshed.</strong>
-          <span>{error}</span>
-        </div>
-      ) : null}
-
+      {error ? <div className="error today-workspace-error" role="alert"><strong>Today could not be refreshed.</strong><span>{error}</span></div> : null}
       {loading ? <HamsterLoader label="Loading your Today workspace" /> : null}
 
       {!loading ? (
@@ -459,33 +402,26 @@ export function RoleTodayWorkspace() {
               <div><span>Needs attention</span><h2 id="today-attention-title">What should happen next</h2></div>
               <small>{attentionItems.length ? `${attentionItems.length} priority area${attentionItems.length === 1 ? '' : 's'}` : 'No urgent signals'}</small>
             </div>
-
             {attentionItems.length ? (
               <div className="today-attention-grid">
                 {attentionItems.map((item) => (
                   <Link className="today-attention-card" href={item.href} key={`${item.href}:${item.badge}`}>
                     <span className="today-attention-count">{item.badge ? metricValue(summary, item.badge) : '0'}</span>
-                    <div><strong>{item.label}</strong><p>{item.helper}</p></div>
-                    <span aria-hidden="true">→</span>
+                    <div><strong>{item.label}</strong><p>{item.helper}</p></div><span aria-hidden="true">→</span>
                   </Link>
                 ))}
               </div>
             ) : (
-              <div className="today-clear-state">
-                <span aria-hidden="true">✓</span>
-                <div><strong>No urgent role signals</strong><p>Your current summary does not show overdue, unassigned or approval pressure. Continue with the prioritized work below.</p></div>
-              </div>
+              <div className="today-clear-state"><span aria-hidden="true">✓</span><div><strong>No urgent role signals</strong><p>Your summary does not show overdue, unassigned or approval pressure. Continue with the prioritized work below.</p></div></div>
             )}
           </section>
 
           <div className="today-primary-grid">
             <section aria-labelledby="today-work-title" className="today-section today-work-section">
-              <div className="today-section-heading">
-                <div><span>Your work</span><h2 id="today-work-title">Prioritized role actions</h2></div>
-              </div>
+              <div className="today-section-heading"><div><span>Your work</span><h2 id="today-work-title">Prioritized role actions</h2></div></div>
               <div className="today-work-list">
-                {definition.work.map((item, index) => (
-                  <Link className={`today-work-row ${index === 0 ? 'is-primary' : ''}`} href={item.href} key={item.href}>
+                {accessibleWork.map((item, index) => (
+                  <Link className={`today-work-row ${index === 0 ? 'is-primary' : ''}`} href={item.href} key={`${item.href}:${item.label}`}>
                     <span className="today-work-rank">{String(index + 1).padStart(2, '0')}</span>
                     <div><strong>{item.label}</strong><p>{item.helper}</p></div>
                     {item.badge ? <span className="today-work-count">{metricValue(summary, item.badge)}</span> : <span aria-hidden="true" className="today-work-arrow">→</span>}
@@ -495,15 +431,10 @@ export function RoleTodayWorkspace() {
             </section>
 
             <aside aria-labelledby="today-snapshot-title" className="today-section today-snapshot-section">
-              <div className="today-section-heading">
-                <div><span>Snapshot</span><h2 id="today-snapshot-title">Current role position</h2></div>
-              </div>
+              <div className="today-section-heading"><div><span>Snapshot</span><h2 id="today-snapshot-title">Current role position</h2></div></div>
               <div className="today-metric-list">
                 {definition.metrics.map((metric) => (
-                  <article className="today-metric-row" key={metric.key}>
-                    <div><strong>{metric.label}</strong><p>{metric.helper}</p></div>
-                    <span>{metricValue(summary, metric.key)}</span>
-                  </article>
+                  <article className="today-metric-row" key={metric.key}><div><strong>{metric.label}</strong><p>{metric.helper}</p></div><span>{metricValue(summary, metric.key)}</span></article>
                 ))}
               </div>
             </aside>
@@ -512,24 +443,11 @@ export function RoleTodayWorkspace() {
           <section aria-label="Pinned and recent pages" className="today-shortcuts-grid">
             <div className="today-section today-shortcut-section">
               <div className="today-section-heading"><div><span>Pinned</span><h2>Pages you keep close</h2></div></div>
-              {pinnedPages.length ? (
-                <div className="today-link-list">
-                  {pinnedPages.map((page) => (
-                    <Link href={page.href} key={page.href}><span>★</span><div><strong>{page.label}</strong><small>{page.description ?? 'Pinned application page'}</small></div><span aria-hidden="true">→</span></Link>
-                  ))}
-                </div>
-              ) : <p className="today-shortcut-empty">Pin up to four pages from the application navigation. They will appear here and in the desktop rail.</p>}
+              {pinnedPages.length ? <div className="today-link-list">{pinnedPages.map((page) => <Link href={page.href} key={page.href}><span>★</span><div><strong>{page.label}</strong><small>{page.description ?? 'Pinned application page'}</small></div><span aria-hidden="true">→</span></Link>)}</div> : <p className="today-shortcut-empty">Pin up to four pages from the application navigation. They will appear here and in the desktop rail.</p>}
             </div>
-
             <div className="today-section today-shortcut-section">
               <div className="today-section-heading"><div><span>Recent</span><h2>Continue where you left off</h2></div></div>
-              {visibleRecentPages.length ? (
-                <div className="today-link-list">
-                  {visibleRecentPages.map((page) => (
-                    <Link href={page.href} key={page.href}><span>↗</span><div><strong>{page.label}</strong><small>Recently opened</small></div><span aria-hidden="true">→</span></Link>
-                  ))}
-                </div>
-              ) : <p className="today-shortcut-empty">Recently opened role pages will appear here as you use the application.</p>}
+              {visibleRecent.length ? <div className="today-link-list">{visibleRecent.map((page) => <Link href={page.href} key={page.href}><span>↗</span><div><strong>{page.label}</strong><small>Recently opened</small></div><span aria-hidden="true">→</span></Link>)}</div> : <p className="today-shortcut-empty">Recently opened role pages will appear here as you use the application.</p>}
             </div>
           </section>
         </>
