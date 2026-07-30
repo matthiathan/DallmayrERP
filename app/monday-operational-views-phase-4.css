@@ -1,0 +1,83 @@
+/* Monday-style operational views: one service dataset, five task-focused presentations. */
+.monday-service-operations { gap: 18px; }
+.monday-service-view-tabs { display: flex; gap: 4px; overflow-x: auto; padding: 4px; border: 1px solid var(--monday-divider); border-radius: 10px; background: var(--monday-shell-bg); scrollbar-width: thin; }
+.monday-service-view-tabs button { display: grid; gap: 2px; min-width: 150px; padding: 10px 13px; border: 0; border-radius: 8px; background: transparent; color: var(--monday-text); text-align: left; cursor: pointer; }
+.monday-service-view-tabs button:hover { background: var(--monday-hover); }
+.monday-service-view-tabs button.is-active { background: var(--monday-selected); color: var(--monday-strong); box-shadow: inset 0 -2px 0 var(--monday-accent); }
+.monday-service-view-tabs small { color: var(--monday-muted); font-size: .68rem; line-height: 1.3; }
+.monday-service-view-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; padding: 4px 2px; }
+.monday-service-view-heading > div { display: grid; gap: 3px; }
+.monday-service-view-heading span { color: var(--monday-muted); font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.monday-service-view-heading h2, .monday-service-view-heading p { margin: 0; }
+.monday-service-view-heading > strong { white-space: nowrap; color: var(--monday-muted); }
+.monday-service-kanban { display: grid; grid-auto-columns: minmax(290px, 340px); grid-auto-flow: column; gap: 12px; overflow-x: auto; padding: 2px 2px 12px; scroll-snap-type: x proximity; }
+.monday-service-lane { display: grid; align-content: start; gap: 10px; min-height: 420px; padding: 10px; border: 1px solid var(--monday-divider); border-radius: 10px; background: color-mix(in srgb, var(--monday-page-bg) 72%, var(--monday-shell-bg)); scroll-snap-align: start; }
+.monday-service-lane > header, .monday-service-calendar section > header, .monday-service-map-grid section > header, .monday-service-workload section > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.monday-service-lane > header > div { display: flex; align-items: center; gap: 8px; text-transform: capitalize; }
+.monday-service-lane > header > span, .monday-service-map-grid section > header > span { display: grid; place-items: center; min-width: 28px; height: 28px; border-radius: 999px; background: var(--monday-shell-raised); color: var(--monday-muted); font-size: .75rem; font-weight: 800; }
+.monday-service-lane-list { display: grid; gap: 9px; }
+.monday-service-job-card { display: grid; gap: 11px; padding: 13px; border: 1px solid var(--monday-divider); border-radius: 9px; background: var(--monday-shell-bg); box-shadow: none; }
+.monday-service-job-card:hover { border-color: color-mix(in srgb, var(--monday-accent) 48%, var(--monday-divider)); }
+.monday-service-summary { display: grid; gap: 8px; min-width: 0; }
+.monday-service-summary > div:first-child { display: flex; justify-content: space-between; gap: 8px; }
+.monday-service-summary > div:first-child small { color: var(--monday-muted); }
+.monday-service-summary p { margin: 0; color: var(--monday-strong); font-weight: 680; line-height: 1.38; }
+.monday-service-summary dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 10px; margin: 0; }
+.monday-service-summary dl div { min-width: 0; }
+.monday-service-summary dt { color: var(--monday-muted); font-size: .66rem; font-weight: 780; text-transform: uppercase; }
+.monday-service-summary dd { overflow: hidden; margin: 2px 0 0; color: var(--monday-text); font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
+.monday-service-summary-badges { display: flex; flex-wrap: wrap; gap: 5px; }
+.monday-service-card-actions { display: grid; gap: 8px; padding-top: 9px; border-top: 1px solid var(--monday-divider); }
+.monday-service-card-actions label { display: grid; gap: 4px; color: var(--monday-muted); font-size: .7rem; font-weight: 760; }
+.monday-service-empty { padding: 24px 10px; color: var(--monday-muted); text-align: center; }
+.monday-service-calendar { display: grid; gap: 12px; }
+.monday-service-calendar section { display: grid; gap: 8px; }
+.monday-service-calendar section > header { position: sticky; top: calc(var(--application-header-height) + 8px); z-index: 2; padding: 9px 12px; border: 1px solid var(--monday-divider); border-radius: 8px; background: var(--monday-shell-bg); }
+.monday-service-calendar section > div { display: grid; gap: 7px; padding-left: 18px; border-left: 2px solid var(--monday-divider); }
+.monday-service-calendar a { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 14px; padding: 11px; border: 1px solid var(--monday-divider); border-radius: 8px; background: var(--monday-shell-bg); color: inherit; text-decoration: none; }
+.monday-service-calendar time { color: var(--monday-muted); font-size: .75rem; font-weight: 760; }
+.monday-service-map-grid, .monday-service-workload { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.monday-service-map-grid > section, .monday-service-workload > section, .monday-service-dashboard-grid > section { display: grid; align-content: start; gap: 11px; padding: 14px; border: 1px solid var(--monday-divider); border-radius: 10px; background: var(--monday-shell-bg); }
+.monday-service-map-grid section > header > div { display: grid; gap: 3px; min-width: 0; }
+.monday-service-map-grid section > header span { color: var(--monday-muted); font-size: .66rem; text-transform: uppercase; }
+.monday-service-map-grid section > header strong { overflow: hidden; text-overflow: ellipsis; }
+.monday-service-map-grid section > div { display: grid; gap: 7px; }
+.monday-service-map-grid section > div a, .monday-service-dashboard-grid section > a { padding: 9px; border: 1px solid var(--monday-divider); border-radius: 8px; color: inherit; text-decoration: none; }
+.monday-service-workload section > header > div { display: grid; gap: 2px; }
+.monday-service-workload section > header small { color: var(--monday-muted); }
+.monday-service-capacity { height: 8px; overflow: hidden; border-radius: 999px; background: var(--monday-page-bg); }
+.monday-service-capacity span { display: block; height: 100%; border-radius: inherit; background: var(--monday-accent); }
+.monday-service-workload dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; }
+.monday-service-workload dl div { padding: 8px; border-radius: 7px; background: var(--monday-page-bg); }
+.monday-service-workload dt { color: var(--monday-muted); font-size: .66rem; }
+.monday-service-workload dd { margin: 3px 0 0; font-size: 1.15rem; font-weight: 820; }
+.monday-service-workload section > div:last-child { display: grid; gap: 5px; }
+.monday-service-workload section > div:last-child a { color: var(--monday-text); font-size: .76rem; text-decoration: none; }
+.monday-service-kpis { display: grid; grid-template-columns: repeat(5, minmax(130px, 1fr)); gap: 10px; }
+.monday-service-kpis article { display: grid; gap: 3px; padding: 14px; border: 1px solid var(--monday-divider); border-radius: 9px; background: var(--monday-shell-bg); }
+.monday-service-kpis span, .monday-service-kpis small { color: var(--monday-muted); }
+.monday-service-kpis strong { font-size: clamp(1.55rem, 3vw, 2.4rem); line-height: 1; }
+.monday-service-dashboard { display: grid; gap: 12px; }
+.monday-service-dashboard-grid { display: grid; grid-template-columns: minmax(280px, .8fr) minmax(360px, 1.2fr); gap: 12px; }
+.monday-service-dashboard-grid section > header { padding-bottom: 8px; border-bottom: 1px solid var(--monday-divider); }
+.monday-service-distribution { display: grid; grid-template-columns: 105px minmax(80px, 1fr) 36px; align-items: center; gap: 8px; text-transform: capitalize; }
+.monday-service-distribution > div { height: 8px; overflow: hidden; border-radius: 999px; background: var(--monday-page-bg); }
+.monday-service-distribution i { display: block; height: 100%; background: var(--monday-accent); }
+@media (max-width: 980px) {
+  .monday-service-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .monday-service-dashboard-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .monday-service-view-tabs { margin-inline: -4px; }
+  .monday-service-view-tabs button { min-width: 128px; }
+  .monday-service-view-tabs small { display: none; }
+  .monday-service-view-heading { align-items: start; }
+  .monday-service-kanban { grid-auto-columns: minmax(86vw, 1fr); }
+  .monday-service-calendar a { grid-template-columns: 1fr; }
+  .monday-service-map-grid, .monday-service-workload { grid-template-columns: 1fr; }
+  .monday-service-kpis { grid-template-columns: 1fr 1fr; }
+  .monday-service-summary dl { grid-template-columns: 1fr; }
+}
+@media (max-width: 430px) {
+  .monday-service-kpis { grid-template-columns: 1fr; }
+}
