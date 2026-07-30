@@ -84,13 +84,14 @@ export function WorkspaceCommandBar({
   hasControls?: boolean;
 }) {
   return (
-    <WorkspaceSurface
-      ariaLabel={ariaLabel}
-      as="section"
-      className={joinClasses('ds-command-bar', className)}
-      padding="none"
+    <section
+      aria-label={ariaLabel}
+      className={joinClasses('ds-surface', 'ds-command-bar', className)}
+      data-elevation="flat"
+      data-has-controls={hasControls ? 'true' : 'false'}
+      data-padding="none"
     >
-      <div data-has-controls={hasControls ? 'true' : 'false'}>{children}</div>
-    </WorkspaceSurface>
+      {children}
+    </section>
   );
 }
