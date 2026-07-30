@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 import {
   getPageTemplate,
   pageTemplateLabel,
@@ -40,41 +40,38 @@ function detectLegacyTemplate(root: HTMLElement): PageTemplate {
   return 'default';
 }
 
-export function PageTemplateFrame({
-  pathname,
-  children,
-}: {
-  pathname: string;
-  children: ReactNode;
-}) {
-  const routeTemplate = useMemo(() => getPageTemplate(pathname), [pathname]);
-  const [detectedTemplate, setDetectedTemplate] = useState<PageTemplate>('default');
-  const frameRef = useRef<HTMLDivElement | null>(null);
+function applyTemplate(root: HTMLElement, routeTemplate: PageTemplate) {
+  const detectedTemplate = detectLegacyTemplate(root);
+  const template = routeTemplate === 'default' ? detectedTemplate : routeTemplate;
+
+  root.dataset.pageTemplate = template;
+  root.setAttribute('aria-label', pageTemplateLabel(template));
+  root.classList.remove(
+    'template-dashboard',
+    'template-list',
+    'template-record',
+    'template-operational',
+    'template-form',
+    'template-default',
+  );
+  root.classList.add('workspace-template-frame', `template-${template}`);
+}
+
+export function PageTemplateFrame() {
+  const pathname = usePathname();
 
   useEffect(() => {
-    const root = frameRef.current;
+    const root = document.querySelector<HTMLElement>('.application-main');
     if (!root) return;
 
-    function updateTemplate() {
-      setDetectedTemplate(detectLegacyTemplate(root));
-    }
-
+    const routeTemplate = getPageTemplate(pathname);
+    const updateTemplate = () => applyTemplate(root, routeTemplate);
     updateTemplate();
+
     const observer = new MutationObserver(updateTemplate);
     observer.observe(root, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, [pathname]);
 
-  const template = routeTemplate === 'default' ? detectedTemplate : routeTemplate;
-
-  return (
-    <div
-      aria-label={pageTemplateLabel(template)}
-      className={`workspace-template-frame template-${template}`}
-      data-page-template={template}
-      ref={frameRef}
-    >
-      {children}
-    </div>
-  );
+  return null;
 }
