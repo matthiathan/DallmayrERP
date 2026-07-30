@@ -47,11 +47,12 @@ export function GlobalAccountMenu() {
     const mobileMedia = window.matchMedia('(max-width: 980px)');
 
     function syncTarget() {
-      const brandTarget = document.querySelector('.erp-menu-row.notch-menu-row');
+      const desktopTarget = document.querySelector('#desktop-account-menu-target');
+      const legacyTarget = document.querySelector('.erp-menu-row.notch-menu-row');
       const mobileTarget = document.querySelector('#mobile-account-menu-target');
       const useMobile = mobileMedia.matches && Boolean(mobileTarget);
       setMobilePlacement(useMobile);
-      setPortalTarget(useMobile ? mobileTarget : brandTarget ?? mobileTarget);
+      setPortalTarget(useMobile ? mobileTarget : desktopTarget ?? legacyTarget ?? mobileTarget);
     }
 
     syncTarget();

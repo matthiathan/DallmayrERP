@@ -5,13 +5,23 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { DesktopNavigationRail } from '@/components/layout/DesktopNavigationRail';
 import { MobileNavigationDrawer, MobileQuickBar } from '@/components/layout/MobileNavigation';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { DensityToggle } from '@/components/ui/DensityToggle';
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
-import { canAccessPath, getDefaultPathForRole, isNavItemAllowed, navSections, roleLabels } from '@/lib/auth/permissions';
+import {
+  canAccessPath,
+  getDefaultPathForRole,
+  isNavItemAllowed,
+  navSections,
+  roleLabels,
+  type NavItem,
+  type NavSection,
+} from '@/lib/auth/permissions';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import type { BusinessRole } from '@/types/dallmayrerp';
 import { displayProfileName, isProfileComplete } from '@/types/dallmayrerp';
 
 type OpenTab = {
@@ -20,9 +30,33 @@ type OpenTab = {
   code: string;
 };
 
-const DESKTOP_PRIMARY_SECTION_LIMIT = 5;
-const DESKTOP_OVERFLOW_THRESHOLD = 6;
-const DESKTOP_OVERFLOW_KEY = '__desktop_more__';
+const FAVORITES_KEY = 'dallmayr-mobile-favorites-v1';
+const RAIL_COLLAPSED_KEY = 'dallmayr-desktop-rail-collapsed-v1';
+const MAX_FAVORITES = 4;
+
+const sectionOrderByRole: Record<BusinessRole, string[]> = {
+  admin: ['System', 'Transactions', 'Masters', 'Fixed Assets', 'Sales', 'Reports', 'Batch Reports', 'Utilities'],
+  operations: ['Operations', 'Assets & Maintenance', 'Inventory', 'Reports'],
+  sales: ['Sales', 'Masters', 'Transactions', 'Reports', 'Utilities'],
+  finance: ['Sales', 'Transactions', 'Masters', 'Reports', 'Batch Reports', 'Utilities'],
+  marketing: ['Sales', 'Masters', 'Reports', 'Batch Reports', 'Transactions', 'Utilities'],
+  executive: ['Reports', 'Transactions', 'Fixed Assets', 'Masters', 'Sales', 'Batch Reports', 'Utilities'],
+  warehouse_staff: ['Transactions', 'Masters', 'Reports', 'Batch Reports', 'Utilities'],
+  technician: ['Transactions', 'Fixed Assets', 'Masters', 'Utilities'],
+  road_technician: ['Transactions', 'Fixed Assets', 'Masters', 'Utilities'],
+};
+
+const primaryPathCandidates: Record<BusinessRole, string[]> = {
+  admin: ['/work', '/admin/users', '/'],
+  operations: ['/operations/dispatch', '/operations/exceptions', '/work'],
+  sales: ['/sales', '/customers', '/work'],
+  finance: ['/finance', '/finance/service-coverage', '/work'],
+  marketing: ['/marketing', '/marketing/campaigns', '/work'],
+  executive: ['/executive/command-centre', '/executive', '/work'],
+  warehouse_staff: ['/warehouse/stock', '/warehouse/planning', '/work'],
+  technician: ['/technician', '/work'],
+  road_technician: ['/road-tech', '/work'],
+};
 
 function StatusScreen({
   title,
@@ -78,39 +112,34 @@ function safeTabList(value: string | null): OpenTab[] {
   }
 }
 
-function NotchRail({ side }: { side: 'left' | 'right' }) {
-  return (
-    <div aria-hidden="true" className={`notch-rail notch-rail-${side}`}>
-      <svg className="notch-line-svg" preserveAspectRatio="none">
-        <line x1="0" y1="39.5" x2="100%" y2="39.5" />
-        <line x1="0" y1="36.5" x2="100%" y2="36.5" />
-      </svg>
-    </div>
-  );
+function safeFavoriteList(value: string | null) {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item): item is string => typeof item === 'string').slice(0, MAX_FAVORITES);
+  } catch {
+    return [];
+  }
 }
 
-function NotchCorner({ side }: { side: 'left' | 'right' }) {
-  const backgroundPath = side === 'left'
-    ? 'M0 0 H52 V64 C26 64 26 40 0 40 Z'
-    : 'M0 0 H52 V40 C26 40 26 64 0 64 Z';
-  const outlineOne = side === 'left'
-    ? 'M0 39.5 C26 39.5 26 63.5 52 63.5'
-    : 'M0 63.5 C26 63.5 26 39.5 52 39.5';
-  const outlineTwo = side === 'left'
-    ? 'M0 36.5 C26 36.5 26 60.5 52 60.5'
-    : 'M0 60.5 C26 60.5 26 36.5 52 36.5';
+function orderNavigationSections(role: BusinessRole, sections: NavSection[]) {
+  const order = sectionOrderByRole[role];
+  const rank = new Map(order.map((heading, index) => [heading, index]));
+  const seen = new Set<string>();
 
-  return (
-    <div aria-hidden="true" className={`notch-corner notch-corner-${side}`}>
-      <svg className="notch-corner-bg" viewBox="0 0 52 64" preserveAspectRatio="none">
-        <path d={backgroundPath} />
-      </svg>
-      <svg className="notch-corner-lines" viewBox="0 0 52 64" preserveAspectRatio="none">
-        <path d={outlineOne} />
-        <path d={outlineTwo} />
-      </svg>
-    </div>
-  );
+  return sections
+    .filter((section) => section.heading !== 'Windows')
+    .sort((left, right) => (rank.get(left.heading) ?? 99) - (rank.get(right.heading) ?? 99))
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => {
+        if (seen.has(item.href)) return false;
+        seen.add(item.href);
+        return true;
+      }),
+    }))
+    .filter((section) => section.items.length > 0);
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -118,15 +147,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { authUser, businessProfile, businessUser, userDetails, loading, error } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [openDesktopSection, setOpenDesktopSection] = useState<string | null>(null);
   const [openTabs, setOpenTabs] = useState<OpenTab[]>([]);
+  const [favoriteHrefs, setFavoriteHrefs] = useState<string[]>([]);
+  const [railCollapsed, setRailCollapsed] = useState(false);
   const profileComplete = isProfileComplete(userDetails);
   const role = userDetails?.role;
 
   useEffect(() => {
-    if (!loading && !authUser) {
-      router.replace('/login');
-    }
+    if (!loading && !authUser) router.replace('/login');
   }, [authUser, loading, router]);
 
   useEffect(() => {
@@ -142,18 +170,17 @@ export function AppShell({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (pathname === '/' && role !== 'admin') {
-      router.replace(getDefaultPathForRole(role));
-    }
+    if (pathname === '/' && role !== 'admin') router.replace(getDefaultPathForRole(role));
   }, [businessUser, loading, pathname, profileComplete, role, router]);
 
   useEffect(() => {
     setMenuOpen(false);
-    setOpenDesktopSection(null);
   }, [pathname]);
 
   useEffect(() => {
     setOpenTabs(safeTabList(window.localStorage.getItem('dallmayr-open-tabs')));
+    setFavoriteHrefs(safeFavoriteList(window.localStorage.getItem(FAVORITES_KEY)));
+    setRailCollapsed(window.localStorage.getItem(RAIL_COLLAPSED_KEY) === 'true');
   }, []);
 
   useEffect(() => {
@@ -200,7 +227,6 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!menuOpen) return;
-
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
@@ -209,7 +235,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
 
     window.addEventListener('keydown', handleKeyDown);
-
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleKeyDown);
@@ -261,222 +286,123 @@ export function AppShell({ children }: { children: ReactNode }) {
       items: section.items.filter((item) => isNavItemAllowed(userDetails.role, item)),
     }))
     .filter((section) => section.items.length > 0);
-  const useDesktopOverflow = visibleSections.length > DESKTOP_OVERFLOW_THRESHOLD;
-  const primaryDesktopSections = useDesktopOverflow
-    ? visibleSections.slice(0, DESKTOP_PRIMARY_SECTION_LIMIT)
-    : visibleSections;
-  const overflowDesktopSections = useDesktopOverflow
-    ? visibleSections.slice(DESKTOP_PRIMARY_SECTION_LIMIT)
-    : [];
-  const overflowDesktopActive = overflowDesktopSections.some((section) =>
-    section.items.some((item) => isActivePath(pathname, item.href)),
-  );
-  const activeSection = visibleSections.find((section) => section.items.some((item) => isActivePath(pathname, item.href)));
+  const navigationSections = orderNavigationSections(userDetails.role, visibleSections);
+  const allNavigationItems = navigationSections.flatMap((section) => section.items);
+  const activeSection = navigationSections.find((section) => section.items.some((item) => isActivePath(pathname, item.href)));
   const activeItem = activeSection?.items.find((item) => isActivePath(pathname, item.href));
-  const activeTitle = activeItem?.label ?? 'Start Page';
-  const activeCode = activeItem?.code ?? moduleCode(activeTitle, activeItem?.href ?? homePath);
+  const activeTitle = activeItem?.label ?? 'Today';
   const activeBranch = userDetails.branch.toUpperCase();
-  const activeTitleWithContext = activeItem ? `${activeTitle}-${activeBranch}` : activeTitle;
   const userName = displayProfileName(businessProfile);
-  const environmentName = process.env.NEXT_PUBLIC_APP_ENVIRONMENT || 'Production';
-  const tabsToRender = openTabs.length > 0 ? openTabs : [{ href: homePath, label: 'Start Page', code: 'STP01' }];
-  const visibleHrefs = new Set(visibleSections.flatMap((section) => section.items.map((item) => item.href)));
-  const taskCandidates = userDetails.role === 'technician'
-    ? ['/technician', '/work']
-    : userDetails.role === 'road_technician'
-      ? ['/road-tech', '/work']
-      : userDetails.role === 'operations'
-        ? ['/operations/exceptions', '/work']
-        : ['/work', '/operations/exceptions'];
-  const mobileTaskPath = taskCandidates.find((href) => visibleHrefs.has(href)) ?? homePath;
-  const mobileScanPath = ['/warehouse/stock', '/operations/assets', mobileTaskPath]
-    .find((href) => visibleHrefs.has(href)) ?? mobileTaskPath;
+  const favoriteItems = favoriteHrefs
+    .map((href) => allNavigationItems.find((item) => item.href === href))
+    .filter((item): item is NavItem => Boolean(item));
+  const recentPages = [...openTabs]
+    .reverse()
+    .filter((tab, index, items) => items.findIndex((item) => item.href === tab.href) === index)
+    .filter((tab) => tab.href !== pathname && tab.href !== homePath);
+  const visibleHrefs = new Set(allNavigationItems.map((item) => item.href));
+  const mobileTaskPath = primaryPathCandidates[userDetails.role].find((href) => visibleHrefs.has(href)) ?? homePath;
+  const mobileScanPath = userDetails.role === 'warehouse_staff' ? '/warehouse/stock/scan' : '/operations/assets/scan';
 
-  function closeTab(tabHref: string) {
-    const next = openTabs.filter((item) => item.href !== tabHref);
-    setOpenTabs(next);
-    window.localStorage.setItem('dallmayr-open-tabs', JSON.stringify(next));
-    if (isActivePath(pathname, tabHref)) {
-      router.push(next.at(-1)?.href ?? homePath);
-    }
+  function toggleFavorite(href: string) {
+    setFavoriteHrefs((current) => {
+      const next = current.includes(href)
+        ? current.filter((item) => item !== href)
+        : current.length >= MAX_FAVORITES
+          ? current
+          : [...current, href];
+      window.localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  function toggleRail() {
+    setRailCollapsed((current) => {
+      const next = !current;
+      window.localStorage.setItem(RAIL_COLLAPSED_KEY, String(next));
+      return next;
+    });
   }
 
   return (
-    <div className={`app-shell top-shell ${menuOpen ? 'mobile-menu-open' : ''}`}>
+    <div className={`app-shell top-shell application-shell-v2 ${railCollapsed ? 'desktop-rail-collapsed' : ''} ${menuOpen ? 'mobile-menu-open' : ''}`}>
       <a className="skip-link" href="#main-content">Skip to main content</a>
 
       {menuOpen ? <button aria-label="Close navigation menu" className="mobile-nav-backdrop" onClick={() => setMenuOpen(false)} type="button" /> : null}
 
-      <header className="topbar erp-chrome notch-erp-navbar">
-        <div className="notch-navbar-frame">
-          <NotchRail side="left" />
-          <div className="notch-navbar-shell">
-            <NotchCorner side="left" />
+      <header className="application-header">
+        <div className="application-header-inner">
+          <Link aria-label="Open Today workspace" className="application-brand" href={homePath}>
+            <span aria-hidden="true" className="application-brand-mark">D</span>
+            <span>DallmayrERP</span>
+          </Link>
 
-            <div className="notch-navbar-center">
-              <div className="erp-menu-row notch-menu-row">
-                <Link className="erp-brand-button notch-logo-button" href={homePath} aria-label="Open Start Page">
-                  <span className="notch-logo-mark">D</span>
-                  <span>DallmayrERP</span>
-                </Link>
-
-                <nav aria-label="ERP menu bar" className="erp-menubar notch-menubar">
-                  {primaryDesktopSections.map((section) => {
-                    const sectionActive = section.items.some((item) => isActivePath(pathname, item.href));
-                    const sectionOpen = openDesktopSection === section.heading;
-                    return (
-                      <details
-                        className={`erp-menu ${sectionActive ? 'has-active' : ''}`}
-                        key={section.heading}
-                        onToggle={(event) => {
-                          const isOpen = event.currentTarget.open;
-                          setOpenDesktopSection((current) => {
-                            if (isOpen) return section.heading;
-                            return current === section.heading ? null : current;
-                          });
-                        }}
-                        open={sectionOpen}
-                      >
-                        <summary className="erp-menu-label">{section.heading}</summary>
-                        <div className="erp-menu-panel">
-                          {section.items.map((item) => {
-                            const active = isActivePath(pathname, item.href);
-                            return (
-                              <Link aria-current={active ? 'page' : undefined} className={`erp-menu-item ${active ? 'active' : ''}`} href={item.href} key={item.href}>
-                                <span className="erp-menu-code">{item.code}</span>
-                                <span className="erp-menu-text">
-                                  <strong>{item.label}</strong>
-                                  {item.description ? <small>{item.description}</small> : null}
-                                </span>
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      </details>
-                    );
-                  })}
-
-                  {overflowDesktopSections.length > 0 ? (
-                    <details
-                      className={`erp-menu erp-menu-overflow ${overflowDesktopActive ? 'has-active' : ''}`}
-                      onToggle={(event) => {
-                        const isOpen = event.currentTarget.open;
-                        setOpenDesktopSection((current) => {
-                          if (isOpen) return DESKTOP_OVERFLOW_KEY;
-                          return current === DESKTOP_OVERFLOW_KEY ? null : current;
-                        });
-                      }}
-                      open={openDesktopSection === DESKTOP_OVERFLOW_KEY}
-                    >
-                      <summary className="erp-menu-label">More</summary>
-                      <div className="erp-menu-panel erp-overflow-menu-panel">
-                        {overflowDesktopSections.map((section) => (
-                          <section className="erp-overflow-section" key={section.heading}>
-                            <h3>{section.heading}</h3>
-                            <div className="erp-overflow-section-links">
-                              {section.items.map((item) => {
-                                const active = isActivePath(pathname, item.href);
-                                return (
-                                  <Link aria-current={active ? 'page' : undefined} className={`erp-menu-item ${active ? 'active' : ''}`} href={item.href} key={item.href}>
-                                    <span className="erp-menu-code">{item.code}</span>
-                                    <span className="erp-menu-text">
-                                      <strong>{item.label}</strong>
-                                      {item.description ? <small>{item.description}</small> : null}
-                                    </span>
-                                  </Link>
-                                );
-                              })}
-                            </div>
-                          </section>
-                        ))}
-                      </div>
-                    </details>
-                  ) : null}
-                </nav>
-
-                <div className="erp-command-area notch-command-area">
-                  <GlobalSearch />
-                  <DensityToggle />
-                  <button className="erp-signout" onClick={signOut} type="button">Sign out</button>
-                </div>
-
-                <button
-                  aria-controls="mobile-navigation"
-                  aria-expanded={menuOpen}
-                  aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-                  className="hamburger-button notch-mobile-button"
-                  onClick={() => setMenuOpen((current) => !current)}
-                  type="button"
-                >
-                  <span />
-                  <span />
-                  <span />
-                </button>
-              </div>
-            </div>
-
-            <NotchCorner side="right" />
+          <div className="application-page-context">
+            <span>{activeSection?.heading ?? roleLabels[userDetails.role]}</span>
+            <strong>{activeTitle}</strong>
+            <small>{activeBranch} · {roleLabels[userDetails.role]}</small>
           </div>
-          <NotchRail side="right" />
-        </div>
 
-        <div aria-label="Open screens" className="erp-tab-row notch-tab-row" role="navigation">
-          <span aria-hidden="true" className="erp-window-icon">◉</span>
-          {tabsToRender.map((tab) => {
-            const active = isActivePath(pathname, tab.href);
-            return (
-              <div className={`erp-tab ${active ? 'active' : ''}`} key={tab.href}>
-                <Link aria-current={active ? 'page' : undefined} className="erp-tab-link" href={tab.href}>
-                  <span>{tab.label}</span>
-                  <small>[{tab.code}]</small>
-                </Link>
-                {tabsToRender.length > 1 ? (
-                  <button
-                    aria-label={`Close ${tab.label} tab`}
-                    className="erp-tab-close"
-                    onClick={() => closeTab(tab.href)}
-                    type="button"
-                  >
-                    ×
-                  </button>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="erp-active-titlebar notch-titlebar">
-          <div>
-            <span>{activeTitleWithContext}</span>
-            <strong>[{activeCode}]</strong>
+          <div className="application-header-actions">
+            <GlobalSearch />
+            <DensityToggle />
+            <div className="desktop-alerts-target" id="desktop-alerts-target" />
+            <div className="desktop-account-menu-target" id="desktop-account-menu-target" />
           </div>
-          <strong className="erp-context-strip">{environmentName} | {activeBranch} | {roleLabels[userDetails.role]} | {userName}</strong>
+
+          <button
+            aria-controls="mobile-navigation"
+            aria-expanded={menuOpen}
+            aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            className="hamburger-button notch-mobile-button application-mobile-menu-button"
+            onClick={() => setMenuOpen((current) => !current)}
+            type="button"
+          >
+            <span />
+            <span />
+            <span />
+          </button>
         </div>
 
         <MobileNavigationDrawer
           activeTitle={activeTitle}
+          favoriteHrefs={favoriteHrefs}
           homePath={homePath}
+          onToggleFavorite={toggleFavorite}
           open={menuOpen}
           pathname={pathname}
           profileComplete={profileComplete}
           recentPages={openTabs.map((tab) => ({ href: tab.href, label: tab.label }))}
           roleLabel={roleLabels[userDetails.role]}
-          sections={visibleSections}
+          sections={navigationSections}
           setOpen={setMenuOpen}
           userName={userName}
         />
       </header>
 
+      <DesktopNavigationRail
+        collapsed={railCollapsed}
+        homePath={homePath}
+        onToggleCollapse={toggleRail}
+        onToggleFavorite={toggleFavorite}
+        pathname={pathname}
+        pinnedItems={favoriteItems}
+        recentPages={recentPages}
+        roleLabel={roleLabels[userDetails.role]}
+        sections={navigationSections}
+      />
+
       <MobileQuickBar
         homePath={homePath}
         menuOpen={menuOpen}
         pathname={pathname}
+        role={userDetails.role}
         scanPath={mobileScanPath}
         setMenuOpen={setMenuOpen}
         taskPath={mobileTaskPath}
       />
 
-      <main className="main top-main" id="main-content" tabIndex={-1}>
+      <main className="main top-main application-main" id="main-content" tabIndex={-1}>
         {!allowedPath ? (
           <div className="neo-card access-denied" role="alert">
             <div className="badge danger">Access blocked</div>
@@ -484,7 +410,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <p>
               Your current role is <strong>{roleLabels[userDetails.role]}</strong>. Use the navigation menu to open your assigned pages.
             </p>
-            <Link className="button" href={homePath}>Go to Start Page</Link>
+            <Link className="button" href={homePath}>Go to Today</Link>
           </div>
         ) : (
           <>

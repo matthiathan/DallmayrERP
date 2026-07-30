@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import type { NavSection } from '@/lib/auth/permissions';
+import type { BusinessRole } from '@/types/dallmayrerp';
 
 type RecentPage = {
   href: string;
@@ -13,7 +14,9 @@ type RecentPage = {
 
 type MobileNavigationDrawerProps = {
   activeTitle: string;
+  favoriteHrefs: string[];
   homePath: string;
+  onToggleFavorite: (href: string) => void;
   open: boolean;
   pathname: string;
   profileComplete: boolean;
@@ -28,32 +31,23 @@ type MobileQuickBarProps = {
   homePath: string;
   menuOpen: boolean;
   pathname: string;
+  role: BusinessRole;
   scanPath: string;
   setMenuOpen: Dispatch<SetStateAction<boolean>>;
   taskPath: string;
 };
 
-const FAVORITES_KEY = 'dallmayr-mobile-favorites-v1';
 const MAX_FAVORITES = 4;
 
 function isActivePath(pathname: string, href: string) {
   return pathname === href || (href !== '/' && pathname.startsWith(`${href}/`));
 }
 
-function safeFavorites(value: string | null) {
-  if (!value) return [];
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item): item is string => typeof item === 'string').slice(0, MAX_FAVORITES);
-  } catch {
-    return [];
-  }
-}
-
 export function MobileNavigationDrawer({
   activeTitle,
+  favoriteHrefs,
   homePath,
+  onToggleFavorite,
   open,
   pathname,
   profileComplete,
@@ -66,11 +60,6 @@ export function MobileNavigationDrawer({
   const panelRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
-  const [favorites, setFavorites] = useState<string[]>([]);
-
-  useEffect(() => {
-    setFavorites(safeFavorites(window.localStorage.getItem(FAVORITES_KEY)));
-  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -131,10 +120,10 @@ export function MobileNavigationDrawer({
   }, [sections]);
 
   const favoriteItems = useMemo(
-    () => favorites
+    () => favoriteHrefs
       .map((href) => allItems.find((item) => item.href === href))
       .filter((item): item is NavSection['items'][number] => Boolean(item)),
-    [allItems, favorites],
+    [allItems, favoriteHrefs],
   );
 
   const recentItems = useMemo(() => {
@@ -142,24 +131,12 @@ export function MobileNavigationDrawer({
     return [...recentPages]
       .reverse()
       .filter((page) => {
-        if (seen.has(page.href) || page.href === homePath || page.href === pathname || favorites.includes(page.href)) return false;
+        if (seen.has(page.href) || page.href === homePath || page.href === pathname || favoriteHrefs.includes(page.href)) return false;
         seen.add(page.href);
         return true;
       })
       .slice(0, 4);
-  }, [favorites, homePath, pathname, recentPages]);
-
-  function toggleFavorite(href: string) {
-    setFavorites((current) => {
-      const next = current.includes(href)
-        ? current.filter((item) => item !== href)
-        : current.length >= MAX_FAVORITES
-          ? current
-          : [...current, href];
-      window.localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
-      return next;
-    });
-  }
+  }, [favoriteHrefs, homePath, pathname, recentPages]);
 
   return (
     <div
@@ -208,7 +185,7 @@ export function MobileNavigationDrawer({
         className="mobile-primary-link"
         href={homePath}
       >
-        Start Page
+        Today
       </Link>
 
       {favoriteItems.length > 0 ? (
@@ -246,8 +223,8 @@ export function MobileNavigationDrawer({
               <div className="mobile-nav-section-links">
                 {section.items.map((item) => {
                   const active = isActivePath(pathname, item.href);
-                  const pinned = favorites.includes(item.href);
-                  const pinDisabled = !pinned && favorites.length >= MAX_FAVORITES;
+                  const pinned = favoriteHrefs.includes(item.href);
+                  const pinDisabled = !pinned && favoriteHrefs.length >= MAX_FAVORITES;
                   return (
                     <div className="mobile-nav-item-row" key={item.href}>
                       <Link
@@ -265,7 +242,7 @@ export function MobileNavigationDrawer({
                         aria-pressed={pinned}
                         className="mobile-nav-pin"
                         disabled={pinDisabled}
-                        onClick={() => toggleFavorite(item.href)}
+                        onClick={() => onToggleFavorite(item.href)}
                         title={pinDisabled ? `You can pin up to ${MAX_FAVORITES} pages` : undefined}
                         type="button"
                       >
@@ -291,14 +268,31 @@ export function MobileNavigationDrawer({
   );
 }
 
+const quickLabels: Record<BusinessRole, { label: string; icon: string }> = {
+  admin: { label: 'Work', icon: '✓' },
+  operations: { label: 'Dispatch', icon: '⇄' },
+  sales: { label: 'Sales', icon: '↗' },
+  finance: { label: 'Finance', icon: '$' },
+  marketing: { label: 'Marketing', icon: '◎' },
+  executive: { label: 'Overview', icon: '◇' },
+  warehouse_staff: { label: 'Stock', icon: '▦' },
+  technician: { label: 'Jobs', icon: '✓' },
+  road_technician: { label: 'Routes', icon: '⌖' },
+};
+
 export function MobileQuickBar({
   homePath,
   menuOpen,
   pathname,
+  role,
   scanPath,
   setMenuOpen,
   taskPath,
 }: MobileQuickBarProps) {
+  const fieldRole = role === 'technician' || role === 'road_technician';
+  const warehouseRole = role === 'warehouse_staff';
+  const primary = quickLabels[role];
+
   function openSearch() {
     const trigger = document.querySelector<HTMLButtonElement>('.mobile-global-search-trigger');
     if (trigger) {
@@ -308,20 +302,40 @@ export function MobileQuickBar({
     setMenuOpen(true);
   }
 
+  function openAlerts() {
+    window.dispatchEvent(new Event('dallmayr-open-alerts'));
+  }
+
+  function openQueue() {
+    window.dispatchEvent(new Event('dallmayr-open-field-queue'));
+  }
+
   return (
     <nav aria-label="Mobile quick actions" className="mobile-quick-bar">
       <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} href={homePath}>
-        <span aria-hidden="true">⌂</span><strong>Home</strong>
+        <span aria-hidden="true">⌂</span><strong>Today</strong>
       </Link>
       <Link aria-current={isActivePath(pathname, taskPath) ? 'page' : undefined} href={taskPath}>
-        <span aria-hidden="true">✓</span><strong>Tasks</strong>
+        <span aria-hidden="true">{primary.icon}</span><strong>{primary.label}</strong>
       </Link>
-      <button onClick={openSearch} type="button">
-        <span aria-hidden="true">⌕</span><strong>Search</strong>
-      </button>
-      <Link aria-current={isActivePath(pathname, scanPath) ? 'page' : undefined} href={scanPath}>
-        <span aria-hidden="true">▣</span><strong>Scan</strong>
-      </Link>
+      {fieldRole || warehouseRole ? (
+        <Link aria-current={isActivePath(pathname, scanPath) ? 'page' : undefined} href={scanPath}>
+          <span aria-hidden="true">▣</span><strong>Scan</strong>
+        </Link>
+      ) : (
+        <button aria-label="Open global search" onClick={openSearch} type="button">
+          <span aria-hidden="true">⌕</span><strong>Search</strong>
+        </button>
+      )}
+      {fieldRole ? (
+        <button aria-label="Open offline work queue" onClick={openQueue} type="button">
+          <span aria-hidden="true">⇅</span><strong>Queue</strong>
+        </button>
+      ) : (
+        <button aria-label="Open notifications" onClick={openAlerts} type="button">
+          <span aria-hidden="true">♢</span><strong>Alerts</strong>
+        </button>
+      )}
       <button aria-expanded={menuOpen} onClick={() => setMenuOpen((current) => !current)} type="button">
         <span aria-hidden="true">☰</span><strong>Menu</strong>
       </button>
