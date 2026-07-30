@@ -3,6 +3,7 @@ name: DallmayrERP Audit Bootstrap
 on:
   pull_request:
     branches: [main]
+    types: [reopened]
 
 permissions:
   contents: write
@@ -37,61 +38,6 @@ jobs:
           git apply audit-patch/post.patch
           rm -rf audit-patch
 
-      - name: Restore permanent CI workflow
-        run: |
-          cat > .github/workflows/ci.yml <<'YAML'
-          name: DallmayrERP CI
-
-          on:
-            pull_request:
-              branches: [main]
-            push:
-              branches: [main]
-
-          permissions:
-            contents: read
-
-          concurrency:
-            group: ci-${{ github.workflow }}-${{ github.ref }}
-            cancel-in-progress: true
-
-          jobs:
-            build:
-              name: Validate and build Next.js app
-              runs-on: ubuntu-latest
-              timeout-minutes: 15
-              env:
-                NEXT_PUBLIC_SUPABASE_URL: https://egbiiizxsqlarqpnzxxs.supabase.co
-                NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-build-key
-
-              steps:
-                - name: Checkout repository
-                  uses: actions/checkout@v4
-
-                - name: Setup Node.js
-                  uses: actions/setup-node@v4
-                  with:
-                    node-version: 22
-
-                - name: Install dependencies
-                  run: npm install --no-audit --no-fund
-
-                - name: Check stylesheet architecture
-                  run: npm run stylecheck
-
-                - name: Check RPC contracts
-                  run: npm run contractcheck
-
-                - name: Check source safety regressions
-                  run: npm run sourcecheck
-
-                - name: Typecheck application
-                  run: npm run typecheck
-
-                - name: Build application
-                  run: npm run build
-          YAML
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -118,9 +64,10 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Commit validated fixes
+      - name: Commit validated source fixes
         run: |
-          rm -rf .next node_modules
+          rm -rf .next node_modules tsconfig.tsbuildinfo
+          git checkout HEAD -- .github/workflows/ci.yml
           git config user.name 'DallmayrERP CI'
           git config user.email 'actions@users.noreply.github.com'
           git add -A
