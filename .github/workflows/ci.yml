@@ -33,6 +33,8 @@ jobs:
           cat audit-patch/part-*.patch > /tmp/audit-fixes.patch
           git apply --check /tmp/audit-fixes.patch
           git apply /tmp/audit-fixes.patch
+          git apply --check audit-patch/post.patch
+          git apply audit-patch/post.patch
           rm -rf audit-patch
 
       - name: Restore permanent CI workflow
