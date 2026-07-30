@@ -1,0 +1,30 @@
++    'log_work_time', 'receive_purchase_order_line', 'receive_stock_lot',
++    'receive_stock_serial', 'record_asset_audit', 'record_asset_downtime',
++    'record_asset_meter_reading', 'record_customer_service_payment',
++    'reschedule_daily_service_item', 'resolve_stock_barcode', 'review_purchase_order',
++    'review_work_item', 'save_customer_service_plan', 'save_work_completion',
++    'search_contract_renewals', 'search_finance_accounts',
++    'search_inventory_recommendations', 'search_inventory_transfer_suggestions',
++    'search_machine_assets', 'search_marketing_segments',
++    'search_reliability_machines', 'search_sales_opportunities',
++    'submit_purchase_order_for_approval', 'sync_operational_exceptions',
++    'transition_delivery_order', 'transition_purchase_order',
++    'transition_service_job', 'transition_work_item', 'triage_exception_case',
++    'update_asset_custody', 'update_asset_professional_profile', 'update_asset_profile'
++  ];
++begin
++  for v_function in
++    select p.oid::regprocedure as signature
++    from pg_proc p
++    join pg_namespace n on n.oid = p.pronamespace
++    where n.nspname = 'public'
++      and p.proname = any(v_client_rpcs)
++  loop
++    execute format('revoke all on function %s from public', v_function.signature);
++    execute format('revoke execute on function %s from anon', v_function.signature);
++    execute format('grant execute on function %s to authenticated, service_role', v_function.signature);
++  end loop;
++end;
++$$;
++
++notify pgrst, 'reload schema';
