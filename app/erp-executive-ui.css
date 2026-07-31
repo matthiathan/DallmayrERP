@@ -1,0 +1,1417 @@
+/* DallmayrERP executive UI system.
+   Frontend-only redesign: stable shell, readable surfaces, dense ERP tables,
+   clear records and forms. Business components and backend calls are untouched. */
+
+:root {
+  --application-header-height: 68px;
+  --application-rail-width: 280px;
+  --application-rail-collapsed-width: 76px;
+
+  --erp-ui-page: #f4f7fa;
+  --erp-ui-page-2: #eaf0f4;
+  --erp-ui-surface: #ffffff;
+  --erp-ui-surface-raised: #f9fbfc;
+  --erp-ui-surface-muted: #eef4f6;
+  --erp-ui-text: #14232e;
+  --erp-ui-heading: #081925;
+  --erp-ui-muted: #526675;
+  --erp-ui-soft: #718390;
+  --erp-ui-line: #d5e0e7;
+  --erp-ui-line-strong: #aebfca;
+  --erp-ui-teal: #0f8f9c;
+  --erp-ui-teal-dark: #075f6c;
+  --erp-ui-teal-soft: #dff7f8;
+  --erp-ui-gold: #c69b3f;
+  --erp-ui-gold-soft: #fff5d9;
+  --erp-ui-green: #18794e;
+  --erp-ui-red: #be3d3f;
+  --erp-ui-rail: #071923;
+  --erp-ui-rail-2: #0e2733;
+  --erp-ui-rail-line: rgba(255, 255, 255, 0.12);
+  --erp-ui-rail-text: #edf7f8;
+  --erp-ui-rail-muted: #a5bac3;
+  --erp-ui-shadow-xs: 0 1px 2px rgba(10, 28, 40, 0.08);
+  --erp-ui-shadow-sm: 0 8px 20px rgba(10, 28, 40, 0.07);
+  --erp-ui-shadow-md: 0 18px 44px rgba(10, 28, 40, 0.1);
+  --erp-ui-radius-xs: 4px;
+  --erp-ui-radius-sm: 6px;
+  --erp-ui-radius-md: 8px;
+  --erp-ui-content-max: 1760px;
+  --erp-ui-control-height: 42px;
+
+  --bg: var(--erp-ui-page);
+  --bg-deep: var(--erp-ui-page);
+  --surface: var(--erp-ui-surface);
+  --surface-2: var(--erp-ui-surface-raised);
+  --surface-3: var(--erp-ui-surface-muted);
+  --text: var(--erp-ui-text);
+  --text-strong: var(--erp-ui-heading);
+  --muted: var(--erp-ui-muted);
+  --content-surface: var(--erp-ui-surface);
+  --content-surface-raised: var(--erp-ui-surface-raised);
+  --content-text: var(--erp-ui-text);
+  --content-strong: var(--erp-ui-heading);
+  --content-muted: var(--erp-ui-muted);
+  --content-subtle: var(--erp-ui-soft);
+  --content-border: var(--erp-ui-line);
+  --content-accent-text: var(--erp-ui-teal-dark);
+  --design-panel: var(--erp-ui-surface);
+  --design-panel-raised: var(--erp-ui-surface-raised);
+  --design-input: var(--erp-ui-surface);
+  --design-border: var(--erp-ui-line);
+  --design-border-strong: var(--erp-ui-line-strong);
+  --design-text: var(--erp-ui-text);
+  --design-strong: var(--erp-ui-heading);
+  --design-muted: var(--erp-ui-muted);
+  --design-subtle: var(--erp-ui-soft);
+  --design-accent: var(--erp-ui-teal);
+  --monday-shell-bg: var(--erp-ui-surface);
+  --monday-shell-raised: var(--erp-ui-surface-raised);
+  --monday-page-bg: var(--erp-ui-page);
+  --monday-text: var(--erp-ui-text);
+  --monday-strong: var(--erp-ui-heading);
+  --monday-muted: var(--erp-ui-muted);
+  --monday-subtle: var(--erp-ui-soft);
+  --monday-border: var(--erp-ui-line);
+  --monday-divider: var(--erp-ui-line);
+  --monday-hover: #edf7f8;
+  --monday-selected: var(--erp-ui-teal-soft);
+  --monday-accent: var(--erp-ui-teal);
+  --erp-readable: var(--erp-ui-text);
+  --erp-muted: var(--erp-ui-muted);
+  --erp-soft-muted: var(--erp-ui-soft);
+  --erp-page: var(--erp-ui-page);
+  --erp-panel: var(--erp-ui-surface);
+  --erp-raised: var(--erp-ui-surface-raised);
+  --erp-line: var(--erp-ui-line);
+  --erp-strong-line: var(--erp-ui-line-strong);
+  --erp-focus: var(--erp-ui-teal);
+  --erp-field-title: #20313d;
+  --erp-field-title-soft: #384d5b;
+  --erp-table-title: #1c3344;
+}
+
+html[data-visual-theme],
+html[data-theme-tone] {
+  color-scheme: light !important;
+  background: var(--erp-ui-page) !important;
+}
+
+html[data-visual-theme] body,
+html[data-theme-tone] body {
+  min-width: 320px;
+  margin: 0;
+  overflow-x: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(244, 247, 250, 0) 260px),
+    repeating-linear-gradient(90deg, rgba(8, 25, 37, 0.026) 0 1px, transparent 1px 112px),
+    var(--erp-ui-page) !important;
+  color: var(--erp-ui-text) !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: 14px;
+  letter-spacing: 0;
+  text-rendering: optimizeLegibility;
+}
+
+body::before,
+body::after,
+.orb,
+.notch-corner,
+.notch-corner-lines,
+.notch-corner-bg {
+  display: none !important;
+}
+
+html[data-visual-theme] body *,
+html[data-visual-theme] body *::before,
+html[data-visual-theme] body *::after {
+  box-sizing: border-box;
+  letter-spacing: 0;
+}
+
+html[data-visual-theme] body :is(a, button, input, select, textarea, summary) {
+  font: inherit;
+}
+
+html[data-visual-theme] body :is(h1, h2, h3, h4, h5, h6, p) {
+  margin-top: 0;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body :is(h1, h2, h3, h4, h5, h6) {
+  color: var(--erp-ui-heading) !important;
+  line-height: 1.18;
+}
+
+html[data-visual-theme] body p {
+  color: var(--erp-ui-muted) !important;
+  line-height: 1.58;
+}
+
+html[data-visual-theme] body .application-shell-v2 {
+  min-height: 100dvh !important;
+  padding-top: var(--application-header-height) !important;
+  background: var(--erp-ui-page) !important;
+  color: var(--erp-ui-text) !important;
+}
+
+/* Application header. */
+html[data-visual-theme] body .application-shell-v2 .application-header {
+  position: fixed !important;
+  inset: 0 0 auto 0 !important;
+  z-index: 7000 !important;
+  min-height: var(--application-header-height) !important;
+  border-bottom: 1px solid var(--erp-ui-line) !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  color: var(--erp-ui-text) !important;
+  box-shadow: 0 10px 28px rgba(10, 28, 40, 0.08) !important;
+  backdrop-filter: blur(18px) saturate(120%);
+}
+
+html[data-visual-theme] body .application-shell-v2 .application-header-inner {
+  display: grid !important;
+  grid-template-columns: minmax(190px, 236px) minmax(280px, 1fr) max-content !important;
+  align-items: center !important;
+  gap: 18px !important;
+  width: 100% !important;
+  min-height: var(--application-header-height) !important;
+  padding: 9px 24px 9px 18px !important;
+  overflow: visible !important;
+}
+
+html[data-visual-theme] body .application-status-strip,
+html[data-visual-theme] body .application-page-context {
+  display: none !important;
+}
+
+html[data-visual-theme] body .application-brand {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+  min-height: 48px !important;
+  padding: 5px 9px 5px 5px !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--erp-ui-radius-md) !important;
+  color: var(--erp-ui-heading) !important;
+  font-size: 1rem !important;
+  font-weight: 850 !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+}
+
+html[data-visual-theme] body .application-brand:hover,
+html[data-visual-theme] body .application-brand:focus-visible {
+  border-color: var(--erp-ui-line) !important;
+  background: var(--erp-ui-surface-raised) !important;
+  outline: 3px solid rgba(15, 143, 156, 0.14) !important;
+  outline-offset: 0 !important;
+}
+
+html[data-visual-theme] body .application-brand-mark {
+  display: grid !important;
+  place-items: center !important;
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  border: 1px solid rgba(198, 155, 63, 0.42) !important;
+  border-radius: var(--erp-ui-radius-md) !important;
+  background: linear-gradient(180deg, #f3d582, var(--erp-ui-gold)) !important;
+  color: #081925 !important;
+  font-weight: 900 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+}
+
+html[data-visual-theme] body .application-header-search {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+html[data-visual-theme] body .application-header-search .global-search-trigger,
+html[data-visual-theme] body .global-search-trigger {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 46px !important;
+  padding: 9px 12px 9px 16px !important;
+  border: 1px solid var(--erp-ui-line) !important;
+  border-radius: var(--erp-ui-radius-md) !important;
+  background: var(--erp-ui-surface-raised) !important;
+  color: var(--erp-ui-muted) !important;
+  box-shadow: none !important;
+  font-size: 0.95rem !important;
+  font-weight: 760 !important;
+}
+
+html[data-visual-theme] body .application-header-search .global-search-trigger:hover,
+html[data-visual-theme] body .application-header-search .global-search-trigger:focus-visible,
+html[data-visual-theme] body .global-search-trigger:hover,
+html[data-visual-theme] body .global-search-trigger:focus-visible {
+  border-color: rgba(15, 143, 156, 0.5) !important;
+  background: #ffffff !important;
+  color: var(--erp-ui-heading) !important;
+  outline: 3px solid rgba(15, 143, 156, 0.14) !important;
+  outline-offset: 0 !important;
+}
+
+html[data-visual-theme] body .global-search-trigger kbd {
+  border-color: var(--erp-ui-line) !important;
+  border-radius: var(--erp-ui-radius-sm) !important;
+  background: #ffffff !important;
+  color: var(--erp-ui-soft) !important;
+  box-shadow: none !important;
+}
+
+html[data-visual-theme] body .application-header-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+  min-width: max-content !important;
+  overflow: visible !important;
+}
+
+html[data-visual-theme] body .application-header-actions .density-toggle {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 114px !important;
+  height: 44px !important;
+  gap: 4px !important;
+  padding: 5px !important;
+  border: 1px solid var(--erp-ui-line) !important;
+  border-radius: 999px !important;
+  background: #182631 !important;
+  box-shadow: var(--erp-ui-shadow-sm) !important;
+}
+
+html[data-visual-theme] body .application-header-actions .density-toggle button {
+  display: grid !important;
+  place-items: center !important;
+  flex: 0 0 32px !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  color: #d8e5ea !important;
+  line-height: 1 !important;
+}
+
+html[data-visual-theme] body .application-header-actions .density-toggle button.is-active,
+html[data-visual-theme] body .application-header-actions .density-toggle button[aria-pressed='true'] {
+  background: #0b1620 !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(198, 155, 63, 0.72) !important;
+}
+
+html[data-visual-theme] body .desktop-alerts-target,
+html[data-visual-theme] body .desktop-account-menu-target {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 46px !important;
+  width: 46px !important;
+  height: 46px !important;
+  min-width: 46px !important;
+  overflow: visible !important;
+}
+
+html[data-visual-theme] body .desktop-alerts-target > *,
+html[data-visual-theme] body .desktop-account-menu-target > * {
+  position: relative !important;
+  inset: auto !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+html[data-visual-theme] body .notification-inbox-trigger,
+html[data-visual-theme] body .desktop-account-menu-target .dallmayr-account-menu.is-brand,
+html[data-visual-theme] body .desktop-account-menu-target .dallmayr-account-trigger {
+  flex: 0 0 42px !important;
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
+  max-width: 42px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+}
+
+html[data-visual-theme] body .desktop-account-menu-target .dallmayr-account-trigger,
+html[data-visual-theme] body .notification-inbox-trigger {
+  display: grid !important;
+  place-items: center !important;
+  border: 1px solid var(--erp-ui-line) !important;
+  background: #182631 !important;
+  color: #edf7f8 !important;
+  box-shadow: var(--erp-ui-shadow-sm) !important;
+}
+
+html[data-visual-theme] body .desktop-account-menu-target .dallmayr-account-avatar {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  color: #06141d !important;
+  background: linear-gradient(180deg, #f5d983, var(--erp-ui-gold)) !important;
+  font-size: 0.78rem !important;
+  line-height: 1 !important;
+}
+
+html[data-visual-theme] body .desktop-account-menu-target .dallmayr-account-identity,
+html[data-visual-theme] body .desktop-account-menu-target .dallmayr-account-chevron {
+  display: none !important;
+}
+
+html[data-visual-theme] body .desktop-account-menu-target .dallmayr-account-panel {
+  top: calc(100% + 12px) !important;
+  right: 0 !important;
+  left: auto !important;
+  width: min(430px, calc(100vw - 24px)) !important;
+  max-width: min(430px, calc(100vw - 24px)) !important;
+  border-radius: var(--erp-ui-radius-md) !important;
+}
+
+/* Desktop navigation rail. */
+@media (min-width: 981px) {
+  html[data-visual-theme] body .monday-navigation-rail {
+    position: fixed !important;
+    inset: var(--application-header-height) auto 0 0 !important;
+    z-index: 6800 !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr) auto !important;
+    width: var(--application-rail-width) !important;
+    min-width: var(--application-rail-width) !important;
+    padding: 16px 14px !important;
+    overflow: hidden !important;
+    border-right: 1px solid var(--erp-ui-rail-line) !important;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0)),
+      linear-gradient(155deg, var(--erp-ui-rail-2), var(--erp-ui-rail) 62%) !important;
+    color: var(--erp-ui-rail-text) !important;
+    box-shadow: 16px 0 36px rgba(7, 25, 35, 0.12) !important;
+  }
+
+  html[data-visual-theme] body .monday-navigation-rail.is-collapsed {
+    width: var(--application-rail-collapsed-width) !important;
+    min-width: var(--application-rail-collapsed-width) !important;
+    padding-inline: 10px !important;
+  }
+}
+
+html[data-visual-theme] body .desktop-rail-heading {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 44px !important;
+  gap: 10px !important;
+  align-items: center !important;
+  padding-bottom: 12px !important;
+  border-bottom: 1px solid var(--erp-ui-rail-line) !important;
+}
+
+html[data-visual-theme] body .desktop-rail-collapse,
+html[data-visual-theme] body .desktop-rail-glyph-link {
+  display: grid !important;
+  place-items: center !important;
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: var(--erp-ui-radius-md) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: var(--erp-ui-rail-muted) !important;
+  box-shadow: none !important;
+}
+
+html[data-visual-theme] body .desktop-rail-collapse:hover,
+html[data-visual-theme] body .desktop-rail-collapse:focus-visible,
+html[data-visual-theme] body .desktop-rail-glyph-link:hover,
+html[data-visual-theme] body .desktop-rail-glyph-link:focus-visible,
+html[data-visual-theme] body .desktop-rail-glyph-link[aria-current='page'] {
+  border-color: rgba(198, 155, 63, 0.5) !important;
+  background: rgba(198, 155, 63, 0.16) !important;
+  color: #ffffff !important;
+  outline: none !important;
+}
+
+html[data-visual-theme] body .monday-workspace-switcher > summary {
+  display: grid !important;
+  grid-template-columns: 40px minmax(0, 1fr) 18px !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 54px !important;
+  padding: 7px 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: var(--erp-ui-radius-md) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: var(--erp-ui-rail-text) !important;
+  cursor: pointer !important;
+}
+
+html[data-visual-theme] body .monday-workspace-icon,
+html[data-visual-theme] body .desktop-rail-item-glyph {
+  display: grid !important;
+  place-items: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  border-radius: var(--erp-ui-radius-sm) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #f4cf74 !important;
+  font-size: 0.72rem !important;
+  font-weight: 900 !important;
+}
+
+html[data-visual-theme] body .monday-workspace-switcher small,
+html[data-visual-theme] body .desktop-rail-section-label,
+html[data-visual-theme] body .desktop-rail-section-label strong,
+html[data-visual-theme] body .desktop-rail-section-label span {
+  color: var(--erp-ui-rail-muted) !important;
+  font-size: 0.72rem !important;
+  font-weight: 840 !important;
+  text-transform: uppercase !important;
+}
+
+html[data-visual-theme] body .monday-workspace-switcher strong,
+html[data-visual-theme] body .desktop-rail-item-row strong,
+html[data-visual-theme] body .monday-primary-navigation strong {
+  overflow: hidden !important;
+  color: var(--erp-ui-rail-text) !important;
+  font-size: 0.86rem !important;
+  font-weight: 820 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+html[data-visual-theme] body .desktop-rail-navigation {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  padding: 12px 0 !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+html[data-visual-theme] body .monday-primary-navigation {
+  display: grid !important;
+  gap: 8px !important;
+  padding: 0 0 14px !important;
+  margin: 0 0 14px !important;
+  border-bottom: 1px solid var(--erp-ui-rail-line) !important;
+}
+
+html[data-visual-theme] body .monday-primary-navigation :is(a, button),
+html[data-visual-theme] body .desktop-rail-item-row > a,
+html[data-visual-theme] body .desktop-rail-section > summary,
+html[data-visual-theme] body .desktop-rail-recent a {
+  display: grid !important;
+  grid-template-columns: 38px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 50px !important;
+  width: 100% !important;
+  padding: 8px !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--erp-ui-radius-md) !important;
+  background: transparent !important;
+  color: var(--erp-ui-rail-muted) !important;
+  text-align: left !important;
+  text-decoration: none !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+}
+
+html[data-visual-theme] body .desktop-rail-section > summary {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  min-height: 42px !important;
+  padding: 9px 10px !important;
+}
+
+html[data-visual-theme] body .monday-primary-navigation :is(a, button):hover,
+html[data-visual-theme] body .monday-primary-navigation :is(a, button):focus-visible,
+html[data-visual-theme] body .monday-primary-navigation :is(a, button)[aria-current='page'],
+html[data-visual-theme] body .desktop-rail-item-row > a:hover,
+html[data-visual-theme] body .desktop-rail-item-row > a:focus-visible,
+html[data-visual-theme] body .desktop-rail-item-row > a[aria-current='page'],
+html[data-visual-theme] body .desktop-rail-section > summary:hover,
+html[data-visual-theme] body .desktop-rail-section[open] > summary,
+html[data-visual-theme] body .desktop-rail-recent a:hover,
+html[data-visual-theme] body .desktop-rail-recent a:focus-visible {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+  outline: none !important;
+}
+
+html[data-visual-theme] body .desktop-rail-item-row > a[aria-current='page'],
+html[data-visual-theme] body .monday-primary-navigation :is(a, button)[aria-current='page'] {
+  border-color: rgba(15, 199, 213, 0.38) !important;
+  background: rgba(15, 143, 156, 0.22) !important;
+  box-shadow: inset 3px 0 0 #16c7d5 !important;
+}
+
+html[data-visual-theme] body .desktop-rail-item-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 38px !important;
+  gap: 6px !important;
+  align-items: center !important;
+}
+
+html[data-visual-theme] body .desktop-rail-item-row > button {
+  display: grid !important;
+  place-items: center !important;
+  width: 38px !important;
+  height: 44px !important;
+  min-width: 38px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: var(--erp-ui-radius-md) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #d7b26b !important;
+  box-shadow: none !important;
+}
+
+html[data-visual-theme] body .desktop-rail-section,
+html[data-visual-theme] body .desktop-rail-shortcuts,
+html[data-visual-theme] body .desktop-rail-directory,
+html[data-visual-theme] body .desktop-rail-recent {
+  display: grid !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+html[data-visual-theme] body .desktop-rail-section-links {
+  display: grid !important;
+  gap: 6px !important;
+  padding: 6px 0 10px !important;
+}
+
+html[data-visual-theme] body .desktop-rail-item-row small,
+html[data-visual-theme] body .monday-primary-navigation small {
+  overflow: hidden !important;
+  color: var(--erp-ui-rail-muted) !important;
+  font-size: 0.76rem !important;
+  line-height: 1.3 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+html[data-visual-theme] body .desktop-rail-collapsed-links {
+  display: grid !important;
+  justify-items: center !important;
+  gap: 8px !important;
+  padding-top: 12px !important;
+  overflow-y: auto !important;
+}
+
+/* Main content and page templates. */
+@media (min-width: 981px) {
+  html[data-visual-theme] body .application-shell-v2 .application-main {
+    width: calc(100% - var(--application-rail-width)) !important;
+    max-width: none !important;
+    min-height: calc(100dvh - var(--application-header-height)) !important;
+    margin-left: var(--application-rail-width) !important;
+    padding: 30px 40px 72px !important;
+    background: transparent !important;
+    color: var(--erp-ui-text) !important;
+  }
+
+  html[data-visual-theme] body .application-shell-v2.desktop-rail-collapsed .application-main {
+    width: calc(100% - var(--application-rail-collapsed-width)) !important;
+    margin-left: var(--application-rail-collapsed-width) !important;
+  }
+}
+
+html[data-visual-theme] body .application-main {
+  display: grid !important;
+  align-content: start !important;
+  gap: 26px !important;
+}
+
+html[data-visual-theme] body .application-main > :not(.breadcrumbs),
+html[data-visual-theme] body .workspace-stage,
+html[data-visual-theme] body .dashboard-stage,
+html[data-visual-theme] body [class*='dashboard-stage'],
+html[data-visual-theme] body [class*='-stage'],
+html[data-visual-theme] body .monday-customer-board {
+  width: 100% !important;
+  max-width: var(--erp-ui-content-max) !important;
+  min-width: 0 !important;
+  justify-self: stretch !important;
+}
+
+html[data-visual-theme] body .breadcrumbs {
+  color: var(--erp-ui-soft) !important;
+  font-size: 0.84rem !important;
+  font-weight: 720 !important;
+}
+
+html[data-visual-theme] body .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header),
+html[data-visual-theme] body .monday-board-header {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: start !important;
+  gap: 18px 28px !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 24px 28px !important;
+  overflow: visible !important;
+  border: 1px solid var(--erp-ui-line) !important;
+  border-left: 5px solid var(--erp-ui-gold) !important;
+  border-radius: var(--erp-ui-radius-md) !important;
+  background: var(--erp-ui-surface) !important;
+  color: var(--erp-ui-text) !important;
+  box-shadow: var(--erp-ui-shadow-sm) !important;
+}
+
+html[data-visual-theme] body .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header)::before,
+html[data-visual-theme] body .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header)::after,
+html[data-visual-theme] body .monday-board-header::before,
+html[data-visual-theme] body .monday-board-header::after {
+  display: none !important;
+}
+
+html[data-visual-theme] body .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header) h1,
+html[data-visual-theme] body .monday-board-title-row h1,
+html[data-visual-theme] body .monday-board-header-copy h1 {
+  max-width: none !important;
+  margin: 0 !important;
+  color: var(--erp-ui-heading) !important;
+  font-size: 2rem !important;
+  font-weight: 860 !important;
+  line-height: 1.14 !important;
+}
+
+html[data-visual-theme] body .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header) p,
+html[data-visual-theme] body .monday-board-header-copy > p {
+  max-width: 100ch !important;
+  margin: 0 !important;
+  color: var(--erp-ui-muted) !important;
+  font-size: 0.96rem !important;
+}
+
+html[data-visual-theme] body .badge,
+html[data-visual-theme] body .monday-board-eyebrow,
+html[data-visual-theme] body .minimal-kicker,
+html[data-visual-theme] body .nav-heading {
+  width: fit-content !important;
+  min-height: 24px !important;
+  padding: 4px 8px !important;
+  border: 1px solid rgba(198, 155, 63, 0.32) !important;
+  border-radius: var(--erp-ui-radius-sm) !important;
+  background: var(--erp-ui-gold-soft) !important;
+  color: #694c14 !important;
+  box-shadow: none !important;
+  font-size: 0.72rem !important;
+  font-weight: 860 !important;
+  text-transform: uppercase !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .card,
+  .neo-card,
+  .hero-panel,
+  .ds-surface,
+  .minimal-panel,
+  .operations-panel,
+  .spatial-card,
+  .monday-board-surface,
+  .enterprise-table-shell,
+  .remote-table-shell,
+  .monday-my-work-dashboard-grid > section,
+  .monday-my-work-card,
+  .monday-my-work-create,
+  .monday-my-work-calendar,
+  .record-section,
+  .customer-360-panel,
+  .role-workspace-panel,
+  .operations-manager-panel,
+  .monthly-service-panel,
+  .requested-service-create-card,
+  .record-comment,
+  .record-timeline-item
+):not(.page-header):not(.minimal-page-header) {
+  min-width: 0 !important;
+  padding: 22px !important;
+  overflow: visible !important;
+  border: 1px solid var(--erp-ui-line) !important;
+  border-radius: var(--erp-ui-radius-md) !important;
+  background: var(--erp-ui-surface) !important;
+  color: var(--erp-ui-text) !important;
+  box-shadow: var(--erp-ui-shadow-xs) !important;
+}
+
+html[data-visual-theme] body .application-main :is(.card, .neo-card, .hero-panel)::before,
+html[data-visual-theme] body .application-main :is(.card, .neo-card, .hero-panel)::after {
+  display: none !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .grid.grid-2,
+  .minimal-split,
+  .record-detail-grid,
+  .exception-detail-grid
+) {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)) !important;
+  gap: 22px !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .grid.grid-3,
+  .grid.grid-4,
+  .grid.grid-5,
+  .grid.grid-6,
+  .kpi-grid,
+  .spatial-kpi-grid,
+  .operations-manager-kpis,
+  .admin-access-kpis,
+  .exception-centre-kpis,
+  .role-metric-grid,
+  .minimal-metric-grid,
+  [class*='-kpis']
+) {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)) !important;
+  gap: 18px !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .kpi-card,
+  .metric-card,
+  .stats-card,
+  .minimal-metric,
+  .role-metric-card,
+  .field-service-metric
+) {
+  min-height: 126px !important;
+  padding: 18px !important;
+  border-radius: var(--erp-ui-radius-md) !important;
+  background: linear-gradient(180deg, #ffffff, #f8fbfc) !important;
+  color: var(--erp-ui-text) !important;
+}
+
+html[data-visual-theme] body .application-main :is(.kpi-value, .kpi-card strong, .metric-card strong, .monday-my-work-kpis strong) {
+  color: var(--erp-ui-heading) !important;
+  font-size: 2rem !important;
+  font-weight: 880 !important;
+  line-height: 1.05 !important;
+}
+
+/* Forms and controls. */
+html[data-visual-theme] body .application-main :is(form, .form-grid, .input-grid, .field-grid, .minimal-grid-3) {
+  min-width: 0 !important;
+}
+
+html[data-visual-theme] body .application-main :is(.form-grid, .input-grid, .field-grid, .minimal-grid-3),
+html[data-visual-theme] body .application-main.workspace-template-frame.template-form :is(.form-grid, .input-grid, .field-grid) {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)) !important;
+  align-items: end !important;
+  gap: 16px !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  label:not(.button):not(.mobile-nav-card):not(.dallmayr-account-trigger),
+  legend,
+  dt,
+  .asset-ticket-label,
+  .customer-combobox-label,
+  .monday-board-search,
+  .monday-board-inline-select
+) {
+  display: grid !important;
+  gap: 7px !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  color: var(--erp-field-title) !important;
+  -webkit-text-fill-color: var(--erp-field-title) !important;
+  font-size: 0.88rem !important;
+  font-weight: 840 !important;
+  line-height: 1.35 !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body .application-main :is(label small, label .field-note, label .helper-text, .field-note, .helper-text, .description) {
+  color: var(--erp-field-title-soft) !important;
+  -webkit-text-fill-color: var(--erp-field-title-soft) !important;
+  opacity: 1 !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),
+  select,
+  textarea,
+  .table-column-filter-input,
+  .monday-board-search input,
+  .monday-board-inline-select select,
+  .monday-board-filter-grid input,
+  .monday-board-filter-grid select
+) {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: var(--erp-ui-control-height) !important;
+  padding: 10px 12px !important;
+  border: 1px solid var(--erp-ui-line-strong) !important;
+  border-radius: var(--erp-ui-radius-md) !important;
+  background: #ffffff !important;
+  color: var(--erp-ui-text) !important;
+  -webkit-text-fill-color: var(--erp-ui-text) !important;
+  box-shadow: inset 0 1px 2px rgba(10, 28, 40, 0.06) !important;
+  font-size: 0.95rem !important;
+  font-weight: 650 !important;
+  line-height: 1.35 !important;
+}
+
+html[data-visual-theme] body .application-main textarea {
+  min-height: 120px !important;
+  line-height: 1.5 !important;
+  resize: vertical;
+}
+
+html[data-visual-theme] body .application-main :is(input, textarea)::placeholder {
+  color: #657887 !important;
+  -webkit-text-fill-color: #657887 !important;
+  opacity: 1 !important;
+}
+
+html[data-visual-theme] body .application-main :is(input, select, textarea):focus {
+  border-color: var(--erp-ui-teal) !important;
+  outline: 3px solid rgba(15, 143, 156, 0.16) !important;
+  outline-offset: 0 !important;
+  box-shadow: inset 0 1px 2px rgba(10, 28, 40, 0.06) !important;
+}
+
+html[data-visual-theme] body .application-main :is(input[type='checkbox'], input[type='radio']) {
+  accent-color: var(--erp-ui-teal) !important;
+}
+
+html[data-visual-theme] body .application-main :is(.button, button.button, a.button, .monday-board-command-button, .monday-board-menu > summary) {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  min-height: 42px !important;
+  max-width: 100% !important;
+  padding: 10px 14px !important;
+  border: 1px solid var(--erp-ui-teal-dark) !important;
+  border-radius: var(--erp-ui-radius-md) !important;
+  background: var(--erp-ui-teal) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: none !important;
+  font-size: 0.92rem !important;
+  font-weight: 820 !important;
+  line-height: 1.25 !important;
+  text-decoration: none !important;
+  text-shadow: none !important;
+  cursor: pointer !important;
+}
+
+html[data-visual-theme] body .application-main :is(.button, button.button, a.button, .monday-board-command-button, .monday-board-menu > summary):hover,
+html[data-visual-theme] body .application-main :is(.button, button.button, a.button, .monday-board-command-button, .monday-board-menu > summary):focus-visible {
+  border-color: var(--erp-ui-teal-dark) !important;
+  background: var(--erp-ui-teal-dark) !important;
+  outline: 3px solid rgba(15, 143, 156, 0.18) !important;
+  outline-offset: 0 !important;
+}
+
+html[data-visual-theme] body .application-main :is(.button.secondary, .button[data-variant='secondary'], .monday-board-command-button[data-active='true'], .monday-board-menu[open] > summary) {
+  border-color: var(--erp-ui-line-strong) !important;
+  background: #ffffff !important;
+  color: var(--erp-ui-text) !important;
+  -webkit-text-fill-color: var(--erp-ui-text) !important;
+}
+
+html[data-visual-theme] body .application-main :is(.button.danger, .button.is-danger, .button.secondary.danger) {
+  border-color: var(--erp-ui-red) !important;
+  background: var(--erp-ui-red) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+html[data-visual-theme] body .application-main :is(.button:disabled, button:disabled, select:disabled, input:disabled, textarea:disabled) {
+  cursor: not-allowed !important;
+  opacity: 0.62 !important;
+}
+
+html[data-visual-theme] body .application-main :is(.button, button.button, a.button, .badge, .status-badge) :is(span, strong, small) {
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+/* Command bars, boards and tables. */
+html[data-visual-theme] body .application-main :is(
+  .workspace-command-bar,
+  .monday-board-command-bar,
+  .monday-board-view-tabs,
+  .enterprise-table-toolbar,
+  .remote-table-filters,
+  .workspace-filter-bar
+) {
+  position: relative !important;
+  top: auto !important;
+  z-index: 20 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  padding: 12px !important;
+  overflow: visible !important;
+  border: 1px solid var(--erp-ui-line) !important;
+  border-radius: var(--erp-ui-radius-md) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  color: var(--erp-ui-text) !important;
+  box-shadow: var(--erp-ui-shadow-xs) !important;
+}
+
+html[data-visual-theme] body .workspace-command-bar,
+html[data-visual-theme] body .page-toolbar {
+  display: grid !important;
+  gap: 12px !important;
+}
+
+html[data-visual-theme] body .workspace-command-body,
+html[data-visual-theme] body .page-toolbar-controls-body {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+}
+
+html[data-visual-theme] body .workspace-filter-bar,
+html[data-visual-theme] body .remote-table-filters {
+  flex: 1 1 520px !important;
+  box-shadow: none !important;
+}
+
+html[data-visual-theme] body .workspace-command-actions,
+html[data-visual-theme] body .page-toolbar-actions,
+html[data-visual-theme] body .toolbar-actions,
+html[data-visual-theme] body .action-row,
+html[data-visual-theme] body .button-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  min-width: 0 !important;
+}
+
+html[data-visual-theme] body .monday-board-view-tabs {
+  padding: 6px !important;
+  overflow-x: auto !important;
+}
+
+html[data-visual-theme] body .monday-board-view-tab {
+  min-height: 38px !important;
+  padding: 8px 12px !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--erp-ui-radius-sm) !important;
+  background: transparent !important;
+  color: var(--erp-ui-muted) !important;
+  font-size: 0.86rem !important;
+  font-weight: 780 !important;
+}
+
+html[data-visual-theme] body .monday-board-view-tab:hover,
+html[data-visual-theme] body .monday-board-view-tab:focus-visible,
+html[data-visual-theme] body .monday-board-view-tab[aria-selected='true'] {
+  border-color: rgba(15, 143, 156, 0.28) !important;
+  background: var(--erp-ui-teal-soft) !important;
+  color: var(--erp-ui-teal-dark) !important;
+  outline: none !important;
+}
+
+html[data-visual-theme] body .enterprise-table-shell,
+html[data-visual-theme] body .remote-table-shell,
+html[data-visual-theme] body .monday-board-surface {
+  display: grid !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+html[data-visual-theme] body :is(.enterprise-table-wrap, .table-wrap, .table-scroll-frame, .table-scroll-primary, .data-table-wrapper, .monday-board-desktop-table, .enterprise-table-desktop-view) {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+}
+
+html[data-visual-theme] body :is(.table-wrap table, .enterprise-table-wrap table, .data-table-wrapper table, .monday-board-table, .resizable-enterprise-table) {
+  width: 100% !important;
+  min-width: max(100%, 980px) !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  table-layout: auto !important;
+  background: #ffffff !important;
+  color: var(--erp-ui-text) !important;
+}
+
+html[data-visual-theme] body :is(thead th, .monday-board-table thead th, .resizable-enterprise-table thead th) {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  min-width: 122px !important;
+  padding: 11px 14px !important;
+  border-bottom: 1px solid var(--erp-ui-line-strong) !important;
+  background: #e8f0f4 !important;
+  color: var(--erp-table-title) !important;
+  -webkit-text-fill-color: var(--erp-table-title) !important;
+  font-size: 0.82rem !important;
+  font-weight: 860 !important;
+  line-height: 1.3 !important;
+  text-align: left !important;
+  text-transform: none !important;
+  vertical-align: top !important;
+  white-space: normal !important;
+}
+
+html[data-visual-theme] body :is(.table-header-label, .resizable-th-content .table-sort-button, .monday-board-sort-button, .monday-board-sort-button > span:first-child) {
+  color: var(--erp-table-title) !important;
+  -webkit-text-fill-color: var(--erp-table-title) !important;
+  font-size: 0.82rem !important;
+  font-weight: 860 !important;
+  text-transform: none !important;
+}
+
+html[data-visual-theme] body :is(tbody td, .monday-board-table td, .resizable-enterprise-table td) {
+  min-width: 122px !important;
+  padding: 13px 14px !important;
+  border-bottom: 1px solid #e5edf2 !important;
+  background: #ffffff !important;
+  color: var(--erp-ui-text) !important;
+  -webkit-text-fill-color: var(--erp-ui-text) !important;
+  font-size: 0.88rem !important;
+  line-height: 1.46 !important;
+  text-align: left !important;
+  vertical-align: top !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+html[data-visual-theme] body :is(tbody tr:nth-child(even) td, .resizable-enterprise-table tbody tr:nth-child(even) td, .monday-board-table tbody tr:nth-child(even) td) {
+  background: #fbfdfe !important;
+}
+
+html[data-visual-theme] body :is(tbody tr:hover td, .monday-board-table tbody tr:not(.monday-board-group-row):hover td, .resizable-enterprise-table tbody tr:hover td) {
+  background: #edf8f9 !important;
+  color: var(--erp-ui-heading) !important;
+}
+
+html[data-visual-theme] body .table-column-filter-input {
+  height: 34px !important;
+  min-height: 34px !important;
+  padding: 6px 9px !important;
+  font-size: 0.78rem !important;
+}
+
+html[data-visual-theme] body .enterprise-table-pagination {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+  padding: 12px !important;
+  border-top: 1px solid var(--erp-ui-line) !important;
+  background: var(--erp-ui-surface-raised) !important;
+  color: var(--erp-ui-muted) !important;
+}
+
+html[data-visual-theme] body .enterprise-pagination-buttons {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+/* Record/object pages and operational workspaces. */
+html[data-visual-theme] body .application-main.workspace-template-frame.template-record :is(.record-workspace, .record-detail-stage, .asset-detail-stage, .customer-detail-stage) {
+  display: grid !important;
+  gap: 24px !important;
+  min-width: 0 !important;
+}
+
+html[data-visual-theme] body .application-main.workspace-template-frame.template-record dl {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)) !important;
+  gap: 12px !important;
+  margin: 0 !important;
+}
+
+html[data-visual-theme] body .application-main.workspace-template-frame.template-record dl > div {
+  min-width: 0 !important;
+  padding: 12px !important;
+  border: 1px solid var(--erp-ui-line) !important;
+  border-radius: var(--erp-ui-radius-md) !important;
+  background: var(--erp-ui-surface-raised) !important;
+}
+
+html[data-visual-theme] body .application-main.workspace-template-frame.template-record dt {
+  color: var(--erp-field-title) !important;
+  -webkit-text-fill-color: var(--erp-field-title) !important;
+  font-size: 0.74rem !important;
+  font-weight: 840 !important;
+  text-transform: uppercase !important;
+}
+
+html[data-visual-theme] body .application-main.workspace-template-frame.template-record dd {
+  margin: 5px 0 0 !important;
+  color: var(--erp-ui-heading) !important;
+  -webkit-text-fill-color: var(--erp-ui-heading) !important;
+  font-weight: 760 !important;
+}
+
+html[data-visual-theme] body .record-timeline {
+  display: grid !important;
+  gap: 10px !important;
+  min-height: 160px !important;
+  color: var(--erp-ui-muted) !important;
+}
+
+html[data-visual-theme] body .record-timeline > p,
+html[data-visual-theme] body .record-comment-list > p,
+html[data-visual-theme] body .empty-state,
+html[data-visual-theme] body .ux-empty-state {
+  color: var(--erp-ui-muted) !important;
+  -webkit-text-fill-color: var(--erp-ui-muted) !important;
+  font-weight: 650 !important;
+  opacity: 1 !important;
+}
+
+html[data-visual-theme] body .application-main.workspace-template-frame.template-operational :is(.field-service-layout, .operations-dispatch-layout, .exception-centre-layout, .admin-access-layout) {
+  display: grid !important;
+  grid-template-columns: minmax(320px, 0.85fr) minmax(520px, 1.45fr) !important;
+  gap: 22px !important;
+  min-width: 0 !important;
+  align-items: start !important;
+}
+
+html[data-visual-theme] body :is(.field-job-queue, .field-execution, .operations-dispatch-panel, .exception-detail-panel) {
+  min-width: 0 !important;
+  border-radius: var(--erp-ui-radius-md) !important;
+  background: var(--erp-ui-surface) !important;
+  color: var(--erp-ui-text) !important;
+}
+
+html[data-visual-theme] body .status-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 24px !important;
+  padding: 3px 8px !important;
+  border-radius: var(--erp-ui-radius-sm) !important;
+  border: 1px solid var(--erp-ui-line) !important;
+  background: var(--erp-ui-surface-raised) !important;
+  color: var(--erp-ui-text) !important;
+  -webkit-text-fill-color: currentColor !important;
+  font-size: 0.74rem !important;
+  font-weight: 840 !important;
+  line-height: 1.2 !important;
+}
+
+html[data-visual-theme] body :is(.status-badge[data-tone='success'], .status-badge[data-value='active'], .status-badge[data-value='completed'], .badge.success) {
+  border-color: rgba(24, 121, 78, 0.28) !important;
+  background: #e7f6ed !important;
+  color: var(--erp-ui-green) !important;
+}
+
+html[data-visual-theme] body :is(.status-badge[data-tone='danger'], .status-badge[data-value='critical'], .status-badge[data-value='overdue'], .badge.danger, .error) {
+  border-color: rgba(190, 61, 63, 0.28) !important;
+  background: #fff0f0 !important;
+  color: var(--erp-ui-red) !important;
+}
+
+/* Dialogs, drawers and overlays. */
+html[data-visual-theme] body :is(.global-search-dialog, .dallmayr-account-panel, .monday-board-filter-drawer, .notification-inbox-panel, .mobile-nav-panel, .mobile-filter-sheet) {
+  border: 1px solid var(--erp-ui-line) !important;
+  border-radius: var(--erp-ui-radius-md) !important;
+  background: var(--erp-ui-surface) !important;
+  color: var(--erp-ui-text) !important;
+  box-shadow: var(--erp-ui-shadow-md) !important;
+}
+
+html[data-visual-theme] body :is(.global-search-dialog, .dallmayr-account-panel, .monday-board-filter-drawer, .notification-inbox-panel, .mobile-nav-panel, .mobile-filter-sheet) :is(h2, h3, strong) {
+  color: var(--erp-ui-heading) !important;
+}
+
+html[data-visual-theme] body :is(.global-search-dialog, .dallmayr-account-panel, .monday-board-filter-drawer, .notification-inbox-panel, .mobile-nav-panel, .mobile-filter-sheet) :is(p, small, label) {
+  color: var(--erp-ui-muted) !important;
+}
+
+/* Responsive behavior. */
+@media (min-width: 981px) and (max-width: 1280px) {
+  :root {
+    --application-rail-width: 248px;
+  }
+
+  html[data-visual-theme] body .application-shell-v2 .application-header-inner {
+    grid-template-columns: minmax(166px, 214px) minmax(240px, 1fr) max-content !important;
+    gap: 12px !important;
+    padding-inline: 14px !important;
+  }
+
+  html[data-visual-theme] body .application-header-actions .density-toggle {
+    display: none !important;
+  }
+
+  html[data-visual-theme] body .application-shell-v2 .application-main {
+    padding: 26px 28px 64px !important;
+  }
+}
+
+@media (min-width: 981px) and (max-width: 1100px) {
+  :root {
+    --application-rail-width: 228px;
+  }
+
+  html[data-visual-theme] body .application-brand {
+    width: 48px !important;
+    padding: 5px !important;
+  }
+
+  html[data-visual-theme] body .application-brand > span:last-child {
+    display: none !important;
+  }
+
+  html[data-visual-theme] body .application-shell-v2 .application-header-inner {
+    grid-template-columns: 48px minmax(220px, 1fr) max-content !important;
+  }
+}
+
+@media (max-width: 980px) {
+  :root {
+    --application-header-height: calc(64px + env(safe-area-inset-top, 0px));
+  }
+
+  html[data-visual-theme] body .application-shell-v2 {
+    padding-top: var(--application-header-height) !important;
+  }
+
+  html[data-visual-theme] body .application-shell-v2 .application-header {
+    min-height: var(--application-header-height) !important;
+    padding-top: env(safe-area-inset-top, 0px) !important;
+  }
+
+  html[data-visual-theme] body .application-shell-v2 .application-header-inner {
+    grid-template-columns: 46px minmax(0, 1fr) 46px !important;
+    gap: 10px !important;
+    min-height: 64px !important;
+    padding: 8px 12px !important;
+  }
+
+  html[data-visual-theme] body .application-brand {
+    width: 46px !important;
+    min-height: 46px !important;
+    padding: 4px !important;
+  }
+
+  html[data-visual-theme] body .application-brand > span:last-child,
+  html[data-visual-theme] body .application-header-search,
+  html[data-visual-theme] body .application-header-actions,
+  html[data-visual-theme] body .monday-navigation-rail {
+    display: none !important;
+  }
+
+  html[data-visual-theme] body .application-page-context {
+    display: grid !important;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    min-width: 0 !important;
+    text-align: center !important;
+  }
+
+  html[data-visual-theme] body .application-page-context strong {
+    overflow: hidden !important;
+    color: var(--erp-ui-heading) !important;
+    font-size: 0.96rem !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  html[data-visual-theme] body .application-page-context span,
+  html[data-visual-theme] body .application-page-context small {
+    display: none !important;
+  }
+
+  html[data-visual-theme] body .application-mobile-menu-button {
+    display: grid !important;
+    place-self: center end !important;
+    width: 46px !important;
+    height: 46px !important;
+    min-width: 46px !important;
+    border-radius: var(--erp-ui-radius-md) !important;
+  }
+
+  html[data-visual-theme] body .application-shell-v2 .application-main {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 18px 14px 104px !important;
+  }
+
+  html[data-visual-theme] body .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header),
+  html[data-visual-theme] body .monday-board-header {
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding: 18px !important;
+  }
+
+  html[data-visual-theme] body .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header) h1,
+  html[data-visual-theme] body .monday-board-title-row h1,
+  html[data-visual-theme] body .monday-board-header-copy h1 {
+    font-size: 1.48rem !important;
+  }
+
+  html[data-visual-theme] body .application-main :is(.card, .neo-card, .hero-panel, .minimal-panel, .operations-panel, .record-section, .customer-360-panel):not(.page-header):not(.minimal-page-header) {
+    padding: 16px !important;
+  }
+
+  html[data-visual-theme] body .application-main :is(
+    .grid.grid-2,
+    .grid.grid-3,
+    .grid.grid-4,
+    .grid.grid-5,
+    .grid.grid-6,
+    .kpi-grid,
+    .spatial-kpi-grid,
+    [class*='-kpis'],
+    .field-service-layout,
+    .operations-dispatch-layout,
+    .exception-centre-layout,
+    .admin-access-layout
+  ) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  html[data-visual-theme] body .workspace-command-body,
+  html[data-visual-theme] body .page-toolbar-controls-body,
+  html[data-visual-theme] body .enterprise-table-toolbar,
+  html[data-visual-theme] body .remote-table-filters,
+  html[data-visual-theme] body .workspace-filter-bar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  html[data-visual-theme] body .application-main :is(.form-grid, .input-grid, .field-grid, .minimal-grid-3) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-visual-theme] body *,
+  html[data-visual-theme] body *::before,
+  html[data-visual-theme] body *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
