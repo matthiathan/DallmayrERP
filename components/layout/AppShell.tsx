@@ -301,6 +301,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     .filter((tab, index, items) => items.findIndex((item) => item.href === tab.href) === index)
     .filter((tab) => tab.href !== pathname && tab.href !== homePath);
   const visibleHrefs = new Set(allNavigationItems.map((item) => item.href));
+  const statusQuickLinks = [
+    { href: '/work', label: 'My Work' },
+    { href: '/operations/exceptions', label: 'Exceptions' },
+    { href: '/operations/dispatch', label: 'Dispatch' },
+    { href: '/warehouse/stock', label: 'Stock' },
+  ].filter((item) => item.href === '/work' || visibleHrefs.has(item.href)).slice(0, 3);
   const mobileTaskPath = primaryPathCandidates[userDetails.role].find((href) => visibleHrefs.has(href)) ?? homePath;
   const mobileScanPath = userDetails.role === 'warehouse_staff' ? '/warehouse/stock/scan' : '/operations/assets/scan';
 
@@ -350,7 +356,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="application-page-context">
             <span>{activeSection?.heading ?? roleLabels[userDetails.role]}</span>
             <strong>{activeTitle}</strong>
-            <small>{activeBranch} · {roleLabels[userDetails.role]}</small>
+            <small>{activeBranch} &middot; {roleLabels[userDetails.role]}</small>
           </div>
 
           <button
@@ -365,6 +371,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span />
             <span />
           </button>
+        </div>
+
+        <div aria-label="Workspace status" className="application-status-strip">
+          <span><strong>{activeBranch}</strong>&nbsp;branch</span>
+          <span>{roleLabels[userDetails.role]}</span>
+          <span>{profileComplete ? 'Profile ready' : 'Profile setup'}</span>
+          {statusQuickLinks.map((item) => (
+            <Link href={item.href} key={item.href}>{item.label}</Link>
+          ))}
         </div>
 
         <MobileNavigationDrawer

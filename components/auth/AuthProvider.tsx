@@ -103,10 +103,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    const client = getSupabaseClient();
+    let unsubscribe: (() => void) | undefined;
 
     async function initialise() {
       try {
+        const client = getSupabaseClient();
+        const { data: subscription } = client.auth.onAuthStateChange((_event, session) => {
+          if (!mounted) return;
+          setAuthUser(session?.user ?? null);
+          setLoading(true);
+
+          window.setTimeout(async () => {
+            if (!mounted) return;
+            try {
+              const profile = await withTimeout(
+                loadBusinessProfile(session?.user ?? null),
+                'Timed out while checking your ERP role and user details. Please refresh the page or sign in again.',
+              );
+              if (!mounted) return;
+              setBusinessProfile(profile);
+              setError(null);
+            } catch (err) {
+              if (!mounted) return;
+              setBusinessProfile(null);
+              setError(err instanceof Error ? err.message : 'Could not load user profile.');
+            } finally {
+              if (mounted) setLoading(false);
+            }
+          }, 0);
+        });
+        unsubscribe = () => subscription.subscription.unsubscribe();
+
         const { currentUser, profile } = await withTimeout(
           loadFromSession(),
           'Timed out while checking your session and ERP profile. Please refresh the page or sign in again.',
@@ -127,34 +154,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     initialise();
 
-    const { data: subscription } = client.auth.onAuthStateChange((_event, session) => {
-      if (!mounted) return;
-      setAuthUser(session?.user ?? null);
-      setLoading(true);
-
-      window.setTimeout(async () => {
-        if (!mounted) return;
-        try {
-          const profile = await withTimeout(
-            loadBusinessProfile(session?.user ?? null),
-            'Timed out while checking your ERP role and user details. Please refresh the page or sign in again.',
-          );
-          if (!mounted) return;
-          setBusinessProfile(profile);
-          setError(null);
-        } catch (err) {
-          if (!mounted) return;
-          setBusinessProfile(null);
-          setError(err instanceof Error ? err.message : 'Could not load user profile.');
-        } finally {
-          if (mounted) setLoading(false);
-        }
-      }, 0);
-    });
-
     return () => {
       mounted = false;
-      subscription.subscription.unsubscribe();
+      unsubscribe?.();
     };
   }, []);
 

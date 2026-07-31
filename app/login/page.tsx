@@ -29,21 +29,25 @@ export default function LoginPage() {
     setSuccess(null);
     setSubmitting(true);
 
-    const client = getSupabaseClient();
-    const cleanEmail = email.trim().toLowerCase();
-    const { error: loginError } = await client.auth.signInWithPassword({
-      email: cleanEmail,
-      password,
-    });
+    try {
+      const client = getSupabaseClient();
+      const cleanEmail = email.trim().toLowerCase();
+      const { error: loginError } = await client.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
+      });
 
-    setSubmitting(false);
+      if (loginError) {
+        setError('Login failed. Check that your account is activated and that the password is correct.');
+        return;
+      }
 
-    if (loginError) {
-      setError('Login failed. Check that your account is activated and that the password is correct.');
-      return;
+      router.replace('/');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login could not start.');
+    } finally {
+      setSubmitting(false);
     }
-
-    router.replace('/');
   }
 
   async function activate(event: FormEvent<HTMLFormElement>) {
@@ -52,34 +56,36 @@ export default function LoginPage() {
     setSuccess(null);
     setSubmitting(true);
 
-    const client = getSupabaseClient();
-    const cleanEmail = email.trim().toLowerCase();
+    try {
+      const client = getSupabaseClient();
+      const cleanEmail = email.trim().toLowerCase();
+      const { error: signUpError } = await client.auth.signUp({
+        email: cleanEmail,
+        password,
+      });
 
-    const { error: signUpError } = await client.auth.signUp({
-      email: cleanEmail,
-      password,
-    });
+      if (signUpError) {
+        setError(signUpError.message);
+        return;
+      }
 
-    if (signUpError) {
+      const { error: loginError } = await client.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
+      });
+
+      if (loginError) {
+        setSuccess('Account activation started. Check your email if Supabase requires confirmation, then sign in. Your email must still be invited by admin before ERP access unlocks.');
+        setMode('login');
+        return;
+      }
+
+      router.replace('/');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Account activation could not start.');
+    } finally {
       setSubmitting(false);
-      setError(signUpError.message);
-      return;
     }
-
-    const { error: loginError } = await client.auth.signInWithPassword({
-      email: cleanEmail,
-      password,
-    });
-
-    setSubmitting(false);
-
-    if (loginError) {
-      setSuccess('Account activation started. Check your email if Supabase requires confirmation, then sign in. Your email must still be invited by admin before ERP access unlocks.');
-      setMode('login');
-      return;
-    }
-
-    router.replace('/');
   }
 
   const isActivate = mode === 'activate';

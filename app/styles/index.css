@@ -77,3 +77,6 @@
 @import '../monday-item-card-phase-3.css';
 @import '../monday-operational-views-phase-4.css';
 @import '../monday-my-work-phase-5.css';
+
+/* 6. 2026 operations cockpit overhaul. Keep this last so it can normalize legacy surfaces. */
+@import '../operations-cockpit.css';

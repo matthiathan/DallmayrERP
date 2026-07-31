@@ -444,7 +444,7 @@ export function MobileAppExperience() {
 
           {error ? <div className="notification-inbox-error" role="alert">{error}</div> : null}
           {!error && alerts.length === 0 ? (
-            <div className="notification-inbox-empty"><span aria-hidden="true">✓</span><strong>You're up to date</strong><p>New assigned jobs and operational exceptions will appear here.</p></div>
+            <div className="notification-inbox-empty"><span aria-hidden="true">✓</span><strong>You are up to date</strong><p>New assigned jobs and operational exceptions will appear here.</p></div>
           ) : null}
 
           <div className="notification-inbox-content">

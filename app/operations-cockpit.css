@@ -1,0 +1,893 @@
+/* 2026 operations cockpit overhaul.
+   This layer reskins the current Next.js app without changing business flows. */
+
+:root {
+  --application-header-height: 72px;
+  --application-rail-width: 282px;
+  --application-rail-collapsed-width: 74px;
+  --cockpit-bg: #eef3f6;
+  --cockpit-bg-strong: #dce5ea;
+  --cockpit-ink: #13212c;
+  --cockpit-muted: #5f6f7a;
+  --cockpit-subtle: #7d8992;
+  --cockpit-panel: #ffffff;
+  --cockpit-panel-alt: #f7fafb;
+  --cockpit-line: #d6e1e7;
+  --cockpit-line-strong: #b6c5ce;
+  --cockpit-rail: #071722;
+  --cockpit-rail-2: #0d2634;
+  --cockpit-rail-ink: #edf7f8;
+  --cockpit-rail-muted: #93aeb8;
+  --cockpit-gold: #c6a15a;
+  --cockpit-gold-soft: #fff4d7;
+  --cockpit-teal: #0f9aa7;
+  --cockpit-teal-soft: #ddfbfb;
+  --cockpit-green: #188a5d;
+  --cockpit-red: #c83f42;
+  --cockpit-shadow-sm: 0 12px 28px rgba(16, 34, 45, 0.08);
+  --cockpit-shadow-md: 0 24px 58px rgba(12, 30, 42, 0.12);
+  --cockpit-radius-xs: 6px;
+  --cockpit-radius-sm: 8px;
+  --cockpit-radius-md: 12px;
+  --cockpit-radius-lg: 16px;
+  --monday-shell-bg: var(--cockpit-panel);
+  --monday-shell-raised: var(--cockpit-panel-alt);
+  --monday-page-bg: var(--cockpit-bg);
+  --monday-text: var(--cockpit-ink);
+  --monday-strong: #071722;
+  --monday-muted: var(--cockpit-muted);
+  --monday-subtle: var(--cockpit-subtle);
+  --monday-border: var(--cockpit-line);
+  --monday-divider: var(--cockpit-line);
+  --monday-hover: #edf8f9;
+  --monday-selected: #ddfbfb;
+  --monday-accent: var(--cockpit-teal);
+  --design-panel: var(--cockpit-panel);
+  --design-panel-raised: var(--cockpit-panel-alt);
+  --design-input: #ffffff;
+  --design-border: var(--cockpit-line);
+  --design-text: var(--cockpit-ink);
+  --design-strong: #071722;
+  --design-muted: var(--cockpit-muted);
+  --design-subtle: var(--cockpit-subtle);
+  --workspace-radius-sm: var(--cockpit-radius-sm);
+  --workspace-radius-md: var(--cockpit-radius-md);
+  --workspace-radius-lg: var(--cockpit-radius-lg);
+}
+
+html[data-visual-theme] {
+  color-scheme: light;
+  background: var(--cockpit-bg);
+}
+
+html[data-visual-theme] body {
+  min-width: 320px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(238, 243, 246, 0) 240px),
+    repeating-linear-gradient(90deg, rgba(7, 23, 34, 0.025) 0 1px, transparent 1px 104px),
+    var(--cockpit-bg) !important;
+  color: var(--cockpit-ink) !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+html[data-visual-theme] body::before,
+html[data-visual-theme] body::after {
+  display: none !important;
+}
+
+::selection {
+  background: rgba(15, 154, 167, 0.24);
+  color: #06141d;
+}
+
+.monday-shell-phase-1 {
+  background: transparent !important;
+}
+
+.monday-shell-phase-1 .application-header {
+  min-height: var(--application-header-height) !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(7, 23, 34, 0.1) !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: 0 16px 44px rgba(16, 34, 45, 0.09) !important;
+  backdrop-filter: blur(22px) saturate(145%);
+}
+
+.monday-shell-phase-1 .application-header::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: linear-gradient(180deg, var(--cockpit-gold), var(--cockpit-teal));
+}
+
+.monday-shell-phase-1 .application-header-inner {
+  grid-template-columns: minmax(206px, 250px) minmax(260px, 680px) minmax(260px, 1fr) !important;
+  gap: 18px !important;
+  max-width: none;
+  min-height: var(--application-header-height) !important;
+  padding: 10px 22px 10px 18px !important;
+}
+
+.monday-shell-phase-1 .application-brand {
+  min-height: 48px !important;
+  gap: 10px;
+  padding: 6px 10px 6px 6px !important;
+  border: 1px solid transparent;
+  border-radius: var(--cockpit-radius-md) !important;
+  color: var(--cockpit-ink) !important;
+  letter-spacing: 0;
+}
+
+.monday-shell-phase-1 .application-brand:hover,
+.monday-shell-phase-1 .application-brand:focus-visible {
+  border-color: var(--cockpit-line);
+  background: var(--cockpit-panel-alt);
+  outline: none;
+}
+
+.monday-shell-phase-1 .application-brand-mark {
+  width: 38px !important;
+  height: 38px !important;
+  border: 1px solid rgba(198, 161, 90, 0.42);
+  border-radius: var(--cockpit-radius-sm) !important;
+  background:
+    linear-gradient(145deg, rgba(198, 161, 90, 0.95), rgba(248, 224, 158, 0.92)),
+    var(--cockpit-gold) !important;
+  color: #091924 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 10px 22px rgba(198, 161, 90, 0.22);
+}
+
+.monday-shell-phase-1 .application-header-search .global-search-trigger,
+.global-search-trigger {
+  min-height: 46px !important;
+  border: 1px solid var(--cockpit-line) !important;
+  border-radius: var(--cockpit-radius-md) !important;
+  background: #f8fbfc !important;
+  color: var(--cockpit-muted) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+}
+
+.monday-shell-phase-1 .application-header-search .global-search-trigger:hover,
+.monday-shell-phase-1 .application-header-search .global-search-trigger:focus-visible,
+.global-search-trigger:hover,
+.global-search-trigger:focus-visible {
+  border-color: rgba(15, 154, 167, 0.48) !important;
+  background: #ffffff !important;
+  color: var(--cockpit-ink) !important;
+  box-shadow: 0 0 0 4px rgba(15, 154, 167, 0.1) !important;
+  outline: none;
+}
+
+.global-search-trigger kbd {
+  border: 1px solid var(--cockpit-line);
+  border-radius: var(--cockpit-radius-xs);
+  background: #ffffff;
+  color: var(--cockpit-subtle);
+  box-shadow: none;
+}
+
+.monday-shell-phase-1 .application-header-actions {
+  align-items: center;
+  gap: 8px;
+}
+
+.monday-shell-phase-1 .application-header-actions .density-toggle,
+.monday-shell-phase-1 .desktop-alerts-target,
+.monday-shell-phase-1 .desktop-account-menu-target {
+  width: 44px !important;
+  height: 44px !important;
+  flex-basis: 44px !important;
+  border-radius: var(--cockpit-radius-md) !important;
+}
+
+.monday-shell-phase-1 .application-page-context {
+  display: grid !important;
+  justify-self: end;
+  min-width: 0;
+  gap: 1px;
+  padding: 5px 12px;
+  border-left: 1px solid var(--cockpit-line);
+  color: var(--cockpit-muted);
+  text-align: right;
+}
+
+.monday-shell-phase-1 .application-page-context span {
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.monday-shell-phase-1 .application-page-context strong {
+  overflow: hidden;
+  color: var(--cockpit-ink);
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monday-shell-phase-1 .application-page-context small {
+  color: var(--cockpit-subtle);
+  font-size: 0.73rem;
+  font-weight: 700;
+}
+
+.application-status-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 0 22px 10px calc(18px + 5px);
+  color: var(--cockpit-muted);
+  font-size: 0.76rem;
+  font-weight: 760;
+}
+
+.application-status-strip span,
+.application-status-strip a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border: 1px solid var(--cockpit-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.74);
+  color: var(--cockpit-muted);
+  text-decoration: none;
+}
+
+.application-status-strip strong {
+  color: var(--cockpit-ink);
+}
+
+.application-status-strip a:hover,
+.application-status-strip a:focus-visible {
+  border-color: rgba(15, 154, 167, 0.45);
+  color: var(--cockpit-teal);
+  outline: none;
+}
+
+@media (min-width: 981px) {
+  html[data-visual-theme] body .monday-shell-phase-1 {
+    padding-top: calc(var(--application-header-height) + 34px) !important;
+  }
+
+  html[data-visual-theme] body .monday-shell-phase-1 .application-main {
+    width: calc(100% - var(--application-rail-width)) !important;
+    min-height: calc(100dvh - var(--application-header-height) - 34px) !important;
+    margin-left: var(--application-rail-width) !important;
+    padding: 22px clamp(22px, 2.4vw, 40px) 56px !important;
+  }
+
+  html[data-visual-theme] body .monday-shell-phase-1.desktop-rail-collapsed .application-main {
+    width: calc(100% - var(--application-rail-collapsed-width)) !important;
+    margin-left: var(--application-rail-collapsed-width) !important;
+  }
+
+  .monday-navigation-rail {
+    inset: calc(var(--application-header-height) + 34px) auto 0 0 !important;
+    width: var(--application-rail-width) !important;
+    min-width: var(--application-rail-width) !important;
+    padding: 14px 12px 18px !important;
+    border-right: 0 !important;
+    background:
+      linear-gradient(180deg, rgba(198, 161, 90, 0.12), transparent 220px),
+      linear-gradient(160deg, var(--cockpit-rail-2), var(--cockpit-rail) 62%) !important;
+    color: var(--cockpit-rail-ink) !important;
+    box-shadow: 18px 0 44px rgba(7, 23, 34, 0.18) !important;
+  }
+
+  .monday-navigation-rail.is-collapsed {
+    width: var(--application-rail-collapsed-width) !important;
+    min-width: var(--application-rail-collapsed-width) !important;
+    padding-inline: 8px !important;
+  }
+}
+
+.monday-navigation-rail .desktop-rail-heading {
+  min-height: 58px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.monday-workspace-switcher > summary {
+  min-height: 50px;
+  border-radius: var(--cockpit-radius-md) !important;
+  color: var(--cockpit-rail-ink);
+}
+
+.monday-workspace-switcher > summary:hover,
+.monday-workspace-switcher > summary:focus-visible,
+.monday-workspace-switcher[open] > summary {
+  border-color: rgba(198, 161, 90, 0.34) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.monday-workspace-icon,
+.desktop-rail-item-glyph,
+.desktop-rail-glyph-link > span:first-child,
+.monday-primary-navigation > :is(a, button) > span:first-child {
+  border-radius: var(--cockpit-radius-sm) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: var(--cockpit-gold) !important;
+}
+
+.monday-workspace-switcher small,
+.desktop-rail-section-label,
+.desktop-rail-section summary small,
+.desktop-rail-item-row small,
+.monday-primary-navigation small,
+.desktop-rail-recent a {
+  color: var(--cockpit-rail-muted) !important;
+}
+
+.monday-workspace-switcher strong,
+.desktop-rail-section summary,
+.desktop-rail-item-row strong,
+.monday-primary-navigation strong {
+  color: var(--cockpit-rail-ink) !important;
+}
+
+.monday-primary-navigation,
+.desktop-rail-section,
+.desktop-rail-recent {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  border-radius: var(--cockpit-radius-md) !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+}
+
+.monday-primary-navigation > :is(a, button),
+.desktop-rail-item-row > a,
+.desktop-rail-recent a,
+.desktop-rail-glyph-link {
+  border-radius: var(--cockpit-radius-sm) !important;
+  color: var(--cockpit-rail-ink) !important;
+}
+
+.monday-primary-navigation > :is(a, button):hover,
+.monday-primary-navigation > :is(a, button):focus-visible,
+.monday-primary-navigation > :is(a, button)[aria-current='page'],
+.desktop-rail-item-row > a:hover,
+.desktop-rail-item-row > a:focus-visible,
+.desktop-rail-item-row > a[aria-current='page'],
+.desktop-rail-recent a:hover,
+.desktop-rail-glyph-link:hover,
+.desktop-rail-glyph-link:focus-visible,
+.desktop-rail-glyph-link[aria-current='page'] {
+  background: rgba(255, 255, 255, 0.13) !important;
+  color: #ffffff !important;
+  outline: none;
+}
+
+.desktop-rail-item-row > button,
+.desktop-rail-collapse {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: var(--cockpit-gold) !important;
+}
+
+.desktop-rail-item-row > button:hover,
+.desktop-rail-collapse:hover {
+  border-color: rgba(198, 161, 90, 0.42) !important;
+  background: rgba(198, 161, 90, 0.16) !important;
+}
+
+.monday-workspace-menu,
+.monday-board-menu-panel,
+.monday-board-save-view-popover,
+.global-search-dialog,
+.monday-board-filter-drawer {
+  border: 1px solid var(--cockpit-line) !important;
+  border-radius: var(--cockpit-radius-lg) !important;
+  background: var(--cockpit-panel) !important;
+  color: var(--cockpit-ink) !important;
+  box-shadow: var(--cockpit-shadow-md) !important;
+}
+
+.application-main {
+  color: var(--cockpit-ink) !important;
+}
+
+.application-main > .breadcrumbs {
+  color: var(--cockpit-muted) !important;
+}
+
+.application-main.workspace-template-frame {
+  gap: 22px !important;
+}
+
+.application-main.workspace-template-frame > :is(.page-header, .minimal-page-header),
+.monday-board-header {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(7, 23, 34, 0.1) !important;
+  border-radius: var(--cockpit-radius-lg) !important;
+  background:
+    linear-gradient(135deg, rgba(7, 23, 34, 0.97), rgba(13, 44, 58, 0.96) 58%, rgba(22, 81, 84, 0.92)),
+    var(--cockpit-rail) !important;
+  color: #f7fbfc !important;
+  box-shadow: var(--cockpit-shadow-md) !important;
+}
+
+.application-main.workspace-template-frame > :is(.page-header, .minimal-page-header)::after,
+.monday-board-header::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--cockpit-gold), var(--cockpit-teal), #58c188);
+}
+
+.application-main.workspace-template-frame > :is(.page-header, .minimal-page-header) .badge,
+.monday-board-eyebrow {
+  border: 1px solid rgba(198, 161, 90, 0.38) !important;
+  background: rgba(255, 244, 215, 0.12) !important;
+  color: #ffe5a6 !important;
+}
+
+.application-main.workspace-template-frame > :is(.page-header, .minimal-page-header) h1,
+.monday-board-title-row h1,
+.monday-board-header-copy h1 {
+  color: #ffffff !important;
+  letter-spacing: 0 !important;
+}
+
+.application-main.workspace-template-frame > :is(.page-header, .minimal-page-header) p,
+.monday-board-header-copy > p {
+  color: rgba(244, 250, 252, 0.8) !important;
+}
+
+.card,
+.neo-card,
+.hero-panel,
+.ds-surface,
+.workspace-command-bar,
+.monday-my-work-create,
+.monday-my-work-empty,
+.monday-my-work-calendar,
+.monday-my-work-dashboard-grid > section,
+.monday-board-surface,
+.enterprise-table-shell,
+.remote-table-shell,
+.operations-panel,
+.minimal-panel,
+.spatial-card {
+  border: 1px solid var(--cockpit-line) !important;
+  border-radius: var(--cockpit-radius-lg) !important;
+  background: var(--cockpit-panel) !important;
+  color: var(--cockpit-ink) !important;
+  box-shadow: var(--cockpit-shadow-sm) !important;
+}
+
+.card::before,
+.card::after,
+.neo-card::before,
+.neo-card::after,
+.hero-panel::before,
+.hero-panel::after {
+  display: none !important;
+}
+
+.kpi-card,
+.monday-my-work-kpis button,
+.metric-card,
+.stats-card {
+  position: relative;
+  min-height: 138px;
+  overflow: hidden;
+  border: 1px solid var(--cockpit-line) !important;
+  border-radius: var(--cockpit-radius-lg) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(247, 250, 251, 0.92)),
+    var(--cockpit-panel) !important;
+  color: var(--cockpit-ink) !important;
+  box-shadow: var(--cockpit-shadow-sm) !important;
+}
+
+.kpi-card::before,
+.monday-my-work-kpis button::before,
+.metric-card::before,
+.stats-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: linear-gradient(180deg, var(--cockpit-gold), var(--cockpit-teal));
+}
+
+.kpi-card .nav-heading,
+.monday-my-work-kpis span,
+.monday-my-work-kpis small,
+.minimal-kicker,
+.nav-heading {
+  color: var(--cockpit-muted) !important;
+  letter-spacing: 0.08em !important;
+}
+
+.kpi-value,
+.kpi-card strong,
+.monday-my-work-kpis strong {
+  color: var(--cockpit-ink) !important;
+  letter-spacing: 0 !important;
+}
+
+.kpi-card p,
+.monday-my-work-card > p,
+.minimal-panel-header p,
+.ds-section-header p {
+  color: var(--cockpit-muted) !important;
+}
+
+.grid.grid-3,
+.grid.grid-4,
+.grid.grid-5,
+.grid.grid-6,
+.kpi-grid,
+[class*='-kpis'] {
+  gap: 16px !important;
+}
+
+.button,
+button.button,
+a.button,
+.monday-board-command-button,
+.monday-board-menu > summary {
+  min-height: 40px;
+  border: 1px solid transparent !important;
+  border-radius: var(--cockpit-radius-sm) !important;
+  background: var(--cockpit-ink) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  font-weight: 820 !important;
+  letter-spacing: 0 !important;
+}
+
+.button:hover,
+.button:focus-visible,
+.monday-board-command-button:hover,
+.monday-board-command-button:focus-visible,
+.monday-board-menu > summary:hover,
+.monday-board-menu > summary:focus-visible {
+  background: #0d3340 !important;
+  outline: 3px solid rgba(15, 154, 167, 0.16);
+  outline-offset: 0;
+}
+
+.button.secondary,
+.button[data-variant='secondary'],
+.monday-board-command-button[data-active='true'],
+.monday-board-menu[open] > summary {
+  border-color: var(--cockpit-line) !important;
+  background: #ffffff !important;
+  color: var(--cockpit-ink) !important;
+}
+
+.button.danger,
+.button.is-danger,
+.monday-board-command-button.is-danger {
+  background: var(--cockpit-red) !important;
+  color: #ffffff !important;
+}
+
+input,
+select,
+textarea,
+.monday-board-search input,
+.monday-board-inline-select select,
+.monday-board-filter-grid input,
+.monday-board-filter-grid select {
+  border: 1px solid var(--cockpit-line-strong) !important;
+  border-radius: var(--cockpit-radius-sm) !important;
+  background: #ffffff !important;
+  color: var(--cockpit-ink) !important;
+  box-shadow: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.monday-board-search input:focus,
+.monday-board-inline-select select:focus {
+  border-color: var(--cockpit-teal) !important;
+  box-shadow: 0 0 0 4px rgba(15, 154, 167, 0.12) !important;
+  outline: none;
+}
+
+.monday-board-view-tabs,
+.monday-board-command-bar,
+.workspace-command-bar {
+  border: 1px solid var(--cockpit-line) !important;
+  border-radius: var(--cockpit-radius-lg) !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: var(--cockpit-shadow-sm) !important;
+}
+
+.monday-board-view-tab {
+  border-radius: var(--cockpit-radius-sm) !important;
+  color: var(--cockpit-muted) !important;
+}
+
+.monday-board-view-tab:hover,
+.monday-board-view-tab:focus-visible,
+.monday-board-view-tab[aria-selected='true'] {
+  background: var(--cockpit-teal-soft) !important;
+  color: #07313a !important;
+  outline: none;
+}
+
+.monday-board-view-tab[aria-selected='true']::after {
+  background: var(--cockpit-teal) !important;
+}
+
+.monday-board-filter-chips > button,
+.badge,
+.status-badge,
+.enterprise-status-badge {
+  border: 1px solid var(--cockpit-line) !important;
+  border-radius: 999px !important;
+  background: var(--cockpit-panel-alt) !important;
+  color: var(--cockpit-ink) !important;
+  box-shadow: none !important;
+}
+
+.status-badge[data-tone='success'],
+.badge.success,
+.success {
+  border-color: rgba(24, 138, 93, 0.26) !important;
+  background: #e6f7ee !important;
+  color: var(--cockpit-green) !important;
+}
+
+.status-badge[data-tone='danger'],
+.badge.danger,
+.error {
+  border-color: rgba(200, 63, 66, 0.26) !important;
+  background: #fff0ef !important;
+  color: var(--cockpit-red) !important;
+}
+
+.enterprise-table-shell,
+.monday-board-surface,
+.table-wrap {
+  overflow: hidden !important;
+}
+
+table,
+.monday-board-table,
+.resizable-enterprise-table {
+  width: 100%;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  color: var(--cockpit-ink) !important;
+}
+
+thead th,
+.monday-board-table thead th,
+.resizable-enterprise-table thead th {
+  border-bottom: 1px solid var(--cockpit-line-strong) !important;
+  background: #f2f6f8 !important;
+  color: #3f4f5a !important;
+  font-size: 0.72rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+tbody td,
+.monday-board-table td,
+.resizable-enterprise-table td {
+  border-bottom: 1px solid #e6eef2 !important;
+  color: var(--cockpit-ink) !important;
+}
+
+tbody tr:hover td,
+.monday-board-table tbody tr:not(.monday-board-group-row):hover td,
+.resizable-enterprise-table tbody tr:hover td {
+  background: #f6fbfc !important;
+}
+
+.monday-board-group-row td {
+  background: #edf5f7 !important;
+  color: var(--cockpit-ink) !important;
+}
+
+.monday-my-work-list > section > header,
+.monday-my-work-board > section > header,
+.monday-my-work-card,
+.monday-board-mobile-card {
+  border-color: var(--cockpit-line) !important;
+  border-radius: var(--cockpit-radius-md) !important;
+  background: var(--cockpit-panel) !important;
+  color: var(--cockpit-ink) !important;
+  box-shadow: var(--cockpit-shadow-sm) !important;
+}
+
+.monday-my-work-card:hover,
+.monday-my-work-card:focus-visible,
+.monday-board-mobile-card:hover,
+.monday-board-mobile-card:focus-visible {
+  border-color: rgba(15, 154, 167, 0.38) !important;
+  background: #f8fcfd !important;
+  transform: translateY(-2px);
+}
+
+.global-search-overlay,
+.monday-board-drawer-backdrop,
+.mobile-nav-backdrop {
+  background: rgba(7, 23, 34, 0.42) !important;
+  backdrop-filter: blur(6px);
+}
+
+.global-search-input-row {
+  border-bottom: 1px solid var(--cockpit-line);
+}
+
+.global-search-quick-actions a,
+.global-search-result {
+  border: 1px solid var(--cockpit-line) !important;
+  border-radius: var(--cockpit-radius-md) !important;
+  background: var(--cockpit-panel-alt) !important;
+  color: var(--cockpit-ink) !important;
+}
+
+.global-search-result:hover,
+.global-search-result:focus-visible,
+.global-search-quick-actions a:hover,
+.global-search-quick-actions a:focus-visible {
+  border-color: rgba(15, 154, 167, 0.4) !important;
+  background: #ffffff !important;
+  outline: none;
+}
+
+.login-page {
+  align-items: stretch !important;
+  justify-items: stretch !important;
+  min-height: 100dvh;
+  padding: clamp(18px, 4vw, 48px) !important;
+  background:
+    linear-gradient(120deg, rgba(7, 23, 34, 0.94), rgba(11, 48, 61, 0.9) 52%, rgba(238, 243, 246, 0.98) 52%),
+    var(--cockpit-bg) !important;
+}
+
+.login-card {
+  align-self: center;
+  justify-self: end;
+  width: min(100%, 480px) !important;
+  border-radius: var(--cockpit-radius-lg) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: var(--cockpit-ink) !important;
+  box-shadow: var(--cockpit-shadow-md) !important;
+}
+
+.login-card h1 {
+  color: var(--cockpit-ink) !important;
+}
+
+.login-card p {
+  color: var(--cockpit-muted) !important;
+}
+
+html[data-visual-theme] body .login-page .login-card.neo-card,
+html[data-visual-theme] body .auth-state-page .auth-state-card.neo-card {
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: var(--cockpit-ink) !important;
+  box-shadow: var(--cockpit-shadow-md) !important;
+}
+
+html[data-visual-theme] body .login-page .login-card.neo-card h1,
+html[data-visual-theme] body .auth-state-page .auth-state-card.neo-card h1 {
+  color: var(--cockpit-ink) !important;
+}
+
+html[data-visual-theme] body .login-page .login-card.neo-card p,
+html[data-visual-theme] body .auth-state-page .auth-state-card.neo-card p {
+  color: var(--cockpit-muted) !important;
+}
+
+html[data-visual-theme] body .login-page .login-card.neo-card .badge,
+html[data-visual-theme] body .auth-state-page .auth-state-card.neo-card .badge {
+  border-color: rgba(198, 161, 90, 0.34) !important;
+  background: var(--cockpit-gold-soft) !important;
+  color: #775719 !important;
+}
+
+.mobile-nav-panel {
+  border-left: 1px solid var(--cockpit-line) !important;
+  background: var(--cockpit-panel) !important;
+  color: var(--cockpit-ink) !important;
+  box-shadow: var(--cockpit-shadow-md) !important;
+}
+
+.mobile-nav-header,
+.mobile-nav-footer {
+  border-color: var(--cockpit-line) !important;
+}
+
+.mobile-primary-actions > :is(a, button),
+.mobile-nav-card,
+.mobile-nav-shortcut-grid a,
+.mobile-quick-bar > :is(a, button) {
+  border-radius: var(--cockpit-radius-md) !important;
+  background: var(--cockpit-panel-alt) !important;
+  color: var(--cockpit-ink) !important;
+}
+
+.mobile-primary-actions > :is(a, button):hover,
+.mobile-primary-actions > :is(a, button):focus-visible,
+.mobile-nav-card:hover,
+.mobile-nav-card:focus-visible,
+.mobile-nav-card.active,
+.mobile-quick-bar > :is(a, button):hover,
+.mobile-quick-bar > :is(a, button):focus-visible,
+.mobile-quick-bar > :is(a, button)[aria-current='page'] {
+  background: var(--cockpit-teal-soft) !important;
+  color: #07313a !important;
+  outline: none;
+}
+
+.mobile-quick-bar {
+  border: 1px solid rgba(7, 23, 34, 0.12) !important;
+  border-radius: 18px 18px 0 0 !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 -16px 42px rgba(7, 23, 34, 0.14) !important;
+  backdrop-filter: blur(18px);
+}
+
+@media (max-width: 980px) {
+  :root {
+    --application-header-height: calc(68px + env(safe-area-inset-top, 0px));
+  }
+
+  .monday-shell-phase-1 .application-header-inner {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) 14px 8px !important;
+  }
+
+  .monday-shell-phase-1 .application-header-search,
+  .monday-shell-phase-1 .application-header-actions,
+  .monday-shell-phase-1 .application-page-context,
+  .application-status-strip {
+    display: none !important;
+  }
+
+  html[data-visual-theme] body .monday-shell-phase-1 .application-main {
+    padding: 16px 14px 94px !important;
+  }
+
+  .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header),
+  .monday-board-header {
+    padding: 18px !important;
+  }
+
+  .grid.grid-3,
+  .grid.grid-4,
+  .grid.grid-5,
+  .grid.grid-6,
+  .kpi-grid,
+  [class*='-kpis'] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .login-page {
+    place-items: end center !important;
+    background:
+      linear-gradient(180deg, rgba(7, 23, 34, 0.96), rgba(13, 44, 58, 0.92) 42%, var(--cockpit-bg) 42%),
+      var(--cockpit-bg) !important;
+  }
+
+  .login-card {
+    justify-self: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

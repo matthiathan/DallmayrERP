@@ -1,0 +1,16 @@
+# Dependencies and framework output
+node_modules/
+.next/
+dist/
+out/
+tsconfig.tsbuildinfo
+
+# Local environment and logs
+.env
+.env.local
+.env.*.local
+*.log
+
+# Local archives or nested checkouts
+Inhouse-Stock/
+repo-archive/
