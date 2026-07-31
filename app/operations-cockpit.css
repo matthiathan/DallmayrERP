@@ -891,3 +891,482 @@ html[data-visual-theme] body .auth-state-page .auth-state-card.neo-card .badge {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* ERP layout correction pass.
+   Borrowed from SAP Fiori, Dynamics forms and NetSuite-style dashboards:
+   stable chrome, clear page headers, portlet surfaces and non-squeezed data. */
+
+:root {
+  --application-header-height: 64px;
+  --application-rail-width: 264px;
+  --application-rail-collapsed-width: 72px;
+  --erp-content-max-width: 1760px;
+  --erp-readable: #12212b;
+  --erp-muted: #506575;
+  --erp-soft-muted: #687a86;
+  --erp-page: #f3f6f8;
+  --erp-panel: #ffffff;
+  --erp-raised: #f8fafb;
+  --erp-line: #d8e2e8;
+  --erp-strong-line: #b8c7d1;
+  --erp-focus: #0b8795;
+}
+
+html[data-visual-theme] body {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(243, 246, 248, 0) 220px),
+    var(--erp-page) !important;
+  color: var(--erp-readable) !important;
+}
+
+html[data-visual-theme] body :is(.application-main, .application-main *) {
+  box-sizing: border-box;
+}
+
+.application-status-strip {
+  display: none !important;
+}
+
+.monday-shell-phase-1 .application-header {
+  min-height: var(--application-header-height) !important;
+}
+
+.monday-shell-phase-1 .application-header-inner {
+  grid-template-columns: minmax(174px, 236px) minmax(280px, 720px) auto minmax(168px, 270px) !important;
+  gap: 14px !important;
+  min-height: var(--application-header-height) !important;
+  padding: 8px 20px 8px 18px !important;
+}
+
+.monday-shell-phase-1 .application-brand {
+  min-height: 46px !important;
+}
+
+.monday-shell-phase-1 .application-header-search,
+.monday-shell-phase-1 .application-header-actions,
+.monday-shell-phase-1 .application-page-context {
+  min-width: 0 !important;
+}
+
+.monday-shell-phase-1 .application-page-context {
+  max-width: 270px;
+  padding-left: 14px;
+}
+
+.monday-shell-phase-1 .application-page-context strong,
+.monday-shell-phase-1 .application-page-context small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 981px) {
+  html {
+    scroll-padding-top: calc(var(--application-header-height) + 18px) !important;
+  }
+
+  html[data-visual-theme] body .monday-shell-phase-1 {
+    padding-top: var(--application-header-height) !important;
+  }
+
+  html[data-visual-theme] body .monday-shell-phase-1 .application-main {
+    width: calc(100% - var(--application-rail-width)) !important;
+    min-height: calc(100dvh - var(--application-header-height)) !important;
+    margin-left: var(--application-rail-width) !important;
+    padding: 28px 38px 64px !important;
+  }
+
+  html[data-visual-theme] body .monday-shell-phase-1.desktop-rail-collapsed .application-main {
+    width: calc(100% - var(--application-rail-collapsed-width)) !important;
+    margin-left: var(--application-rail-collapsed-width) !important;
+  }
+
+  .monday-navigation-rail {
+    inset: var(--application-header-height) auto 0 0 !important;
+    width: var(--application-rail-width) !important;
+    min-width: var(--application-rail-width) !important;
+  }
+
+  .monday-navigation-rail.is-collapsed {
+    width: var(--application-rail-collapsed-width) !important;
+    min-width: var(--application-rail-collapsed-width) !important;
+  }
+}
+
+@media (min-width: 981px) and (max-width: 1280px) {
+  :root {
+    --application-rail-width: 244px;
+  }
+
+  .monday-shell-phase-1 .application-header-inner {
+    grid-template-columns: minmax(164px, 214px) minmax(240px, 1fr) auto minmax(130px, 212px) !important;
+    gap: 10px !important;
+    padding-inline: 14px !important;
+  }
+
+  html[data-visual-theme] body .monday-shell-phase-1 .application-main {
+    padding: 24px 26px 58px !important;
+  }
+
+  .monday-shell-phase-1 .application-page-context {
+    padding-left: 10px;
+  }
+
+  .monday-shell-phase-1 .application-page-context small {
+    display: none !important;
+  }
+}
+
+@media (min-width: 981px) and (max-width: 1080px) {
+  :root {
+    --application-rail-width: 228px;
+  }
+
+  .monday-shell-phase-1 .application-header-inner {
+    grid-template-columns: minmax(150px, 190px) minmax(220px, 1fr) auto !important;
+  }
+
+  .monday-shell-phase-1 .application-page-context {
+    display: none !important;
+  }
+}
+
+.application-main.workspace-template-frame {
+  gap: 28px !important;
+  justify-items: stretch !important;
+}
+
+.application-main.workspace-template-frame > .breadcrumbs {
+  color: var(--erp-soft-muted) !important;
+  font-size: 0.84rem !important;
+}
+
+.application-main.workspace-template-frame > :is(.page-header, .minimal-page-header),
+.monday-board-header {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: start !important;
+  gap: 18px 28px !important;
+  min-height: 0 !important;
+  padding: 24px 26px !important;
+  overflow: visible !important;
+  border: 1px solid var(--erp-line) !important;
+  border-left: 5px solid var(--cockpit-gold) !important;
+  border-radius: 10px !important;
+  background: var(--erp-panel) !important;
+  color: var(--erp-readable) !important;
+  box-shadow: 0 14px 34px rgba(15, 34, 45, 0.07) !important;
+}
+
+.application-main.workspace-template-frame > :is(.page-header, .minimal-page-header)::after,
+.monday-board-header::after {
+  display: none !important;
+}
+
+.application-main.workspace-template-frame > :is(.page-header, .minimal-page-header) > div:first-child,
+.monday-board-header-copy {
+  display: grid !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+.application-main.workspace-template-frame > :is(.page-header, .minimal-page-header) :is(h1, h2),
+.monday-board-title-row h1,
+.monday-board-header-copy h1 {
+  max-width: none !important;
+  margin: 0 !important;
+  color: var(--erp-readable) !important;
+  font-size: 2rem !important;
+  line-height: 1.15 !important;
+  letter-spacing: 0 !important;
+  text-shadow: none !important;
+}
+
+.application-main.workspace-template-frame > :is(.page-header, .minimal-page-header) p,
+.monday-board-header-copy > p {
+  max-width: 96ch !important;
+  margin: 0 !important;
+  color: var(--erp-muted) !important;
+  font-size: 0.96rem !important;
+  line-height: 1.58 !important;
+}
+
+.application-main.workspace-template-frame > :is(.page-header, .minimal-page-header) .badge,
+.monday-board-eyebrow {
+  width: fit-content !important;
+  border-color: rgba(198, 161, 90, 0.34) !important;
+  background: var(--cockpit-gold-soft) !important;
+  color: #6e5017 !important;
+}
+
+.application-main.workspace-template-frame > :is(.page-header, .minimal-page-header) :is(.action-row, .page-header-actions, .button-row),
+.monday-board-header-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  min-width: min(100%, 240px) !important;
+}
+
+.application-main > :not(.breadcrumbs),
+.monday-customer-board,
+.workspace-stage,
+.dashboard-stage,
+[class*='dashboard-stage'],
+[class*='-stage'] {
+  min-width: 0 !important;
+  max-width: var(--erp-content-max-width);
+}
+
+.application-main :is(
+  .card,
+  .neo-card,
+  .ds-surface,
+  .minimal-panel,
+  .operations-panel,
+  .monday-board-surface,
+  .enterprise-table-shell,
+  .remote-table-shell,
+  .monday-my-work-dashboard-grid > section,
+  .monday-my-work-card,
+  .monday-my-work-create,
+  .monday-my-work-calendar,
+  .record-section,
+  .customer-360-panel
+):not(.page-header):not(.minimal-page-header) {
+  min-width: 0 !important;
+  padding: 22px !important;
+  overflow: visible !important;
+  border: 1px solid var(--erp-line) !important;
+  border-radius: 10px !important;
+  background: var(--erp-panel) !important;
+  color: var(--erp-readable) !important;
+  box-shadow: 0 12px 28px rgba(15, 34, 45, 0.06) !important;
+}
+
+.application-main :is(.card, .neo-card, .minimal-panel, .operations-panel) > :first-child {
+  margin-top: 0;
+}
+
+.application-main :is(.card, .neo-card, .minimal-panel, .operations-panel) > :last-child {
+  margin-bottom: 0;
+}
+
+.application-main :is(
+  .grid.grid-2,
+  .minimal-split,
+  .record-detail-grid,
+  .exception-detail-grid
+) {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)) !important;
+  gap: 22px !important;
+}
+
+.application-main :is(
+  .grid.grid-3,
+  .grid.grid-4,
+  .grid.grid-5,
+  .grid.grid-6,
+  .kpi-grid,
+  .spatial-kpi-grid,
+  .operations-manager-kpis,
+  .admin-access-kpis,
+  .exception-centre-kpis,
+  .role-metric-grid,
+  .minimal-metric-grid,
+  [class*='-kpis']
+) {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)) !important;
+  gap: 18px !important;
+}
+
+.application-main :is(.kpi-card, .metric-card, .stats-card, .minimal-metric, .role-metric-card, .field-service-metric) {
+  min-height: 132px !important;
+  padding: 20px !important;
+  border-radius: 10px !important;
+}
+
+.application-main :is(.kpi-value, .kpi-card strong, .monday-my-work-kpis strong) {
+  color: var(--erp-readable) !important;
+  font-size: 2.05rem !important;
+  line-height: 1.05 !important;
+  letter-spacing: 0 !important;
+  text-shadow: none !important;
+}
+
+.application-main :is(p, li, label, small, td, th, button, a, span, strong) {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.application-main :is(p, li, td, label) {
+  color: inherit;
+  line-height: 1.54;
+}
+
+.application-main :is(p, small, .field-note, .nav-heading, .minimal-kicker) {
+  color: var(--erp-muted) !important;
+}
+
+.application-main :is(h1, h2, h3, h4, strong) {
+  text-shadow: none !important;
+}
+
+.application-main :is(.feature-list, .action-row, .button-row, .page-toolbar-actions, .toolbar-actions) {
+  gap: 10px !important;
+  min-width: 0 !important;
+  flex-wrap: wrap !important;
+}
+
+.application-main :is(.button, button.button, a.button, .monday-board-command-button, .monday-board-menu > summary) {
+  min-height: 42px !important;
+  padding: 10px 14px !important;
+  border-radius: 8px !important;
+  line-height: 1.25 !important;
+}
+
+.application-main :is(form, .form-grid, .input-grid, .field-grid, .minimal-grid-3) {
+  min-width: 0 !important;
+}
+
+.application-main :is(.form-grid, .input-grid, .field-grid, .minimal-grid-3),
+.application-main.workspace-template-frame.template-form :is(.form-grid, .input-grid, .field-grid) {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)) !important;
+  gap: 16px !important;
+}
+
+.application-main label {
+  display: grid;
+  gap: 7px;
+  color: var(--erp-muted) !important;
+  font-size: 0.84rem;
+  font-weight: 720;
+}
+
+.application-main :is(input, select, textarea) {
+  min-height: 46px !important;
+  border-color: var(--erp-strong-line) !important;
+  color: var(--erp-readable) !important;
+  font-size: 0.95rem !important;
+}
+
+.application-main textarea {
+  min-height: 116px !important;
+  line-height: 1.48 !important;
+}
+
+.application-main :is(.workspace-command-bar, .monday-board-command-bar, .monday-board-view-tabs) {
+  position: relative !important;
+  top: auto !important;
+  z-index: 10 !important;
+  overflow: visible !important;
+  border-radius: 10px !important;
+  background: var(--erp-panel) !important;
+}
+
+.application-main :is(.workspace-command-body, .workspace-filter-bar, .remote-table-filters, .enterprise-table-toolbar, .monday-board-command-bar) {
+  gap: 12px !important;
+}
+
+.application-main :is(.workspace-filter-bar > label, .remote-table-filters > label, .monday-board-search) {
+  min-width: min(100%, 240px) !important;
+}
+
+.application-main :is(.enterprise-table-shell, .remote-table-shell, .monday-board-surface) {
+  display: grid !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+.application-main :is(
+  .table-scroll-frame,
+  .table-wrap,
+  .enterprise-table-wrap,
+  .data-table-wrapper,
+  .monday-board-desktop-table,
+  .enterprise-table-desktop-view
+) {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+}
+
+.application-main .table-wrap::before,
+.application-main .enterprise-table-wrap::before {
+  display: none !important;
+}
+
+.application-main :is(.table-wrap table, .enterprise-table-wrap table, .data-table-wrapper table) {
+  min-width: max(100%, 960px) !important;
+  table-layout: auto !important;
+}
+
+.application-main :is(.monday-board-table, .resizable-enterprise-table) {
+  min-width: max(100%, 960px);
+  table-layout: auto !important;
+}
+
+.application-main :is(th, td, .monday-board-table th, .monday-board-table td, .resizable-enterprise-table th, .resizable-enterprise-table td) {
+  min-width: 118px;
+  padding: 13px 16px !important;
+  color: var(--erp-readable) !important;
+  font-size: 0.88rem !important;
+  line-height: 1.46 !important;
+  vertical-align: top !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+}
+
+.application-main :is(thead th, .monday-board-table thead th, .resizable-enterprise-table thead th) {
+  color: #415767 !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.05em !important;
+}
+
+.application-main :is(.table-column-filter-input, .monday-board-filter-grid input, .monday-board-filter-grid select) {
+  min-height: 36px !important;
+  font-size: 0.82rem !important;
+}
+
+.application-main :is(.monday-board-record-link, .minimal-list-item, .record-timeline-item, .monday-board-mobile-card) {
+  min-width: 0 !important;
+  color: var(--erp-readable) !important;
+}
+
+@media (max-width: 980px) {
+  .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header),
+  .monday-board-header {
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding: 18px !important;
+  }
+
+  .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header) :is(h1, h2),
+  .monday-board-title-row h1,
+  .monday-board-header-copy h1 {
+    font-size: 1.48rem !important;
+  }
+
+  html[data-visual-theme] body .monday-shell-phase-1 .application-main {
+    padding: 18px 14px 104px !important;
+  }
+
+  .application-main :is(
+    .grid.grid-2,
+    .grid.grid-3,
+    .grid.grid-4,
+    .grid.grid-5,
+    .grid.grid-6,
+    .kpi-grid,
+    .spatial-kpi-grid,
+    [class*='-kpis']
+  ) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .application-main :is(.card, .neo-card, .minimal-panel, .operations-panel):not(.page-header):not(.minimal-page-header) {
+    padding: 16px !important;
+  }
+}
