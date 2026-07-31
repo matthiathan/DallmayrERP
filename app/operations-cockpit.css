@@ -1510,3 +1510,171 @@ html[data-visual-theme] body :is(.application-main, .application-main *) {
     display: none !important;
   }
 }
+
+/* Final UI contract: legible field titles and a predictable ERP header. */
+:root {
+  --erp-field-title: #20313d;
+  --erp-field-title-soft: #384d5b;
+  --erp-table-title: #223747;
+  --erp-control-bg: #ffffff;
+  --erp-control-placeholder: #617482;
+}
+
+html[data-visual-theme] body .application-main :is(
+  form label:not(.button),
+  .form-grid > label:not(.button),
+  .input-grid > label:not(.button),
+  .field-grid > label:not(.button),
+  .workspace-filter-bar > label:not(.button),
+  .remote-table-filters > label:not(.button),
+  .monday-board-filter-grid label:not(.button),
+  .monday-board-search,
+  .monday-board-inline-select,
+  .monday-board-save-view-popover label,
+  .monday-board-menu-panel > label,
+  .enterprise-table-pagination label,
+  .mobile-filter-group > label,
+  .customer-combobox-label,
+  .asset-ticket-label,
+  legend
+) {
+  color: var(--erp-field-title) !important;
+  font-size: 0.88rem !important;
+  font-weight: 820 !important;
+  line-height: 1.35 !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .workspace-filter-bar > label:not(.button),
+  .remote-table-filters > label:not(.button),
+  .monday-board-search,
+  .monday-board-inline-select,
+  .enterprise-table-pagination label,
+  .mobile-filter-group > label
+) {
+  color: var(--erp-field-title) !important;
+  font-size: 0.84rem !important;
+  letter-spacing: 0 !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  label small,
+  label .field-note,
+  label .helper-text,
+  .field-note,
+  .helper-text,
+  .description
+) {
+  color: var(--erp-field-title-soft) !important;
+  opacity: 1 !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),
+  select,
+  textarea,
+  .table-column-filter-input
+) {
+  border-color: #aebfca !important;
+  background: var(--erp-control-bg) !important;
+  color: var(--erp-readable) !important;
+  box-shadow: inset 0 1px 2px rgba(12, 30, 42, 0.07) !important;
+}
+
+html[data-visual-theme] body .application-main :is(input, textarea)::placeholder {
+  color: var(--erp-control-placeholder) !important;
+  opacity: 1 !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  thead th,
+  .monday-board-table thead th,
+  .resizable-enterprise-table thead th
+) {
+  border-bottom: 1px solid #aebfca !important;
+  background: #e8f0f4 !important;
+  color: var(--erp-table-title) !important;
+  font-size: 0.82rem !important;
+  font-weight: 860 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .table-header-label,
+  .resizable-th-content .table-sort-button,
+  .monday-board-sort-button,
+  .monday-board-sort-button > span:first-child
+) {
+  color: var(--erp-table-title) !important;
+  font-size: 0.82rem !important;
+  font-weight: 860 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+@media (min-width: 981px) {
+  html[data-visual-theme] body .monday-shell-phase-1 .application-header {
+    min-height: 68px !important;
+    border-bottom: 1px solid var(--erp-line) !important;
+    background: rgba(255, 255, 255, 0.97) !important;
+    box-shadow: 0 10px 28px rgba(13, 32, 44, 0.08) !important;
+    backdrop-filter: blur(16px) saturate(120%);
+  }
+
+  html[data-visual-theme] body .monday-shell-phase-1 .application-header-inner {
+    grid-template-columns: minmax(186px, 236px) minmax(320px, 1fr) max-content !important;
+    gap: clamp(14px, 1.5vw, 24px) !important;
+    min-height: 68px !important;
+    padding: 9px 24px 9px 18px !important;
+  }
+
+  html[data-visual-theme] body .monday-shell-phase-1 .application-header-search {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  html[data-visual-theme] body .monday-shell-phase-1 .application-header-search .global-search-trigger {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 46px !important;
+  }
+
+  html[data-visual-theme] body .monday-shell-phase-1 .application-header-actions {
+    min-width: max-content !important;
+    gap: 12px !important;
+  }
+
+  html[data-visual-theme] body .monday-shell-phase-1 .application-page-context {
+    display: none !important;
+  }
+}
+
+@media (min-width: 981px) and (max-width: 1280px) {
+  html[data-visual-theme] body .monday-shell-phase-1 .application-header-inner {
+    grid-template-columns: minmax(166px, 214px) minmax(240px, 1fr) max-content !important;
+    gap: 12px !important;
+    padding-inline: 14px !important;
+  }
+
+  html[data-visual-theme] body .monday-shell-phase-1 .application-header-actions {
+    gap: 10px !important;
+  }
+}
+
+@media (min-width: 981px) and (max-width: 1100px) {
+  html[data-visual-theme] body .monday-shell-phase-1 .application-brand {
+    width: 48px !important;
+    padding: 5px !important;
+  }
+
+  html[data-visual-theme] body .monday-shell-phase-1 .application-brand > span:last-child {
+    display: none !important;
+  }
+
+  html[data-visual-theme] body .monday-shell-phase-1 .application-header-inner {
+    grid-template-columns: 48px minmax(220px, 1fr) max-content !important;
+  }
+}
