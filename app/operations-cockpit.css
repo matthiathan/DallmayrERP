@@ -1678,3 +1678,88 @@ html[data-visual-theme] body .application-main :is(
     grid-template-columns: 48px minmax(220px, 1fr) max-content !important;
   }
 }
+
+/* White-surface contrast guard for legacy record/forms that still inherit theme-white text. */
+body .application-shell-v2 .application-main :is(
+  .card,
+  .neo-card,
+  .record-section,
+  .customer-360-panel,
+  .form-card,
+  .form-section,
+  .minimal-panel,
+  .operations-panel,
+  .ds-surface,
+  .record-timeline,
+  .record-comment-list
+) {
+  color: var(--erp-readable) !important;
+  -webkit-text-fill-color: currentColor;
+}
+
+body .application-shell-v2 .application-main :is(
+  label:not(.button):not(.mobile-nav-card):not(.dallmayr-account-trigger),
+  legend,
+  dt,
+  .asset-ticket-label,
+  .customer-combobox-label
+) {
+  color: var(--erp-field-title) !important;
+  -webkit-text-fill-color: var(--erp-field-title) !important;
+  font-weight: 840 !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+body .application-shell-v2 .application-main :is(
+  .card,
+  .neo-card,
+  .record-section,
+  .customer-360-panel,
+  .form-card,
+  .form-section,
+  .minimal-panel,
+  .operations-panel,
+  .ds-surface
+) :is(h1, h2, h3, h4, h5, h6, strong, dd):not(.button):not(.badge):not(.status-badge) {
+  color: var(--erp-readable) !important;
+  -webkit-text-fill-color: var(--erp-readable) !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+body .application-shell-v2 .application-main :is(
+  .card,
+  .neo-card,
+  .record-section,
+  .customer-360-panel,
+  .form-card,
+  .form-section,
+  .minimal-panel,
+  .operations-panel,
+  .ds-surface,
+  .record-timeline,
+  .record-comment-list
+) :is(p, li, small, .field-note, .helper-text, .description, .empty-state):not(.button):not(.badge):not(.status-badge) {
+  color: var(--erp-field-title-soft) !important;
+  -webkit-text-fill-color: var(--erp-field-title-soft) !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+body .application-shell-v2 .application-main :is(
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),
+  select,
+  textarea
+) {
+  -webkit-text-fill-color: var(--erp-readable) !important;
+}
+
+body .application-shell-v2 .application-main :is(.button, button.button, a.button, .badge, .status-badge) {
+  -webkit-text-fill-color: currentColor !important;
+}
+
+body .application-shell-v2 .application-main :is(.button, button.button, a.button, .badge, .status-badge) :is(span, strong, small) {
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+}
