@@ -78,12 +78,12 @@ export function DesktopNavigationRail({
             <summary>
               <span aria-hidden="true" className="monday-workspace-icon">D</span>
               <span><small>Workspace</small><strong>{roleLabel}</strong></span>
-              <span aria-hidden="true" className="monday-workspace-chevron">⌄</span>
+              <span aria-hidden="true" className="monday-workspace-chevron">v</span>
             </summary>
             <div className="monday-workspace-menu">
-              <Link href={homePath}><span aria-hidden="true">⌂</span><span><strong>Today</strong><small>Priorities and recent work</small></span></Link>
-              <Link href="/work"><span aria-hidden="true">✓</span><span><strong>My Work</strong><small>Assigned work and approvals</small></span></Link>
-              <button onClick={openInbox} type="button"><span aria-hidden="true">♢</span><span><strong>Inbox</strong><small>Operational notifications</small></span></button>
+              <Link href={homePath}><span aria-hidden="true">T</span><span><strong>Today</strong><small>Priorities and recent work</small></span></Link>
+              <Link href="/work"><span aria-hidden="true">W</span><span><strong>My Work</strong><small>Assigned work and approvals</small></span></Link>
+              <button onClick={openInbox} type="button"><span aria-hidden="true">I</span><span><strong>Inbox</strong><small>Operational notifications</small></span></button>
             </div>
           </details>
         ) : null}
@@ -93,20 +93,20 @@ export function DesktopNavigationRail({
           onClick={onToggleCollapse}
           type="button"
         >
-          <span aria-hidden="true">{collapsed ? '›' : '‹'}</span>
+          <span aria-hidden="true">{collapsed ? '>' : '<'}</span>
         </button>
       </div>
 
       {collapsed ? (
         <nav aria-label="Collapsed application navigation" className="desktop-rail-collapsed-links">
           <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} className="desktop-rail-glyph-link" href={homePath} title="Today">
-            <span aria-hidden="true">⌂</span><span className="sr-only">Today</span>
+            <span aria-hidden="true">T</span><span className="sr-only">Today</span>
           </Link>
           <Link aria-current={isActivePath(pathname, '/work') ? 'page' : undefined} className="desktop-rail-glyph-link" href="/work" title="My Work">
-            <span aria-hidden="true">✓</span><span className="sr-only">My Work</span>
+            <span aria-hidden="true">W</span><span className="sr-only">My Work</span>
           </Link>
           <button aria-label="Open Inbox" className="desktop-rail-glyph-link" onClick={openInbox} title="Inbox" type="button">
-            <span aria-hidden="true">♢</span>
+            <span aria-hidden="true">I</span>
           </button>
           {collapsedItems.slice(0, 10).map((item) => (
             <Link aria-current={isActivePath(pathname, item.href) ? 'page' : undefined} className="desktop-rail-glyph-link" href={item.href} key={item.href} title={item.label}>
@@ -119,13 +119,13 @@ export function DesktopNavigationRail({
           <nav aria-label="Role navigation" className="desktop-rail-navigation">
             <div className="monday-primary-navigation">
               <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} href={homePath}>
-                <span aria-hidden="true">⌂</span><span><strong>Today</strong><small>Your role workspace</small></span>
+                <span aria-hidden="true">T</span><span><strong>Today</strong><small>Your role workspace</small></span>
               </Link>
               <Link aria-current={isActivePath(pathname, '/work') ? 'page' : undefined} href="/work">
-                <span aria-hidden="true">✓</span><span><strong>My Work</strong><small>Assigned tasks and approvals</small></span>
+                <span aria-hidden="true">W</span><span><strong>My Work</strong><small>Assigned tasks and approvals</small></span>
               </Link>
               <button onClick={openInbox} type="button">
-                <span aria-hidden="true">♢</span><span><strong>Inbox</strong><small>Notifications and exceptions</small></span>
+                <span aria-hidden="true">I</span><span><strong>Inbox</strong><small>Notifications and exceptions</small></span>
               </button>
             </div>
 
@@ -138,7 +138,7 @@ export function DesktopNavigationRail({
                       <span aria-hidden="true" className="desktop-rail-item-glyph">{navigationGlyph(item.label)}</span>
                       <span><strong>{item.label}</strong><small>{item.description}</small></span>
                     </Link>
-                    <button aria-label={`Remove ${item.label} from favourites`} onClick={() => onToggleFavorite(item.href)} type="button">★</button>
+                    <button aria-label={`Remove ${item.label} from favourites`} onClick={() => onToggleFavorite(item.href)} type="button">*</button>
                   </div>
                 ))}
               </section>
@@ -161,7 +161,7 @@ export function DesktopNavigationRail({
                               <span><strong>{item.label}</strong><small>{item.description}</small></span>
                             </Link>
                             <button aria-label={pinned ? `Remove ${item.label} from favourites` : `Add ${item.label} to favourites`} aria-pressed={pinned} onClick={() => onToggleFavorite(item.href)} type="button">
-                              {pinned ? '★' : '☆'}
+                              {pinned ? '*' : '+'}
                             </button>
                           </div>
                         );
@@ -178,7 +178,7 @@ export function DesktopNavigationRail({
               <div className="desktop-rail-section-label"><strong>Recent</strong></div>
               {recentPages.slice(0, 4).map((page) => (
                 <Link aria-current={isActivePath(pathname, page.href) ? 'page' : undefined} href={page.href} key={page.href}>
-                  <span aria-hidden="true">↗</span><span>{page.label}</span>
+                  <span aria-hidden="true">O</span><span>{page.label}</span>
                 </Link>
               ))}
             </section>

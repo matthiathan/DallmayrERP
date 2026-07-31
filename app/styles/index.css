@@ -83,3 +83,6 @@
 
 /* 7. Executive ERP redesign contract. This is the current application UI layer. */
 @import '../erp-executive-ui.css';
+
+/* 8. Dynamics 365-inspired operating shell. */
+@import '../dynamics-365-ui.css';

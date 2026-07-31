@@ -91,11 +91,29 @@ export default function LoginPage() {
   const isActivate = mode === 'activate';
 
   return (
-    <main className="login-page">
-      <div className="login-card neo-card">
+    <main className="login-page dynamics-login-page">
+      <section aria-label="DallmayrERP overview" className="dynamics-login-intro">
+        <div className="dynamics-login-brand">
+          <span aria-hidden="true">D</span>
+          <strong>DallmayrERP</strong>
+        </div>
+        <div className="dynamics-login-copy">
+          <span>Business applications</span>
+          <h1>Run service, stock, finance and customer work from one workspace.</h1>
+          <p>Role-based dashboards, searchable records, operational queues and approvals built for daily branch execution.</p>
+        </div>
+        <div className="dynamics-login-modules" aria-label="Core modules">
+          <span>Operations</span>
+          <span>Warehouse</span>
+          <span>Finance</span>
+          <span>Sales</span>
+        </div>
+      </section>
+
+      <div className="login-card neo-card dynamics-login-card">
         <div className="orb" />
-        <div className="badge">Secure ERP</div>
-        <h1>{isActivate ? 'Activate your DallmayrERP account' : 'DallmayrERP Sign In'}</h1>
+        <div className="badge">Secure workspace</div>
+        <h1>{isActivate ? 'Activate your DallmayrERP account' : 'Sign in'}</h1>
         <p>
           {isActivate
             ? 'Create your Supabase login account. ERP access only unlocks when admin has invited the same email in Users & Roles.'
