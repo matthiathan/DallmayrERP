@@ -98,7 +98,7 @@
   display: inline-flex;
   align-items: center;
   grid-auto-flow: column;
-  justify-content: start;
+  justify-content: flex-start;
 }
 
 .monday-my-work-search {
