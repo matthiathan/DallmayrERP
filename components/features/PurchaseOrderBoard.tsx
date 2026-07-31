@@ -223,7 +223,7 @@ export function PurchaseOrderBoard() {
       {selectedOrder ? <section className="neo-card">
         <div className="page-toolbar-heading"><div><h2>{selectedOrder.po_number}</h2><p>{selectedOrder.supplier_name} • {selectedOrder.branch.toUpperCase()}</p></div><StatusBadge value={selectedOrder.status} /></div>
         <div className="action-row">
-          {selectedOrder.status === 'draft' ? <><button className="button" disabled={saving || lines.length === 0} onClick={() => changeStatus('ordered')} type="button">Mark ordered</button><button className="button secondary" disabled={saving} onClick={() => changeStatus('cancelled')} type="button">Cancel</button></> : null}
+          {selectedOrder.status === 'draft' ? <><button className="button" disabled={saving || lines.length === 0} onClick={() => changeStatus('ordered')} type="button">Mark ordered</button><button className="button secondary danger-action" disabled={saving} onClick={() => { if (window.confirm(`Cancel purchase order ${selectedOrder.po_number}? This will mark the order as cancelled.`)) void changeStatus('cancelled'); }} type="button">Cancel purchase order</button></> : null}
         </div>
 
         {selectedOrder.status === 'draft' ? <form className="grid" onSubmit={addLine}>

@@ -299,6 +299,8 @@ html[data-visual-theme] body .application-header-actions .density-toggle button 
   padding: 0 !important;
   border-radius: 999px !important;
   color: #d8e5ea !important;
+  font-size: 0.74rem !important;
+  font-weight: 860 !important;
   line-height: 1 !important;
 }
 
@@ -1114,6 +1116,44 @@ html[data-visual-theme] body .table-column-filter-input {
   font-size: 0.78rem !important;
 }
 
+html[data-visual-theme] body :is(.table-sort-button, .monday-board-sort-button) {
+  gap: 8px !important;
+}
+
+html[data-visual-theme] body .table-sort-state {
+  display: inline-grid !important;
+  place-items: center !important;
+  flex: 0 0 auto !important;
+  min-width: 38px !important;
+  padding: 3px 7px !important;
+  border: 1px solid #d4e0e7 !important;
+  border-radius: 999px !important;
+  background: #f6f9fb !important;
+  color: #526675 !important;
+  -webkit-text-fill-color: #526675 !important;
+  font-size: 0.66rem !important;
+  font-weight: 860 !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+}
+
+html[data-visual-theme] body .table-sort-state.is-active {
+  border-color: rgba(15, 143, 156, 0.32) !important;
+  background: #dbf5f7 !important;
+  color: #0b6f7a !important;
+  -webkit-text-fill-color: #0b6f7a !important;
+}
+
+html[data-visual-theme] body :is(.enterprise-table-empty-cell, .monday-board-table-empty) {
+  padding: 34px 18px !important;
+  background: #f8fbfc !important;
+  color: var(--erp-ui-muted) !important;
+  -webkit-text-fill-color: var(--erp-ui-muted) !important;
+  font-size: 0.96rem !important;
+  font-weight: 740 !important;
+  text-align: center !important;
+}
+
 html[data-visual-theme] body .enterprise-table-pagination {
   display: flex !important;
   align-items: center !important;
@@ -1230,6 +1270,21 @@ html[data-visual-theme] body :is(.status-badge[data-tone='danger'], .status-badg
   color: var(--erp-ui-red) !important;
 }
 
+html[data-visual-theme] body .application-main :is(.button.danger-action, .button.secondary.danger-action, .monday-board-command-button.is-danger) {
+  border-color: rgba(190, 61, 63, 0.32) !important;
+  background: #fff4f4 !important;
+  color: var(--erp-ui-red) !important;
+  -webkit-text-fill-color: var(--erp-ui-red) !important;
+}
+
+html[data-visual-theme] body .application-main :is(.button.danger-action, .button.secondary.danger-action, .monday-board-command-button.is-danger):hover,
+html[data-visual-theme] body .application-main :is(.button.danger-action, .button.secondary.danger-action, .monday-board-command-button.is-danger):focus-visible {
+  border-color: rgba(190, 61, 63, 0.54) !important;
+  background: #ffe8e8 !important;
+  color: #8b1f22 !important;
+  -webkit-text-fill-color: #8b1f22 !important;
+}
+
 /* Dialogs, drawers and overlays. */
 html[data-visual-theme] body :is(.global-search-dialog, .dallmayr-account-panel, .monday-board-filter-drawer, .notification-inbox-panel, .mobile-nav-panel, .mobile-filter-sheet) {
   border: 1px solid var(--erp-ui-line) !important;
@@ -1245,6 +1300,54 @@ html[data-visual-theme] body :is(.global-search-dialog, .dallmayr-account-panel,
 
 html[data-visual-theme] body :is(.global-search-dialog, .dallmayr-account-panel, .monday-board-filter-drawer, .notification-inbox-panel, .mobile-nav-panel, .mobile-filter-sheet) :is(p, small, label) {
   color: var(--erp-ui-muted) !important;
+}
+
+/* Auth and loading states. */
+html[data-visual-theme] body .auth-state-page {
+  min-height: 100dvh !important;
+  padding: 24px !important;
+  background: var(--erp-ui-bg) !important;
+  color: var(--erp-ui-text) !important;
+}
+
+html[data-visual-theme] body .auth-state-page .auth-state-card.neo-card {
+  width: min(100%, 520px) !important;
+  padding: 30px !important;
+  border: 1px solid var(--erp-ui-line) !important;
+  border-radius: var(--erp-ui-radius-md) !important;
+  background: #ffffff !important;
+  color: var(--erp-ui-text) !important;
+  box-shadow: var(--erp-ui-shadow-md) !important;
+}
+
+html[data-visual-theme] body .auth-state-page .auth-state-card.neo-card::before,
+html[data-visual-theme] body .auth-state-page .auth-state-card.neo-card::after,
+html[data-visual-theme] body .auth-state-page .auth-state-card .orb {
+  display: none !important;
+}
+
+html[data-visual-theme] body .auth-state-page .auth-state-card h1 {
+  margin: 0 0 8px !important;
+  color: var(--erp-ui-heading) !important;
+  -webkit-text-fill-color: var(--erp-ui-heading) !important;
+  font-size: clamp(1.7rem, 3vw, 2.3rem) !important;
+  font-weight: 880 !important;
+  letter-spacing: 0 !important;
+}
+
+html[data-visual-theme] body .auth-state-page .auth-state-card.neo-card p {
+  margin: 0 !important;
+  color: var(--erp-ui-muted) !important;
+  -webkit-text-fill-color: var(--erp-ui-muted) !important;
+  font-size: 1rem !important;
+  font-weight: 620 !important;
+  line-height: 1.55 !important;
+}
+
+html[data-visual-theme] body .auth-state-page .auth-state-card.neo-card .hamster-loader__label {
+  color: var(--erp-ui-muted) !important;
+  -webkit-text-fill-color: var(--erp-ui-muted) !important;
+  text-shadow: none !important;
 }
 
 /* Responsive behavior. */

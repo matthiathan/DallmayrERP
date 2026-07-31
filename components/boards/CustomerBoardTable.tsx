@@ -175,14 +175,13 @@ export function CustomerBoardTable({
                   const activeSort = sortColumn === column.id;
                   return (
                     <th key={column.id} style={{ width: `${width}px` }}>
-                      <button className="monday-board-sort-button" onClick={() => onSort(column.id)} type="button">
+                      <button className="monday-board-sort-button" onClick={() => onSort(column.id)} title={`Sort by ${column.label}`} type="button">
                         <span>{column.label}</span>
-                        <span aria-hidden="true" className={activeSort ? 'is-active' : undefined}>{activeSort ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}</span>
+                        <span aria-hidden="true" className={activeSort ? 'table-sort-state is-active' : 'table-sort-state'}>{activeSort ? (sortDirection === 'asc' ? 'Asc' : 'Desc') : 'Sort'}</span>
                         <span className="sr-only">{activeSort ? `Sorted ${sortDirection}` : 'Not sorted'}</span>
                       </button>
                       <button
                         aria-label={`Resize ${column.label} column`}
-                        aria-valuenow={width}
                         className="monday-board-column-resizer"
                         data-active={activeColumnId === column.id ? 'true' : undefined}
                         onDoubleClick={(event) => {

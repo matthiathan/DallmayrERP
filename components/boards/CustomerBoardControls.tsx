@@ -16,6 +16,12 @@ import {
 } from '@/components/boards/useCustomerBoard';
 
 export function CustomerBoardControls({ board }: { board: CustomerBoardController }) {
+  function deleteCurrentView() {
+    if (window.confirm('Delete this saved customer board view? This cannot be undone.')) {
+      board.deleteCurrentView();
+    }
+  }
+
   return (
     <>
       <BoardViewTabs
@@ -86,12 +92,12 @@ export function CustomerBoardControls({ board }: { board: CustomerBoardControlle
           {board.saveViewOpen ? (
             <form className="monday-board-save-view-popover" onSubmit={(event) => { event.preventDefault(); board.saveCurrentView(); }}>
               <label>View name<input autoFocus maxLength={60} onChange={(event) => board.setSaveViewName(event.target.value)} placeholder="e.g. Active Gauteng accounts" value={board.saveViewName} /></label>
-              <div><button className="button secondary" onClick={() => board.setSaveViewOpen(false)} type="button">Cancel</button><button className="button" disabled={!board.saveViewName.trim()} type="submit">Save</button></div>
+              <div><button className="button secondary" onClick={() => board.setSaveViewOpen(false)} type="button">Cancel save</button><button className="button" disabled={!board.saveViewName.trim()} type="submit">Save named view</button></div>
             </form>
           ) : null}
         </div>
 
-        {board.currentCustomView ? <button className="monday-board-command-button is-danger" onClick={board.deleteCurrentView} type="button">Delete view</button> : null}
+        {board.currentCustomView ? <button className="monday-board-command-button is-danger" onClick={deleteCurrentView} type="button">Delete saved view</button> : null}
 
         <div className="monday-board-command-summary">
           <strong>{board.activeViewLabel}</strong>
@@ -101,8 +107,8 @@ export function CustomerBoardControls({ board }: { board: CustomerBoardControlle
 
       {board.activeFilterChips.length > 0 ? (
         <BoardFilterChips>
-          {board.activeFilterChips.map((chip) => <button key={chip.id} onClick={chip.clear} type="button"><span>{chip.label}</span><span aria-hidden="true">×</span></button>)}
-          <button className="monday-board-clear-chips" onClick={board.clearAllFilters} type="button">Clear all</button>
+          {board.activeFilterChips.map((chip) => <button aria-label={`Remove ${chip.label} filter`} key={chip.id} onClick={chip.clear} type="button"><span>{chip.label}</span><span aria-hidden="true">×</span></button>)}
+          <button className="monday-board-clear-chips" onClick={board.clearAllFilters} type="button">Clear all filters</button>
         </BoardFilterChips>
       ) : null}
 

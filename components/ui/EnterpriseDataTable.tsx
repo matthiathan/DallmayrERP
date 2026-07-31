@@ -234,6 +234,9 @@ export function EnterpriseDataTable<T>({
   const totalPagesLabel = pageCount.toLocaleString();
   const sortableColumns = columns.filter((column) => column.sortable);
   const filterableColumns = columns.filter((column) => column.filterable !== false);
+  const sortStateLabel = (direction: 'asc' | 'desc' | null) => (
+    direction === 'asc' ? 'Asc' : direction === 'desc' ? 'Desc' : 'Sort'
+  );
 
   return (
     <section className="enterprise-table-shell">
@@ -272,9 +275,9 @@ export function EnterpriseDataTable<T>({
                       <div className="resizable-th-stack">
                         <div className="resizable-th-content">
                           {column.sortable ? (
-                            <button className="table-sort-button" onClick={() => toggleSort(column)} type="button">
+                            <button className="table-sort-button" onClick={() => toggleSort(column)} title={`Sort by ${column.header}`} type="button">
                               <span>{column.header}</span>
-                              <span aria-hidden="true">{activeSort === 'asc' ? '↑' : activeSort === 'desc' ? '↓' : '↕'}</span>
+                              <span aria-hidden="true" className={activeSort ? 'table-sort-state is-active' : 'table-sort-state'}>{sortStateLabel(activeSort)}</span>
                             </button>
                           ) : <span className="table-header-label">{column.header}</span>}
                         </div>
@@ -292,7 +295,6 @@ export function EnterpriseDataTable<T>({
                         ) : <span aria-hidden="true" className="table-column-filter-spacer" />}
                         <button
                           aria-label={`Resize ${column.header} column. Drag, use arrow keys, or double click to reset.`}
-                          aria-valuenow={columnWidth}
                           className="table-column-resizer"
                           data-active={activeColumnId === column.id ? 'true' : undefined}
                           onDoubleClick={(event) => {
@@ -313,7 +315,7 @@ export function EnterpriseDataTable<T>({
             </thead>
             <tbody>
               {visibleRows.length === 0 ? (
-                <tr><td colSpan={columns.length}>{emptyMessage}</td></tr>
+                <tr><td className="enterprise-table-empty-cell" colSpan={columns.length}>{emptyMessage}</td></tr>
               ) : visibleRows.map((row) => (
                 <tr key={rowKey(row)}>
                   {columns.map((column) => {

@@ -4,7 +4,13 @@ import { useEffect, useState } from 'react';
 
 type Density = 'comfortable' | 'standard' | 'compact';
 
-const densities: Density[] = ['comfortable', 'standard', 'compact'];
+const densityOptions: Array<{ label: string; shortLabel: string; value: Density }> = [
+  { label: 'Roomy', shortLabel: 'R', value: 'comfortable' },
+  { label: 'Standard', shortLabel: 'S', value: 'standard' },
+  { label: 'Compact', shortLabel: 'C', value: 'compact' },
+];
+
+const densities = densityOptions.map((option) => option.value);
 
 export function DensityToggle() {
   const [density, setDensity] = useState<Density>('standard');
@@ -24,16 +30,17 @@ export function DensityToggle() {
 
   return (
     <div className="density-toggle" aria-label="Display density">
-      {densities.map((item) => (
+      {densityOptions.map((option) => (
         <button
-          aria-pressed={density === item}
-          className={density === item ? 'is-active' : ''}
-          key={item}
-          onClick={() => changeDensity(item)}
-          title={`Use ${item} display density`}
+          aria-label={`Use ${option.label.toLowerCase()} display density`}
+          aria-pressed={density === option.value}
+          className={density === option.value ? 'is-active' : ''}
+          key={option.value}
+          onClick={() => changeDensity(option.value)}
+          title={`Use ${option.label.toLowerCase()} display density`}
           type="button"
         >
-          {item[0].toUpperCase()}
+          {option.shortLabel}
         </button>
       ))}
     </div>

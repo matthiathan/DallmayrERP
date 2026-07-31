@@ -108,14 +108,14 @@ export function RemoteDataTable<T>({
     totalWidth,
   } = useResizableColumns(columns, tableId);
 
-  function updateColumnFilter(columnId: string, value: string) {
+  const updateColumnFilter = useCallback((columnId: string, value: string) => {
     const next = { ...effectiveColumnFilters };
     if (value) next[columnId] = value;
     else delete next[columnId];
 
     if (onColumnFiltersChange) onColumnFiltersChange(next);
     else setLocalColumnFilters(next);
-  }
+  }, [effectiveColumnFilters, onColumnFiltersChange]);
 
   const clearColumnFilters = useCallback(() => {
     if (onColumnFiltersChange) onColumnFiltersChange({});
@@ -137,7 +137,7 @@ export function RemoteDataTable<T>({
         label: `${column?.header ?? columnId}: ${value}`,
         onRemove: () => updateColumnFilter(columnId, ''),
       };
-    }), [columns, effectiveColumnFilters]);
+    }), [columns, effectiveColumnFilters, updateColumnFilter]);
 
   const allMobileFilterChips = useMemo(
     () => [...mobileFilterChips, ...columnFilterChips],
@@ -203,7 +203,6 @@ export function RemoteDataTable<T>({
                         ) : <span aria-hidden="true" className="table-column-filter-spacer" />}
                         <button
                           aria-label={`Resize ${column.header} column. Drag, use arrow keys, or double click to reset.`}
-                          aria-valuenow={columnWidth}
                           className="table-column-resizer"
                           data-active={activeColumnId === column.id ? 'true' : undefined}
                           onDoubleClick={(event) => {
@@ -224,7 +223,7 @@ export function RemoteDataTable<T>({
             </thead>
             <tbody>
               {visibleRows.length === 0 ? (
-                <tr><td colSpan={columns.length}>{loading ? 'Loading records...' : emptyMessage}</td></tr>
+                <tr><td className="enterprise-table-empty-cell" colSpan={columns.length}>{loading ? 'Loading records...' : emptyMessage}</td></tr>
               ) : visibleRows.map((row) => (
                 <tr key={rowKey(row)}>
                   {columns.map((column) => {

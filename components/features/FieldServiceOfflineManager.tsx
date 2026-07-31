@@ -441,7 +441,7 @@ export function FieldServiceOfflineManager() {
                     <div><span>{item.status.replace(/_/g, ' ')}</span><h3>{item.jobNumber}</h3><p>{formatQueuedAt(item.createdAt)}</p></div>
                     {item.lastError ? <div className="field-offline-error" role="alert">{item.lastError}</div> : null}
                     <dl><div><dt>Outcome</dt><dd>{item.outcome.replace(/_/g, ' ')}</dd></div><div><dt>Evidence</dt><dd>{item.photo ? item.photoName ?? 'Photo attached' : 'No photo'}</dd></div></dl>
-                    <button className="button secondary" disabled={item.status === 'syncing'} onClick={() => void removeFieldQueueItem(item.id).then(refreshQueue)} type="button">Remove from device</button>
+                    <button className="button secondary danger-action" disabled={item.status === 'syncing'} onClick={() => { if (window.confirm(`Remove queued completion for ${item.jobNumber} from this device? This cannot be synced afterward.`)) void removeFieldQueueItem(item.id).then(refreshQueue); }} type="button">Remove from device</button>
                   </article>
                 ))}
               </div>
