@@ -24,6 +24,7 @@
     "lint": "next lint",
     "test": "npm run typecheck",
     "stylecheck": "node scripts/check-style-architecture.mjs",
+    "security:pentest": "node scripts/security-pentest.mjs",
     "typecheck": "tsc --noEmit",
     "check": "npm run stylecheck && npm run typecheck && npm run build"
   },

@@ -124,11 +124,11 @@ export default function LoginPage() {
         <form onSubmit={isActivate ? activate : login} className="grid" style={{ marginTop: 20 }}>
           <label>
             Email
-            <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required />
+            <input autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} type="email" required />
           </label>
           <label>
             Password
-            <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" minLength={6} required />
+            <input autoComplete={isActivate ? 'new-password' : 'current-password'} value={password} onChange={(event) => setPassword(event.target.value)} type="password" minLength={6} required />
           </label>
           <button className="button pulse-button" disabled={submitting} type="submit">
             {submitting ? 'Please wait...' : isActivate ? 'Activate account' : 'Sign in'}
