@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ErpPage, ErpTabBar } from '@/components/ui/ErpLayout';
 import { PageToolbar } from '@/components/ui/PageToolbar';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { getSupabaseClient } from '@/lib/supabase/client';
@@ -398,7 +399,7 @@ export function Customer360Workspace() {
   ].filter(Boolean) as Array<{ href: string; label: string }>;
 
   return (
-    <div className="customer360-stage erp-record-workspace erp-customer-workspace">
+    <ErpPage className="customer360-stage erp-record-workspace erp-customer-workspace" variant="record">
       {error ? <div className="error" role="alert">{error}</div> : null}
 
       <section className="customer360-hero">
@@ -443,7 +444,7 @@ export function Customer360Workspace() {
         <button onClick={() => setActiveTab('activity')} type="button"><span>Activity events</span><strong>{timeline.length}</strong><small>Most recent linked events</small></button>
       </section>
 
-      <nav aria-label="Customer workspace sections" className="customer360-tabs" role="tablist">
+      <ErpTabBar className="customer360-tabs" label="Customer workspace sections">
         {tabs.map((tab) => (
           <button
             aria-controls={`customer360-panel-${tab.id}`}
@@ -458,7 +459,7 @@ export function Customer360Workspace() {
             {tab.label}
           </button>
         ))}
-      </nav>
+      </ErpTabBar>
 
       {activeTab === 'overview' ? (
         <section aria-labelledby="customer360-tab-overview" className="customer360-panel" id="customer360-panel-overview" role="tabpanel">
@@ -607,7 +608,7 @@ export function Customer360Workspace() {
           </article>
         </section>
       ) : null}
-    </div>
+    </ErpPage>
   );
 }
 

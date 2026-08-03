@@ -6,6 +6,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { AssetTicketCard } from '@/components/ui/AssetTicketCard';
 import { BarcodeCapture } from '@/components/ui/BarcodeCapture';
 import { CustomerSelect, type CustomerOption } from '@/components/ui/CustomerSelect';
+import { ErpPage, ErpPanel } from '@/components/ui/ErpLayout';
 import { type EnterpriseColumn } from '@/components/ui/EnterpriseDataTable';
 import { PageToolbar } from '@/components/ui/PageToolbar';
 import { RemoteDataTable } from '@/components/ui/RemoteDataTable';
@@ -256,11 +257,15 @@ export function MachineAssetBoard() {
   ], []);
 
   return (
-    <div className="grid spatial-stage spatial-dashboard erp-list-workspace erp-machine-register-workspace">
+    <ErpPage className="spatial-stage spatial-dashboard erp-list-workspace erp-machine-register-workspace" variant="list">
       {error ? <div className="error">{error}</div> : null}
       {message ? <div className="success">{message}</div> : null}
-      <div className="neo-card spatial-machine-panel spatial-card">
-        <div className="page-toolbar-heading"><div><h2>Machine profiles</h2><p>Create customer-linked machines or enter any distinctive part of an existing QR/barcode or serial number to prevent duplicate records.</p></div><Link className="button secondary" href="/work">Open Action Centre</Link></div>
+      <ErpPanel
+        actions={<Link className="button secondary" href="/work">Open Action Centre</Link>}
+        className="spatial-machine-panel spatial-card"
+        description="Create customer-linked machines or enter any distinctive part of an existing QR/barcode or serial number to prevent duplicate records."
+        title="Machine profiles"
+      >
         <form className="grid" onSubmit={createMachine}>
           <div className="form-grid">
             <CustomerSelect label="Customer" onSelect={applyCustomer} value={customerName} />
@@ -290,7 +295,7 @@ export function MachineAssetBoard() {
           ) : null}
           <button className="button pulse-button" disabled={saving || Boolean(scannedAsset) || scanCandidates.length > 0 || !serialNumber.trim() || !machineBarcode.trim()} type="submit">{saving ? 'Creating machine...' : 'Create machine'}</button>
         </form>
-      </div>
+      </ErpPanel>
 
       {scannedAsset ? (
         <AssetTicketCard
@@ -340,6 +345,6 @@ export function MachineAssetBoard() {
         searchPlaceholder="Enter part of a machine, customer, serial, barcode, site, status or branch"
         totalRows={totalRows}
       />
-    </div>
+    </ErpPage>
   );
 }

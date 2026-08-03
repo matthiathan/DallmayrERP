@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErpPage } from '@/components/ui/ErpLayout';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { isNavItemAllowed, navSections, roleLabels } from '@/lib/auth/permissions';
 import { getSupabaseClient } from '@/lib/supabase/client';
@@ -348,7 +349,7 @@ export function RoleTodayWorkspace() {
   const attentionItems = accessibleAttention.filter((item) => item.badge && metricNumber(summary, item.badge) > 0);
 
   return (
-    <div className="today-workspace-stage">
+    <ErpPage className="today-workspace-stage" variant="dashboard">
       <header className="today-workspace-hero">
         <div className="today-user-avatar" aria-hidden="true">{initialsFor(userName)}</div>
         <div className="today-workspace-heading">
@@ -419,6 +420,6 @@ export function RoleTodayWorkspace() {
           </section>
         </>
       ) : null}
-    </div>
+    </ErpPage>
   );
 }

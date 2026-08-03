@@ -44,7 +44,7 @@ export function PageToolbar({
   return (
     <WorkspaceCommandBar
       ariaLabel={`${title} controls`}
-      className="page-toolbar workspace-command-bar"
+      className="page-toolbar workspace-command-bar erp-command-bar"
       hasControls={hasControls}
     >
       <WorkspaceSectionHeader

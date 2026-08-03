@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { ErpPage } from '@/components/ui/ErpLayout';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { PageToolbar } from '@/components/ui/PageToolbar';
@@ -237,7 +238,7 @@ export function OperationsDispatchOverview() {
   const scheduledTechnicians = capacityRows.filter((technician) => technician.routeStops > 0 || technician.openJobs > 0).length;
 
   return (
-    <div className="dispatch-overview-stage">
+    <ErpPage className="dispatch-overview-stage" variant="operational">
       {error ? <div className="error" role="alert">{error}</div> : null}
 
       <PageToolbar
@@ -407,6 +408,6 @@ export function OperationsDispatchOverview() {
           </section>
         </>
       ) : null}
-    </div>
+    </ErpPage>
   );
 }

@@ -668,6 +668,279 @@ html[data-visual-theme] body :is(.action-row, .page-header-actions, .button-row,
 }
 
 /* Panels and layout rhythm */
+html[data-visual-theme] body .application-main .erp-page {
+  display: grid !important;
+  align-content: start !important;
+  gap: 18px !important;
+  width: min(100%, 1760px) !important;
+  max-width: 100% !important;
+  margin-inline: auto !important;
+  color: var(--erp-workbench-text) !important;
+  -webkit-text-fill-color: currentColor;
+}
+
+html[data-visual-theme] body .application-main .erp-page-header {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) max-content !important;
+  align-items: flex-end !important;
+  gap: 20px !important;
+  min-width: 0 !important;
+  padding: 0 0 16px !important;
+  border-bottom: 1px solid var(--erp-workbench-border-strong) !important;
+}
+
+html[data-visual-theme] body .application-main .erp-page-header-copy,
+html[data-visual-theme] body .application-main .erp-panel-header > div,
+html[data-visual-theme] body .application-main .erp-metric-card > div {
+  min-width: 0 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-page-header h1 {
+  margin: 0 !important;
+  color: var(--erp-workbench-heading) !important;
+  -webkit-text-fill-color: var(--erp-workbench-heading) !important;
+  font-size: clamp(26px, 2vw, 34px) !important;
+  font-weight: 600 !important;
+  line-height: 1.12 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-page-header p,
+html[data-visual-theme] body .application-main .erp-panel-header p,
+html[data-visual-theme] body .application-main .erp-metric-card p {
+  max-width: 86ch !important;
+  margin: 5px 0 0 !important;
+  color: var(--erp-workbench-muted) !important;
+  -webkit-text-fill-color: var(--erp-workbench-muted) !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-eyebrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  min-height: 20px !important;
+  margin-bottom: 4px !important;
+  color: var(--erp-workbench-blue-dark) !important;
+  -webkit-text-fill-color: var(--erp-workbench-blue-dark) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  text-transform: uppercase !important;
+}
+
+html[data-visual-theme] body .application-main .erp-page-header-side {
+  display: grid !important;
+  justify-items: end !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-page-header-actions,
+html[data-visual-theme] body .application-main .erp-panel-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+}
+
+html[data-visual-theme] body .application-main .erp-page-header-meta {
+  color: var(--erp-workbench-muted) !important;
+  -webkit-text-fill-color: var(--erp-workbench-muted) !important;
+  font-size: 12px !important;
+}
+
+html[data-visual-theme] body .application-main .erp-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid var(--erp-workbench-border) !important;
+  border-radius: var(--erp-workbench-radius) !important;
+  background: var(--erp-workbench-surface) !important;
+  color: var(--erp-workbench-text) !important;
+  -webkit-text-fill-color: currentColor;
+  box-shadow: var(--erp-workbench-shadow) !important;
+}
+
+html[data-visual-theme] body .application-main .erp-panel[data-density='comfortable'] {
+  padding: 18px !important;
+}
+
+html[data-visual-theme] body .application-main .erp-panel[data-density='compact'] {
+  padding: 12px !important;
+}
+
+html[data-visual-theme] body .application-main .erp-panel-header {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: flex-start !important;
+  gap: 14px !important;
+  min-width: 0 !important;
+  padding-bottom: 14px !important;
+}
+
+html[data-visual-theme] body .application-main .erp-panel-header h2 {
+  margin: 0 !important;
+  color: var(--erp-workbench-heading) !important;
+  -webkit-text-fill-color: var(--erp-workbench-heading) !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-panel-body {
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-panel[data-scroll='content'] .erp-panel-body,
+html[data-visual-theme] body .application-main .erp-panel[data-scroll='list'] .erp-panel-body {
+  max-height: clamp(360px, 58vh, 720px) !important;
+  overflow: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-gutter: stable both-edges;
+}
+
+html[data-visual-theme] body .application-main .erp-metric-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)) !important;
+  gap: 14px !important;
+  min-width: 0 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-metric-grid[data-columns='2'] {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+html[data-visual-theme] body .application-main .erp-metric-grid[data-columns='3'] {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+html[data-visual-theme] body .application-main .erp-metric-grid[data-columns='4'] {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+html[data-visual-theme] body .application-main .erp-metric-card {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 16px !important;
+  overflow: hidden !important;
+  border: 1px solid var(--erp-workbench-border) !important;
+  border-left: 3px solid var(--erp-workbench-blue) !important;
+  border-radius: var(--erp-workbench-radius) !important;
+  background: var(--erp-workbench-surface) !important;
+  box-shadow: var(--erp-workbench-shadow) !important;
+}
+
+html[data-visual-theme] body .application-main .erp-metric-card[data-tone='good'] {
+  border-left-color: var(--erp-workbench-success) !important;
+}
+
+html[data-visual-theme] body .application-main .erp-metric-card[data-tone='warning'] {
+  border-left-color: var(--erp-workbench-warning) !important;
+}
+
+html[data-visual-theme] body .application-main .erp-metric-card[data-tone='danger'] {
+  border-left-color: var(--erp-workbench-danger) !important;
+}
+
+html[data-visual-theme] body .application-main .erp-metric-card > div > span {
+  display: block !important;
+  color: var(--erp-workbench-muted) !important;
+  -webkit-text-fill-color: var(--erp-workbench-muted) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-metric-card strong {
+  display: block !important;
+  margin-top: 4px !important;
+  color: var(--erp-workbench-heading) !important;
+  -webkit-text-fill-color: var(--erp-workbench-heading) !important;
+  font-size: clamp(24px, 2vw, 32px) !important;
+  font-weight: 600 !important;
+  line-height: 1.1 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-split-view,
+html[data-visual-theme] body .application-main .erp-record-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px) !important;
+  align-items: start !important;
+  gap: 18px !important;
+  min-width: 0 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-split-view[data-priority='aside'],
+html[data-visual-theme] body .application-main .erp-record-layout {
+  grid-template-columns: minmax(300px, 420px) minmax(0, 1fr) !important;
+}
+
+html[data-visual-theme] body .application-main .erp-split-view[data-priority='aside'] .erp-split-primary,
+html[data-visual-theme] body .application-main .erp-record-summary {
+  order: -1 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-split-primary,
+html[data-visual-theme] body .application-main .erp-split-aside,
+html[data-visual-theme] body .application-main .erp-record-main,
+html[data-visual-theme] body .application-main .erp-record-summary {
+  min-width: 0 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-record-main,
+html[data-visual-theme] body .application-main .erp-record-summary {
+  display: grid !important;
+  align-content: start !important;
+  gap: 18px !important;
+}
+
+html[data-visual-theme] body .application-main .erp-record-summary {
+  position: sticky !important;
+  top: 0 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-tab-bar {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+  padding: 4px !important;
+  overflow-x: auto !important;
+  border: 1px solid var(--erp-workbench-border) !important;
+  border-radius: var(--erp-workbench-radius) !important;
+  background: var(--erp-workbench-surface) !important;
+  scrollbar-gutter: stable;
+}
+
+html[data-visual-theme] body .application-main .erp-tab-bar :is(button, a) {
+  min-height: 32px !important;
+  min-width: max-content !important;
+  padding: 0 12px !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--erp-workbench-radius) !important;
+  background: transparent !important;
+  color: var(--erp-workbench-text) !important;
+  -webkit-text-fill-color: var(--erp-workbench-text) !important;
+  font-weight: 600 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-tab-bar :is(button, a):hover,
+html[data-visual-theme] body .application-main .erp-tab-bar :is(button, a):focus-visible,
+html[data-visual-theme] body .application-main .erp-tab-bar :is(button.is-active, button[aria-selected='true'], a[aria-current='page']) {
+  border-color: #c7e0f4 !important;
+  background: var(--erp-workbench-blue-pale) !important;
+  color: var(--erp-workbench-blue-dark) !important;
+  -webkit-text-fill-color: var(--erp-workbench-blue-dark) !important;
+}
+
 html[data-visual-theme] body .application-main :is(.grid, .spatial-stage, .spatial-dashboard, .professional-ops-stage, .erp-list-workspace, .erp-record-workspace) {
   gap: 18px !important;
 }
@@ -1220,6 +1493,41 @@ html[data-visual-theme] body .auth-state-page .auth-state-card.neo-card {
     margin: 0 !important;
     padding: 14px 14px 88px !important;
     overflow: visible !important;
+  }
+
+  html[data-visual-theme] body .application-main .erp-page {
+    gap: 14px !important;
+    width: 100% !important;
+  }
+
+  html[data-visual-theme] body .application-main .erp-page-header,
+  html[data-visual-theme] body .application-main .erp-panel-header,
+  html[data-visual-theme] body .application-main .erp-split-view,
+  html[data-visual-theme] body .application-main .erp-split-view[data-priority='aside'],
+  html[data-visual-theme] body .application-main .erp-record-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  html[data-visual-theme] body .application-main .erp-page-header-side,
+  html[data-visual-theme] body .application-main .erp-page-header-actions,
+  html[data-visual-theme] body .application-main .erp-panel-actions {
+    justify-items: start !important;
+    justify-content: flex-start !important;
+  }
+
+  html[data-visual-theme] body .application-main .erp-panel[data-density='comfortable'] {
+    padding: 14px !important;
+  }
+
+  html[data-visual-theme] body .application-main .erp-metric-grid,
+  html[data-visual-theme] body .application-main .erp-metric-grid[data-columns='2'],
+  html[data-visual-theme] body .application-main .erp-metric-grid[data-columns='3'],
+  html[data-visual-theme] body .application-main .erp-metric-grid[data-columns='4'] {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)) !important;
+  }
+
+  html[data-visual-theme] body .application-main .erp-record-summary {
+    position: static !important;
   }
 
   html[data-visual-theme] body .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header, .hero-panel),
