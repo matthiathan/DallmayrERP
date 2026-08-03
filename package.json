@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start -p ${PORT:-3000}",
+    "start": "node scripts/start-next.mjs",
     "desktop:dev": "electron .",
     "desktop:package": "electron-forge package",
     "desktop:make": "electron-forge make",

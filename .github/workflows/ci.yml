@@ -42,3 +42,32 @@ jobs:
 
       - name: Build application
         run: npm run build
+
+      - name: Run security pentest against local production server
+        shell: bash
+        env:
+          SECURITY_PENTEST_TARGET: http://localhost:3000
+        run: |
+          npm run start > next-server.log 2>&1 &
+          server_pid="$!"
+
+          cleanup() {
+            kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+            if [ -f next-server.log ]; then
+              tail -n 80 next-server.log
+            fi
+          }
+
+          trap cleanup EXIT
+
+          for attempt in {1..45}; do
+            if curl -fsS "$SECURITY_PENTEST_TARGET/login" > /dev/null; then
+              npm run security:pentest
+              exit 0
+            fi
+            sleep 2
+          done
+
+          cat next-server.log
+          exit 1
