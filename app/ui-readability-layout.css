@@ -1536,6 +1536,241 @@ html[data-visual-theme] body .application-main :is(
   -webkit-text-fill-color: currentColor;
 }
 
+/* ERP layout rhythm: flatter Dynamics-style workspaces with a predictable
+   title row, command area and dense but breathable work panels. */
+html[data-visual-theme] body .application-main.workspace-template-frame {
+  gap: 16px !important;
+}
+
+html[data-visual-theme] body .application-main.workspace-template-frame > :not(.breadcrumbs) {
+  width: min(100%, 1680px) !important;
+  max-width: 100% !important;
+  margin-inline: auto !important;
+}
+
+html[data-visual-theme] body .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header, .hero-panel),
+html[data-visual-theme] body .application-main .customer360-stage.erp-record-workspace > .customer360-hero {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 16px !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 18px 20px !important;
+  overflow: visible !important;
+  border: 1px solid var(--ui-safe-line) !important;
+  border-radius: 8px !important;
+  background: var(--ui-safe-surface) !important;
+  color: var(--ui-safe-text) !important;
+  -webkit-text-fill-color: currentColor;
+  box-shadow: none !important;
+}
+
+html[data-visual-theme] body .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header, .hero-panel)::before,
+html[data-visual-theme] body .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header, .hero-panel)::after,
+html[data-visual-theme] body .application-main .customer360-stage.erp-record-workspace > .customer360-hero::after {
+  display: none !important;
+}
+
+html[data-visual-theme] body .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header, .hero-panel) > div:first-child,
+html[data-visual-theme] body .application-main .customer360-stage.erp-record-workspace .customer360-hero-copy {
+  display: grid !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+}
+
+html[data-visual-theme] body .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header, .hero-panel) :is(h1, h2),
+html[data-visual-theme] body .application-main .customer360-stage.erp-record-workspace .customer360-hero h1 {
+  margin: 0 !important;
+  color: var(--ui-safe-heading) !important;
+  -webkit-text-fill-color: var(--ui-safe-heading) !important;
+  font-size: clamp(24px, 2vw, 32px) !important;
+  letter-spacing: 0 !important;
+  line-height: 1.14 !important;
+  text-shadow: none !important;
+  text-transform: none !important;
+}
+
+html[data-visual-theme] body .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header, .hero-panel) p,
+html[data-visual-theme] body .application-main .customer360-stage.erp-record-workspace :is(.customer360-address, .customer360-identity) {
+  max-width: 78ch !important;
+  margin: 0 !important;
+  color: var(--ui-safe-text) !important;
+  -webkit-text-fill-color: var(--ui-safe-text) !important;
+  font-size: 14px !important;
+  line-height: 1.45 !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header, .hero-panel) :is(.action-row, .page-header-actions, .button-row),
+html[data-visual-theme] body .application-main .customer360-contact-actions {
+  justify-content: flex-end !important;
+  margin: 0 !important;
+}
+
+html[data-visual-theme] body .application-main :is(.spatial-stage, .spatial-dashboard, .professional-ops-stage, .erp-list-workspace, .erp-record-workspace) {
+  display: grid !important;
+  gap: 16px !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  perspective: none !important;
+}
+
+html[data-visual-theme] body .application-main :is(.spatial-stage, .spatial-dashboard)::before,
+html[data-visual-theme] body .application-main :is(.spatial-stage, .spatial-dashboard)::after {
+  display: none !important;
+}
+
+html[data-visual-theme] body .application-main .spatial-kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+  gap: 12px !important;
+  margin: 0 !important;
+}
+
+html[data-visual-theme] body .application-main .spatial-kpi-grid > * {
+  min-height: 104px !important;
+  transform: none !important;
+}
+
+html[data-visual-theme] body .application-main :is(.neo-card, .card, .minimal-panel, .minimal-card, .operations-panel):not(.page-header):not(.minimal-page-header):not(.hero-panel) {
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+html[data-visual-theme] body .application-main :is(.page-toolbar, .workspace-command-bar) {
+  position: relative !important;
+  z-index: 10 !important;
+  margin: 0 !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+html[data-visual-theme] body .application-main :is(.page-toolbar-heading, .workspace-command-heading, .page-toolbar-heading > div) {
+  min-width: 0 !important;
+}
+
+html[data-visual-theme] body .application-main :is(.page-toolbar-controls-body, .workspace-command-body) {
+  align-items: end !important;
+  gap: 12px !important;
+}
+
+html[data-visual-theme] body .application-main .erp-list-workspace > :is(.error, .success, [role='alert'], [role='status']) {
+  order: 1;
+}
+
+html[data-visual-theme] body .application-main .erp-list-workspace > :is(.page-header, .minimal-page-header, .hero-panel) {
+  order: 0;
+}
+
+html[data-visual-theme] body .application-main .erp-list-workspace > .spatial-kpi-grid {
+  order: 2;
+}
+
+html[data-visual-theme] body .application-main .erp-stock-register-workspace > .low-stock-alerts {
+  order: 3;
+}
+
+html[data-visual-theme] body .application-main .erp-list-workspace > .page-toolbar {
+  order: 4;
+}
+
+html[data-visual-theme] body .application-main .erp-list-workspace > :is(.enterprise-table-shell, .remote-table-shell, .monday-board-surface) {
+  order: 5;
+}
+
+html[data-visual-theme] body .application-main .erp-stock-register-workspace > .stock-control-centre,
+html[data-visual-theme] body .application-main .erp-machine-register-workspace > .spatial-machine-panel {
+  order: 6;
+}
+
+html[data-visual-theme] body .application-main .erp-stock-register-workspace > :is(.neo-card:not(.low-stock-alerts):not(.stock-control-centre), .erp-supporting-panel) {
+  order: 7;
+}
+
+html[data-visual-theme] body .application-main .erp-machine-register-workspace > .asset-ticket-canvas {
+  order: 6;
+}
+
+html[data-visual-theme] body .application-main .erp-record-workspace :is(.asset-ticket-canvas, .asset-ticket-wrapper, .asset-ticket) {
+  max-width: 100% !important;
+}
+
+html[data-visual-theme] body .application-main .erp-record-workspace .asset-ticket-canvas {
+  padding: 0 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-record-workspace .customer360-hero-summary {
+  min-height: 0 !important;
+  border-color: var(--ui-safe-line) !important;
+  border-radius: 8px !important;
+  background: var(--ui-safe-surface-alt) !important;
+  color: var(--ui-safe-text) !important;
+  box-shadow: none !important;
+}
+
+html[data-visual-theme] body .application-main .erp-record-workspace .customer360-hero-summary :is(span, small) {
+  color: var(--ui-safe-text) !important;
+  -webkit-text-fill-color: var(--ui-safe-text) !important;
+}
+
+html[data-visual-theme] body .application-main .erp-record-workspace .customer360-hero-summary strong {
+  color: var(--ui-safe-heading) !important;
+  -webkit-text-fill-color: var(--ui-safe-heading) !important;
+}
+
+html[data-visual-theme] body .application-main .erp-record-workspace .customer360-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+  gap: 10px !important;
+}
+
+html[data-visual-theme] body .application-main .erp-record-workspace .customer360-metrics button {
+  min-height: 110px !important;
+  border-radius: 8px !important;
+  background: var(--ui-safe-surface) !important;
+  color: var(--ui-safe-text) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+html[data-visual-theme] body .application-main .erp-record-workspace .customer360-tabs {
+  border-radius: 8px !important;
+  background: var(--ui-safe-surface) !important;
+  box-shadow: none !important;
+}
+
+@media (min-width: 1180px) {
+  html[data-visual-theme] body .application-main .erp-record-workspace {
+    grid-template-columns: minmax(300px, 0.78fr) minmax(0, 1.35fr) !important;
+    align-items: start !important;
+  }
+
+  html[data-visual-theme] body .application-main .erp-record-workspace > :is(.asset-ticket-canvas, .page-header, .customer360-hero, .spatial-kpi-grid, .customer360-metrics) {
+    grid-column: 1 !important;
+  }
+
+  html[data-visual-theme] body .application-main .erp-record-workspace > :is(.page-toolbar, .neo-card, .grid.grid-2, .table-wrap, .customer360-tabs, .customer360-panel, .stock-photo-grid) {
+    grid-column: 2 !important;
+  }
+
+  html[data-visual-theme] body .application-main .erp-record-workspace > :is(.asset-ticket-canvas, .page-header, .customer360-hero) {
+    position: sticky !important;
+    top: calc(var(--application-header-height, 64px) + 16px) !important;
+    z-index: 8 !important;
+  }
+
+  html[data-visual-theme] body .application-main .erp-record-workspace > .page-toolbar {
+    position: sticky !important;
+    top: calc(var(--application-header-height, 64px) + 16px) !important;
+    z-index: 12 !important;
+  }
+
+  html[data-visual-theme] body .application-main .erp-stock-item-workspace > .page-header,
+  html[data-visual-theme] body .application-main .erp-work-item-workspace > .page-header {
+    align-self: start !important;
+  }
+}
+
 @media (max-width: 760px) {
   html[data-visual-theme] body .application-main .table-scroll-primary {
     max-height: clamp(320px, 58vh, 560px) !important;
@@ -1570,5 +1805,16 @@ html[data-visual-theme] body .application-main :is(
     .monday-my-work-card-heading
   ) {
     grid-template-columns: 1fr !important;
+  }
+
+  html[data-visual-theme] body .application-main.workspace-template-frame > :is(.page-header, .minimal-page-header, .hero-panel),
+  html[data-visual-theme] body .application-main .customer360-stage.erp-record-workspace > .customer360-hero {
+    grid-template-columns: 1fr !important;
+    padding: 16px !important;
+  }
+
+  html[data-visual-theme] body .application-main .erp-list-workspace,
+  html[data-visual-theme] body .application-main .erp-record-workspace {
+    gap: 12px !important;
   }
 }

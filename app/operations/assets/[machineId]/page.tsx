@@ -213,7 +213,7 @@ export default function AssetLifecycleWorkspacePage() {
     <AppShell>
       {error ? <div className="error">{error}</div> : null}
       {message ? <div className="success">{message}</div> : null}
-      {!machine ? <div className="neo-card"><h1>Asset not found</h1><Link className="button" href="/operations/assets">Back to assets</Link></div> : <div className="grid professional-ops-stage">
+      {!machine ? <div className="neo-card"><h1>Asset not found</h1><Link className="button" href="/operations/assets">Back to assets</Link></div> : <div className="grid professional-ops-stage erp-record-workspace erp-asset-workspace">
         <AssetTicketCard
           asset={{
             id: machine.id,

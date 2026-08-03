@@ -186,7 +186,7 @@ export default function WorkItemWorkspacePage() {
     <AppShell>
       {error ? <div className="error">{error}</div> : null}
       {message ? <div className="success">{message}</div> : null}
-      {!work ? <div className="neo-card"><h1>Work item not found</h1><Link className="button" href="/work">Back to Action Centre</Link></div> : <div className="grid professional-ops-stage">
+      {!work ? <div className="neo-card"><h1>Work item not found</h1><Link className="button" href="/work">Back to Action Centre</Link></div> : <div className="grid professional-ops-stage erp-record-workspace erp-work-item-workspace">
         <div className="page-header hero-panel spatial-card">
           <div><div className="badge">{work.work_number}</div><h1>{work.title}</h1><p>{work.description ?? 'No description recorded.'}</p><div className="feature-list"><StatusBadge value={work.status} /><StatusBadge value={work.priority} /><StatusBadge value={work.work_type} />{work.approval_required ? <StatusBadge value={work.approval_status} /> : null}</div></div>
         </div>

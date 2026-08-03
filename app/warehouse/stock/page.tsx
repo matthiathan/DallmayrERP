@@ -104,6 +104,7 @@ export default function WarehouseStockPage() {
 
   return (
     <AppShell>
+      <div className="erp-list-workspace erp-stock-register-workspace">
       <div className="page-header hero-panel spatial-card"><div><div className="badge">Stock control centre</div><h1>Warehouse Inventory</h1><p>Phone scanning, visual item records, location balances, purchasing, receiving, issuing, transfers and low-stock control.</p></div><div className="action-row"><Link className="button" href="/warehouse/purchasing">Purchase orders</Link><Link className="button secondary" href="/warehouse/locations">Locations</Link><Link className="button secondary" href="/warehouse/ledger">Movement ledger</Link></div></div>
       {error ? <div className="error">{error}</div> : null}
       {success ? <div className="success">{success}</div> : null}
@@ -118,7 +119,8 @@ export default function WarehouseStockPage() {
 
       <PageToolbar actions={<button className="button secondary" disabled={loading} onClick={loadStock} type="button">{loading ? 'Refreshing...' : 'Refresh stock'}</button>} description="Search, sort and open detailed visual stock profiles." lastUpdated={lastUpdated} title="Stock register" />
       <EnterpriseDataTable columns={columns} emptyMessage={loading ? 'Loading stock records...' : 'No matching stock items found.'} getSearchText={(row) => [row.id, row.stock_name, row.sku, row.item_barcode, row.box_barcode, row.category, row.supplier_name, row.warehouse_location].join(' ')} initialSearch={focusedStockId} rowKey={(row) => row.id} rows={items} searchPlaceholder="Search stock, SKU, barcode, category, supplier or location" />
-      <div style={{ marginTop: 20 }}><DocumentHub department="warehouse" branch="all" /></div>
+      <div className="erp-supporting-panel" style={{ marginTop: 20 }}><DocumentHub department="warehouse" branch="all" /></div>
+      </div>
     </AppShell>
   );
 }

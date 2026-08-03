@@ -398,7 +398,7 @@ export function Customer360Workspace() {
   ].filter(Boolean) as Array<{ href: string; label: string }>;
 
   return (
-    <div className="customer360-stage">
+    <div className="customer360-stage erp-record-workspace erp-customer-workspace">
       {error ? <div className="error" role="alert">{error}</div> : null}
 
       <section className="customer360-hero">

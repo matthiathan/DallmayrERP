@@ -59,7 +59,14 @@ const recordRoots = [
   '/customers',
   '/operations/assets',
   '/warehouse/stock',
+  '/work',
 ];
+
+const nonRecordLeaves = new Set([
+  'execution',
+  'lifecycle',
+  'scan',
+]);
 
 function startsWithRoute(pathname: string, route: string) {
   return pathname === route || pathname.startsWith(`${route}/`);
@@ -71,15 +78,15 @@ function isRecordRoute(pathname: string) {
   return recordRoots.some((root) => {
     if (!pathname.startsWith(`${root}/`)) return false;
     const remainder = pathname.slice(root.length + 1);
-    return Boolean(remainder) && !remainder.includes('/');
+    return Boolean(remainder) && !remainder.includes('/') && !nonRecordLeaves.has(remainder);
   });
 }
 
 export function getPageTemplate(pathname: string): PageTemplate {
   if (dashboardPaths.has(pathname)) return 'dashboard';
-  if (operationalPrefixes.some((route) => startsWithRoute(pathname, route))) return 'operational';
   if (listPaths.has(pathname)) return 'list';
   if (isRecordRoute(pathname)) return 'record';
+  if (operationalPrefixes.some((route) => startsWithRoute(pathname, route))) return 'operational';
   if (formPaths.has(pathname)) return 'form';
   return 'default';
 }

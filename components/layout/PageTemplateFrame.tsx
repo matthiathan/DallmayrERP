@@ -19,6 +19,7 @@ const operationalSelectors = [
 ];
 
 const recordSelectors = [
+  '.erp-record-workspace',
   '.customer-360-stage',
   '.customer360-stage',
   '.record-workspace',

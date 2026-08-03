@@ -256,7 +256,7 @@ export function MachineAssetBoard() {
   ], []);
 
   return (
-    <div className="grid spatial-stage spatial-dashboard">
+    <div className="grid spatial-stage spatial-dashboard erp-list-workspace erp-machine-register-workspace">
       {error ? <div className="error">{error}</div> : null}
       {message ? <div className="success">{message}</div> : null}
       <div className="neo-card spatial-machine-panel spatial-card">
