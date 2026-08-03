@@ -339,8 +339,7 @@
   }
 
   .desktop-rail-shortcuts,
-  .desktop-rail-directory,
-  .desktop-rail-recent {
+  .desktop-rail-directory {
     display: grid;
     gap: 7px;
   }
@@ -469,31 +468,6 @@
     border-color: var(--application-shell-border);
     background: var(--application-shell-hover);
     color: var(--application-shell-accent);
-  }
-
-  .desktop-rail-recent {
-    margin-top: auto;
-    padding-top: 14px;
-    border-top: 1px solid var(--application-shell-border);
-  }
-
-  .desktop-rail-recent > a {
-    display: grid;
-    grid-template-columns: 22px minmax(0, 1fr);
-    gap: 7px;
-    min-height: 36px;
-    padding: 7px 8px;
-    border-radius: 9px;
-    color: var(--application-shell-muted);
-    font-size: 0.74rem;
-    text-decoration: none;
-  }
-
-  .desktop-rail-recent > a:hover,
-  .desktop-rail-recent > a:focus-visible,
-  .desktop-rail-recent > a[aria-current='page'] {
-    background: var(--application-shell-hover);
-    color: var(--application-shell-strong);
   }
 
   .desktop-rail-collapsed-links {

@@ -11,7 +11,6 @@ import { displayProfileName } from '@/types/dallmayrerp';
 import type { BusinessRole } from '@/types/dallmayrerp';
 
 const FAVORITES_KEY = 'dallmayr-mobile-favorites-v1';
-const RECENT_KEY = 'dallmayr-open-tabs';
 
 type MetricKey =
   | 'my_active_work'
@@ -52,7 +51,6 @@ type TodayDefinition = {
   work: TodayLink[];
   metrics: TodayMetric[];
 };
-type RecentPage = { href: string; label: string };
 
 const definitions: Record<BusinessRole, TodayDefinition> = {
   admin: {
@@ -277,20 +275,6 @@ function safeFavorites(value: string | null) {
   }
 }
 
-function safeRecent(value: string | null) {
-  if (!value) return [];
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.flatMap((item): RecentPage[] => {
-      if (!item || typeof item !== 'object' || !('href' in item) || !('label' in item)) return [];
-      return typeof item.href === 'string' && typeof item.label === 'string' ? [{ href: item.href, label: item.label }] : [];
-    });
-  } catch {
-    return [];
-  }
-}
-
 export function RoleTodayWorkspace() {
   const { businessProfile, businessUser, userDetails } = useAuth();
   const [summary, setSummary] = useState<WorkspaceSummary | null>(null);
@@ -298,7 +282,6 @@ export function RoleTodayWorkspace() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [favoriteHrefs, setFavoriteHrefs] = useState<string[]>([]);
-  const [recentPages, setRecentPages] = useState<RecentPage[]>([]);
   const role = userDetails?.role;
 
   const loadSummary = useCallback(async () => {
@@ -324,7 +307,6 @@ export function RoleTodayWorkspace() {
   useEffect(() => {
     const loadLocalNavigation = () => {
       setFavoriteHrefs(safeFavorites(window.localStorage.getItem(FAVORITES_KEY)));
-      setRecentPages(safeRecent(window.localStorage.getItem(RECENT_KEY)).slice(-9));
     };
     loadLocalNavigation();
     window.addEventListener('storage', loadLocalNavigation);
@@ -352,17 +334,6 @@ export function RoleTodayWorkspace() {
     const item = allowedByHref.get(href);
     return item ? [item] : [];
   }), [allowedByHref, favoriteHrefs]);
-  const visibleRecent = useMemo(() => {
-    const seen = new Set<string>();
-    return [...recentPages].reverse()
-      .filter((page) => page.href !== '/workspace' && allowedByHref.has(page.href))
-      .filter((page) => {
-        if (seen.has(page.href)) return false;
-        seen.add(page.href);
-        return true;
-      })
-      .slice(0, 5);
-  }, [allowedByHref, recentPages]);
 
   if (!role || !businessUser || !userDetails) {
     return <EmptyState title="Today workspace unavailable" message="Your role and profile details are still loading. Refresh the page if this does not update." />;
@@ -440,14 +411,10 @@ export function RoleTodayWorkspace() {
             </aside>
           </div>
 
-          <section aria-label="Pinned and recent pages" className="today-shortcuts-grid">
+          <section aria-label="Pinned pages" className="today-shortcuts-grid">
             <div className="today-section today-shortcut-section">
               <div className="today-section-heading"><div><span>Pinned</span><h2>Pages you keep close</h2></div></div>
               {pinnedPages.length ? <div className="today-link-list">{pinnedPages.map((page) => <Link href={page.href} key={page.href}><span>★</span><div><strong>{page.label}</strong><small>{page.description ?? 'Pinned application page'}</small></div><span aria-hidden="true">→</span></Link>)}</div> : <p className="today-shortcut-empty">Pin up to four pages from the application navigation. They will appear here and in the desktop rail.</p>}
-            </div>
-            <div className="today-section today-shortcut-section">
-              <div className="today-section-heading"><div><span>Recent</span><h2>Continue where you left off</h2></div></div>
-              {visibleRecent.length ? <div className="today-link-list">{visibleRecent.map((page) => <Link href={page.href} key={page.href}><span>↗</span><div><strong>{page.label}</strong><small>Recently opened</small></div><span aria-hidden="true">→</span></Link>)}</div> : <p className="today-shortcut-empty">Recently opened role pages will appear here as you use the application.</p>}
             </div>
           </section>
         </>

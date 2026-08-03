@@ -554,8 +554,7 @@ html[data-visual-theme] body .monday-primary-navigation {
 
 html[data-visual-theme] body .monday-primary-navigation :is(a, button),
 html[data-visual-theme] body .desktop-rail-item-row > a,
-html[data-visual-theme] body .desktop-rail-section > summary,
-html[data-visual-theme] body .desktop-rail-recent a {
+html[data-visual-theme] body .desktop-rail-section > summary {
   min-height: 42px !important;
   padding: 6px !important;
   border: 1px solid transparent !important;
@@ -570,9 +569,7 @@ html[data-visual-theme] body .monday-primary-navigation :is(a, button):focus-vis
 html[data-visual-theme] body .desktop-rail-item-row > a:hover,
 html[data-visual-theme] body .desktop-rail-item-row > a:focus-visible,
 html[data-visual-theme] body .desktop-rail-section > summary:hover,
-html[data-visual-theme] body .desktop-rail-section[open] > summary,
-html[data-visual-theme] body .desktop-rail-recent a:hover,
-html[data-visual-theme] body .desktop-rail-recent a:focus-visible {
+html[data-visual-theme] body .desktop-rail-section[open] > summary {
   border-color: #c7e0f4 !important;
   background: var(--d365-blue-pale) !important;
   color: var(--d365-heading) !important;

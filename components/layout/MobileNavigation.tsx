@@ -7,11 +7,6 @@ import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import type { NavSection } from '@/lib/auth/permissions';
 import type { BusinessRole } from '@/types/dallmayrerp';
 
-type RecentPage = {
-  href: string;
-  label: string;
-};
-
 type MobileNavigationDrawerProps = {
   activeTitle: string;
   favoriteHrefs: string[];
@@ -20,7 +15,6 @@ type MobileNavigationDrawerProps = {
   open: boolean;
   pathname: string;
   profileComplete: boolean;
-  recentPages: RecentPage[];
   roleLabel: string;
   sections: NavSection[];
   setOpen: Dispatch<SetStateAction<boolean>>;
@@ -51,7 +45,6 @@ export function MobileNavigationDrawer({
   open,
   pathname,
   profileComplete,
-  recentPages,
   roleLabel,
   sections,
   setOpen,
@@ -126,18 +119,6 @@ export function MobileNavigationDrawer({
     [allItems, favoriteHrefs],
   );
 
-  const recentItems = useMemo(() => {
-    const seen = new Set<string>();
-    return [...recentPages]
-      .reverse()
-      .filter((page) => {
-        if (seen.has(page.href) || page.href === homePath || page.href === pathname || favoriteHrefs.includes(page.href)) return false;
-        seen.add(page.href);
-        return true;
-      })
-      .slice(0, 4);
-  }, [favoriteHrefs, homePath, pathname, recentPages]);
-
   return (
     <div
       aria-labelledby="mobile-navigation-title"
@@ -202,15 +183,6 @@ export function MobileNavigationDrawer({
             {favoriteItems.map((item) => (
               <Link href={item.href} key={item.href}>{item.label}</Link>
             ))}
-          </div>
-        </section>
-      ) : null}
-
-      {recentItems.length > 0 ? (
-        <section aria-label="Recent pages" className="mobile-nav-shortcuts">
-          <div className="mobile-nav-shortcut-heading"><strong>Recent</strong></div>
-          <div className="mobile-nav-shortcut-grid">
-            {recentItems.map((item) => <Link href={item.href} key={item.href}>{item.label}</Link>)}
           </div>
         </section>
       ) : null}

@@ -507,8 +507,7 @@ html[data-visual-theme] body .monday-primary-navigation {
 
 html[data-visual-theme] body .monday-primary-navigation :is(a, button),
 html[data-visual-theme] body .desktop-rail-item-row > a,
-html[data-visual-theme] body .desktop-rail-section > summary,
-html[data-visual-theme] body .desktop-rail-recent a {
+html[data-visual-theme] body .desktop-rail-section > summary {
   display: grid !important;
   grid-template-columns: 38px minmax(0, 1fr) !important;
   align-items: center !important;
@@ -539,9 +538,7 @@ html[data-visual-theme] body .desktop-rail-item-row > a:hover,
 html[data-visual-theme] body .desktop-rail-item-row > a:focus-visible,
 html[data-visual-theme] body .desktop-rail-item-row > a[aria-current='page'],
 html[data-visual-theme] body .desktop-rail-section > summary:hover,
-html[data-visual-theme] body .desktop-rail-section[open] > summary,
-html[data-visual-theme] body .desktop-rail-recent a:hover,
-html[data-visual-theme] body .desktop-rail-recent a:focus-visible {
+html[data-visual-theme] body .desktop-rail-section[open] > summary {
   border-color: rgba(255, 255, 255, 0.12) !important;
   background: rgba(255, 255, 255, 0.08) !important;
   color: #ffffff !important;
@@ -577,8 +574,7 @@ html[data-visual-theme] body .desktop-rail-item-row > button {
 
 html[data-visual-theme] body .desktop-rail-section,
 html[data-visual-theme] body .desktop-rail-shortcuts,
-html[data-visual-theme] body .desktop-rail-directory,
-html[data-visual-theme] body .desktop-rail-recent {
+html[data-visual-theme] body .desktop-rail-directory {
   display: grid !important;
   gap: 8px !important;
   min-width: 0 !important;

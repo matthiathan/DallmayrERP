@@ -24,12 +24,6 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 import type { BusinessRole } from '@/types/dallmayrerp';
 import { displayProfileName, isProfileComplete } from '@/types/dallmayrerp';
 
-type OpenTab = {
-  href: string;
-  label: string;
-  code: string;
-};
-
 const FAVORITES_KEY = 'dallmayr-mobile-favorites-v1';
 const RAIL_COLLAPSED_KEY = 'dallmayr-desktop-rail-collapsed-v1';
 const MAX_FAVORITES = 4;
@@ -86,32 +80,6 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || (href !== '/' && pathname.startsWith(`${href}/`));
 }
 
-function moduleCode(label: string, href: string) {
-  const fromLabel = label
-    .replace(/&/g, ' ')
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((word) => word[0])
-    .join('')
-    .slice(0, 5)
-    .toUpperCase();
-  const fallback = href.split('/').filter(Boolean).at(-1)?.replace(/[^a-z0-9]/gi, '').slice(0, 5).toUpperCase();
-  return fromLabel || fallback || 'HOME';
-}
-
-function safeTabList(value: string | null): OpenTab[] {
-  if (!value) return [];
-  try {
-    const parsed = JSON.parse(value) as OpenTab[];
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .filter((item) => item && typeof item.href === 'string' && typeof item.label === 'string' && typeof item.code === 'string')
-      .slice(-9);
-  } catch {
-    return [];
-  }
-}
-
 function safeFavoriteList(value: string | null) {
   if (!value) return [];
   try {
@@ -147,7 +115,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { authUser, businessProfile, businessUser, userDetails, loading, error } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [openTabs, setOpenTabs] = useState<OpenTab[]>([]);
   const [favoriteHrefs, setFavoriteHrefs] = useState<string[]>([]);
   const [railCollapsed, setRailCollapsed] = useState(false);
   const profileComplete = isProfileComplete(userDetails);
@@ -178,52 +145,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
-    setOpenTabs(safeTabList(window.localStorage.getItem('dallmayr-open-tabs')));
     setFavoriteHrefs(safeFavoriteList(window.localStorage.getItem(FAVORITES_KEY)));
     setRailCollapsed(window.localStorage.getItem(RAIL_COLLAPSED_KEY) === 'true');
   }, []);
-
-  useEffect(() => {
-    if (!userDetails?.role) return;
-    const allowedSections = navSections
-      .map((section) => ({
-        ...section,
-        items: section.items.filter((item) => isNavItemAllowed(userDetails.role, item)),
-      }))
-      .filter((section) => section.items.length > 0);
-    const activeSection = allowedSections.find((section) => section.items.some((item) => isActivePath(pathname, item.href)));
-    const activeItem = activeSection?.items.find((item) => isActivePath(pathname, item.href));
-    if (!activeItem) return;
-
-    const nextTab: OpenTab = {
-      href: activeItem.href,
-      label: activeItem.label,
-      code: activeItem.code || moduleCode(activeItem.label, activeItem.href),
-    };
-
-    setOpenTabs((current) => {
-      const next = [...current.filter((item) => item.href !== nextTab.href), nextTab].slice(-9);
-      window.localStorage.setItem('dallmayr-open-tabs', JSON.stringify(next));
-      return next;
-    });
-  }, [pathname, userDetails?.role]);
-
-  useEffect(() => {
-    if (openTabs.length < 2) return;
-
-    function handleTabKeys(event: KeyboardEvent) {
-      if (!event.ctrlKey || event.key !== 'Tab') return;
-      event.preventDefault();
-      const currentIndex = openTabs.findIndex((tab) => isActivePath(pathname, tab.href));
-      const nextIndex = event.shiftKey
-        ? currentIndex <= 0 ? openTabs.length - 1 : currentIndex - 1
-        : currentIndex < 0 || currentIndex === openTabs.length - 1 ? 0 : currentIndex + 1;
-      router.push(openTabs[nextIndex].href);
-    }
-
-    window.addEventListener('keydown', handleTabKeys);
-    return () => window.removeEventListener('keydown', handleTabKeys);
-  }, [openTabs, pathname, router]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -296,10 +220,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const favoriteItems = favoriteHrefs
     .map((href) => allNavigationItems.find((item) => item.href === href))
     .filter((item): item is NavItem => Boolean(item));
-  const recentPages = [...openTabs]
-    .reverse()
-    .filter((tab, index, items) => items.findIndex((item) => item.href === tab.href) === index)
-    .filter((tab) => tab.href !== pathname && tab.href !== homePath);
   const visibleHrefs = new Set(allNavigationItems.map((item) => item.href));
   const statusQuickLinks = [
     { href: '/work', label: 'My Work' },
@@ -390,7 +310,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           open={menuOpen}
           pathname={pathname}
           profileComplete={profileComplete}
-          recentPages={openTabs.map((tab) => ({ href: tab.href, label: tab.label }))}
           roleLabel={roleLabels[userDetails.role]}
           sections={navigationSections}
           setOpen={setMenuOpen}
@@ -405,7 +324,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         onToggleFavorite={toggleFavorite}
         pathname={pathname}
         pinnedItems={favoriteItems}
-        recentPages={recentPages}
         roleLabel={roleLabels[userDetails.role]}
         sections={navigationSections}
       />

@@ -4,11 +4,6 @@ import Link from 'next/link';
 import { useEffect } from 'react';
 import type { NavItem, NavSection } from '@/lib/auth/permissions';
 
-type RecentPage = {
-  href: string;
-  label: string;
-};
-
 type DesktopNavigationRailProps = {
   collapsed: boolean;
   homePath: string;
@@ -16,7 +11,6 @@ type DesktopNavigationRailProps = {
   onToggleFavorite: (href: string) => void;
   pathname: string;
   pinnedItems: NavItem[];
-  recentPages: RecentPage[];
   roleLabel: string;
   sections: NavSection[];
 };
@@ -44,7 +38,6 @@ export function DesktopNavigationRail({
   onToggleFavorite,
   pathname,
   pinnedItems,
-  recentPages,
   roleLabel,
   sections,
 }: DesktopNavigationRailProps) {
@@ -81,7 +74,7 @@ export function DesktopNavigationRail({
               <span aria-hidden="true" className="monday-workspace-chevron">v</span>
             </summary>
             <div className="monday-workspace-menu">
-              <Link href={homePath}><span aria-hidden="true">T</span><span><strong>Today</strong><small>Priorities and recent work</small></span></Link>
+              <Link href={homePath}><span aria-hidden="true">T</span><span><strong>Today</strong><small>Priorities and work queues</small></span></Link>
               <Link href="/work"><span aria-hidden="true">W</span><span><strong>My Work</strong><small>Assigned work and approvals</small></span></Link>
               <button onClick={openInbox} type="button"><span aria-hidden="true">I</span><span><strong>Inbox</strong><small>Operational notifications</small></span></button>
             </div>
@@ -173,16 +166,6 @@ export function DesktopNavigationRail({
             </div>
           </nav>
 
-          {recentPages.length > 0 ? (
-            <section aria-label="Recently opened pages" className="desktop-rail-recent">
-              <div className="desktop-rail-section-label"><strong>Recent</strong></div>
-              {recentPages.slice(0, 4).map((page) => (
-                <Link aria-current={isActivePath(pathname, page.href) ? 'page' : undefined} href={page.href} key={page.href}>
-                  <span aria-hidden="true">O</span><span>{page.label}</span>
-                </Link>
-              ))}
-            </section>
-          ) : null}
         </>
       )}
     </aside>

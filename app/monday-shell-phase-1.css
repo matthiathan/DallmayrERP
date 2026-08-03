@@ -350,8 +350,7 @@ body::after {
   }
 
   .monday-navigation-rail .desktop-rail-shortcuts,
-  .monday-navigation-rail .desktop-rail-directory,
-  .monday-navigation-rail .desktop-rail-recent {
+  .monday-navigation-rail .desktop-rail-directory {
     gap: 3px;
   }
 
@@ -436,12 +435,6 @@ body::after {
     min-width: 30px;
     min-height: 40px;
     border-radius: 7px;
-  }
-
-  .monday-navigation-rail .desktop-rail-recent {
-    margin-top: auto;
-    padding-top: 9px;
-    border-top-color: var(--monday-divider);
   }
 
   .monday-navigation-rail.is-collapsed .desktop-rail-heading {

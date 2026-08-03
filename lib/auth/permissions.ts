@@ -44,7 +44,7 @@ export const navSections: NavSection[] = [
   {
     heading: 'Operations',
     items: [
-      { href: '/workspace', label: 'Today', code: 'OPH01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Role priorities, urgent signals, pinned pages and recent work.' },
+      { href: '/workspace', label: 'Today', code: 'OPH01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Role priorities, urgent signals and pinned pages.' },
       { href: '/operations/dashboard', label: 'Operations Dashboard', code: 'OPD01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Live branch workload, route pressure, service exceptions and operational performance.' },
       { href: '/operations/dispatch', label: 'Dispatch Overview', code: 'DSP01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Combined route gaps, service exceptions, delivery pressure and technician capacity.' },
       { href: '/operations/exceptions', label: 'Exception Centre', code: 'EXC01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Acknowledge, assign, snooze, escalate and resolve persistent operational exceptions.' },
@@ -89,7 +89,7 @@ export const navSections: NavSection[] = [
   {
     heading: 'Windows',
     items: [
-      { href: '/workspace', label: 'Today', code: 'WIN01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Return to role priorities and recent work.' },
+      { href: '/workspace', label: 'Today', code: 'WIN01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Return to role priorities and work queues.' },
       { href: '/operations/exceptions', label: 'Exception Centre', code: 'WIN03', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Open the persistent operational exception inbox.' },
       { href: '/work', label: 'Action Centre', code: 'WIN02', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Open the Operations action and exception inbox.' },
     ],
@@ -97,7 +97,7 @@ export const navSections: NavSection[] = [
   {
     heading: 'System',
     items: [
-      { href: '/workspace', label: 'Today', code: 'STP01', roles: 'all', description: 'Role priorities, urgent signals, pinned pages and recent work.' },
+      { href: '/workspace', label: 'Today', code: 'STP01', roles: 'all', description: 'Role priorities, urgent signals and pinned pages.' },
       { href: '/', label: 'System Dashboard', code: 'SYS01', roles: ['admin'], description: 'Administrative overview and core ERP counts.' },
       { href: '/admin/users', label: 'Users & Roles', code: 'USR01', roles: ['admin'], description: 'Invite users, assign roles, branches and permissions.' },
       { href: '/admin/activity', label: 'Activity Log', code: 'AUD01', roles: ['admin'], description: 'Audit events and system activity.' },
@@ -184,7 +184,7 @@ export const navSections: NavSection[] = [
   {
     heading: 'Windows',
     items: [
-      { href: '/workspace', label: 'Today', code: 'WIN01', roles: 'all', description: 'Return to role priorities, pinned pages and recent work.' },
+      { href: '/workspace', label: 'Today', code: 'WIN01', roles: 'all', description: 'Return to role priorities and pinned pages.' },
       { href: '/work', label: 'Action Centre', code: 'WIN02', roles: 'all', description: 'Open the operational action inbox.' },
     ],
   },

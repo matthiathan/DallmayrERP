@@ -316,8 +316,7 @@ html[data-visual-theme] body::after {
 .desktop-rail-section-label,
 .desktop-rail-section summary small,
 .desktop-rail-item-row small,
-.monday-primary-navigation small,
-.desktop-rail-recent a {
+.monday-primary-navigation small {
   color: var(--cockpit-rail-muted) !important;
 }
 
@@ -329,8 +328,7 @@ html[data-visual-theme] body::after {
 }
 
 .monday-primary-navigation,
-.desktop-rail-section,
-.desktop-rail-recent {
+.desktop-rail-section {
   border-color: rgba(255, 255, 255, 0.1) !important;
   border-radius: var(--cockpit-radius-md) !important;
   background: rgba(255, 255, 255, 0.055) !important;
@@ -338,7 +336,6 @@ html[data-visual-theme] body::after {
 
 .monday-primary-navigation > :is(a, button),
 .desktop-rail-item-row > a,
-.desktop-rail-recent a,
 .desktop-rail-glyph-link {
   border-radius: var(--cockpit-radius-sm) !important;
   color: var(--cockpit-rail-ink) !important;
@@ -350,7 +347,6 @@ html[data-visual-theme] body::after {
 .desktop-rail-item-row > a:hover,
 .desktop-rail-item-row > a:focus-visible,
 .desktop-rail-item-row > a[aria-current='page'],
-.desktop-rail-recent a:hover,
 .desktop-rail-glyph-link:hover,
 .desktop-rail-glyph-link:focus-visible,
 .desktop-rail-glyph-link[aria-current='page'] {
