@@ -882,3 +882,285 @@ html[data-visual-theme] body :is(.sr-only, .visually-hidden) {
     flex: 1 1 min(100%, 180px) !important;
   }
 }
+
+/* Absolute text/background pairing.
+   This is the final contrast contract: light surfaces get dark text, dark or
+   blue chrome gets light text, and self-contained chips never inherit a
+   same-tone colour from legacy theme layers. */
+html[data-visual-theme] body {
+  --ui-safe-on-dark: #ffffff;
+  --ui-safe-on-dark-muted: #e7f1fb;
+  --ui-safe-status-info-bg: #e5f1fb;
+  --ui-safe-status-info-text: #005a9e;
+  --ui-safe-status-purple-bg: #f3edff;
+  --ui-safe-status-purple-text: #4c1d95;
+  --ui-safe-status-neutral-bg: #f8f9fb;
+  --ui-safe-status-neutral-text: #27313f;
+}
+
+html[data-visual-theme] body :is(
+  .application-main,
+  .login-card,
+  .dynamics-login-card,
+  .auth-state-card,
+  .neo-card,
+  .card,
+  .minimal-panel,
+  .minimal-card,
+  .dashboard-panel,
+  .operations-panel,
+  .monday-board-panel,
+  .monday-board-card,
+  .monday-board-surface,
+  .today-section,
+  .workspace-profile-panel,
+  .page-header,
+  .minimal-page-header,
+  .monday-board-header,
+  .today-workspace-hero,
+  .workspace-hero,
+  .workspace-command-bar,
+  .monday-board-command-bar,
+  .enterprise-table-toolbar,
+  .remote-table-toolbar,
+  .global-search-dialog,
+  .dallmayr-account-panel,
+  .notification-inbox-panel,
+  .mobile-filter-sheet
+) {
+  background-color: var(--ui-safe-surface) !important;
+  color: var(--ui-safe-text) !important;
+  -webkit-text-fill-color: currentColor;
+}
+
+html[data-visual-theme] body :is(
+  .application-main,
+  .login-card,
+  .dynamics-login-card,
+  .auth-state-card,
+  .neo-card,
+  .card,
+  .minimal-panel,
+  .minimal-card,
+  .dashboard-panel,
+  .operations-panel,
+  .monday-board-panel,
+  .monday-board-card,
+  .monday-board-surface,
+  .today-section,
+  .workspace-profile-panel,
+  .page-header,
+  .minimal-page-header,
+  .monday-board-header,
+  .today-workspace-hero,
+  .workspace-hero,
+  .workspace-command-bar,
+  .monday-board-command-bar,
+  .enterprise-table-toolbar,
+  .remote-table-toolbar,
+  .global-search-dialog,
+  .dallmayr-account-panel,
+  .notification-inbox-panel,
+  .mobile-filter-sheet
+) :where(h1, h2, h3, h4, h5, h6, legend, dt, th, strong, b, label, .nav-heading, .page-toolbar-heading, .table-heading, .kpi-value, .metric-value) {
+  color: var(--ui-safe-heading) !important;
+  -webkit-text-fill-color: var(--ui-safe-heading) !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body :is(
+  .application-main,
+  .login-card,
+  .dynamics-login-card,
+  .auth-state-card,
+  .neo-card,
+  .card,
+  .minimal-panel,
+  .minimal-card,
+  .dashboard-panel,
+  .operations-panel,
+  .monday-board-panel,
+  .monday-board-card,
+  .monday-board-surface,
+  .today-section,
+  .workspace-profile-panel,
+  .page-header,
+  .minimal-page-header,
+  .monday-board-header,
+  .today-workspace-hero,
+  .workspace-hero,
+  .workspace-command-bar,
+  .monday-board-command-bar,
+  .enterprise-table-toolbar,
+  .remote-table-toolbar,
+  .global-search-dialog,
+  .dallmayr-account-panel,
+  .notification-inbox-panel,
+  .mobile-filter-sheet
+) :where(p, dd, td, li, em, time, figcaption, span:not(.badge):not(.status-badge):not(.feature-pill):not(.button-icon):not(.application-brand-mark), small, .muted, .field-note, .helper-text, .description, .empty-state, .minimal-empty) {
+  color: var(--ui-safe-muted) !important;
+  -webkit-text-fill-color: var(--ui-safe-muted) !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body :is(
+  .application-main,
+  .global-search-dialog,
+  .dallmayr-account-panel,
+  .notification-inbox-panel,
+  .mobile-filter-sheet
+) a:not(.button):not(.badge):not(.status-badge):not(.feature-pill) {
+  color: var(--ui-safe-blue-dark) !important;
+  -webkit-text-fill-color: var(--ui-safe-blue-dark) !important;
+}
+
+html[data-visual-theme] body :is(.application-header, .dynamics-login-intro) {
+  color: var(--ui-safe-on-dark) !important;
+  -webkit-text-fill-color: currentColor;
+}
+
+html[data-visual-theme] body .dynamics-login-intro :where(h1, h2, h3, h4, h5, h6, strong, b, .dynamics-login-brand, .dynamics-login-brand > span) {
+  color: var(--ui-safe-on-dark) !important;
+  -webkit-text-fill-color: var(--ui-safe-on-dark) !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body .dynamics-login-intro :where(p, small, .dynamics-login-copy > span) {
+  color: var(--ui-safe-on-dark-muted) !important;
+  -webkit-text-fill-color: var(--ui-safe-on-dark-muted) !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body .dynamics-login-modules span {
+  border-color: rgba(255, 255, 255, 0.42) !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: var(--ui-safe-on-dark) !important;
+  -webkit-text-fill-color: var(--ui-safe-on-dark) !important;
+}
+
+html[data-visual-theme] body .application-header :is(.application-brand, .application-brand > span:last-child, .application-page-context, .application-page-context span, .application-page-context strong, .application-page-context small) {
+  color: var(--ui-safe-on-dark) !important;
+  -webkit-text-fill-color: var(--ui-safe-on-dark) !important;
+}
+
+html[data-visual-theme] body .application-header :is(.density-toggle button:not([aria-pressed='true']), .notification-inbox-trigger, .dallmayr-account-trigger) {
+  color: var(--ui-safe-on-dark) !important;
+  -webkit-text-fill-color: var(--ui-safe-on-dark) !important;
+}
+
+html[data-visual-theme] body .application-header .density-toggle button[aria-pressed='true'],
+html[data-visual-theme] body .application-header .dallmayr-account-avatar {
+  background: #ffffff !important;
+  color: var(--ui-safe-blue-dark) !important;
+  -webkit-text-fill-color: var(--ui-safe-blue-dark) !important;
+}
+
+html[data-visual-theme] body :is(input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select, textarea, option, optgroup) {
+  background-color: #ffffff !important;
+  color: var(--ui-safe-heading) !important;
+  -webkit-text-fill-color: var(--ui-safe-heading) !important;
+  caret-color: var(--ui-safe-heading) !important;
+}
+
+html[data-visual-theme] body :is(input, textarea)::placeholder {
+  color: #657386 !important;
+  -webkit-text-fill-color: #657386 !important;
+  opacity: 1 !important;
+}
+
+html[data-visual-theme] body :is(.button, button.button, a.button, .badge, .status-badge, .feature-pill) :where(*) {
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
+}
+
+html[data-visual-theme] body :is(.status-badge, .badge, .feature-pill) {
+  border-color: var(--ui-safe-line) !important;
+  background: var(--ui-safe-status-neutral-bg) !important;
+  color: var(--ui-safe-status-neutral-text) !important;
+  -webkit-text-fill-color: var(--ui-safe-status-neutral-text) !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body :is(.status-info, .badge.info, .status-badge.info, .status-badge.is-info) {
+  border-color: #8cc3ea !important;
+  background: var(--ui-safe-status-info-bg) !important;
+  color: var(--ui-safe-status-info-text) !important;
+  -webkit-text-fill-color: var(--ui-safe-status-info-text) !important;
+}
+
+html[data-visual-theme] body :is(.status-purple, .badge.purple, .status-badge.purple, .status-badge.is-purple) {
+  border-color: #c8b6f5 !important;
+  background: var(--ui-safe-status-purple-bg) !important;
+  color: var(--ui-safe-status-purple-text) !important;
+  -webkit-text-fill-color: var(--ui-safe-status-purple-text) !important;
+}
+
+html[data-visual-theme] body :is(.status-warning, .badge.warning, .status-badge.warning, .status-badge.is-warning, .status-badge[data-tone='warning'], .status-badge[data-value='warning']) {
+  border-color: #e1c16e !important;
+  background: #fff8e1 !important;
+  color: var(--ui-safe-warning) !important;
+  -webkit-text-fill-color: var(--ui-safe-warning) !important;
+}
+
+html[data-visual-theme] body :is(.status-success, .badge.success, .status-badge.success, .status-badge.is-success, .status-badge[data-tone='success'], .status-badge[data-value='active'], .status-badge[data-value='completed'], .success) {
+  border-color: #9fd89f !important;
+  background: #f1fbf1 !important;
+  color: var(--ui-safe-success) !important;
+  -webkit-text-fill-color: var(--ui-safe-success) !important;
+}
+
+html[data-visual-theme] body :is(.status-danger, .badge.danger, .status-badge.danger, .status-badge.is-danger, .status-badge[data-tone='danger'], .status-badge[data-value='critical'], .status-badge[data-value='overdue'], .error) {
+  border-color: #e6a1a6 !important;
+  background: #fff3f4 !important;
+  color: var(--ui-safe-danger) !important;
+  -webkit-text-fill-color: var(--ui-safe-danger) !important;
+}
+
+html[data-visual-theme] body :is(.status-neutral, .badge.neutral, .status-badge.neutral, .status-badge.is-neutral) {
+  border-color: var(--ui-safe-line) !important;
+  background: var(--ui-safe-status-neutral-bg) !important;
+  color: var(--ui-safe-status-neutral-text) !important;
+  -webkit-text-fill-color: var(--ui-safe-status-neutral-text) !important;
+}
+
+html[data-visual-theme] body :is(.login-card, .dynamics-login-card, .auth-state-card) :is(h1, h2, h3, h4, h5, h6, strong, b, label, legend) {
+  color: var(--ui-safe-heading) !important;
+  -webkit-text-fill-color: var(--ui-safe-heading) !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body :is(.login-card, .dynamics-login-card, .auth-state-card) :is(p, small, span:not(.badge):not(.status-badge):not(.feature-pill), .field-note, .helper-text, .muted) {
+  color: var(--ui-safe-muted) !important;
+  -webkit-text-fill-color: var(--ui-safe-muted) !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body .application-main :is(.neo-card, .card, .minimal-panel, .minimal-card, .dashboard-panel, .operations-panel, .monday-board-panel, .monday-board-card, .monday-board-surface, .today-section, .workspace-profile-panel, .page-header, .minimal-page-header, .monday-board-header, .today-workspace-hero, .workspace-hero, .global-search-dialog, .dallmayr-account-panel, .notification-inbox-panel, .mobile-filter-sheet) :is(h1, h2, h3, h4, h5, h6, strong, b, label, legend, dt, th, .nav-heading, .page-toolbar-heading, .table-heading, .kpi-value, .metric-value) {
+  color: var(--ui-safe-heading) !important;
+  -webkit-text-fill-color: var(--ui-safe-heading) !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body .application-main :is(.neo-card, .card, .minimal-panel, .minimal-card, .dashboard-panel, .operations-panel, .monday-board-panel, .monday-board-card, .monday-board-surface, .today-section, .workspace-profile-panel, .page-header, .minimal-page-header, .monday-board-header, .today-workspace-hero, .workspace-hero, .global-search-dialog, .dallmayr-account-panel, .notification-inbox-panel, .mobile-filter-sheet) :is(p, small, dd, td, li, em, time, figcaption, span:not(.badge):not(.status-badge):not(.feature-pill):not(.button-icon):not(.application-brand-mark), .muted, .field-note, .helper-text, .description, .empty-state, .minimal-empty) {
+  color: var(--ui-safe-muted) !important;
+  -webkit-text-fill-color: var(--ui-safe-muted) !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body label:not(.mobile-nav-card):not(.dallmayr-account-trigger) {
+  color: var(--ui-safe-heading) !important;
+  -webkit-text-fill-color: var(--ui-safe-heading) !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body :is(.application-header, .dynamics-login-intro) label {
+  color: var(--ui-safe-on-dark) !important;
+  -webkit-text-fill-color: var(--ui-safe-on-dark) !important;
+}
+
+html[data-visual-theme] body .login-page .login-card.dynamics-login-card form.grid > label,
+html[data-theme-tone] body .login-page .login-card.dynamics-login-card form.grid > label {
+  color: var(--ui-safe-heading) !important;
+  -webkit-text-fill-color: var(--ui-safe-heading) !important;
+  text-shadow: none !important;
+}
