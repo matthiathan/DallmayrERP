@@ -3,6 +3,8 @@ node_modules/
 .next/
 dist/
 out/
+out-native/
+release/
 tsconfig.tsbuildinfo
 
 # Local environment and logs
@@ -14,3 +16,9 @@ tsconfig.tsbuildinfo
 # Local archives or nested checkouts
 Inhouse-Stock/
 repo-archive/
+
+# Native build output
+android/.gradle/
+android/**/build/
+ios/**/build/
+ios/DerivedData/

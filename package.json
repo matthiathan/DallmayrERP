@@ -2,6 +2,7 @@
   "name": "dallmayrerp",
   "version": "0.1.0",
   "private": true,
+  "main": "native/desktop/main.cjs",
   "engines": {
     "node": "22.x"
   },
@@ -9,6 +10,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start -p ${PORT:-3000}",
+    "desktop:dev": "electron .",
+    "desktop:package": "electron-forge package",
+    "desktop:make": "electron-forge make",
+    "mobile:add:android": "cap add android",
+    "mobile:add:ios": "cap add ios",
+    "mobile:copy": "cap copy",
+    "mobile:sync": "cap sync",
+    "mobile:open:android": "cap open android",
+    "mobile:open:ios": "cap open ios",
+    "mobile:run:android": "cap run android",
+    "mobile:run:ios": "cap run ios",
     "lint": "next lint",
     "test": "npm run typecheck",
     "stylecheck": "node scripts/check-style-architecture.mjs",
@@ -16,16 +28,25 @@
     "check": "npm run stylecheck && npm run typecheck && npm run build"
   },
   "dependencies": {
-    "@supabase/supabase-js": "2.48.1",
+    "@capacitor/android": "8.5.0",
+    "@capacitor/core": "8.5.0",
+    "@capacitor/ios": "8.5.0",
+    "@supabase/supabase-js": "2.112.0",
     "html5-qrcode": "2.3.8",
-    "next": "15.5.20",
+    "next": "15.5.22",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.5.0",
+    "@electron-forge/cli": "7.11.2",
+    "@electron-forge/maker-dmg": "7.11.2",
+    "@electron-forge/maker-squirrel": "7.11.2",
+    "@electron-forge/maker-zip": "7.11.2",
     "@types/node": "22.10.2",
     "@types/react": "19.0.2",
     "@types/react-dom": "19.0.2",
+    "electron": "43.2.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^15.5.20",
     "typescript": "5.9.3"

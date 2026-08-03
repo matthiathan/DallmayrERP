@@ -1,0 +1,56 @@
+module.exports = {
+  packagerConfig: {
+    name: 'DallmayrERP',
+    executableName: 'DallmayrERP',
+    appBundleId: 'za.co.dallmayr.erp',
+    appCategoryType: 'public.app-category.business',
+    asar: true,
+    ignore: [
+      /^\/\.github($|\/)/,
+      /^\/\.next($|\/)/,
+      /^\/\.agents($|\/)/,
+      /^\/android($|\/)/,
+      /^\/app($|\/)/,
+      /^\/components($|\/)/,
+      /^\/dist($|\/)/,
+      /^\/docs($|\/)/,
+      /^\/ios($|\/)/,
+      /^\/lib($|\/)/,
+      /^\/node_modules($|\/)/,
+      /^\/public($|\/)/,
+      /^\/scripts($|\/)/,
+      /^\/sql($|\/)/,
+      /^\/supabase($|\/)/,
+      /^\/types($|\/)/,
+      /^\/\.codex-/,
+      /^\/codex-/,
+      /^\/next-env\.d\.ts$/,
+      /^\/next\.config\.ts$/,
+      /^\/package-lock\.json$/,
+      /^\/README\.md$/,
+      /^\/render\.yaml$/,
+      /^\/tsconfig/,
+    ],
+  },
+  rebuildConfig: {},
+  makers: [
+    {
+      name: '@electron-forge/maker-squirrel',
+      config: {
+        name: 'dallmayrerp',
+        authors: 'Dallmayr South Africa',
+        description: 'DallmayrERP desktop application',
+      },
+    },
+    {
+      name: '@electron-forge/maker-zip',
+      platforms: ['darwin'],
+    },
+    {
+      name: '@electron-forge/maker-dmg',
+      config: {
+        name: 'DallmayrERP',
+      },
+    },
+  ],
+};
