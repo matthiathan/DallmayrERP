@@ -442,23 +442,72 @@ html[data-visual-theme] body .application-header-actions .density-toggle button[
 
 html[data-visual-theme] body .desktop-alerts-target,
 html[data-visual-theme] body .desktop-account-menu-target {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   flex-basis: 36px !important;
   width: 36px !important;
   height: 36px !important;
   min-width: 36px !important;
+  align-self: center !important;
+  overflow: visible !important;
+}
+
+html[data-visual-theme] body .desktop-account-menu-target .dallmayr-account-menu.is-brand {
+  position: relative !important;
+  inset: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 34px !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  max-width: 34px !important;
+  margin: 0 !important;
+  transform: none !important;
+  z-index: 7200 !important;
 }
 
 html[data-visual-theme] body .notification-inbox-trigger,
 html[data-visual-theme] body .desktop-account-menu-target .dallmayr-account-trigger {
+  position: relative !important;
+  inset: auto !important;
+  display: grid !important;
+  place-items: center !important;
   width: 34px !important;
   height: 34px !important;
   min-width: 34px !important;
   min-height: 34px !important;
+  max-width: 34px !important;
+  margin: 0 !important;
+  padding: 0 !important;
   border: 1px solid rgba(255, 255, 255, 0.32) !important;
   border-radius: var(--d365-radius) !important;
   background: rgba(0, 0, 0, 0.12) !important;
   color: #ffffff !important;
   box-shadow: none !important;
+  transform: none !important;
+}
+
+html[data-visual-theme] body .desktop-account-menu-target .dallmayr-account-avatar {
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  border-radius: var(--d365-radius) !important;
+  font-size: 0.72rem !important;
+  line-height: 1 !important;
+}
+
+html[data-visual-theme] body .desktop-account-menu-target .dallmayr-account-identity,
+html[data-visual-theme] body .desktop-account-menu-target .dallmayr-account-chevron {
+  display: none !important;
+}
+
+html[data-visual-theme] body .desktop-account-menu-target .dallmayr-account-panel {
+  top: calc(100% + 8px) !important;
+  right: 0 !important;
+  left: auto !important;
 }
 
 html[data-visual-theme] body .application-status-strip,
