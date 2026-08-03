@@ -1164,3 +1164,197 @@ html[data-theme-tone] body .login-page .login-card.dynamics-login-card form.grid
   -webkit-text-fill-color: var(--ui-safe-heading) !important;
   text-shadow: none !important;
 }
+
+/* Bounded data grids: long ERP registers must stay readable and scroll inside
+   their own work area instead of extending the whole page indefinitely. */
+html[data-visual-theme] body .application-main :is(
+  .enterprise-table-shell,
+  .remote-table-shell,
+  .data-table-wrapper,
+  .resizable-table-shell,
+  .monday-board-table-wrap
+) {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  border-color: var(--ui-safe-line) !important;
+  background: var(--ui-safe-surface) !important;
+  color: var(--ui-safe-text) !important;
+  -webkit-text-fill-color: currentColor;
+}
+
+html[data-visual-theme] body .application-main :is(.enterprise-table-desktop-view, .table-scroll-frame) {
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+html[data-visual-theme] body .application-main .table-scroll-frame {
+  overflow: hidden !important;
+  border: 1px solid var(--ui-safe-line) !important;
+  border-radius: var(--ui-safe-radius) !important;
+  background: var(--ui-safe-surface) !important;
+}
+
+html[data-visual-theme] body .application-main .table-scroll-primary {
+  max-width: 100% !important;
+  max-height: clamp(360px, 64vh, 720px) !important;
+  overflow: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-gutter: stable both-edges;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--ui-safe-surface) !important;
+}
+
+html[data-visual-theme] body .application-main .table-bottom-scroll {
+  border-top: 1px solid var(--ui-safe-line) !important;
+  border-bottom: 0 !important;
+  background: #eef2f7 !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .enterprise-table-wrap,
+  .table-wrap,
+  .data-table-wrapper,
+  .monday-board-table-wrap
+) :is(table, .resizable-enterprise-table, .monday-board-table),
+html[data-visual-theme] body .application-main :is(.resizable-enterprise-table, .monday-board-table) {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  background: var(--ui-safe-surface) !important;
+  color: var(--ui-safe-text) !important;
+  -webkit-text-fill-color: currentColor;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .enterprise-table-wrap,
+  .table-wrap,
+  .data-table-wrapper,
+  .monday-board-table-wrap
+) :is(thead th, .resizable-enterprise-table thead th, .monday-board-table thead th),
+html[data-visual-theme] body .application-main :is(.resizable-enterprise-table, .monday-board-table) thead th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 8 !important;
+  border-color: var(--ui-safe-line) !important;
+  background: #eef2f7 !important;
+  color: var(--ui-safe-heading) !important;
+  -webkit-text-fill-color: var(--ui-safe-heading) !important;
+  box-shadow: inset 0 -1px 0 var(--ui-safe-line) !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .enterprise-table-wrap,
+  .table-wrap,
+  .data-table-wrapper,
+  .monday-board-table-wrap
+) :is(tbody tr, .resizable-enterprise-table tbody tr, .monday-board-table tbody tr),
+html[data-visual-theme] body .application-main :is(.resizable-enterprise-table, .monday-board-table) tbody tr {
+  background: #ffffff !important;
+  color: var(--ui-safe-text) !important;
+  -webkit-text-fill-color: var(--ui-safe-text) !important;
+  opacity: 1 !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .enterprise-table-wrap,
+  .table-wrap,
+  .data-table-wrapper,
+  .monday-board-table-wrap
+) :is(tbody tr:nth-child(even), .resizable-enterprise-table tbody tr:nth-child(even), .monday-board-table tbody tr:nth-child(even)),
+html[data-visual-theme] body .application-main :is(.resizable-enterprise-table, .monday-board-table) tbody tr:nth-child(even) {
+  background: #f7f9fc !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .enterprise-table-wrap,
+  .table-wrap,
+  .data-table-wrapper,
+  .monday-board-table-wrap
+) :is(tbody tr:hover, tbody tr:focus-within, .resizable-enterprise-table tbody tr:hover, .resizable-enterprise-table tbody tr:focus-within, .monday-board-table tbody tr:hover, .monday-board-table tbody tr:focus-within),
+html[data-visual-theme] body .application-main :is(.resizable-enterprise-table, .monday-board-table) tbody tr:hover,
+html[data-visual-theme] body .application-main :is(.resizable-enterprise-table, .monday-board-table) tbody tr:focus-within {
+  background: var(--ui-safe-blue-soft) !important;
+  color: var(--ui-safe-heading) !important;
+  -webkit-text-fill-color: var(--ui-safe-heading) !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .enterprise-table-wrap,
+  .table-wrap,
+  .data-table-wrapper,
+  .monday-board-table-wrap
+) :is(tbody tr > td, tbody tr > th, .resizable-enterprise-table tbody tr > td, .resizable-enterprise-table tbody tr > th, .monday-board-table tbody tr > td, .monday-board-table tbody tr > th),
+html[data-visual-theme] body .application-main :is(.resizable-enterprise-table, .monday-board-table) tbody tr > :is(td, th) {
+  border-color: var(--ui-safe-line) !important;
+  background: inherit !important;
+  color: var(--ui-safe-text) !important;
+  -webkit-text-fill-color: var(--ui-safe-text) !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .enterprise-table-wrap,
+  .table-wrap,
+  .data-table-wrapper,
+  .monday-board-table-wrap
+) :is(tbody tr:hover > td, tbody tr:focus-within > td, .resizable-enterprise-table tbody tr:hover > td, .resizable-enterprise-table tbody tr:focus-within > td, .monday-board-table tbody tr:hover > td, .monday-board-table tbody tr:focus-within > td),
+html[data-visual-theme] body .application-main :is(.resizable-enterprise-table, .monday-board-table) tbody tr:is(:hover, :focus-within) > td {
+  background: inherit !important;
+  color: var(--ui-safe-heading) !important;
+  -webkit-text-fill-color: var(--ui-safe-heading) !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .enterprise-table-wrap,
+  .table-wrap,
+  .data-table-wrapper,
+  .monday-board-table-wrap
+) tbody td :is(strong, b, a, label, span:not(.badge):not(.status-badge):not(.feature-pill):not(.button-icon), small, p, em, time),
+html[data-visual-theme] body .application-main :is(.resizable-enterprise-table, .monday-board-table) tbody td :is(strong, b, a, label, span:not(.badge):not(.status-badge):not(.feature-pill):not(.button-icon), small, p, em, time) {
+  color: var(--ui-safe-text) !important;
+  -webkit-text-fill-color: var(--ui-safe-text) !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .enterprise-table-wrap,
+  .table-wrap,
+  .data-table-wrapper,
+  .monday-board-table-wrap,
+  .resizable-enterprise-table,
+  .monday-board-table
+) tbody td :is(strong, b, a) {
+  color: var(--ui-safe-heading) !important;
+  -webkit-text-fill-color: var(--ui-safe-heading) !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .enterprise-table-wrap,
+  .table-wrap,
+  .data-table-wrapper,
+  .monday-board-table-wrap,
+  .resizable-enterprise-table,
+  .monday-board-table
+) tbody td :is(.status-badge, .badge, .feature-pill),
+html[data-visual-theme] body .application-main :is(
+  .enterprise-table-wrap,
+  .table-wrap,
+  .data-table-wrapper,
+  .monday-board-table-wrap,
+  .resizable-enterprise-table,
+  .monday-board-table
+) tbody td :is(.status-badge, .badge, .feature-pill) :where(*) {
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
+  text-shadow: none !important;
+}
+
+@media (max-width: 760px) {
+  html[data-visual-theme] body .application-main .table-scroll-primary {
+    max-height: clamp(320px, 58vh, 560px) !important;
+  }
+}
