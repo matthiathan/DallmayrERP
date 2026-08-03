@@ -1353,8 +1353,222 @@ html[data-visual-theme] body .application-main :is(
   text-shadow: none !important;
 }
 
+/* Plain legacy tables still appear on detail pages. Keep those in bounded
+   scroll regions too, not only the RemoteDataTable implementation. */
+html[data-visual-theme] body .application-main .table-wrap:not(.table-scroll-primary) {
+  max-width: 100% !important;
+  max-height: clamp(320px, 58vh, 640px) !important;
+  overflow: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-gutter: stable both-edges;
+  border: 1px solid var(--ui-safe-line) !important;
+  border-radius: var(--ui-safe-radius) !important;
+  background: var(--ui-safe-surface) !important;
+}
+
+html[data-visual-theme] body .application-main .table-wrap:not(.table-scroll-primary) thead th {
+  top: 0 !important;
+  z-index: 6 !important;
+}
+
+/* Long operational lists should behave like contained work areas once they
+   become large enough to crowd the page. */
+html[data-visual-theme] body .application-main :is(
+  .minimal-list,
+  .record-timeline,
+  .record-comment-list,
+  .customer360-service-list,
+  .customer360-stack-list,
+  .dispatch-card-list,
+  .exception-case-list,
+  .professional-work-list,
+  .monday-my-work-list,
+  .field-offline-list,
+  .notification-inbox-list
+) {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  scrollbar-gutter: stable;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .minimal-list:has(> :is(.minimal-list-item, a, button, article, div):nth-child(10)),
+  .record-timeline:has(> .record-timeline-item:nth-child(7)),
+  .record-comment-list:has(> .record-comment:nth-child(7)),
+  .customer360-service-list:has(> :nth-child(7)),
+  .customer360-stack-list:has(> :nth-child(7)),
+  .dispatch-card-list:has(> :nth-child(8)),
+  .exception-case-list:has(> .exception-case-card:nth-child(8)),
+  .professional-work-list:has(> .professional-work-card:nth-child(10)),
+  .monday-my-work-list:has(> :nth-child(7)),
+  .field-offline-list:has(> :nth-child(8)),
+  .notification-inbox-list:has(> :nth-child(8))
+) {
+  max-height: clamp(320px, 58vh, 680px) !important;
+  overflow: auto !important;
+  overscroll-behavior: contain !important;
+  padding-right: 8px !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .minimal-list-item,
+  .record-timeline-item,
+  .record-comment,
+  .queue-line,
+  .professional-work-card,
+  .dispatch-pressure-card,
+  .exception-case-card,
+  .customer360-record-card,
+  .customer360-service-row,
+  .customer360-contract-row,
+  .customer360-delivery-row,
+  .monday-my-work-card
+) {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  border-color: var(--ui-safe-line) !important;
+  background: var(--ui-safe-surface) !important;
+  color: var(--ui-safe-text) !important;
+  -webkit-text-fill-color: currentColor;
+  text-shadow: none !important;
+  overflow-wrap: anywhere;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .minimal-list-item,
+  .record-timeline-item,
+  .record-comment,
+  .queue-line,
+  .professional-work-card,
+  .dispatch-pressure-card,
+  .exception-case-card,
+  .customer360-record-card,
+  .customer360-service-row,
+  .customer360-contract-row,
+  .customer360-delivery-row,
+  .monday-my-work-card
+) > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .minimal-list-item,
+  .record-timeline-item,
+  .record-comment,
+  .queue-line,
+  .professional-work-card,
+  .dispatch-pressure-card,
+  .exception-case-card,
+  .customer360-record-card,
+  .customer360-service-row,
+  .customer360-contract-row,
+  .customer360-delivery-row,
+  .monday-my-work-card
+) :is(h1, h2, h3, h4, h5, h6, strong, b, label, dt) {
+  color: var(--ui-safe-heading) !important;
+  -webkit-text-fill-color: var(--ui-safe-heading) !important;
+  text-shadow: none !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .minimal-list-item,
+  .record-timeline-item,
+  .record-comment,
+  .queue-line,
+  .professional-work-card,
+  .dispatch-pressure-card,
+  .exception-case-card,
+  .customer360-record-card,
+  .customer360-service-row,
+  .customer360-contract-row,
+  .customer360-delivery-row,
+  .monday-my-work-card
+) :is(p, small, dd, em, time, span:not(.badge):not(.status-badge):not(.feature-pill):not(.button-icon)) {
+  color: var(--ui-safe-text) !important;
+  -webkit-text-fill-color: var(--ui-safe-text) !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .minimal-list-item,
+  .record-timeline-item,
+  .queue-line,
+  .professional-work-card,
+  .dispatch-pressure-card,
+  .exception-case-card,
+  .customer360-service-row,
+  .customer360-contract-row,
+  .customer360-delivery-row,
+  .monday-my-work-card
+) :is(.status-badge, .badge, .feature-pill) {
+  flex: 0 0 auto;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .minimal-list-item:hover,
+  .minimal-list-item:focus-visible,
+  .minimal-list-item.is-selected,
+  .record-timeline-item:hover,
+  .record-timeline-item:focus-visible,
+  .queue-line:hover,
+  .queue-line:focus-visible,
+  .professional-work-card:hover,
+  .professional-work-card:focus-visible,
+  .dispatch-pressure-card:hover,
+  .dispatch-pressure-card:focus-visible,
+  .exception-case-card:hover,
+  .exception-case-card:focus-visible,
+  .exception-case-card.is-selected,
+  .customer360-record-card:hover,
+  .customer360-record-card:focus-visible,
+  .customer360-service-row:hover,
+  .customer360-service-row:focus-visible,
+  .customer360-delivery-row:hover,
+  .customer360-delivery-row:focus-visible,
+  .monday-my-work-card:hover,
+  .monday-my-work-card:focus-visible
+) {
+  border-color: #9cc9ec !important;
+  background: var(--ui-safe-blue-soft) !important;
+  color: var(--ui-safe-heading) !important;
+  -webkit-text-fill-color: currentColor;
+}
+
 @media (max-width: 760px) {
   html[data-visual-theme] body .application-main .table-scroll-primary {
     max-height: clamp(320px, 58vh, 560px) !important;
+  }
+
+  html[data-visual-theme] body .application-main .table-wrap:not(.table-scroll-primary) {
+    max-height: clamp(300px, 56vh, 520px) !important;
+  }
+
+  html[data-visual-theme] body .application-main :is(
+    .minimal-list:has(> :is(.minimal-list-item, a, button, article, div):nth-child(10)),
+    .record-timeline:has(> .record-timeline-item:nth-child(7)),
+    .record-comment-list:has(> .record-comment:nth-child(7)),
+    .customer360-service-list:has(> :nth-child(7)),
+    .customer360-stack-list:has(> :nth-child(7)),
+    .dispatch-card-list:has(> :nth-child(8)),
+    .exception-case-list:has(> .exception-case-card:nth-child(8)),
+    .professional-work-list:has(> .professional-work-card:nth-child(10)),
+    .monday-my-work-list:has(> :nth-child(7)),
+    .field-offline-list:has(> :nth-child(8)),
+    .notification-inbox-list:has(> :nth-child(8))
+  ) {
+    max-height: clamp(300px, 56vh, 540px) !important;
+  }
+
+  html[data-visual-theme] body .application-main :is(
+    .minimal-list-item,
+    .queue-line,
+    .customer360-service-row,
+    .customer360-contract-row,
+    .customer360-delivery-row,
+    .monday-my-work-card-heading
+  ) {
+    grid-template-columns: 1fr !important;
   }
 }
