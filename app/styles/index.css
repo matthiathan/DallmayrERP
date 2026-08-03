@@ -86,3 +86,6 @@
 
 /* 8. Dynamics 365-inspired operating shell. */
 @import '../dynamics-365-ui.css';
+
+/* 9. User-first readability and layout guardrails. */
+@import '../ui-readability-layout.css';
