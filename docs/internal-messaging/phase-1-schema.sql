@@ -4,6 +4,9 @@
 
 begin;
 
+create schema if not exists private;
+revoke all on schema private from public, anon, authenticated;
+
 create table public.message_threads (
   id uuid primary key default gen_random_uuid(),
   thread_type text not null check (thread_type in ('direct', 'group')),
@@ -37,16 +40,20 @@ create table public.messages (
   body text not null check (char_length(trim(body)) between 1 and 4000),
   client_message_id uuid not null,
   created_at timestamptz not null default now(),
-  unique (sender_id, client_message_id)
+  unique (sender_id, client_message_id),
+  unique (thread_id, id)
 );
 
 create table public.message_read_positions (
   thread_id uuid not null references public.message_threads(id) on delete cascade,
   user_id uuid not null references public.users(id) on delete cascade,
-  last_read_message_id uuid references public.messages(id) on delete set null,
+  last_read_message_id uuid,
   last_read_at timestamptz,
   updated_at timestamptz not null default now(),
-  primary key (thread_id, user_id)
+  primary key (thread_id, user_id),
+  foreign key (thread_id, last_read_message_id)
+    references public.messages(thread_id, id)
+    on delete set null
 );
 
 create table public.message_audit_events (
@@ -61,15 +68,33 @@ create table public.message_audit_events (
 
 create index message_threads_activity_idx
   on public.message_threads (coalesce(last_message_at, updated_at, created_at) desc, id desc);
-
 create index message_thread_members_user_idx
   on public.message_thread_members (user_id, removed_at, joined_at desc);
-
 create index messages_thread_cursor_idx
   on public.messages (thread_id, created_at desc, id desc);
-
 create index message_read_positions_user_idx
   on public.message_read_positions (user_id, updated_at desc);
+
+create or replace function private.is_active_message_member(p_thread_id uuid, p_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.message_thread_members member
+    join public.users app_user on app_user.id = member.user_id
+    where member.thread_id = p_thread_id
+      and member.user_id = p_user_id
+      and member.removed_at is null
+      and app_user.is_active = true
+  );
+$$;
+
+revoke all on function private.is_active_message_member(uuid, uuid) from public, anon, authenticated;
+grant execute on function private.is_active_message_member(uuid, uuid) to authenticated;
 
 alter table public.message_threads enable row level security;
 alter table public.message_thread_members enable row level security;
@@ -93,49 +118,19 @@ create policy message_threads_select_member
 on public.message_threads
 for select
 to authenticated
-using (
-  exists (
-    select 1
-    from public.message_thread_members member
-    join public.users app_user on app_user.id = member.user_id
-    where member.thread_id = message_threads.id
-      and member.user_id = public.current_app_user_id()
-      and member.removed_at is null
-      and app_user.is_active = true
-  )
-);
+using (private.is_active_message_member(id, public.current_app_user_id()));
 
 create policy message_members_select_member
 on public.message_thread_members
 for select
 to authenticated
-using (
-  exists (
-    select 1
-    from public.message_thread_members self
-    join public.users app_user on app_user.id = self.user_id
-    where self.thread_id = message_thread_members.thread_id
-      and self.user_id = public.current_app_user_id()
-      and self.removed_at is null
-      and app_user.is_active = true
-  )
-);
+using (private.is_active_message_member(thread_id, public.current_app_user_id()));
 
 create policy messages_select_member
 on public.messages
 for select
 to authenticated
-using (
-  exists (
-    select 1
-    from public.message_thread_members member
-    join public.users app_user on app_user.id = member.user_id
-    where member.thread_id = messages.thread_id
-      and member.user_id = public.current_app_user_id()
-      and member.removed_at is null
-      and app_user.is_active = true
-  )
-);
+using (private.is_active_message_member(thread_id, public.current_app_user_id()));
 
 create policy messages_insert_member
 on public.messages
@@ -143,22 +138,17 @@ for insert
 to authenticated
 with check (
   sender_id = public.current_app_user_id()
-  and exists (
-    select 1
-    from public.message_thread_members member
-    join public.users app_user on app_user.id = member.user_id
-    where member.thread_id = messages.thread_id
-      and member.user_id = public.current_app_user_id()
-      and member.removed_at is null
-      and app_user.is_active = true
-  )
+  and private.is_active_message_member(thread_id, public.current_app_user_id())
 );
 
 create policy message_read_positions_select_owner
 on public.message_read_positions
 for select
 to authenticated
-using (user_id = public.current_app_user_id());
+using (
+  user_id = public.current_app_user_id()
+  and private.is_active_message_member(thread_id, public.current_app_user_id())
+);
 
 create policy message_read_positions_insert_owner
 on public.message_read_positions
@@ -166,44 +156,35 @@ for insert
 to authenticated
 with check (
   user_id = public.current_app_user_id()
-  and exists (
-    select 1
-    from public.message_thread_members member
-    where member.thread_id = message_read_positions.thread_id
-      and member.user_id = public.current_app_user_id()
-      and member.removed_at is null
-  )
+  and private.is_active_message_member(thread_id, public.current_app_user_id())
 );
 
 create policy message_read_positions_update_owner
 on public.message_read_positions
 for update
 to authenticated
-using (user_id = public.current_app_user_id())
+using (
+  user_id = public.current_app_user_id()
+  and private.is_active_message_member(thread_id, public.current_app_user_id())
+)
 with check (
   user_id = public.current_app_user_id()
-  and exists (
-    select 1
-    from public.message_thread_members member
-    where member.thread_id = message_read_positions.thread_id
-      and member.user_id = public.current_app_user_id()
-      and member.removed_at is null
-  )
+  and private.is_active_message_member(thread_id, public.current_app_user_id())
 );
 
 create policy message_audit_select_member
 on public.message_audit_events
 for select
 to authenticated
-using (
-  exists (
-    select 1
-    from public.message_thread_members member
-    where member.thread_id = message_audit_events.thread_id
-      and member.user_id = public.current_app_user_id()
-      and member.removed_at is null
-  )
-);
+using (private.is_active_message_member(thread_id, public.current_app_user_id()));
+
+-- Direct-thread creation must be performed by one reviewed transaction/RPC that:
+-- 1. resolves the authenticated ERP user from current_app_user_id();
+-- 2. accepts exactly one other active user for a direct thread;
+-- 3. builds direct_key from the two sorted UUID strings;
+-- 4. inserts the thread and both memberships atomically;
+-- 5. returns the existing thread when direct_key already exists.
+-- Clients must never submit an arbitrary direct_key.
 
 -- Cursor query pattern: select newest page first, then render chronologically.
 --
@@ -211,9 +192,12 @@ using (
 --   select id, thread_id, sender_id, body, created_at
 --   from public.messages
 --   where thread_id = :thread_id
---     and ((created_at, id) < (:before_created_at, :before_id) or :before_created_at is null)
+--     and (
+--       :before_created_at is null
+--       or (created_at, id) < (:before_created_at, :before_id)
+--     )
 --   order by created_at desc, id desc
---   limit :page_size
+--   limit least(greatest(:page_size, 1), 100)
 -- ) page
 -- order by created_at asc, id asc;
 
