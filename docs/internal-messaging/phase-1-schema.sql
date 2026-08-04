@@ -6,6 +6,7 @@ begin;
 
 create schema if not exists private;
 revoke all on schema private from public, anon, authenticated;
+grant usage on schema private to authenticated;
 
 create table public.message_threads (
   id uuid primary key default gen_random_uuid(),
@@ -53,7 +54,7 @@ create table public.message_read_positions (
   primary key (thread_id, user_id),
   foreign key (thread_id, last_read_message_id)
     references public.messages(thread_id, id)
-    on delete set null
+    on delete set null (last_read_message_id)
 );
 
 create table public.message_audit_events (
@@ -95,6 +96,85 @@ $$;
 
 revoke all on function private.is_active_message_member(uuid, uuid) from public, anon, authenticated;
 grant execute on function private.is_active_message_member(uuid, uuid) to authenticated;
+
+create or replace function public.create_direct_message_thread(p_other_user_id uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_current_user_id uuid := public.current_app_user_id();
+  v_direct_key text;
+  v_thread_id uuid;
+  v_other_is_active boolean;
+begin
+  if v_current_user_id is null then
+    raise exception 'Authenticated ERP user is required';
+  end if;
+
+  if p_other_user_id is null or p_other_user_id = v_current_user_id then
+    raise exception 'A different active ERP user is required';
+  end if;
+
+  select u.is_active
+  into v_other_is_active
+  from public.users u
+  where u.id = p_other_user_id;
+
+  if coalesce(v_other_is_active, false) is not true then
+    raise exception 'The selected ERP user is not active';
+  end if;
+
+  v_direct_key := case
+    when v_current_user_id::text < p_other_user_id::text
+      then v_current_user_id::text || ':' || p_other_user_id::text
+    else p_other_user_id::text || ':' || v_current_user_id::text
+  end;
+
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_direct_key, 0));
+
+  select thread.id
+  into v_thread_id
+  from public.message_threads thread
+  where thread.direct_key = v_direct_key;
+
+  if v_thread_id is null then
+    insert into public.message_threads (thread_type, direct_key, created_by)
+    values ('direct', v_direct_key, v_current_user_id)
+    returning id into v_thread_id;
+
+    insert into public.message_audit_events (
+      thread_id,
+      actor_user_id,
+      event_type,
+      metadata
+    ) values (
+      v_thread_id,
+      v_current_user_id,
+      'thread_created',
+      jsonb_build_object('thread_type', 'direct')
+    );
+  end if;
+
+  insert into public.message_thread_members (
+    thread_id,
+    user_id,
+    member_role,
+    removed_at,
+    archived_at
+  ) values
+    (v_thread_id, v_current_user_id, 'owner', null, null),
+    (v_thread_id, p_other_user_id, 'member', null, null)
+  on conflict (thread_id, user_id) do update
+  set removed_at = null;
+
+  return v_thread_id;
+end;
+$$;
+
+revoke all on function public.create_direct_message_thread(uuid) from public, anon, authenticated;
+grant execute on function public.create_direct_message_thread(uuid) to authenticated;
 
 alter table public.message_threads enable row level security;
 alter table public.message_thread_members enable row level security;
@@ -177,14 +257,6 @@ on public.message_audit_events
 for select
 to authenticated
 using (private.is_active_message_member(thread_id, public.current_app_user_id()));
-
--- Direct-thread creation must be performed by one reviewed transaction/RPC that:
--- 1. resolves the authenticated ERP user from current_app_user_id();
--- 2. accepts exactly one other active user for a direct thread;
--- 3. builds direct_key from the two sorted UUID strings;
--- 4. inserts the thread and both memberships atomically;
--- 5. returns the existing thread when direct_key already exists.
--- Clients must never submit an arbitrary direct_key.
 
 -- Cursor query pattern: select newest page first, then render chronologically.
 --
