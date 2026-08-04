@@ -53,10 +53,10 @@ export function DesktopNavigationRail({
   const directorySections = sections
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => item.href !== homePath && item.href !== '/work' && item.href !== '/messages'),
+      items: section.items.filter((item) => item.href !== homePath && item.href !== '/work'),
     }))
     .filter((section) => section.items.length > 0);
-  const visiblePinnedItems = pinnedItems.filter((item) => item.href !== homePath && item.href !== '/work' && item.href !== '/messages');
+  const visiblePinnedItems = pinnedItems.filter((item) => item.href !== homePath && item.href !== '/work');
   const allItems = directorySections.flatMap((section) => section.items);
   const collapsedItems = [
     ...visiblePinnedItems,
@@ -76,7 +76,6 @@ export function DesktopNavigationRail({
             <div className="monday-workspace-menu">
               <Link href={homePath}><span aria-hidden="true">T</span><span><strong>Today</strong><small>Priorities and work queues</small></span></Link>
               <Link href="/work"><span aria-hidden="true">W</span><span><strong>My Work</strong><small>Assigned work and approvals</small></span></Link>
-              <Link href="/messages"><span aria-hidden="true">M</span><span><strong>Messages</strong><small>Internal chat and files</small></span></Link>
               <button onClick={openInbox} type="button"><span aria-hidden="true">I</span><span><strong>Inbox</strong><small>Operational notifications</small></span></button>
             </div>
           </details>
@@ -99,9 +98,6 @@ export function DesktopNavigationRail({
           <Link aria-current={isActivePath(pathname, '/work') ? 'page' : undefined} className="desktop-rail-glyph-link" href="/work" title="My Work">
             <span aria-hidden="true">W</span><span className="sr-only">My Work</span>
           </Link>
-          <Link aria-current={isActivePath(pathname, '/messages') ? 'page' : undefined} className="desktop-rail-glyph-link" href="/messages" title="Messages">
-            <span aria-hidden="true">M</span><span className="sr-only">Messages</span>
-          </Link>
           <button aria-label="Open Inbox" className="desktop-rail-glyph-link" onClick={openInbox} title="Inbox" type="button">
             <span aria-hidden="true">I</span>
           </button>
@@ -120,9 +116,6 @@ export function DesktopNavigationRail({
               </Link>
               <Link aria-current={isActivePath(pathname, '/work') ? 'page' : undefined} href="/work">
                 <span aria-hidden="true">W</span><span><strong>My Work</strong><small>Assigned tasks and approvals</small></span>
-              </Link>
-              <Link aria-current={isActivePath(pathname, '/messages') ? 'page' : undefined} href="/messages">
-                <span aria-hidden="true">M</span><span><strong>Messages</strong><small>Internal chat and files</small></span>
               </Link>
               <button onClick={openInbox} type="button">
                 <span aria-hidden="true">I</span><span><strong>Inbox</strong><small>Notifications and exceptions</small></span>
