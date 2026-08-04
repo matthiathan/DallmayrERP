@@ -28,7 +28,7 @@
   --erp-workbench-shadow-raised: 0 4px 12px rgba(0, 0, 0, 0.08);
   --erp-workbench-control: 36px;
   --erp-workbench-header-height: 52px;
-  --erp-workbench-rail-width: 292px;
+  --erp-workbench-rail-width: 268px;
   --erp-workbench-rail-collapsed-width: 64px;
   --erp-workbench-command-height: 52px;
   --application-header-height: var(--erp-workbench-header-height);
@@ -70,6 +70,7 @@ html[data-visual-theme] body :is(p, span, small, strong, h1, h2, h3, h4, h5, h6,
 html[data-visual-theme] body :is(h1, h2, h3, h4, h5, h6, strong, b, label, th, dt, legend) {
   color: var(--erp-workbench-heading) !important;
   -webkit-text-fill-color: var(--erp-workbench-heading) !important;
+  overflow-wrap: anywhere !important;
 }
 
 html[data-visual-theme] body :is(p, small, dd, li, figcaption, time, em, .muted, .field-note) {
@@ -80,6 +81,29 @@ html[data-visual-theme] body :is(p, small, dd, li, figcaption, time, em, .muted,
 html[data-visual-theme] body :is(a) {
   color: var(--erp-workbench-blue-dark) !important;
   -webkit-text-fill-color: var(--erp-workbench-blue-dark) !important;
+}
+
+html[data-visual-theme] body :is(a, button, summary, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--erp-workbench-blue) !important;
+  outline-offset: 2px !important;
+}
+
+html[data-visual-theme] body .skip-link {
+  position: fixed !important;
+  top: 8px !important;
+  left: 8px !important;
+  z-index: 7000 !important;
+  transform: translateY(-140%) !important;
+  padding: 8px 12px !important;
+  border-radius: var(--erp-workbench-radius) !important;
+  background: #ffffff !important;
+  color: var(--erp-workbench-blue-dark) !important;
+  -webkit-text-fill-color: var(--erp-workbench-blue-dark) !important;
+  box-shadow: var(--erp-workbench-shadow-raised) !important;
+}
+
+html[data-visual-theme] body .skip-link:focus-visible {
+  transform: translateY(0) !important;
 }
 
 @media (min-width: 981px) {
@@ -803,6 +827,139 @@ html[data-visual-theme] body .application-main .erp-panel[data-scroll='list'] .e
   scrollbar-gutter: stable both-edges;
 }
 
+html[data-visual-theme] body .application-main .erp-form-section {
+  display: grid !important;
+  gap: 14px !important;
+  min-width: 0 !important;
+  padding: 16px !important;
+  border: 1px solid var(--erp-workbench-border) !important;
+  border-radius: var(--erp-workbench-radius) !important;
+  background: var(--erp-workbench-surface-muted) !important;
+}
+
+html[data-visual-theme] body .application-main .erp-form-section-header h3 {
+  margin: 0 !important;
+  color: var(--erp-workbench-heading) !important;
+  -webkit-text-fill-color: var(--erp-workbench-heading) !important;
+  font-size: 16px !important;
+  line-height: 1.25 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-form-section-header p {
+  margin: 4px 0 0 !important;
+  color: var(--erp-workbench-muted) !important;
+  -webkit-text-fill-color: var(--erp-workbench-muted) !important;
+}
+
+html[data-visual-theme] body .application-main .erp-form-section-body {
+  display: grid !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-form-section-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+}
+
+html[data-visual-theme] body .application-main .erp-state-banner,
+html[data-visual-theme] body .application-main :is(.error, .success, .empty-state, .minimal-empty, .access-denied) {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  align-items: start !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+  padding: 14px 16px !important;
+  overflow: hidden !important;
+  border: 1px solid var(--erp-workbench-border) !important;
+  border-radius: var(--erp-workbench-radius) !important;
+  background: #ffffff !important;
+  color: var(--erp-workbench-text) !important;
+  -webkit-text-fill-color: currentColor;
+  box-shadow: var(--erp-workbench-shadow) !important;
+}
+
+html[data-visual-theme] body .application-main .erp-state-banner[data-tone='danger'],
+html[data-visual-theme] body .application-main .error {
+  border-color: #f3b8bb !important;
+  background: #fde7e9 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-state-banner[data-tone='success'],
+html[data-visual-theme] body .application-main .success {
+  border-color: #9fd89f !important;
+  background: #dff6dd !important;
+}
+
+html[data-visual-theme] body .application-main .erp-state-banner[data-tone='warning'] {
+  border-color: #fde300 !important;
+  background: #fff4ce !important;
+}
+
+html[data-visual-theme] body .application-main .erp-state-marker,
+html[data-visual-theme] body .application-main .empty-state-icon {
+  width: 10px !important;
+  min-width: 10px !important;
+  height: 10px !important;
+  margin-top: 6px !important;
+  border-radius: 999px !important;
+  background: var(--erp-workbench-blue) !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+html[data-visual-theme] body .application-main :is(.error, .success, .minimal-empty)::before {
+  content: '' !important;
+  width: 10px !important;
+  min-width: 10px !important;
+  height: 10px !important;
+  margin-top: 6px !important;
+  border-radius: 999px !important;
+}
+
+html[data-visual-theme] body .application-main .erp-state-banner[data-tone='danger'] .erp-state-marker,
+html[data-visual-theme] body .application-main .error::before {
+  background: var(--erp-workbench-danger) !important;
+}
+
+html[data-visual-theme] body .application-main .erp-state-banner[data-tone='success'] .erp-state-marker,
+html[data-visual-theme] body .application-main .success::before {
+  background: var(--erp-workbench-success) !important;
+}
+
+html[data-visual-theme] body .application-main .erp-state-copy,
+html[data-visual-theme] body .application-main .erp-state-action {
+  min-width: 0 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-state-copy h2,
+html[data-visual-theme] body .application-main .empty-state h3 {
+  margin: 0 !important;
+  color: var(--erp-workbench-heading) !important;
+  -webkit-text-fill-color: var(--erp-workbench-heading) !important;
+  font-size: 17px !important;
+  line-height: 1.25 !important;
+}
+
+html[data-visual-theme] body .application-main .erp-state-copy p,
+html[data-visual-theme] body .application-main .empty-state p {
+  margin: 4px 0 0 !important;
+  color: var(--erp-workbench-muted) !important;
+  -webkit-text-fill-color: var(--erp-workbench-muted) !important;
+}
+
+html[data-visual-theme] body .application-main .empty-state {
+  grid-template-columns: auto minmax(0, 1fr) !important;
+}
+
+html[data-visual-theme] body .application-main .empty-state h3,
+html[data-visual-theme] body .application-main .empty-state p,
+html[data-visual-theme] body .application-main .empty-state .action-row {
+  grid-column: 2 !important;
+}
+
 html[data-visual-theme] body .application-main .erp-metric-grid {
   display: grid !important;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)) !important;
@@ -977,6 +1134,14 @@ html[data-visual-theme] body .application-main :is(.neo-card, .card, .minimal-pa
   padding: 18px !important;
 }
 
+html[data-visual-theme] body .application-main :is(.neo-card, .card, .erp-panel, .minimal-panel, .minimal-card) :is(.neo-card, .card, .erp-panel, .minimal-panel, .minimal-card) {
+  box-shadow: none !important;
+}
+
+html[data-visual-theme] body .application-main :is(.neo-card, .card, .erp-panel, .minimal-panel, .minimal-card) > :is(.neo-card, .card, .erp-panel, .minimal-panel, .minimal-card) {
+  background: var(--erp-workbench-surface-muted) !important;
+}
+
 html[data-visual-theme] body .application-main :is(.neo-card, .card, .minimal-panel, .minimal-card, .dashboard-panel, .operations-panel)::before,
 html[data-visual-theme] body .application-main :is(.neo-card, .card, .minimal-panel, .minimal-card, .dashboard-panel, .operations-panel)::after {
   display: none !important;
@@ -1010,7 +1175,7 @@ html[data-visual-theme] body .application-main :is(.page-toolbar, .workspace-com
 
 html[data-visual-theme] body .application-main .page-toolbar {
   position: sticky !important;
-  top: -22px !important;
+  top: 0 !important;
   z-index: 30 !important;
 }
 
@@ -1038,11 +1203,11 @@ html[data-visual-theme] body .application-main :is(.page-toolbar-controls-body, 
 
 html[data-visual-theme] body .application-main :is(.page-toolbar-filters, .workspace-filter-bar, .ds-filter-bar, .remote-table-filters) {
   display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)) !important;
   align-items: flex-end !important;
   gap: 10px !important;
   flex: 1 1 520px !important;
-  min-width: min(100%, 320px) !important;
+  min-width: 0 !important;
 }
 
 html[data-visual-theme] body .application-main :is(.page-toolbar-actions, .workspace-command-actions, .ds-action-bar, .enterprise-table-actions) {
@@ -1095,6 +1260,7 @@ html[data-visual-theme] body .application-main .form-grid {
   display: grid !important;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)) !important;
   align-items: flex-end !important;
+  gap: 14px !important;
 }
 
 html[data-visual-theme] body .application-main label {
@@ -1108,12 +1274,35 @@ html[data-visual-theme] body .application-main label {
   line-height: 1.25 !important;
 }
 
+html[data-visual-theme] body .application-main label:has(:is(input, select, textarea)[required])::after {
+  content: 'Required' !important;
+  width: max-content !important;
+  max-width: 100% !important;
+  padding: 2px 6px !important;
+  border-radius: var(--erp-workbench-radius) !important;
+  background: var(--erp-workbench-blue-pale) !important;
+  color: var(--erp-workbench-blue-dark) !important;
+  -webkit-text-fill-color: var(--erp-workbench-blue-dark) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  text-transform: uppercase !important;
+}
+
+html[data-visual-theme] body .application-main :is(.field-note, .helper-text, .description) {
+  color: var(--erp-workbench-muted) !important;
+  -webkit-text-fill-color: var(--erp-workbench-muted) !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
 html[data-visual-theme] body :is(.button, button.button, a.button, .monday-board-command-button, .mobile-table-filter-button, .column-width-reset) {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   gap: 8px !important;
-  min-width: max-content !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
   min-height: var(--erp-workbench-control) !important;
   padding: 0 12px !important;
   overflow: hidden !important;
@@ -1125,7 +1314,9 @@ html[data-visual-theme] body :is(.button, button.button, a.button, .monday-board
   box-shadow: none !important;
   font-weight: 600 !important;
   text-decoration: none !important;
-  white-space: nowrap !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+  white-space: normal !important;
 }
 
 html[data-visual-theme] body :is(.button, button.button, a.button, .monday-board-command-button, .mobile-table-filter-button, .column-width-reset):hover,
@@ -1164,6 +1355,13 @@ html[data-visual-theme] body :is(button:disabled, .button[disabled], input:disab
   opacity: 0.68 !important;
 }
 
+html[data-visual-theme] body :is(input:disabled, select:disabled, textarea:disabled) {
+  border-color: var(--erp-workbench-border) !important;
+  background: #f3f2f1 !important;
+  color: var(--erp-workbench-muted) !important;
+  -webkit-text-fill-color: var(--erp-workbench-muted) !important;
+}
+
 /* Data grids */
 html[data-visual-theme] body .application-main :is(.enterprise-table-shell, .remote-table-shell) {
   display: flex !important;
@@ -1189,10 +1387,12 @@ html[data-visual-theme] body .remote-table-toolbar {
   border: 0 !important;
   border-bottom: 1px solid var(--erp-workbench-border) !important;
   border-radius: 0 !important;
+  min-width: 0 !important;
 }
 
 html[data-visual-theme] body .enterprise-table-search {
-  flex: 1 1 320px !important;
+  flex: 1 1 280px !important;
+  min-width: min(100%, 240px) !important;
 }
 
 html[data-visual-theme] body .enterprise-table-count {
@@ -1344,6 +1544,19 @@ html[data-visual-theme] body .enterprise-table-pagination {
   -webkit-text-fill-color: var(--erp-workbench-muted) !important;
 }
 
+html[data-visual-theme] body .enterprise-table-pagination label {
+  display: inline-flex !important;
+  align-items: center !important;
+  grid-auto-flow: column !important;
+  gap: 8px !important;
+  width: auto !important;
+}
+
+html[data-visual-theme] body .enterprise-table-pagination select {
+  width: auto !important;
+  min-width: 84px !important;
+}
+
 html[data-visual-theme] body .enterprise-pagination-buttons {
   display: flex !important;
   flex-wrap: wrap !important;
@@ -1360,6 +1573,78 @@ html[data-visual-theme] body .application-main .table-wrap:not(.table-scroll-pri
   border: 1px solid var(--erp-workbench-border) !important;
   border-radius: var(--erp-workbench-radius) !important;
   background: #ffffff !important;
+}
+
+html[data-visual-theme] body .mobile-record-list,
+html[data-visual-theme] body .mobile-filter-chips,
+html[data-visual-theme] body .mobile-table-filter-button {
+  display: none !important;
+}
+
+html[data-visual-theme] body .mobile-filter-sheet-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 6500 !important;
+  display: grid !important;
+  align-items: flex-end !important;
+  padding: 16px !important;
+  background: rgba(0, 0, 0, 0.38) !important;
+}
+
+html[data-visual-theme] body .mobile-filter-sheet {
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(100%, 680px) !important;
+  max-height: min(88dvh, 760px) !important;
+  margin-inline: auto !important;
+  overflow: hidden !important;
+}
+
+html[data-visual-theme] body .mobile-filter-sheet-header,
+html[data-visual-theme] body .mobile-filter-sheet-footer {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 14px !important;
+  border-bottom: 1px solid var(--erp-workbench-border) !important;
+}
+
+html[data-visual-theme] body .mobile-filter-sheet-footer {
+  border-top: 1px solid var(--erp-workbench-border) !important;
+  border-bottom: 0 !important;
+  padding-bottom: max(14px, env(safe-area-inset-bottom, 0px)) !important;
+}
+
+html[data-visual-theme] body .mobile-filter-sheet-body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  padding: 14px !important;
+  overflow: auto !important;
+  overscroll-behavior: contain !important;
+}
+
+html[data-visual-theme] body .mobile-filter-sheet-close {
+  display: grid !important;
+  place-items: center !important;
+  width: 42px !important;
+  min-width: 42px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  border: 1px solid var(--erp-workbench-border-strong) !important;
+  border-radius: var(--erp-workbench-radius) !important;
+  background: #ffffff !important;
+  color: var(--erp-workbench-heading) !important;
+  -webkit-text-fill-color: var(--erp-workbench-heading) !important;
+}
+
+html[data-visual-theme] body .mobile-filter-column-grid,
+html[data-visual-theme] body .mobile-filter-field-grid,
+html[data-visual-theme] body .mobile-filter-sort-row {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)) !important;
+  gap: 12px !important;
 }
 
 /* Long cards and list areas */
@@ -1548,6 +1833,102 @@ html[data-visual-theme] body .auth-state-page .auth-state-card.neo-card {
     min-height: 0 !important;
   }
 
+  html[data-visual-theme] body .enterprise-table-desktop-view {
+    display: none !important;
+  }
+
+  html[data-visual-theme] body .mobile-record-list {
+    display: grid !important;
+    gap: 12px !important;
+    padding: 12px !important;
+    background: var(--erp-workbench-surface-muted) !important;
+  }
+
+  html[data-visual-theme] body .mobile-record-card {
+    display: grid !important;
+    gap: 12px !important;
+    min-width: 0 !important;
+    padding: 14px !important;
+    border: 1px solid var(--erp-workbench-border) !important;
+    border-radius: var(--erp-workbench-radius) !important;
+    background: #ffffff !important;
+    color: var(--erp-workbench-text) !important;
+    -webkit-text-fill-color: currentColor;
+    box-shadow: var(--erp-workbench-shadow) !important;
+  }
+
+  html[data-visual-theme] body .mobile-record-card-title {
+    display: grid !important;
+    gap: 4px !important;
+    min-width: 0 !important;
+  }
+
+  html[data-visual-theme] body .mobile-record-card-title > span,
+  html[data-visual-theme] body .mobile-record-card-details dt {
+    color: var(--erp-workbench-muted) !important;
+    -webkit-text-fill-color: var(--erp-workbench-muted) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    text-transform: uppercase !important;
+  }
+
+  html[data-visual-theme] body .mobile-record-card-title > div {
+    color: var(--erp-workbench-heading) !important;
+    -webkit-text-fill-color: var(--erp-workbench-heading) !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    line-height: 1.3 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  html[data-visual-theme] body .mobile-record-card-details {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    margin: 0 !important;
+  }
+
+  html[data-visual-theme] body .mobile-record-card-details > div {
+    display: grid !important;
+    gap: 2px !important;
+    min-width: 0 !important;
+  }
+
+  html[data-visual-theme] body .mobile-record-card-details dd {
+    margin: 0 !important;
+    color: var(--erp-workbench-text) !important;
+    -webkit-text-fill-color: var(--erp-workbench-text) !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  html[data-visual-theme] body .mobile-record-empty {
+    padding: 18px !important;
+    border: 1px dashed var(--erp-workbench-border-strong) !important;
+    border-radius: var(--erp-workbench-radius) !important;
+    background: #ffffff !important;
+    color: var(--erp-workbench-muted) !important;
+    -webkit-text-fill-color: var(--erp-workbench-muted) !important;
+  }
+
+  html[data-visual-theme] body .mobile-filter-chips {
+    display: flex !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+    overflow-x: auto !important;
+    background: var(--erp-workbench-surface) !important;
+  }
+
+  html[data-visual-theme] body .mobile-filter-chips button,
+  html[data-visual-theme] body .mobile-table-filter-button,
+  html[data-visual-theme] body :is(button, a.button, .button, input, select, textarea) {
+    min-height: 44px !important;
+  }
+
+  html[data-visual-theme] body .mobile-table-filter-button {
+    display: inline-flex !important;
+  }
+
   html[data-visual-theme] body .table-scroll-frame {
     height: clamp(360px, 62vh, 620px) !important;
   }
@@ -1565,5 +1946,121 @@ html[data-visual-theme] body .auth-state-page .auth-state-card.neo-card {
 
   html[data-visual-theme] body .application-main :is(.page-toolbar-actions, .workspace-command-actions, .ds-action-bar, .enterprise-table-actions) {
     justify-content: stretch !important;
+  }
+
+  html[data-visual-theme] body .application-main .erp-state-banner,
+  html[data-visual-theme] body .application-main :is(.error, .success, .empty-state, .minimal-empty, .access-denied) {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+  }
+
+  html[data-visual-theme] body .application-main .erp-state-action {
+    grid-column: 2 !important;
+    justify-self: stretch !important;
+  }
+
+  html[data-visual-theme] body .mobile-filter-sheet-backdrop {
+    padding: 8px 8px 0 !important;
+  }
+
+  html[data-visual-theme] body .mobile-filter-sheet {
+    width: 100% !important;
+    max-height: min(92dvh, 760px) !important;
+    border-bottom-right-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+  }
+
+  html[data-visual-theme] body .mobile-filter-sheet-footer {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+}
+
+html[data-visual-theme] body .login-page.dynamics-login-page,
+html[data-theme-tone] body .login-page.dynamics-login-page,
+html[data-visual-theme] body .login-page.dynamics-login-page *,
+html[data-theme-tone] body .login-page.dynamics-login-page * {
+  box-sizing: border-box !important;
+}
+
+html[data-visual-theme] body .login-page.dynamics-login-page,
+html[data-theme-tone] body .login-page.dynamics-login-page {
+  width: 100% !important;
+  max-width: 100vw !important;
+  min-width: 0 !important;
+  place-items: stretch !important;
+  overflow-x: hidden !important;
+}
+
+html[data-visual-theme] body .dynamics-login-intro,
+html[data-theme-tone] body .dynamics-login-intro,
+html[data-visual-theme] body .dynamics-login-copy,
+html[data-theme-tone] body .dynamics-login-copy,
+html[data-visual-theme] body .dynamics-login-modules,
+html[data-theme-tone] body .dynamics-login-modules,
+html[data-visual-theme] body .dynamics-login-card,
+html[data-theme-tone] body .dynamics-login-card {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+html[data-visual-theme] body .dynamics-login-copy h1,
+html[data-theme-tone] body .dynamics-login-copy h1,
+html[data-visual-theme] body .dynamics-login-copy p,
+html[data-theme-tone] body .dynamics-login-copy p,
+html[data-visual-theme] body .dynamics-login-card p,
+html[data-theme-tone] body .dynamics-login-card p {
+  max-width: 100% !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+}
+
+@media (max-width: 980px) {
+  html[data-visual-theme] body .login-page.dynamics-login-page,
+  html[data-theme-tone] body .login-page.dynamics-login-page {
+    grid-template-columns: minmax(0, 1fr) !important;
+    justify-items: stretch !important;
+  }
+
+  html[data-visual-theme] body .dynamics-login-intro,
+  html[data-theme-tone] body .dynamics-login-intro {
+    width: 100% !important;
+    padding: 28px clamp(16px, 5vw, 22px) !important;
+  }
+
+  html[data-visual-theme] body .dynamics-login-copy h1,
+  html[data-theme-tone] body .dynamics-login-copy h1 {
+    font-size: clamp(2rem, 9vw, 2.55rem) !important;
+    line-height: 1.1 !important;
+  }
+
+  html[data-visual-theme] body .dynamics-login-copy p,
+  html[data-theme-tone] body .dynamics-login-copy p {
+    font-size: 0.95rem !important;
+  }
+
+  html[data-visual-theme] body .dynamics-login-modules,
+  html[data-theme-tone] body .dynamics-login-modules {
+    width: 100% !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  html[data-visual-theme] body .dynamics-login-card,
+  html[data-theme-tone] body .dynamics-login-card {
+    justify-self: center !important;
+    width: min(calc(100% - 28px), 456px) !important;
+  }
+
+  html[data-visual-theme] body .dynamics-login-card form,
+  html[data-theme-tone] body .dynamics-login-card form,
+  html[data-visual-theme] body .dynamics-login-card label,
+  html[data-theme-tone] body .dynamics-login-card label,
+  html[data-visual-theme] body .dynamics-login-card :is(input, button),
+  html[data-theme-tone] body .dynamics-login-card :is(input, button),
+  html[data-visual-theme] body .dynamics-login-card .action-row,
+  html[data-theme-tone] body .dynamics-login-card .action-row {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
   }
 }

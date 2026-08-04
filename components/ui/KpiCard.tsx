@@ -1,9 +1,5 @@
+import { ErpMetricCard } from '@/components/ui/ErpLayout';
+
 export function KpiCard({ label, value, helper }: { label: string; value: string | number; helper?: string }) {
-  return (
-    <div className="card kpi-card">
-      <div className="nav-heading">{label}</div>
-      <div className="kpi-value">{value}</div>
-      {helper ? <p>{helper}</p> : null}
-    </div>
-  );
+  return <ErpMetricCard helper={helper} label={label} value={value} />;
 }

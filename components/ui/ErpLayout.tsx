@@ -4,6 +4,7 @@ type PageVariant = 'dashboard' | 'list' | 'record' | 'operational' | 'form' | 'd
 type PanelDensity = 'comfortable' | 'compact';
 type PanelScroll = 'none' | 'content' | 'list';
 type MetricTone = 'neutral' | 'good' | 'warning' | 'danger' | 'info';
+type StateTone = 'info' | 'success' | 'warning' | 'danger' | 'neutral';
 
 function joinClasses(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(' ');
@@ -188,5 +189,60 @@ export function ErpTabBar({
     <nav aria-label={label} className={joinClasses('erp-tab-bar', className)} role="tablist">
       {children}
     </nav>
+  );
+}
+
+export function ErpStateBanner({
+  action,
+  children,
+  className,
+  message,
+  title,
+  tone = 'info',
+}: {
+  action?: ReactNode;
+  children?: ReactNode;
+  className?: string;
+  message?: ReactNode;
+  title: ReactNode;
+  tone?: StateTone;
+}) {
+  return (
+    <section className={joinClasses('erp-state-banner', className)} data-tone={tone} role={tone === 'danger' ? 'alert' : 'status'}>
+      <div className="erp-state-marker" aria-hidden="true" />
+      <div className="erp-state-copy">
+        <h2>{title}</h2>
+        {message ? <p>{message}</p> : null}
+        {children}
+      </div>
+      {action ? <div className="erp-state-action">{action}</div> : null}
+    </section>
+  );
+}
+
+export function ErpFormSection({
+  actions,
+  children,
+  className,
+  description,
+  title,
+}: {
+  actions?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  description?: ReactNode;
+  title?: ReactNode;
+}) {
+  return (
+    <section className={joinClasses('erp-form-section', className)}>
+      {title || description ? (
+        <header className="erp-form-section-header">
+          {title ? <h3>{title}</h3> : null}
+          {description ? <p>{description}</p> : null}
+        </header>
+      ) : null}
+      <div className="erp-form-section-body">{children}</div>
+      {actions ? <div className="erp-form-section-actions">{actions}</div> : null}
+    </section>
   );
 }

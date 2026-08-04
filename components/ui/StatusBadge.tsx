@@ -103,5 +103,13 @@ export function StatusBadge({ value, label, tone }: { value: string; label?: str
   const normalized = value.toLowerCase();
   const resolvedTone = tone ?? statusTones[normalized] ?? 'neutral';
 
-  return <span className={`status-badge status-${resolvedTone}`}>{label ?? formatStatus(value)}</span>;
+  return (
+    <span
+      className={`status-badge status-${resolvedTone}`}
+      data-tone={resolvedTone}
+      data-value={normalized}
+    >
+      {label ?? formatStatus(value)}
+    </span>
+  );
 }

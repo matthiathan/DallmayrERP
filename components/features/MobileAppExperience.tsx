@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import type { BusinessRole, UserDetails } from '@/types/dallmayrerp';
 
 type AlertTone = 'critical' | 'warning' | 'info';
 
@@ -26,6 +27,7 @@ type ExceptionRow = {
   severity: string;
   status: string;
   branch: string;
+  source_href: string | null;
   last_seen_at: string;
 };
 
@@ -39,6 +41,35 @@ type ServiceJobRow = {
   created_at: string;
 };
 
+type WorkItemRow = {
+  id: string;
+  work_number: string;
+  title: string;
+  work_type: string;
+  priority: string;
+  status: string;
+  branch: string;
+  due_at: string | null;
+  sla_due_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type ContractRenewalRow = {
+  branch: string;
+  contract_number: string | null;
+  customer_code: string | null;
+  customer_name: string | null;
+  agreement_type: string | null;
+  salesman: string | null;
+  end_date_text: string | null;
+  days_to_expire: number | null;
+  renewal_window: string;
+  total_count: number;
+};
+
+type DesktopPermissionState = NotificationPermission | 'unsupported';
+
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
@@ -46,13 +77,17 @@ type InstallPromptEvent = Event & {
 
 const POLL_INTERVAL_MS = 120_000;
 const READ_KEY_PREFIX = 'dallmayr-mobile-alerts-read-v1';
+const NOTIFIED_KEY_PREFIX = 'dallmayr-desktop-alerts-notified-v1';
+const DESKTOP_ENABLED_KEY_PREFIX = 'dallmayr-desktop-notifications-enabled-v1';
 const exceptionRoles = new Set(['admin', 'operations', 'executive', 'warehouse_staff', 'finance']);
 const fieldRoles = new Set(['technician', 'road_technician']);
+const contractRoles = new Set(['admin', 'executive', 'operations', 'sales', 'marketing']);
 const severityOrder: Record<string, number> = { critical: 0, high: 1, warning: 2, info: 3 };
+const openWorkStatuses = ['new', 'triaged', 'assigned', 'in_progress', 'blocked', 'waiting_approval'];
 
-function readIds(userId: string) {
+function readStoredIds(prefix: string, userId: string) {
   try {
-    const raw = window.localStorage.getItem(`${READ_KEY_PREFIX}:${userId}`);
+    const raw = window.localStorage.getItem(`${prefix}:${userId}`);
     const parsed = raw ? JSON.parse(raw) as unknown : [];
     return new Set(Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []);
   } catch {
@@ -60,8 +95,24 @@ function readIds(userId: string) {
   }
 }
 
+function writeStoredIds(prefix: string, userId: string, ids: Set<string>) {
+  window.localStorage.setItem(`${prefix}:${userId}`, JSON.stringify(Array.from(ids).slice(-250)));
+}
+
+function readIds(userId: string) {
+  return readStoredIds(READ_KEY_PREFIX, userId);
+}
+
 function writeIds(userId: string, ids: Set<string>) {
-  window.localStorage.setItem(`${READ_KEY_PREFIX}:${userId}`, JSON.stringify(Array.from(ids).slice(-250)));
+  writeStoredIds(READ_KEY_PREFIX, userId, ids);
+}
+
+function readDesktopEnabled(userId: string) {
+  return window.localStorage.getItem(`${DESKTOP_ENABLED_KEY_PREFIX}:${userId}`) === 'true';
+}
+
+function writeDesktopEnabled(userId: string, enabled: boolean) {
+  window.localStorage.setItem(`${DESKTOP_ENABLED_KEY_PREFIX}:${userId}`, String(enabled));
 }
 
 function formatRelative(value: string) {
@@ -85,6 +136,38 @@ function dueLabel(value: string | null) {
   return hours < 24 ? `Due in ${Math.max(1, hours)}h` : `Due in ${Math.round(hours / 24)}d`;
 }
 
+function alertBranch(userDetails: UserDetails, role: BusinessRole) {
+  return userDetails.branch === 'national' || role === 'admin' || role === 'executive' ? 'all' : userDetails.branch;
+}
+
+function contractHref(role: BusinessRole) {
+  if (role === 'sales') return '/sales';
+  if (role === 'executive') return '/executive/contracts';
+  return '/marketing/contract-renewals';
+}
+
+function appHref(href: string | null | undefined, fallback = '/') {
+  if (!href) return fallback;
+
+  try {
+    const url = new URL(href, 'https://dallmayr.local');
+    if (url.origin !== 'https://dallmayr.local') return fallback;
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return fallback;
+  }
+}
+
+function alertTimestamp(...values: Array<string | null | undefined>) {
+  return values.find((value) => value && Number.isFinite(new Date(value).getTime())) ?? new Date().toISOString();
+}
+
+function alertTargetHref(href: string) {
+  const safeHref = appHref(href);
+  if (typeof window === 'undefined') return safeHref;
+  return new URL(safeHref, window.location.origin).href;
+}
+
 function standaloneMode() {
   const mobileNavigator = navigator as Navigator & { standalone?: boolean };
   return window.matchMedia('(display-mode: standalone)').matches || mobileNavigator.standalone === true;
@@ -94,9 +177,11 @@ export function MobileAppExperience() {
   const pathname = usePathname();
   const { businessUser, userDetails } = useAuth();
   const userId = businessUser?.id ?? '';
-  const role = userDetails?.role ?? '';
+  const role = userDetails?.role;
   const [alerts, setAlerts] = useState<AppAlert[]>([]);
   const [read, setRead] = useState<Set<string>>(new Set());
+  const [desktopPermission, setDesktopPermission] = useState<DesktopPermissionState>('unsupported');
+  const [desktopEnabled, setDesktopEnabled] = useState(false);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [online, setOnline] = useState(true);
@@ -110,6 +195,7 @@ export function MobileAppExperience() {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const notifiedRef = useRef<Set<string>>(new Set());
 
   const unreadCount = useMemo(() => alerts.filter((item) => !read.has(item.id)).length, [alerts, read]);
 
@@ -135,13 +221,41 @@ export function MobileAppExperience() {
   }, []);
 
   const loadAlerts = useCallback(async () => {
-    if (!userId || !userDetails || !navigator.onLine) return;
+    if (!userId || !userDetails || !role || !navigator.onLine) return;
     setLoading(true);
     setError('');
     const client = getSupabaseClient();
     const next: AppAlert[] = [];
 
     try {
+      const { data: workItems, error: workError } = await client
+        .from('work_items')
+        .select('id, work_number, title, work_type, priority, status, branch, due_at, sla_due_at, created_at, updated_at')
+        .eq('assigned_to', userId)
+        .in('status', openWorkStatuses)
+        .order('updated_at', { ascending: false })
+        .limit(40);
+      if (workError) throw workError;
+
+      ((workItems ?? []) as WorkItemRow[]).forEach((item) => {
+        const targetAt = item.sla_due_at ?? item.due_at;
+        const targetTime = targetAt ? new Date(targetAt).getTime() : Number.POSITIVE_INFINITY;
+        const overdue = Number.isFinite(targetTime) && targetTime < Date.now();
+        const priority = item.priority.toLowerCase();
+        const highPriority = ['high', 'urgent', 'critical'].includes(priority);
+        const newWork = item.status === 'new' || item.status === 'assigned';
+
+        next.push({
+          id: `work:${item.id}:${item.status}:${item.updated_at}`,
+          title: `${item.work_number} - ${newWork ? 'New assigned task' : item.status.replace(/_/g, ' ')}`,
+          body: `${item.title}. ${dueLabel(targetAt)}.`,
+          href: `/work/${item.id}`,
+          tone: overdue ? 'critical' : highPriority ? 'warning' : 'info',
+          occurredAt: alertTimestamp(item.updated_at, item.created_at),
+          source: `${item.work_type.replace(/_/g, ' ')} - ${item.branch.toUpperCase()}`,
+        });
+      });
+
       if (fieldRoles.has(role)) {
         const { data, error: jobError } = await client
           .from('service_jobs')
@@ -170,7 +284,41 @@ export function MobileAppExperience() {
         });
       }
 
+      if (contractRoles.has(role)) {
+        const branch = alertBranch(userDetails, role);
+        const { data, error: contractError } = await client.rpc('search_contract_renewals', {
+          p_search: null,
+          p_branch: branch,
+          p_salesman: 'all',
+          p_window: 'overdue',
+          p_offset: 0,
+          p_limit: 8,
+        });
+        if (contractError) throw contractError;
+
+        const rows = (data ?? []) as ContractRenewalRow[];
+        const total = Number(rows[0]?.total_count ?? rows.length);
+        const first = rows[0];
+
+        if (total > 0) {
+          next.push({
+            id: `contracts:overdue:${branch}:${total}:${first?.contract_number ?? first?.customer_code ?? first?.customer_name ?? 'unknown'}`,
+            title: `${total.toLocaleString('en-ZA')} expired contract${total === 1 ? '' : 's'} need review`,
+            body: first
+              ? `${first.customer_name ?? 'A customer'}${first.contract_number ? ` - ${first.contract_number}` : ''}${first.end_date_text ? ` expired ${first.end_date_text}` : ' is past renewal date'}.`
+              : 'Open the renewal workspace to review expired customer agreements.',
+            href: contractHref(role),
+            tone: 'critical',
+            occurredAt: new Date().toISOString(),
+            source: 'Contract renewals',
+          });
+        }
+      }
+
       if (exceptionRoles.has(role)) {
+        const { error: syncError } = await client.rpc('sync_operational_exceptions');
+        if (syncError) throw syncError;
+
         const allBranches = userDetails.branch === 'national' || role === 'admin' || role === 'executive';
         const { data, error: exceptionError } = await client.rpc('list_exception_cases', {
           p_branch: allBranches ? 'all' : userDetails.branch,
@@ -187,7 +335,7 @@ export function MobileAppExperience() {
               id: `exception:${item.id}:${item.status}:${item.last_seen_at}`,
               title: item.title,
               body: `${item.detail ?? 'Operational exception requires review.'} · ${item.branch.toUpperCase()}`,
-              href: `/operations/exceptions?case=${encodeURIComponent(item.id)}`,
+              href: appHref(item.source_href, `/operations/exceptions?case=${encodeURIComponent(item.id)}`),
               tone: ['critical', 'high'].includes(item.severity) ? 'critical' : item.severity === 'warning' ? 'warning' : 'info',
               occurredAt: item.last_seen_at,
               source: `Exception · ${item.status.replace(/_/g, ' ')}`,
@@ -213,16 +361,65 @@ export function MobileAppExperience() {
     if (!userId) {
       setRead(new Set<string>());
       setAlerts([]);
+      setDesktopEnabled(false);
+      setDesktopPermission('unsupported');
+      notifiedRef.current = new Set<string>();
       return;
     }
+
+    const permission: DesktopPermissionState = 'Notification' in window ? Notification.permission : 'unsupported';
+    const enabled = permission === 'granted' && readDesktopEnabled(userId);
+
     setRead(readIds(userId));
+    setDesktopPermission(permission);
+    setDesktopEnabled(enabled);
+    notifiedRef.current = readStoredIds(NOTIFIED_KEY_PREFIX, userId);
     void loadAlerts();
   }, [loadAlerts, userId]);
 
   useEffect(() => {
+    if (!userId || open || !desktopEnabled || desktopPermission !== 'granted' || !('Notification' in window)) return;
+
+    const candidates = alerts
+      .filter((item) => !read.has(item.id) && !notifiedRef.current.has(item.id))
+      .slice(0, 4);
+
+    if (!candidates.length) return;
+
+    const nextNotified = new Set(notifiedRef.current);
+
+    candidates.forEach((item) => {
+      const options: NotificationOptions = {
+        body: item.body,
+        badge: '/icons/dallmayr-app.svg',
+        data: { href: alertTargetHref(item.href) },
+        icon: '/icons/dallmayr-app.svg',
+        requireInteraction: item.tone === 'critical',
+        tag: item.id,
+      };
+
+      if (registration?.showNotification) {
+        void registration.showNotification(item.title, options);
+      } else {
+        const notification = new Notification(item.title, options);
+        notification.onclick = () => {
+          window.focus();
+          window.location.assign(item.href);
+          notification.close();
+        };
+      }
+
+      nextNotified.add(item.id);
+    });
+
+    notifiedRef.current = nextNotified;
+    writeStoredIds(NOTIFIED_KEY_PREFIX, userId, nextNotified);
+  }, [alerts, desktopEnabled, desktopPermission, open, read, registration, userId]);
+
+  useEffect(() => {
     if (!userId) return;
     const interval = window.setInterval(() => {
-      if (document.visibilityState === 'visible') void loadAlerts();
+      if (document.visibilityState === 'visible' || desktopEnabled) void loadAlerts();
     }, POLL_INTERVAL_MS);
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') void loadAlerts();
@@ -232,7 +429,7 @@ export function MobileAppExperience() {
       window.clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [loadAlerts, userId]);
+  }, [desktopEnabled, loadAlerts, userId]);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -349,6 +546,56 @@ export function MobileAppExperience() {
     setRead(next);
   }
 
+  async function enableDesktopNotifications() {
+    if (!userId) return;
+
+    if (!('Notification' in window)) {
+      setDesktopPermission('unsupported');
+      setDesktopEnabled(false);
+      setError('Desktop notifications are not supported by this browser.');
+      return;
+    }
+
+    const permission = Notification.permission === 'granted'
+      ? 'granted'
+      : await Notification.requestPermission();
+
+    setDesktopPermission(permission);
+
+    if (permission !== 'granted') {
+      writeDesktopEnabled(userId, false);
+      setDesktopEnabled(false);
+      setError(permission === 'denied'
+        ? 'Desktop notifications are blocked. Enable notifications for this site in your browser settings.'
+        : 'Desktop notifications were not enabled.');
+      return;
+    }
+
+    writeDesktopEnabled(userId, true);
+    setDesktopEnabled(true);
+    setError('');
+
+    const notificationOptions: NotificationOptions = {
+      body: 'You will be notified about expired contracts, new assigned tasks and urgent operational alerts while DallmayrERP is open.',
+      badge: '/icons/dallmayr-app.svg',
+      data: { href: alertTargetHref('/work') },
+      icon: '/icons/dallmayr-app.svg',
+      tag: 'dallmayrerp-desktop-enabled',
+    };
+
+    if (registration?.showNotification) {
+      await registration.showNotification('DallmayrERP desktop alerts enabled', notificationOptions);
+    } else {
+      new Notification('DallmayrERP desktop alerts enabled', notificationOptions);
+    }
+  }
+
+  function disableDesktopNotifications() {
+    if (!userId) return;
+    writeDesktopEnabled(userId, false);
+    setDesktopEnabled(false);
+  }
+
   async function installApplication() {
     if (!installPrompt) return;
     await installPrompt.prompt();
@@ -364,6 +611,15 @@ export function MobileAppExperience() {
 
   const showInstall = !installed && Boolean(installPrompt);
   const showIosHelp = !installed && !installPrompt && ios;
+  const desktopSupported = desktopPermission !== 'unsupported';
+  const desktopBlocked = desktopPermission === 'denied';
+  const desktopStatus = !desktopSupported
+    ? 'Unsupported'
+    : desktopEnabled
+      ? 'On'
+      : desktopBlocked
+        ? 'Blocked'
+        : 'Off';
 
   const unreadAlerts = alerts.filter((item) => !read.has(item.id));
   const earlierAlerts = alerts.filter((item) => read.has(item.id));
@@ -431,12 +687,18 @@ export function MobileAppExperience() {
           <div className="notification-inbox-status">
             <div className={online ? 'is-online' : 'is-offline'}><span /> <strong>{online ? 'Online' : 'Offline'}</strong></div>
             <div><strong>{installed ? 'Installed app' : 'Browser mode'}</strong></div>
+            <div><strong>Desktop alerts</strong><span>{desktopStatus}</span></div>
             {updateReady ? <button onClick={applyUpdate} type="button">Update ready</button> : null}
           </div>
 
           <div className="notification-inbox-toolbar">
             <div><strong>{unreadCount} unread</strong><span>{alerts.length} current notifications</span></div>
             <div>
+              {desktopEnabled ? (
+                <button onClick={disableDesktopNotifications} type="button">Pause desktop alerts</button>
+              ) : (
+                <button disabled={!desktopSupported || desktopBlocked} onClick={() => void enableDesktopNotifications()} type="button">Enable desktop alerts</button>
+              )}
               <button disabled={loading || !online} onClick={() => void loadAlerts()} type="button">{loading ? 'Refreshing…' : 'Refresh'}</button>
               <button disabled={!unreadCount} onClick={markAllRead} type="button">Mark all read</button>
             </div>
@@ -444,7 +706,7 @@ export function MobileAppExperience() {
 
           {error ? <div className="notification-inbox-error" role="alert">{error}</div> : null}
           {!error && alerts.length === 0 ? (
-            <div className="notification-inbox-empty"><span aria-hidden="true">✓</span><strong>You are up to date</strong><p>New assigned jobs and operational exceptions will appear here.</p></div>
+            <div className="notification-inbox-empty"><span aria-hidden="true">✓</span><strong>You are up to date</strong><p>Expired contracts, assigned tasks and operational exceptions will appear here.</p></div>
           ) : null}
 
           <div className="notification-inbox-content">

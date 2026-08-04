@@ -69,13 +69,13 @@ export function MobileRecordList<T>({
   );
 
   return (
-    <div aria-busy={loading} className="mobile-record-list">
+    <div aria-busy={loading} aria-label="Records" className="mobile-record-list" role="list">
       {rows.length === 0 ? (
-        <div className="mobile-record-empty" role="status">
-          {loading ? 'Loading records…' : emptyMessage}
+        <div aria-live="polite" className="mobile-record-empty" role="status">
+          {loading ? 'Loading records...' : emptyMessage}
         </div>
       ) : rows.map((row) => (
-        <article className="mobile-record-card" key={rowKey(row)}>
+        <article className="mobile-record-card" key={rowKey(row)} role="listitem">
           {titleColumn ? (
             <header className="mobile-record-card-title">
               <span>{titleColumn.mobileLabel ?? titleColumn.header}</span>
@@ -106,7 +106,7 @@ export function MobileFilterChips({ chips }: { chips: MobileFilterChip[] }) {
       {chips.map((chip) => (
         <button aria-label={`Remove ${chip.label} filter`} key={chip.id} onClick={chip.onRemove} type="button">
           <span>{chip.label}</span>
-          <span aria-hidden="true">×</span>
+          <span aria-hidden="true">&times;</span>
         </button>
       ))}
     </div>
@@ -196,7 +196,7 @@ export function MobileFilterSheet({
             <span>{activeCount > 0 ? `${activeCount} active` : 'No active filters'}</span>
             <h2 id="mobile-filter-sheet-title">{title}</h2>
           </div>
-          <button aria-label="Close filters" className="mobile-filter-sheet-close" onClick={onClose} ref={closeButtonRef} type="button">×</button>
+          <button aria-label="Close filters" className="mobile-filter-sheet-close" onClick={onClose} ref={closeButtonRef} type="button">&times;</button>
         </header>
         <div className="mobile-filter-sheet-body">{children}</div>
         <footer className="mobile-filter-sheet-footer">

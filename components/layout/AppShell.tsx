@@ -9,6 +9,7 @@ import { DesktopNavigationRail } from '@/components/layout/DesktopNavigationRail
 import { MobileNavigationDrawer, MobileQuickBar } from '@/components/layout/MobileNavigation';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { DensityToggle } from '@/components/ui/DensityToggle';
+import { ErpStateBanner } from '@/components/ui/ErpLayout';
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import {
@@ -340,14 +341,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main className="main top-main application-main" id="main-content" tabIndex={-1}>
         {!allowedPath ? (
-          <div className="neo-card access-denied" role="alert">
-            <div className="badge danger">Access blocked</div>
-            <h1>This page is not assigned to your role.</h1>
-            <p>
-              Your current role is <strong>{roleLabels[userDetails.role]}</strong>. Use the navigation menu to open your assigned pages.
-            </p>
-            <Link className="button" href={homePath}>Go to Today</Link>
-          </div>
+          <ErpStateBanner
+            action={<Link className="button" href={homePath}>Go to Today</Link>}
+            className="access-denied"
+            message={<>Your current role is <strong>{roleLabels[userDetails.role]}</strong>. Use the navigation menu to open your assigned pages.</>}
+            title="This page is not assigned to your role."
+            tone="danger"
+          />
         ) : (
           <>
             <Breadcrumbs />

@@ -1,4 +1,4 @@
-const STATIC_CACHE = 'dallmayr-erp-static-v1';
+const STATIC_CACHE = 'dallmayr-erp-static-v2';
 const STATIC_ASSETS = [
   '/offline.html',
   '/icons/dallmayr-app.svg',
@@ -19,6 +19,44 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const href = event.notification.data?.href || '/';
+  let targetUrl = new URL('/', self.location.origin).href;
+
+  try {
+    const url = new URL(href, self.location.origin);
+    if (url.origin === self.location.origin) targetUrl = url.href;
+  } catch {
+    targetUrl = new URL('/', self.location.origin).href;
+  }
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      const sameOriginClient = clients.find((client) => {
+        try {
+          return new URL(client.url).origin === self.location.origin;
+        } catch {
+          return false;
+        }
+      });
+
+      if (sameOriginClient) {
+        if ('navigate' in sameOriginClient) {
+          return sameOriginClient.navigate(targetUrl).then((client) => (
+            client ? client.focus() : self.clients.openWindow(targetUrl)
+          ));
+        }
+
+        return sameOriginClient.focus();
+      }
+
+      return self.clients.openWindow(targetUrl);
+    }),
+  );
 });
 
 self.addEventListener('fetch', (event) => {
