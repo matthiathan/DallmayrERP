@@ -46,6 +46,15 @@ The future application route must remain disabled unless `NEXT_PUBLIC_INTERNAL_M
 - typing state expires and is never persisted
 - Presence contains no message bodies or sensitive record data
 
+## Static review status
+
+The revised SQL draft has passed application CI but is not migration-ready. The following PostgreSQL-specific corrections remain mandatory:
+
+1. The RLS helper is stored in the private schema. Authenticated policy evaluation must be given only the minimum schema/function privileges required to resolve and execute it, while keeping the schema outside the exposed Data API.
+2. The composite foreign key from `(thread_id, last_read_message_id)` to `messages(thread_id, id)` must use a delete action that nulls only `last_read_message_id`. A generic composite `ON DELETE SET NULL` can attempt to null the non-null `thread_id` and break message deletion.
+3. The direct-thread creation RPC and its concurrency behaviour must be implemented and reviewed before the schema can satisfy the idempotent direct-conversation requirement.
+4. Authenticated-role RLS tests are still required; GitHub application CI does not execute this SQL against Postgres.
+
 ## Rollout gate
 
 Do not convert the SQL draft into a production migration until:
@@ -56,6 +65,7 @@ Do not convert the SQL draft into a production migration until:
 4. A disabled feature flag is present in the application.
 5. A rollback migration has been prepared.
 6. CI and staged browser tests pass.
+7. The remaining static review blockers above are resolved.
 
 ## Context-aware messaging
 
