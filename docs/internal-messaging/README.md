@@ -66,7 +66,7 @@ The live Supabase project reports PostgreSQL 17.6, which supports the column-spe
 
 ## Remaining execution gate
 
-The design is still not approved for production deployment. Before conversion into a migration it must be executed and tested in disposable/local Postgres. This chat does not have an accepted local Work environment, so those tests have been specified but not run.
+The design is still not approved for production deployment. Before conversion into a migration it must be executed and tested in disposable/local Postgres. The current chat session does not have an accepted local Work environment, so those tests have been fully specified but not executed.
 
 After disposable execution:
 
