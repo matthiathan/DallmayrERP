@@ -42,12 +42,6 @@ const operationsNavigationOnly: BusinessRole[] = ['operations'];
 
 export const navSections: NavSection[] = [
   {
-    heading: 'Messaging',
-    items: [
-      { href: '/messages', label: 'Messages', code: 'MSG01', roles: 'all', description: 'Internal company messaging with images, documents, replies and read status.' },
-    ],
-  },
-  {
     heading: 'Operations',
     items: [
       { href: '/workspace', label: 'Today', code: 'OPH01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Role priorities, urgent signals and pinned pages.' },
@@ -197,7 +191,6 @@ export const navSections: NavSection[] = [
 ];
 
 export function isNavItemAllowed(role: BusinessRole, item: NavItem) {
-  if (item.href === '/messages') return item.roles === 'all' || item.roles.includes(role) || role === 'admin';
   if (item.navigationOnlyFor) return item.navigationOnlyFor.includes(role);
   if (role === 'operations') return false;
   return item.roles === 'all' || item.roles.includes(role) || role === 'admin';

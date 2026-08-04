@@ -30,15 +30,15 @@ const RAIL_COLLAPSED_KEY = 'dallmayr-desktop-rail-collapsed-v1';
 const MAX_FAVORITES = 4;
 
 const sectionOrderByRole: Record<BusinessRole, string[]> = {
-  admin: ['Messaging', 'System', 'Transactions', 'Masters', 'Fixed Assets', 'Sales', 'Reports', 'Batch Reports', 'Utilities'],
-  operations: ['Messaging', 'Operations', 'Assets & Maintenance', 'Inventory', 'Reports'],
-  sales: ['Messaging', 'Sales', 'Masters', 'Transactions', 'Reports', 'Utilities'],
-  finance: ['Messaging', 'Sales', 'Transactions', 'Masters', 'Reports', 'Batch Reports', 'Utilities'],
-  marketing: ['Messaging', 'Sales', 'Masters', 'Reports', 'Batch Reports', 'Transactions', 'Utilities'],
-  executive: ['Messaging', 'Reports', 'Transactions', 'Fixed Assets', 'Masters', 'Sales', 'Batch Reports', 'Utilities'],
-  warehouse_staff: ['Messaging', 'Transactions', 'Masters', 'Reports', 'Batch Reports', 'Utilities'],
-  technician: ['Messaging', 'Transactions', 'Fixed Assets', 'Masters', 'Utilities'],
-  road_technician: ['Messaging', 'Transactions', 'Fixed Assets', 'Masters', 'Utilities'],
+  admin: ['System', 'Transactions', 'Masters', 'Fixed Assets', 'Sales', 'Reports', 'Batch Reports', 'Utilities'],
+  operations: ['Operations', 'Assets & Maintenance', 'Inventory', 'Reports'],
+  sales: ['Sales', 'Masters', 'Transactions', 'Reports', 'Utilities'],
+  finance: ['Sales', 'Transactions', 'Masters', 'Reports', 'Batch Reports', 'Utilities'],
+  marketing: ['Sales', 'Masters', 'Reports', 'Batch Reports', 'Transactions', 'Utilities'],
+  executive: ['Reports', 'Transactions', 'Fixed Assets', 'Masters', 'Sales', 'Batch Reports', 'Utilities'],
+  warehouse_staff: ['Transactions', 'Masters', 'Reports', 'Batch Reports', 'Utilities'],
+  technician: ['Transactions', 'Fixed Assets', 'Masters', 'Utilities'],
+  road_technician: ['Transactions', 'Fixed Assets', 'Masters', 'Utilities'],
 };
 
 const primaryPathCandidates: Record<BusinessRole, string[]> = {
@@ -269,15 +269,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="application-header-actions">
-            <Link
-              aria-current={isActivePath(pathname, '/messages') ? 'page' : undefined}
-              aria-label="Open Messages"
-              className={`application-message-link ${isActivePath(pathname, '/messages') ? 'is-active' : ''}`}
-              href="/messages"
-            >
-              <span aria-hidden="true">M</span>
-              <strong>Messages</strong>
-            </Link>
             <DensityToggle />
             <div className="desktop-alerts-target" id="desktop-alerts-target" />
             <div className="desktop-account-menu-target" id="desktop-account-menu-target" />
