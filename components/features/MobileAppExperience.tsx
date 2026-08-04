@@ -68,6 +68,19 @@ type ContractRenewalRow = {
   total_count: number;
 };
 
+type MessageThreadAlertRow = {
+  id: string;
+  title: string;
+  last_message_at: string | null;
+  updated_at: string;
+  last_message_body: string | null;
+  last_message_sender_name: string | null;
+  last_message_created_at: string | null;
+  unread_count: number;
+  is_muted?: boolean;
+  archived_at?: string | null;
+};
+
 type DesktopPermissionState = NotificationPermission | 'unsupported';
 
 type InstallPromptEvent = Event & {
@@ -256,6 +269,28 @@ export function MobileAppExperience() {
         });
       });
 
+      const { data: messageThreads, error: messageError } = await client.rpc('list_message_threads');
+      if (!messageError) {
+        ((messageThreads ?? []) as MessageThreadAlertRow[])
+          .filter((thread) => Number(thread.unread_count ?? 0) > 0 && !thread.is_muted && !thread.archived_at)
+          .slice(0, 20)
+          .forEach((thread) => {
+            const unread = Number(thread.unread_count ?? 0);
+            const sender = thread.last_message_sender_name ?? 'A colleague';
+            const preview = thread.last_message_body?.trim() || 'Sent an attachment.';
+            const occurredAt = alertTimestamp(thread.last_message_created_at, thread.last_message_at, thread.updated_at);
+            next.push({
+              id: `message:${thread.id}:${occurredAt}:${unread}`,
+              title: `${unread} unread message${unread === 1 ? '' : 's'} in ${thread.title}`,
+              body: `${sender}: ${preview}`,
+              href: `/messages?thread=${encodeURIComponent(thread.id)}`,
+              tone: unread >= 5 ? 'warning' : 'info',
+              occurredAt,
+              source: 'Internal messages',
+            });
+          });
+      }
+
       if (fieldRoles.has(role)) {
         const { data, error: jobError } = await client
           .from('service_jobs')
@@ -432,6 +467,27 @@ export function MobileAppExperience() {
   }, [desktopEnabled, loadAlerts, userId]);
 
   useEffect(() => {
+    if (!userId) return;
+    const client = getSupabaseClient();
+    const channel = client
+      .channel(`dallmayr-alert-watch-${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
+        void loadAlerts();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'message_thread_participants' }, () => {
+        void loadAlerts();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'work_items', filter: `assigned_to=eq.${userId}` }, () => {
+        void loadAlerts();
+      })
+      .subscribe();
+
+    return () => {
+      void client.removeChannel(channel);
+    };
+  }, [loadAlerts, userId]);
+
+  useEffect(() => {
     const handleOnline = () => {
       setOnline(true);
       void loadAlerts();
@@ -576,7 +632,7 @@ export function MobileAppExperience() {
     setError('');
 
     const notificationOptions: NotificationOptions = {
-      body: 'You will be notified about expired contracts, new assigned tasks and urgent operational alerts while DallmayrERP is open.',
+      body: 'You will be notified about expired contracts, new assigned tasks, unread messages and urgent operational alerts while DallmayrERP is open.',
       badge: '/icons/dallmayr-app.svg',
       data: { href: alertTargetHref('/work') },
       icon: '/icons/dallmayr-app.svg',
@@ -706,7 +762,7 @@ export function MobileAppExperience() {
 
           {error ? <div className="notification-inbox-error" role="alert">{error}</div> : null}
           {!error && alerts.length === 0 ? (
-            <div className="notification-inbox-empty"><span aria-hidden="true">✓</span><strong>You are up to date</strong><p>Expired contracts, assigned tasks and operational exceptions will appear here.</p></div>
+            <div className="notification-inbox-empty"><span aria-hidden="true">✓</span><strong>You are up to date</strong><p>Expired contracts, assigned tasks, unread messages and operational exceptions will appear here.</p></div>
           ) : null}
 
           <div className="notification-inbox-content">

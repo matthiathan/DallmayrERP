@@ -246,6 +246,74 @@ html[data-visual-theme] body .desktop-account-menu-target {
   overflow: visible !important;
 }
 
+html[data-visual-theme] body .application-message-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  min-width: 112px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.32) !important;
+  border-radius: var(--erp-workbench-radius) !important;
+  background: rgba(0, 0, 0, 0.14) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: none !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+}
+
+html[data-visual-theme] body .application-message-link > span {
+  display: grid !important;
+  place-items: center !important;
+  width: 22px !important;
+  height: 22px !important;
+  flex: 0 0 22px !important;
+  border-radius: 6px !important;
+  background: #ffffff !important;
+  color: var(--erp-workbench-blue-dark) !important;
+  -webkit-text-fill-color: var(--erp-workbench-blue-dark) !important;
+  font-size: 0.74rem !important;
+  font-weight: 900 !important;
+}
+
+html[data-visual-theme] body .application-message-link > strong {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-size: 0.82rem !important;
+  font-weight: 830 !important;
+  line-height: 1 !important;
+}
+
+html[data-visual-theme] body .application-message-link:hover,
+html[data-visual-theme] body .application-message-link:focus-visible,
+html[data-visual-theme] body .application-message-link.is-active,
+html[data-visual-theme] body .application-message-link[aria-current='page'] {
+  border-color: #ffffff !important;
+  background: #ffffff !important;
+  color: var(--erp-workbench-blue-dark) !important;
+  -webkit-text-fill-color: var(--erp-workbench-blue-dark) !important;
+}
+
+html[data-visual-theme] body .application-message-link:hover > strong,
+html[data-visual-theme] body .application-message-link:focus-visible > strong,
+html[data-visual-theme] body .application-message-link.is-active > strong,
+html[data-visual-theme] body .application-message-link[aria-current='page'] > strong {
+  color: var(--erp-workbench-blue-dark) !important;
+  -webkit-text-fill-color: var(--erp-workbench-blue-dark) !important;
+}
+
+html[data-visual-theme] body .application-message-link:hover > span,
+html[data-visual-theme] body .application-message-link:focus-visible > span,
+html[data-visual-theme] body .application-message-link.is-active > span,
+html[data-visual-theme] body .application-message-link[aria-current='page'] > span {
+  background: var(--erp-workbench-blue-dark) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
 html[data-visual-theme] body .application-header-actions .density-toggle {
   display: flex !important;
   align-items: center !important;

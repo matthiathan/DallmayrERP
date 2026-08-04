@@ -1,6 +1,7 @@
 'use client';
 
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErpPage, ErpPageHeader, ErpStateBanner } from '@/components/ui/ErpLayout';
@@ -31,6 +32,10 @@ type ThreadRow = {
   last_message_created_at: string | null;
   unread_count: number;
   participant_names: string | null;
+  is_muted: boolean;
+  archived_at: string | null;
+  pinned_count: number;
+  saved_count: number;
 };
 
 type MessageAttachment = {
@@ -50,10 +55,34 @@ type MessageRow = {
   sender_name: string;
   body: string | null;
   message_type: 'text' | 'image' | 'document' | 'mixed' | 'system';
+  reply_to_message_id: string | null;
+  reply_to_body: string | null;
+  reply_to_sender_name: string | null;
   created_at: string;
   edited_at: string | null;
   deleted_at: string | null;
+  read_by_count: number;
+  read_by_names: string | null;
+  saved_by_me: boolean;
+  pinned_at: string | null;
+  pinned_by_name: string | null;
+  reactions: MessageReaction[];
   attachments: MessageAttachment[];
+};
+
+type MessageReaction = {
+  reaction: ReactionKey;
+  count: number;
+  reacted_by_me: boolean;
+};
+
+type ReactionKey = 'thumbs_up' | 'check' | 'eyes' | 'heart' | 'urgent';
+
+type PresencePayload = {
+  user_id?: string;
+  display_name?: string;
+  typing?: boolean;
+  online_at?: string;
 };
 
 const ATTACHMENT_BUCKET = 'dallmayrerp-message-attachments';
@@ -85,6 +114,21 @@ const ACCEPT_ATTRIBUTE = [
   '.txt',
   '.csv',
 ].join(',');
+const reactionLabels: Record<ReactionKey, string> = {
+  thumbs_up: 'Like',
+  check: 'Done',
+  eyes: 'Seen',
+  heart: 'Appreciate',
+  urgent: 'Urgent',
+};
+const reactionGlyphs: Record<ReactionKey, string> = {
+  thumbs_up: '+1',
+  check: 'OK',
+  eyes: 'View',
+  heart: 'Love',
+  urgent: '!',
+};
+const reactionOptions = Object.keys(reactionLabels) as ReactionKey[];
 
 function formatRelative(value: string | null) {
   if (!value) return 'No activity';
@@ -157,6 +201,30 @@ function parseAttachments(value: unknown): MessageAttachment[] {
     .filter((item): item is MessageAttachment => Boolean(item));
 }
 
+function parseReactions(value: unknown): MessageReaction[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null;
+      const record = item as Record<string, unknown>;
+      if (
+        typeof record.reaction !== 'string'
+        || !reactionOptions.includes(record.reaction as ReactionKey)
+        || typeof record.count !== 'number'
+        || typeof record.reacted_by_me !== 'boolean'
+      ) {
+        return null;
+      }
+
+      return {
+        reaction: record.reaction as ReactionKey,
+        count: record.count,
+        reacted_by_me: record.reacted_by_me,
+      };
+    })
+    .filter((item): item is MessageReaction => Boolean(item));
+}
+
 function messagePreview(thread: ThreadRow) {
   if (thread.last_message_body) return thread.last_message_body;
   if (!thread.last_message_at) return 'No messages yet';
@@ -171,6 +239,21 @@ function threadSearchText(thread: ThreadRow) {
   return `${thread.title} ${thread.participant_names ?? ''} ${thread.last_message_body ?? ''}`.toLowerCase();
 }
 
+function messageSearchText(message: MessageRow) {
+  return [
+    message.sender_name,
+    message.body,
+    message.reply_to_body,
+    message.attachments.map((attachment) => attachment.file_name).join(' '),
+  ].filter(Boolean).join(' ').toLowerCase();
+}
+
+function deliveryLabel(message: MessageRow, mine: boolean) {
+  if (!mine || message.message_type === 'system') return '';
+  if (message.read_by_count > 0) return `Read by ${message.read_by_names ?? `${message.read_by_count} colleague${message.read_by_count === 1 ? '' : 's'}`}`;
+  return 'Sent';
+}
+
 export function InternalMessagingWorkspace() {
   const { businessUser, userDetails } = useAuth();
   const [users, setUsers] = useState<DirectoryUser[]>([]);
@@ -178,11 +261,18 @@ export function InternalMessagingWorkspace() {
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [threadSearch, setThreadSearch] = useState('');
+  const [messageSearch, setMessageSearch] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
   const [userSearch, setUserSearch] = useState('');
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [groupTitle, setGroupTitle] = useState('');
   const [composeBody, setComposeBody] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [replyTarget, setReplyTarget] = useState<MessageRow | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editBody, setEditBody] = useState('');
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [loadingThreads, setLoadingThreads] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [savingThread, setSavingThread] = useState(false);
@@ -191,6 +281,8 @@ export function InternalMessagingWorkspace() {
   const [success, setSuccess] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const presenceChannelRef = useRef<RealtimeChannel | null>(null);
+  const typingTimerRef = useRef<number | null>(null);
 
   const selectedThread = useMemo(
     () => threads.find((thread) => thread.id === selectedThreadId) ?? null,
@@ -217,6 +309,22 @@ export function InternalMessagingWorkspace() {
     [selectedUserIds, users],
   );
 
+  const visibleMessages = useMemo(() => {
+    const query = messageSearch.trim().toLowerCase();
+    if (!query) return messages;
+    return messages.filter((message) => messageSearchText(message).includes(query));
+  }, [messageSearch, messages]);
+
+  const pinnedMessages = useMemo(
+    () => messages.filter((message) => message.pinned_at && !message.deleted_at),
+    [messages],
+  );
+
+  const savedMessages = useMemo(
+    () => messages.filter((message) => message.saved_by_me && !message.deleted_at),
+    [messages],
+  );
+
   const loadDirectory = useCallback(async () => {
     const { data, error: directoryError } = await getSupabaseClient().rpc('list_messaging_users');
     if (directoryError) throw directoryError;
@@ -225,7 +333,7 @@ export function InternalMessagingWorkspace() {
 
   const loadThreads = useCallback(async () => {
     setLoadingThreads(true);
-    const { data, error: threadError } = await getSupabaseClient().rpc('list_message_threads');
+    const { data, error: threadError } = await getSupabaseClient().rpc('list_message_threads', { p_include_archived: showArchived });
     if (threadError) {
       setError(threadError.message);
       setLoadingThreads(false);
@@ -241,7 +349,7 @@ export function InternalMessagingWorkspace() {
       return rows[0]?.id ?? null;
     });
     setLoadingThreads(false);
-  }, []);
+  }, [showArchived]);
 
   const loadMessages = useCallback(async (threadId: string) => {
     setLoadingMessages(true);
@@ -253,12 +361,12 @@ export function InternalMessagingWorkspace() {
       return;
     }
 
-    const rows = await Promise.all(((data ?? []) as Array<Omit<MessageRow, 'attachments'> & { attachments: unknown }>).map(async (message) => {
+    const rows = await Promise.all(((data ?? []) as Array<Omit<MessageRow, 'attachments' | 'reactions'> & { attachments: unknown; reactions: unknown }>).map(async (message) => {
       const attachments = await Promise.all(parseAttachments(message.attachments).map(async (attachment) => {
         const { data: signedData } = await client.storage.from(ATTACHMENT_BUCKET).createSignedUrl(attachment.file_path, 3600);
         return { ...attachment, signed_url: signedData?.signedUrl };
       }));
-      return { ...message, attachments };
+      return { ...message, attachments, reactions: parseReactions(message.reactions) };
     }));
 
     setMessages(rows);
@@ -289,6 +397,13 @@ export function InternalMessagingWorkspace() {
   }, [selectedThreadId]);
 
   useEffect(() => {
+    setMessageSearch('');
+    setReplyTarget(null);
+    setEditingMessageId(null);
+    setEditBody('');
+  }, [selectedThreadId]);
+
+  useEffect(() => {
     if (!businessUser?.id) return;
     const client = getSupabaseClient();
     const channel = client
@@ -306,12 +421,80 @@ export function InternalMessagingWorkspace() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'message_attachments' }, () => {
         if (selectedThreadId) void loadMessages(selectedThreadId);
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'message_reactions' }, () => {
+        if (selectedThreadId) void loadMessages(selectedThreadId);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'message_pins' }, () => {
+        void loadThreads();
+        if (selectedThreadId) void loadMessages(selectedThreadId);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'message_saved_items' }, () => {
+        void loadThreads();
+        if (selectedThreadId) void loadMessages(selectedThreadId);
+      })
       .subscribe();
 
     return () => {
       void client.removeChannel(channel);
     };
   }, [businessUser?.id, loadMessages, loadThreads, selectedThreadId]);
+
+  useEffect(() => {
+    if (!businessUser?.id || !selectedThreadId) {
+      setOnlineUserIds(new Set());
+      setTypingUsers([]);
+      return;
+    }
+
+    const client = getSupabaseClient();
+    const currentUserId = businessUser.id;
+    const displayName = userDetails?.first_name || userDetails?.last_name
+      ? [userDetails.first_name, userDetails.last_name].filter(Boolean).join(' ')
+      : businessUser.email;
+    const channel = client.channel(`presence-message-thread-${selectedThreadId}`);
+
+    function syncPresence() {
+      const state = channel.presenceState() as Record<string, PresencePayload[]>;
+      const online = new Set<string>();
+      const typingNames: string[] = [];
+
+      Object.values(state).flat().forEach((presence) => {
+        if (!presence.user_id) return;
+        online.add(presence.user_id);
+        if (presence.typing && presence.user_id !== currentUserId) {
+          typingNames.push(presence.display_name ?? 'A colleague');
+        }
+      });
+
+      setOnlineUserIds(online);
+      setTypingUsers(Array.from(new Set(typingNames)).slice(0, 3));
+    }
+
+    channel
+      .on('presence', { event: 'sync' }, () => syncPresence())
+      .on('presence', { event: 'join' }, () => syncPresence())
+      .on('presence', { event: 'leave' }, () => syncPresence())
+      .subscribe(async (status) => {
+        if (status !== 'SUBSCRIBED') return;
+        await channel.track({
+          user_id: currentUserId,
+          display_name: displayName,
+          typing: false,
+          online_at: new Date().toISOString(),
+        });
+      });
+
+    presenceChannelRef.current = channel;
+
+    return () => {
+      presenceChannelRef.current = null;
+      if (typingTimerRef.current) window.clearTimeout(typingTimerRef.current);
+      void channel.untrack();
+      void client.removeChannel(channel);
+      setOnlineUserIds(new Set());
+      setTypingUsers([]);
+    };
+  }, [businessUser?.email, businessUser?.id, selectedThreadId, userDetails?.first_name, userDetails?.last_name]);
 
   function toggleUser(userId: string) {
     setSelectedUserIds((current) => {
@@ -320,6 +503,25 @@ export function InternalMessagingWorkspace() {
       else next.add(userId);
       return next;
     });
+  }
+
+  function publishTyping(typing: boolean) {
+    if (!businessUser?.id || !presenceChannelRef.current) return;
+    void presenceChannelRef.current.track({
+      user_id: businessUser.id,
+      display_name: userDetails?.first_name || userDetails?.last_name
+        ? [userDetails.first_name, userDetails.last_name].filter(Boolean).join(' ')
+        : businessUser.email,
+      typing,
+      online_at: new Date().toISOString(),
+    });
+  }
+
+  function updateComposeBody(value: string) {
+    setComposeBody(value);
+    publishTyping(Boolean(value.trim()));
+    if (typingTimerRef.current) window.clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = window.setTimeout(() => publishTyping(false), 1800);
   }
 
   async function createThread(event: FormEvent<HTMLFormElement>) {
@@ -349,6 +551,112 @@ export function InternalMessagingWorkspace() {
     setUserSearch('');
     setSuccess('Conversation created.');
     await loadThreads();
+  }
+
+  async function refreshSelectedThread() {
+    await loadThreads();
+    if (selectedThreadId) await loadMessages(selectedThreadId);
+  }
+
+  async function setThreadMuted() {
+    if (!selectedThread) return;
+    setError(null);
+    const { error: muteError } = await getSupabaseClient().rpc('set_message_thread_muted', {
+      p_thread_id: selectedThread.id,
+      p_muted: !selectedThread.is_muted,
+    });
+    if (muteError) {
+      setError(muteError.message);
+      return;
+    }
+    setSuccess(selectedThread.is_muted ? 'Conversation unmuted.' : 'Conversation muted.');
+    await loadThreads();
+  }
+
+  async function setThreadArchived() {
+    if (!selectedThread) return;
+    setError(null);
+    const nextArchived = !selectedThread.archived_at;
+    const { error: archiveError } = await getSupabaseClient().rpc('set_message_thread_archived', {
+      p_thread_id: selectedThread.id,
+      p_archived: nextArchived,
+    });
+    if (archiveError) {
+      setError(archiveError.message);
+      return;
+    }
+    setSuccess(nextArchived ? 'Conversation archived.' : 'Conversation restored.');
+    if (nextArchived && !showArchived) setSelectedThreadId(null);
+    await loadThreads();
+  }
+
+  async function toggleReaction(messageId: string, reaction: ReactionKey) {
+    if (!selectedThreadId) return;
+    setError(null);
+    const { error: reactionError } = await getSupabaseClient().rpc('toggle_message_reaction', {
+      p_message_id: messageId,
+      p_reaction: reaction,
+    });
+    if (reactionError) {
+      setError(reactionError.message);
+      return;
+    }
+    await loadMessages(selectedThreadId);
+  }
+
+  async function toggleSaved(messageId: string) {
+    if (!selectedThreadId) return;
+    setError(null);
+    const { error: savedError } = await getSupabaseClient().rpc('toggle_message_saved', { p_message_id: messageId });
+    if (savedError) {
+      setError(savedError.message);
+      return;
+    }
+    await refreshSelectedThread();
+  }
+
+  async function togglePinned(messageId: string) {
+    if (!selectedThreadId) return;
+    setError(null);
+    const { error: pinError } = await getSupabaseClient().rpc('toggle_message_pin', { p_message_id: messageId });
+    if (pinError) {
+      setError(pinError.message);
+      return;
+    }
+    await refreshSelectedThread();
+  }
+
+  function beginEdit(message: MessageRow) {
+    setEditingMessageId(message.id);
+    setEditBody(message.body ?? '');
+    setReplyTarget(null);
+  }
+
+  async function saveEditedMessage(messageId: string) {
+    if (!selectedThreadId || !editBody.trim()) return;
+    setError(null);
+    const { error: editError } = await getSupabaseClient().rpc('edit_thread_message', {
+      p_message_id: messageId,
+      p_body: editBody.trim(),
+    });
+    if (editError) {
+      setError(editError.message);
+      return;
+    }
+    setEditingMessageId(null);
+    setEditBody('');
+    await loadMessages(selectedThreadId);
+  }
+
+  async function deleteMessage(messageId: string) {
+    if (!selectedThreadId) return;
+    setError(null);
+    const { error: deleteError } = await getSupabaseClient().rpc('delete_thread_message', { p_message_id: messageId });
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+    await refreshSelectedThread();
   }
 
   function handleFiles(event: ChangeEvent<HTMLInputElement>) {
@@ -413,6 +721,7 @@ export function InternalMessagingWorkspace() {
         p_thread_id: selectedThreadId,
         p_body: composeBody.trim() || null,
         p_message_type: messageType,
+        p_reply_to_message_id: replyTarget?.id ?? null,
       });
       if (sendError) throw sendError;
 
@@ -430,6 +739,8 @@ export function InternalMessagingWorkspace() {
 
       setComposeBody('');
       setSelectedFiles([]);
+      setReplyTarget(null);
+      publishTyping(false);
       fileInputRef.current?.form?.reset();
       await Promise.all([loadThreads(), loadMessages(selectedThreadId)]);
     } catch (sendError) {
@@ -449,7 +760,14 @@ export function InternalMessagingWorkspace() {
   return (
     <ErpPage className="internal-messaging-page" variant="operational">
       <ErpPageHeader
-        actions={<button className="button secondary" disabled={loadingThreads} onClick={() => void loadThreads()} type="button">Refresh</button>}
+        actions={(
+          <div className="messages-page-actions">
+            <button className={showArchived ? 'button' : 'button secondary'} onClick={() => setShowArchived((current) => !current)} type="button">
+              {showArchived ? 'Showing archived' : 'Show archived'}
+            </button>
+            <button className="button secondary" disabled={loadingThreads} onClick={() => void loadThreads()} type="button">Refresh</button>
+          </div>
+        )}
         description="Company conversations, operational images and business documents stay inside DallmayrERP."
         eyebrow="Communications"
         meta={<StatusBadge label={`${unreadTotal} unread`} value={unreadTotal ? 'active' : 'completed'} />}
@@ -520,6 +838,12 @@ export function InternalMessagingWorkspace() {
                   <span className="messages-thread-copy">
                     <strong>{thread.title}</strong>
                     <small>{messagePreview(thread)}</small>
+                    <span className="messages-thread-badges">
+                      {thread.is_muted ? <em>Muted</em> : null}
+                      {thread.archived_at ? <em>Archived</em> : null}
+                      {thread.pinned_count ? <em>{thread.pinned_count} pinned</em> : null}
+                      {thread.saved_count ? <em>{thread.saved_count} saved</em> : null}
+                    </span>
                   </span>
                   <span className="messages-thread-meta">
                     <time>{formatRelative(thread.last_message_created_at ?? thread.last_message_at ?? thread.created_at)}</time>
@@ -539,23 +863,96 @@ export function InternalMessagingWorkspace() {
                   <span className="messages-avatar" aria-hidden="true">{initials(selectedThread.title)}</span>
                   <div>
                     <h2>{selectedThread.title}</h2>
-                    <p>{selectedThread.participant_count} participant{selectedThread.participant_count === 1 ? '' : 's'} - {selectedThread.participant_names}</p>
+                    <p>
+                      {selectedThread.participant_count} participant{selectedThread.participant_count === 1 ? '' : 's'}
+                      {' - '}
+                      {Math.max(0, onlineUserIds.size - 1)} online
+                      {' - '}
+                      {selectedThread.participant_names}
+                    </p>
                   </div>
                 </div>
-                <button className="button secondary" disabled={savingThread} onClick={() => void loadMessages(selectedThread.id)} type="button">Reload</button>
+                <div className="messages-chat-actions">
+                  <button className="button secondary" disabled={savingThread} onClick={() => void setThreadMuted()} type="button">
+                    {selectedThread.is_muted ? 'Unmute' : 'Mute'}
+                  </button>
+                  <button className="button secondary" disabled={savingThread} onClick={() => void setThreadArchived()} type="button">
+                    {selectedThread.archived_at ? 'Restore' : 'Archive'}
+                  </button>
+                  <button className="button secondary" disabled={savingThread} onClick={() => void loadMessages(selectedThread.id)} type="button">Reload</button>
+                </div>
               </header>
+
+              <div className="messages-chat-tools">
+                <label>
+                  <span>Search this conversation</span>
+                  <input value={messageSearch} onChange={(event) => setMessageSearch(event.target.value)} placeholder="Search messages or files" />
+                </label>
+                {pinnedMessages.length ? (
+                  <div className="messages-highlight-strip" aria-label="Pinned messages">
+                    <strong>Pinned</strong>
+                    {pinnedMessages.slice(0, 4).map((message) => (
+                      <button key={message.id} onClick={() => document.getElementById(`message-${message.id}`)?.scrollIntoView({ block: 'center' })} type="button">
+                        {message.body ?? message.attachments[0]?.file_name ?? 'Pinned attachment'}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                {savedMessages.length ? (
+                  <div className="messages-highlight-strip" aria-label="Saved messages">
+                    <strong>Saved</strong>
+                    {savedMessages.slice(0, 4).map((message) => (
+                      <button key={message.id} onClick={() => document.getElementById(`message-${message.id}`)?.scrollIntoView({ block: 'center' })} type="button">
+                        {message.body ?? message.attachments[0]?.file_name ?? 'Saved attachment'}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
 
               <div className="messages-log" role="log" aria-live="polite">
                 {loadingMessages ? <div className="messages-empty-list">Loading messages...</div> : null}
-                {!loadingMessages && messages.length === 0 ? <div className="messages-empty-list">No messages yet.</div> : null}
-                {messages.map((message) => {
+                {!loadingMessages && visibleMessages.length === 0 ? <div className="messages-empty-list">{messageSearch ? 'No messages match your search.' : 'No messages yet.'}</div> : null}
+                {visibleMessages.map((message) => {
                   const mine = message.sender_id === businessUser.id;
                   const system = message.message_type === 'system';
+                  const deleted = Boolean(message.deleted_at);
+                  const readStatus = deliveryLabel(message, mine);
                   return (
-                    <article className={`message-bubble ${mine ? 'is-mine' : ''} ${system ? 'is-system' : ''}`} key={message.id}>
-                      {!mine && !system ? <span className="message-sender">{message.sender_name}</span> : null}
-                      {message.body ? <p>{message.body}</p> : null}
-                      {message.attachments.length ? (
+                    <article className={`message-bubble ${mine ? 'is-mine' : ''} ${system ? 'is-system' : ''} ${deleted ? 'is-deleted' : ''}`} id={`message-${message.id}`} key={message.id}>
+                      <header className="message-bubble-header">
+                        {!mine && !system ? <span className="message-sender">{message.sender_name}</span> : <span />}
+                        {!system && !deleted ? (
+                          <div className="message-actions">
+                            <button onClick={() => setReplyTarget(message)} type="button">Reply</button>
+                            <button className={message.saved_by_me ? 'is-active' : ''} onClick={() => void toggleSaved(message.id)} type="button">{message.saved_by_me ? 'Saved' : 'Save'}</button>
+                            <button className={message.pinned_at ? 'is-active' : ''} onClick={() => void togglePinned(message.id)} type="button">{message.pinned_at ? 'Unpin' : 'Pin'}</button>
+                            {mine ? <button onClick={() => beginEdit(message)} type="button">Edit</button> : null}
+                            {mine || userDetails.role === 'admin' ? <button onClick={() => void deleteMessage(message.id)} type="button">Delete</button> : null}
+                          </div>
+                        ) : null}
+                      </header>
+
+                      {message.reply_to_message_id ? (
+                        <button className="message-reply-preview" onClick={() => document.getElementById(`message-${message.reply_to_message_id}`)?.scrollIntoView({ block: 'center' })} type="button">
+                          <strong>{message.reply_to_sender_name ?? 'Reply'}</strong>
+                          <span>{message.reply_to_body ?? 'Original message unavailable'}</span>
+                        </button>
+                      ) : null}
+
+                      {deleted ? <p className="message-deleted-copy">This message was deleted.</p> : null}
+
+                      {editingMessageId === message.id ? (
+                        <form className="message-edit-form" onSubmit={(event) => { event.preventDefault(); void saveEditedMessage(message.id); }}>
+                          <textarea aria-label="Edit message" value={editBody} onChange={(event) => setEditBody(event.target.value)} />
+                          <span>
+                            <button className="button secondary" onClick={() => { setEditingMessageId(null); setEditBody(''); }} type="button">Cancel</button>
+                            <button className="button" disabled={!editBody.trim()} type="submit">Save</button>
+                          </span>
+                        </form>
+                      ) : message.body && !deleted ? <p>{message.body}</p> : null}
+
+                      {!deleted && message.attachments.length ? (
                         <div className="message-attachments">
                           {message.attachments.map((attachment) => {
                             const image = attachment.content_type.startsWith('image/');
@@ -572,14 +969,51 @@ export function InternalMessagingWorkspace() {
                           })}
                         </div>
                       ) : null}
-                      <time>{formatTime(message.created_at)}</time>
+
+                      {!system && !deleted ? (
+                        <div className="message-reaction-bar" aria-label="Message reactions">
+                          {reactionOptions.map((reaction) => {
+                            const current = message.reactions.find((item) => item.reaction === reaction);
+                            return (
+                              <button
+                                aria-label={reactionLabels[reaction]}
+                                className={current?.reacted_by_me ? 'is-active' : ''}
+                                key={reaction}
+                                onClick={() => void toggleReaction(message.id, reaction)}
+                                type="button"
+                              >
+                                <span>{reactionGlyphs[reaction]}</span>
+                                {current?.count ? <em>{current.count}</em> : null}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : null}
+
+                      <footer className="message-bubble-footer">
+                        <time>{formatTime(message.created_at)}{message.edited_at && !deleted ? ' - edited' : ''}</time>
+                        {message.pinned_at ? <span>Pinned</span> : null}
+                        {readStatus ? <span>{readStatus}</span> : null}
+                      </footer>
                     </article>
                   );
                 })}
+                {typingUsers.length ? (
+                  <div className="messages-typing-indicator">{typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...</div>
+                ) : null}
                 <div ref={messagesEndRef} />
               </div>
 
               <form className="messages-composer" onSubmit={sendMessage}>
+                {replyTarget ? (
+                  <div className="messages-reply-target">
+                    <div>
+                      <strong>Replying to {replyTarget.sender_name}</strong>
+                      <span>{replyTarget.body ?? replyTarget.attachments[0]?.file_name ?? 'Attachment'}</span>
+                    </div>
+                    <button aria-label="Cancel reply" onClick={() => setReplyTarget(null)} type="button">Cancel</button>
+                  </div>
+                ) : null}
                 {selectedFiles.length ? (
                   <div className="messages-file-tray">
                     {selectedFiles.map((file) => (
@@ -597,7 +1031,7 @@ export function InternalMessagingWorkspace() {
                   </label>
                   <textarea
                     aria-label="Message"
-                    onChange={(event) => setComposeBody(event.target.value)}
+                    onChange={(event) => updateComposeBody(event.target.value)}
                     placeholder="Message"
                     rows={1}
                     value={composeBody}

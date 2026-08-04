@@ -106,11 +106,22 @@ export function MobileNavigationDrawer({
     const items = new Map<string, NavSection['items'][number]>();
     sections.forEach((section) => {
       section.items.forEach((item) => {
+        if (item.href === '/messages') return;
         if (!items.has(item.href)) items.set(item.href, item);
       });
     });
     return Array.from(items.values());
   }, [sections]);
+
+  const directorySections = useMemo(
+    () => sections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => item.href !== '/messages'),
+      }))
+      .filter((section) => section.items.length > 0),
+    [sections],
+  );
 
   const favoriteItems = useMemo(
     () => favoriteHrefs
@@ -168,6 +179,9 @@ export function MobileNavigationDrawer({
         <Link aria-current={isActivePath(pathname, '/work') ? 'page' : undefined} href="/work">
           <span aria-hidden="true">✓</span><strong>My Work</strong>
         </Link>
+        <Link aria-current={isActivePath(pathname, '/messages') ? 'page' : undefined} href="/messages">
+          <span aria-hidden="true">M</span><strong>Messages</strong>
+        </Link>
         <button onClick={() => window.dispatchEvent(new Event('dallmayr-open-alerts'))} type="button">
           <span aria-hidden="true">♢</span><strong>Inbox</strong>
         </button>
@@ -188,7 +202,7 @@ export function MobileNavigationDrawer({
       ) : null}
 
       <nav aria-label="Mobile navigation" className="mobile-nav-directory">
-        {sections.map((section) => {
+        {directorySections.map((section) => {
           const sectionActive = section.items.some((item) => isActivePath(pathname, item.href));
           return (
             <details className="mobile-nav-section" key={`${section.heading}-${pathname}`} open={sectionActive || undefined}>
@@ -278,14 +292,6 @@ export function MobileQuickBar({
     setMenuOpen(true);
   }
 
-  function openAlerts() {
-    window.dispatchEvent(new Event('dallmayr-open-alerts'));
-  }
-
-  function openQueue() {
-    window.dispatchEvent(new Event('dallmayr-open-field-queue'));
-  }
-
   return (
     <nav aria-label="Mobile quick actions" className="mobile-quick-bar">
       <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} href={homePath}>
@@ -294,6 +300,9 @@ export function MobileQuickBar({
       <Link aria-current={isActivePath(pathname, taskPath) ? 'page' : undefined} href={taskPath}>
         <span aria-hidden="true">{primary.icon}</span><strong>{primary.label}</strong>
       </Link>
+      <Link aria-current={isActivePath(pathname, '/messages') ? 'page' : undefined} href="/messages">
+        <span aria-hidden="true">M</span><strong>Messages</strong>
+      </Link>
       {fieldRole || warehouseRole ? (
         <Link aria-current={isActivePath(pathname, scanPath) ? 'page' : undefined} href={scanPath}>
           <span aria-hidden="true">▣</span><strong>Scan</strong>
@@ -301,15 +310,6 @@ export function MobileQuickBar({
       ) : (
         <button aria-label="Open global search" onClick={openSearch} type="button">
           <span aria-hidden="true">⌕</span><strong>Search</strong>
-        </button>
-      )}
-      {fieldRole ? (
-        <button aria-label="Open offline work queue" onClick={openQueue} type="button">
-          <span aria-hidden="true">⇅</span><strong>Queue</strong>
-        </button>
-      ) : (
-        <button aria-label="Open notifications" onClick={openAlerts} type="button">
-          <span aria-hidden="true">♢</span><strong>Alerts</strong>
         </button>
       )}
       <button aria-expanded={menuOpen} onClick={() => setMenuOpen((current) => !current)} type="button">

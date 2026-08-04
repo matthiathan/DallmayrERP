@@ -42,10 +42,15 @@ const operationsNavigationOnly: BusinessRole[] = ['operations'];
 
 export const navSections: NavSection[] = [
   {
+    heading: 'Messaging',
+    items: [
+      { href: '/messages', label: 'Messages', code: 'MSG01', roles: 'all', description: 'Internal company messaging with images, documents, replies and read status.' },
+    ],
+  },
+  {
     heading: 'Operations',
     items: [
       { href: '/workspace', label: 'Today', code: 'OPH01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Role priorities, urgent signals and pinned pages.' },
-      { href: '/messages', label: 'Messages', code: 'MSG01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Internal company messaging with images and documents.' },
       { href: '/operations/dashboard', label: 'Operations Dashboard', code: 'OPD01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Live branch workload, route pressure, service exceptions and operational performance.' },
       { href: '/operations/dispatch', label: 'Dispatch Overview', code: 'DSP01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Combined route gaps, service exceptions, delivery pressure and technician capacity.' },
       { href: '/operations/exceptions', label: 'Exception Centre', code: 'EXC01', roles: ['operations'], navigationOnlyFor: operationsNavigationOnly, description: 'Acknowledge, assign, snooze, escalate and resolve persistent operational exceptions.' },
@@ -99,7 +104,6 @@ export const navSections: NavSection[] = [
     heading: 'System',
     items: [
       { href: '/workspace', label: 'Today', code: 'STP01', roles: 'all', description: 'Role priorities, urgent signals and pinned pages.' },
-      { href: '/messages', label: 'Messages', code: 'MSG01', roles: 'all', description: 'Internal company messaging with images and documents.' },
       { href: '/', label: 'System Dashboard', code: 'SYS01', roles: ['admin'], description: 'Administrative overview and core ERP counts.' },
       { href: '/admin/users', label: 'Users & Roles', code: 'USR01', roles: ['admin'], description: 'Invite users, assign roles, branches and permissions.' },
       { href: '/admin/activity', label: 'Activity Log', code: 'AUD01', roles: ['admin'], description: 'Audit events and system activity.' },
@@ -193,6 +197,7 @@ export const navSections: NavSection[] = [
 ];
 
 export function isNavItemAllowed(role: BusinessRole, item: NavItem) {
+  if (item.href === '/messages') return item.roles === 'all' || item.roles.includes(role) || role === 'admin';
   if (item.navigationOnlyFor) return item.navigationOnlyFor.includes(role);
   if (role === 'operations') return false;
   return item.roles === 'all' || item.roles.includes(role) || role === 'admin';
