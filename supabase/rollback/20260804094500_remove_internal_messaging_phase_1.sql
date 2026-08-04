@@ -6,10 +6,11 @@ revoke execute on function private.is_active_message_member(uuid, uuid) from aut
 
 drop function if exists public.create_group_message_thread(text, uuid[]);
 drop function if exists public.create_direct_message_thread(uuid);
-drop function if exists private.is_active_message_member(uuid, uuid);
 
 drop table if exists public.message_read_positions;
 drop table if exists public.message_audit_events;
 drop table if exists public.messages;
 drop table if exists public.message_thread_members;
 drop table if exists public.message_threads;
+
+drop function if exists private.is_active_message_member(uuid, uuid);
