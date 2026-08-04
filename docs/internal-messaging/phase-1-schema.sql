@@ -105,12 +105,22 @@ set search_path = ''
 as $$
 declare
   v_current_user_id uuid := public.current_app_user_id();
+  v_current_is_active boolean;
   v_direct_key text;
   v_thread_id uuid;
   v_other_is_active boolean;
 begin
   if v_current_user_id is null then
     raise exception 'Authenticated ERP user is required';
+  end if;
+
+  select u.is_active
+  into v_current_is_active
+  from public.users u
+  where u.id = v_current_user_id;
+
+  if coalesce(v_current_is_active, false) is not true then
+    raise exception 'The authenticated ERP user is not active';
   end if;
 
   if p_other_user_id is null or p_other_user_id = v_current_user_id then
@@ -153,7 +163,7 @@ begin
       v_thread_id,
       v_current_user_id,
       'thread_created',
-      jsonb_build_object('thread_type', 'direct')
+      pg_catalog.jsonb_build_object('thread_type', 'direct')
     );
   end if;
 
