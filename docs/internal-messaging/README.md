@@ -35,6 +35,7 @@ The future application route must remain disabled unless `NEXT_PUBLIC_INTERNAL_M
 - duplicate client message IDs are idempotent per sender
 - direct conversation creation is idempotent for the same user pair
 - concurrent direct-thread requests return one thread
+- group creation validates title, active users, deduplication and the 50-user maximum
 - newest-page pagination has no gaps or duplicates
 - removed members lose future access immediately
 - administrators do not automatically gain private-conversation access
@@ -49,35 +50,42 @@ The future application route must remain disabled unless `NEXT_PUBLIC_INTERNAL_M
 
 ## Static review status
 
-The schema draft now includes:
+The design now includes:
 
 - minimum private-schema usage and function execution privileges
 - non-recursive active-membership authorization
 - a thread-scoped read-position foreign key that nulls only the message reference
 - active-caller and active-recipient checks
-- a concurrency-safe direct-thread RPC using an advisory transaction lock
+- concurrency-safe direct-thread creation using an advisory transaction lock
 - deterministic direct-thread uniqueness
+- group-thread creation with title, active-member and participant-limit validation
 - explicit revocation of default function execution privileges
+- an authenticated-role RLS, pagination, idempotency and concurrency test specification
 
-The draft is still not approved for deployment. The following work remains:
+The live Supabase project reports PostgreSQL 17.6, which supports the column-specific foreign-key delete action used by the design.
 
-1. Confirm the target Supabase PostgreSQL version supports column-specific `ON DELETE SET NULL` in the intended environment.
-2. Add a reviewed group-thread creation contract with participant-count and owner rules.
-3. Write authenticated-role RLS and concurrency tests.
-4. Execute the draft only in a disposable/local Postgres environment before producing a migration.
-5. Run Supabase security and performance advisors after eventual schema installation.
+## Remaining execution gate
+
+The design is still not approved for production deployment. Before conversion into a migration it must be executed and tested in disposable/local Postgres. This chat does not have an accepted local Work environment, so those tests have been specified but not run.
+
+After disposable execution:
+
+1. Correct any SQL or test failures.
+2. Generate a timestamped migration through the Supabase CLI.
+3. Prepare and verify the down migration.
+4. Run Supabase security and performance advisors after installation in a safe test environment.
+5. Keep the application feature flag disabled until staged authenticated browser testing passes.
 
 ## Rollout gate
 
-Do not convert the SQL draft into a production migration until:
+Do not apply a production migration or expose `/messages` until:
 
-1. The SQL has been reviewed against the current production schema.
-2. Authenticated-role tests have been written and passed.
-3. Security and performance advisors are clean or consciously accepted.
-4. A disabled feature flag is present in the application.
-5. A rollback migration has been prepared.
+1. Authenticated-role tests pass in disposable Postgres.
+2. Concurrent direct-thread creation produces exactly one thread.
+3. Group creation validation passes.
+4. Security and performance advisor findings are resolved or explicitly accepted.
+5. A disabled application feature flag and rollback migration are present.
 6. CI and staged browser tests pass.
-7. The remaining review items above are resolved.
 
 ## Context-aware messaging
 
