@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "docs/internal-messaging/**"
+      - "supabase/migrations/20260804094500_add_internal_messaging_phase_1.sql"
+      - "supabase/rollback/20260804094500_remove_internal_messaging_phase_1.sql"
       - ".github/workflows/internal-messaging-database.yml"
   workflow_dispatch:
 
@@ -46,19 +48,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes postgresql-client
 
-      - name: Prepare executable schema draft
-        run: |
-          awk '
-            tolower($0) == "begin;" { next }
-            tolower($0) == "rollback;" { next }
-            { print }
-          ' docs/internal-messaging/phase-1-schema.sql > /tmp/phase-1-schema.sql
-
-      - name: Apply disposable fixtures and schema
+      - name: Apply disposable fixtures and migration
         run: |
           psql -v ON_ERROR_STOP=1 -f docs/internal-messaging/ci-fixtures.sql
-          psql -v ON_ERROR_STOP=1 -f /tmp/phase-1-schema.sql
-          psql -v ON_ERROR_STOP=1 -f docs/internal-messaging/group-thread-contract.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260804094500_add_internal_messaging_phase_1.sql
 
       - name: Run positive RLS and contract tests
         run: psql -v ON_ERROR_STOP=1 -f docs/internal-messaging/ci-tests.sql
@@ -165,3 +158,10 @@ jobs:
           set -e
           test "$status" -ne 0
           echo "$output" | grep -qi "permission denied"
+
+      - name: Verify rollback removes only messaging objects
+        run: |
+          psql -v ON_ERROR_STOP=1 -f supabase/rollback/20260804094500_remove_internal_messaging_phase_1.sql
+          test "$(psql -Atq -c "select count(*) from pg_tables where schemaname = 'public' and tablename like 'message%'")" = "0"
+          test "$(psql -Atq -c "select count(*) from information_schema.routines where routine_schema = 'public' and routine_name in ('create_direct_message_thread', 'create_group_message_thread')")" = "0"
+          test "$(psql -Atq -c "select count(*) from information_schema.tables where table_schema = 'public' and table_name = 'users'")" = "1"
