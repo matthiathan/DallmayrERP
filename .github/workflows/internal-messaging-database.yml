@@ -66,14 +66,14 @@ jobs:
       - name: Verify non-member send is rejected
         shell: bash
         run: |
+          thread_id=$(psql -Atq -c "select id from public.message_threads where direct_key = '00000000-0000-0000-0000-000000000001:00000000-0000-0000-0000-000000000002'")
+          test -n "$thread_id"
           set +e
-          output=$(psql -v ON_ERROR_STOP=1 2>&1 <<'SQL'
+          output=$(psql -v ON_ERROR_STOP=1 -v thread_id="$thread_id" 2>&1 <<'SQL'
           set role authenticated;
           select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000003', false);
           insert into public.messages (thread_id, body, client_message_id)
-          select id, 'unauthorized', '20000000-0000-0000-0000-000000000002'::uuid
-          from public.message_threads
-          where direct_key = '00000000-0000-0000-0000-000000000001:00000000-0000-0000-0000-000000000002';
+          values (:'thread_id'::uuid, 'unauthorized', '20000000-0000-0000-0000-000000000002'::uuid);
           SQL
           )
           status=$?
@@ -84,17 +84,19 @@ jobs:
       - name: Verify sender impersonation is rejected
         shell: bash
         run: |
+          thread_id=$(psql -Atq -c "select id from public.message_threads where direct_key = '00000000-0000-0000-0000-000000000001:00000000-0000-0000-0000-000000000002'")
+          test -n "$thread_id"
           set +e
-          output=$(psql -v ON_ERROR_STOP=1 2>&1 <<'SQL'
+          output=$(psql -v ON_ERROR_STOP=1 -v thread_id="$thread_id" 2>&1 <<'SQL'
           set role authenticated;
           select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000001', false);
           insert into public.messages (thread_id, sender_id, body, client_message_id)
-          select id,
-                 '00000000-0000-0000-0000-000000000002'::uuid,
-                 'impersonation',
-                 '20000000-0000-0000-0000-000000000003'::uuid
-          from public.message_threads
-          where direct_key = '00000000-0000-0000-0000-000000000001:00000000-0000-0000-0000-000000000002';
+          values (
+            :'thread_id'::uuid,
+            '00000000-0000-0000-0000-000000000002'::uuid,
+            'impersonation',
+            '20000000-0000-0000-0000-000000000003'::uuid
+          );
           SQL
           )
           status=$?
