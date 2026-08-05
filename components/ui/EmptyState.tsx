@@ -1,20 +1,6 @@
 import type { ReactNode } from 'react';
+import { UiEmptyState } from '@/components/ui/DesignSystem';
 
-export function EmptyState({
-  title,
-  message,
-  action,
-}: {
-  title: string;
-  message: string;
-  action?: ReactNode;
-}) {
-  return (
-    <div className="empty-state" role="status">
-      <div className="empty-state-icon" aria-hidden="true">-</div>
-      <h3>{title}</h3>
-      <p>{message}</p>
-      {action ? <div className="action-row">{action}</div> : null}
-    </div>
-  );
+export function EmptyState({ title, message, action }: { title: string; message: string; action?: ReactNode }) {
+  return <UiEmptyState action={action} description={message} title={title} />;
 }
