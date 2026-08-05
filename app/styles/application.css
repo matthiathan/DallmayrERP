@@ -1,0 +1,13 @@
+/*
+ * Canonical DallmayrERP application stylesheet.
+ *
+ * New global visual work belongs in this contract or in a component-scoped
+ * stylesheet imported by it. This manifest is loaded after quarantined legacy
+ * styles and therefore owns the final shell, navigation and page composition.
+ */
+@import '../reference-ui-redesign.css';
+@import '../full-application-rebuild.css';
+@import '../route-composition-system.css';
+@import '../dashboard-role-workspace-rebuild.css';
+@import '../final-route-family-rebuild.css';
+@import '../navigation-contrast-phase-1.css';
