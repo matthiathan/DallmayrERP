@@ -102,3 +102,6 @@
 
 /* 13. Shared route composition system for dashboards, lists, records and forms. */
 @import '../route-composition-system.css';
+
+/* 14. Role dashboard and Today workspace composition. */
+@import '../dashboard-role-workspace-rebuild.css';
