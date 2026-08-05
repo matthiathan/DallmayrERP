@@ -18,7 +18,6 @@
 html { color-scheme: light; background: var(--ui-canvas); }
 body { color: var(--ui-ink) !important; background: var(--ui-canvas) !important; }
 
-/* Shell and workspace */
 .app-shell,
 .erp-app-shell,
 .dallmayr-app-shell { min-height: 100dvh; background: var(--ui-canvas) !important; }
@@ -27,7 +26,6 @@ body { color: var(--ui-ink) !important; background: var(--ui-canvas) !important;
 .dallmayr-workspace,
 main[role='main'] { min-width: 0; color: var(--ui-ink) !important; background: var(--ui-canvas) !important; }
 
-/* Navigation: guaranteed readable regardless of older theme layers. */
 .dallmayr-sidebar {
   width: 276px;
   color: #fff !important;
@@ -63,7 +61,6 @@ main[role='main'] { min-width: 0; color: var(--ui-ink) !important; background: v
 .dallmayr-account-copy > span { color: #5d5240 !important; }
 .dallmayr-account-copy strong { color: #181611 !important; }
 
-/* Content hierarchy */
 .erp-page,
 .page-template-frame,
 .route-page { width: min(100%, 1680px); margin-inline: auto; padding: clamp(16px, 2vw, 28px); color: var(--ui-ink); }
@@ -94,7 +91,6 @@ main[role='main'] { min-width: 0; color: var(--ui-ink) !important; background: v
 .erp-form-section h3,
 .erp-record-summary-card h2 { color: #1c1812 !important; }
 
-/* Forms and controls */
 button,
 input,
 select,
@@ -127,7 +123,6 @@ button.primary,
 button.primary:hover,
 .btn-primary:hover { background: #d6a94f !important; }
 
-/* Tables */
 .erp-table-scroll,
 .table-scroll,
 .data-table-wrapper { overflow: auto !important; scrollbar-gutter: stable; }
@@ -137,7 +132,6 @@ tbody td { color: #2d2821 !important; border-bottom: 1px solid #e4dbcd !importan
 tbody tr:nth-child(even) td { background: #fcfaf6; }
 tbody tr:hover td { background: #fff3d6 !important; }
 
-/* Metrics and states */
 .erp-metric-card { color: var(--ui-ink) !important; background: #fff !important; border: 1px solid var(--ui-border) !important; box-shadow: 0 5px 16px rgba(55,43,25,.07) !important; }
 .erp-metric-card strong { color: #1b1711 !important; }
 .erp-metric-card span,
@@ -146,7 +140,6 @@ tbody tr:hover td { background: #fff3d6 !important; }
 .erp-empty-state,
 .empty-state { color: var(--ui-ink) !important; background: #fffaf0 !important; border-color: #d7c49b !important; }
 
-/* Messaging */
 .messaging-layout,
 .messaging-shell { min-height: calc(100dvh - 32px); background: var(--ui-surface) !important; border: 1px solid var(--ui-border) !important; border-radius: var(--ui-radius); overflow: hidden; }
 .messaging-directory,
@@ -154,7 +147,57 @@ tbody tr:hover td { background: #fff3d6 !important; }
 .messaging-conversation,
 .messaging-chat { background: #fff !important; }
 
-/* Responsive usability */
+/* Mobile overlays must sit above the backdrop and fixed quick bar. */
+.mobile-nav-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9000 !important;
+  background: rgba(20, 18, 15, 0.58) !important;
+}
+.mobile-nav-panel:not([hidden]) {
+  display: flex !important;
+  position: fixed !important;
+  inset: 0 0 0 auto !important;
+  z-index: 9010 !important;
+  width: min(92vw, 420px) !important;
+  max-width: 100% !important;
+  height: 100dvh !important;
+  overflow-y: auto !important;
+  color: var(--ui-ink) !important;
+  background: #fff !important;
+  box-shadow: -14px 0 40px rgba(0, 0, 0, 0.28) !important;
+  flex-direction: column !important;
+  overscroll-behavior: contain;
+}
+.mobile-nav-panel[hidden] { display: none !important; }
+.mobile-nav-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2 !important;
+  background: #fff !important;
+  border-bottom: 1px solid var(--ui-border) !important;
+}
+.mobile-nav-directory { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.mobile-nav-close { position: relative; z-index: 3; }
+.mobile-quick-bar { z-index: 8500 !important; }
+
+.global-search-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10000 !important;
+  overflow-y: auto !important;
+  background: rgba(20, 18, 15, 0.66) !important;
+}
+.global-search-dialog {
+  position: relative !important;
+  z-index: 10001 !important;
+  width: min(94vw, 760px) !important;
+  max-height: calc(100dvh - 24px) !important;
+  overflow-y: auto !important;
+  color: var(--ui-ink) !important;
+  background: #fff !important;
+}
+
 @media (max-width: 1100px) {
   .erp-content-grid,
   .erp-split-view,
@@ -175,6 +218,7 @@ tbody tr:hover td { background: #fff3d6 !important; }
   .erp-button,
   input,
   select { min-height: 46px; }
+  .global-search-dialog { margin: 12px auto !important; border-radius: 12px !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
