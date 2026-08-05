@@ -1,0 +1,349 @@
+/* Phase 4: canonical route-level cleanup.
+ * Loaded last by app/styles/application.css.
+ * This file normalizes visible page composition without changing route logic.
+ */
+
+:root {
+  --page-max: 1600px;
+  --page-gap: 16px;
+  --page-pad-inline: clamp(14px, 2vw, 28px);
+  --page-pad-block: clamp(16px, 2vw, 28px);
+  --surface-radius: 10px;
+  --surface-border: #ded8cf;
+  --surface-shadow: 0 1px 3px rgba(31, 29, 25, .07);
+  --control-height: 40px;
+}
+
+.application-main {
+  padding: var(--page-pad-block) var(--page-pad-inline) 44px !important;
+}
+
+.application-main > :where(.erp-page, .erp-workbench, .role-workspace, .board-page, .customer-board-page, main, section) {
+  width: min(100%, var(--page-max));
+  margin-inline: auto;
+}
+
+:where(.erp-page, .erp-workbench, .role-workspace, .board-page, .customer-board-page) {
+  display: grid;
+  gap: var(--page-gap);
+  min-width: 0;
+}
+
+/* Page titles and context */
+:where(.erp-page-header, .page-template-header, .board-header, .workbench-header, .record-header, .detail-header) {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 20px;
+  min-width: 0;
+  margin: 0 !important;
+  padding: 0 0 4px !important;
+}
+
+:where(.erp-page-header, .page-template-header, .board-header, .workbench-header, .record-header, .detail-header) > :first-child {
+  min-width: 0;
+}
+
+:where(.erp-page-header, .page-template-header, .board-header, .workbench-header, .record-header, .detail-header) h1 {
+  margin: 0 !important;
+  color: #211f1b !important;
+  font-size: clamp(24px, 2.2vw, 34px) !important;
+  line-height: 1.12 !important;
+  letter-spacing: -.025em;
+}
+
+:where(.erp-page-header, .page-template-header, .board-header, .workbench-header, .record-header, .detail-header) p {
+  max-width: 78ch;
+  margin: 6px 0 0 !important;
+  color: #6f6a61 !important;
+  line-height: 1.5;
+}
+
+/* Toolbars and filters */
+:where(.erp-toolbar, .page-toolbar, .board-toolbar, .workbench-toolbar, .filter-bar, .table-toolbar, .record-actions, .page-actions) {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 12px !important;
+  background: #fff !important;
+  border: 1px solid var(--surface-border) !important;
+  border-radius: var(--surface-radius) !important;
+  box-shadow: var(--surface-shadow) !important;
+}
+
+:where(.erp-toolbar, .page-toolbar, .board-toolbar, .workbench-toolbar, .filter-bar, .table-toolbar) :where(input, select, button, .button) {
+  min-height: var(--control-height);
+}
+
+:where(.filter-bar, .table-toolbar) :where(input[type='search'], .search-input, .global-search) {
+  flex: 1 1 260px;
+  min-width: min(100%, 220px);
+}
+
+/* Shared content surfaces */
+:where(.neo-card, .erp-panel, .workbench-panel, .board-panel, .summary-card, .metric-card, .kpi-card, .form-card, .table-card, .detail-card, .record-card, .settings-card, .profile-card) {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: var(--surface-radius) !important;
+}
+
+:where(.neo-card, .erp-panel, .workbench-panel, .board-panel, .summary-card, .metric-card, .kpi-card, .form-card, .table-card, .detail-card, .record-card, .settings-card, .profile-card) > :where(header, .panel-header, .card-header) {
+  padding: 14px 16px !important;
+  border-bottom: 1px solid #ece7df !important;
+}
+
+:where(.neo-card, .erp-panel, .workbench-panel, .board-panel, .form-card, .detail-card, .record-card, .settings-card, .profile-card) > :where(.panel-body, .card-body, .content, form) {
+  padding: 16px !important;
+}
+
+/* KPI and summary grids */
+:where(.metric-grid, .kpi-grid, .summary-grid, .dashboard-grid, .stats-grid) {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px !important;
+}
+
+:where(.metric-card, .kpi-card, .summary-card) {
+  padding: 16px !important;
+}
+
+:where(.metric-card, .kpi-card, .summary-card) :where(strong, .metric-value, .kpi-value) {
+  color: #211f1b !important;
+}
+
+/* Data tables */
+:where(.table-card, .table-container, .data-table-wrapper, .board-table-wrapper, .responsive-table) {
+  min-width: 0;
+  overflow-x: auto !important;
+  background: #fff;
+  border: 1px solid var(--surface-border) !important;
+  border-radius: var(--surface-radius) !important;
+  box-shadow: var(--surface-shadow) !important;
+}
+
+:where(.table-card, .table-container, .data-table-wrapper, .board-table-wrapper, .responsive-table) table {
+  min-width: 720px;
+  border: 0 !important;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 42px;
+  padding: 10px 12px !important;
+  font-weight: 700 !important;
+  white-space: nowrap;
+}
+
+tbody td {
+  padding: 11px 12px !important;
+  vertical-align: middle;
+}
+
+tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+
+/* Forms */
+:where(.form-grid, .field-grid, .settings-grid, .profile-grid) {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px !important;
+}
+
+:where(.form-field, .field, label) {
+  min-width: 0;
+}
+
+:where(.form-field, .field) > label,
+form label > :first-child:not(input):not(select):not(textarea) {
+  display: block;
+  margin-bottom: 6px;
+  color: #4f4a43;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: var(--control-height);
+}
+
+textarea {
+  min-height: 104px;
+  resize: vertical;
+}
+
+:where(.form-actions, .sticky-actions, .record-actions-bottom) {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px !important;
+  background: #faf8f4 !important;
+  border-top: 1px solid #e5dfd6 !important;
+}
+
+/* Master/detail and operational workspaces */
+:where(.split-view, .master-detail, .queue-detail-layout, .operations-split, .record-split) {
+  display: grid !important;
+  grid-template-columns: minmax(280px, .85fr) minmax(0, 2.15fr);
+  gap: 14px !important;
+  min-height: min(720px, calc(100vh - 190px));
+}
+
+:where(.split-view, .master-detail, .queue-detail-layout, .operations-split, .record-split) > * {
+  min-width: 0;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--surface-radius);
+  box-shadow: var(--surface-shadow);
+}
+
+/* Tabs, badges and pagination */
+:where(.tabs, .tab-list, [role='tablist']) {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 4px;
+  background: #eee9e1;
+  border-radius: 9px;
+}
+
+:where(.tabs, .tab-list, [role='tablist']) :where(a, button, [role='tab']) {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 8px 12px;
+  color: #5c564e;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+:where(.tabs, .tab-list, [role='tablist']) :where(.active, [aria-selected='true'], [aria-current='page']) {
+  color: #211f1b !important;
+  background: #fff !important;
+  box-shadow: 0 1px 2px rgba(31,29,25,.1);
+}
+
+:where(.status, .status-badge, .badge, .pill) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  font-weight: 750 !important;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+:where(.pagination, .table-pagination) {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px !important;
+  color: #6f6a61;
+  background: #faf8f4;
+  border-top: 1px solid #e7e1d8;
+}
+
+/* Empty, loading and error states */
+:where(.empty-state, .loading-state, .error-state, .no-results) {
+  display: grid;
+  min-height: 180px;
+  place-items: center;
+  padding: 28px !important;
+  color: #6f6a61 !important;
+  text-align: center;
+  background: #fff !important;
+  border: 1px dashed #d5cfc5 !important;
+  border-radius: var(--surface-radius) !important;
+}
+
+/* Messaging keeps its independent pane scrolling. */
+:where(.messaging-workspace, .internal-messaging-layout, .messaging-shell) {
+  min-height: min(760px, calc(100vh - 150px));
+  overflow: hidden;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--surface-radius);
+  box-shadow: var(--surface-shadow);
+}
+
+:where(.messaging-sidebar, .conversation-list-panel, .chat-directory-panel) {
+  min-width: 280px;
+  background: #fff;
+  border-right: 1px solid #e3ddd4;
+}
+
+:where(.messaging-thread, .chat-panel, .conversation-panel) {
+  min-width: 0;
+  background: #fbf8f2;
+}
+
+/* Responsive route cleanup */
+@media (max-width: 1100px) {
+  :where(.metric-grid, .kpi-grid, .summary-grid, .dashboard-grid, .stats-grid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  :where(.split-view, .master-detail, .queue-detail-layout, .operations-split, .record-split) {
+    grid-template-columns: minmax(240px, .8fr) minmax(0, 1.2fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .application-main {
+    padding: 14px 12px 88px !important;
+  }
+
+  :where(.erp-page-header, .page-template-header, .board-header, .workbench-header, .record-header, .detail-header),
+  :where(.erp-toolbar, .page-toolbar, .board-toolbar, .workbench-toolbar, .filter-bar, .table-toolbar, .record-actions, .page-actions) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  :where(.erp-toolbar, .page-toolbar, .board-toolbar, .workbench-toolbar, .filter-bar, .table-toolbar, .record-actions, .page-actions) :where(button, .button, input, select) {
+    width: 100%;
+  }
+
+  :where(.metric-grid, .kpi-grid, .summary-grid, .dashboard-grid, .stats-grid),
+  :where(.form-grid, .field-grid, .settings-grid, .profile-grid),
+  :where(.split-view, .master-detail, .queue-detail-layout, .operations-split, .record-split) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  :where(.split-view, .master-detail, .queue-detail-layout, .operations-split, .record-split) {
+    min-height: auto;
+  }
+
+  :where(.split-view, .master-detail, .queue-detail-layout, .operations-split, .record-split) > * {
+    max-height: 52vh;
+  }
+
+  :where(.form-actions, .sticky-actions, .record-actions-bottom) {
+    position: sticky;
+    bottom: 0;
+    z-index: 8;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
