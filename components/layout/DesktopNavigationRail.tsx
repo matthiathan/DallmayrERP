@@ -23,13 +23,18 @@ function navigationGlyph(label: string) {
   return (words.length > 1 ? words.slice(0, 2).map((word) => word[0]).join('') : label.slice(0, 2)).toUpperCase();
 }
 
-function uniqueItems(sections: NavSection[]) {
+function groupedSections(sections: NavSection[], homePath: string) {
   const seen = new Set<string>();
-  return sections.flatMap((section) => section.items).filter((item) => {
-    if (seen.has(item.href)) return false;
-    seen.add(item.href);
-    return true;
-  });
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => {
+        if (item.href === homePath || item.href === '/work' || seen.has(item.href)) return false;
+        seen.add(item.href);
+        return true;
+      }),
+    }))
+    .filter((section) => section.items.length > 0);
 }
 
 export function DesktopNavigationRail({
@@ -40,41 +45,60 @@ export function DesktopNavigationRail({
   roleLabel,
   sections,
 }: DesktopNavigationRailProps) {
-  const items = uniqueItems(sections);
+  const visibleSections = groupedSections(sections, homePath);
 
   return (
     <aside aria-label="Application navigation" className={`dallmayr-sidebar ${collapsed ? 'is-collapsed' : ''}`}>
       <div className="dallmayr-sidebar-brand">
         <Link href={homePath} aria-label="Open Dallmayr ERP home">
           <span aria-hidden="true" className="dallmayr-crest">D</span>
-          {!collapsed ? <span><strong>Dallmayr</strong><small>ERP</small></span> : null}
+          {!collapsed ? <span><strong>Dallmayr</strong><small>Enterprise Resource Planning</small></span> : null}
         </Link>
         <button aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'} onClick={onToggleCollapse} type="button">
-          {collapsed ? '›' : '‹'}
+          <span aria-hidden="true">{collapsed ? '›' : '‹'}</span>
         </button>
       </div>
 
       <nav className="dallmayr-sidebar-nav" aria-label="ERP modules">
-        <Link className="dallmayr-sidebar-link" aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} href={homePath} title="Dashboard">
-          <span aria-hidden="true">DB</span>{!collapsed ? <strong>Dashboard</strong> : null}
-        </Link>
-        {items.filter((item) => item.href !== homePath && item.href !== '/work').map((item) => (
-          <Link
-            aria-current={isActivePath(pathname, item.href) ? 'page' : undefined}
-            className="dallmayr-sidebar-link"
-            href={item.href}
-            key={item.href}
-            title={item.label}
-          >
-            <span aria-hidden="true">{navigationGlyph(item.label)}</span>
-            {!collapsed ? <strong>{item.label}</strong> : null}
+        <div className="dallmayr-sidebar-primary">
+          <Link className="dallmayr-sidebar-link" aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} href={homePath} title="Dashboard">
+            <span aria-hidden="true">DB</span>{!collapsed ? <strong>Dashboard</strong> : null}
           </Link>
+          <Link className="dallmayr-sidebar-link" aria-current={isActivePath(pathname, '/work') ? 'page' : undefined} href="/work" title="My Work">
+            <span aria-hidden="true">MW</span>{!collapsed ? <strong>My Work</strong> : null}
+          </Link>
+        </div>
+
+        {visibleSections.map((section) => (
+          <section className="dallmayr-sidebar-group" key={section.heading} aria-label={section.heading}>
+            {!collapsed ? <h2>{section.heading}</h2> : <div className="dallmayr-sidebar-group-divider" aria-hidden="true" />}
+            <div>
+              {section.items.map((item) => (
+                <Link
+                  aria-current={isActivePath(pathname, item.href) ? 'page' : undefined}
+                  className="dallmayr-sidebar-link"
+                  href={item.href}
+                  key={item.href}
+                  title={item.label}
+                >
+                  <span aria-hidden="true">{navigationGlyph(item.label)}</span>
+                  {!collapsed ? <strong>{item.label}</strong> : null}
+                </Link>
+              ))}
+            </div>
+          </section>
         ))}
       </nav>
 
-      <div className="dallmayr-sidebar-account">
-        <span aria-hidden="true" className="dallmayr-account-avatar">{roleLabel.slice(0, 1)}</span>
-        {!collapsed ? <span><strong>{roleLabel}</strong><small>Signed in</small></span> : null}
+      <div className="dallmayr-sidebar-account" title={collapsed ? roleLabel : undefined}>
+        <span aria-hidden="true" className="dallmayr-account-avatar">{roleLabel.slice(0, 1).toUpperCase()}</span>
+        {!collapsed ? (
+          <span className="dallmayr-account-copy">
+            <small>Signed in as</small>
+            <strong>{roleLabel}</strong>
+            <span>Active ERP account</span>
+          </span>
+        ) : null}
       </div>
     </aside>
   );
