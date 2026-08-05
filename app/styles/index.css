@@ -89,6 +89,7 @@
 
 /* 9. User-first readability and layout guardrails. */
 @import '../ui-readability-layout.css';
+@import '../internal-messaging-v2.css';
 
 /* 10. ERP workbench system. Keep last so shell, page rhythm, grids and panels share one authority. */
 @import '../erp-workbench-system.css';
