@@ -1,0 +1,57 @@
+name: Internal Messaging Index Validation
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20260804115800_add_internal_messaging_supporting_indexes.sql"
+      - "supabase/rollback/20260804115800_remove_internal_messaging_supporting_indexes.sql"
+      - ".github/workflows/internal-messaging-indexes.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-index-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: messaging_index_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d messaging_index_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: messaging_index_test
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Apply messaging foundation and index migration
+        run: |
+          psql -v ON_ERROR_STOP=1 -f docs/internal-messaging/ci-fixtures.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260804094500_add_internal_messaging_phase_1.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260804115800_add_internal_messaging_supporting_indexes.sql
+      - name: Verify supporting indexes exist
+        run: |
+          test "$(psql -Atq -c "select count(*) from pg_indexes where schemaname = 'public' and indexname in ('message_threads_created_by_idx','message_audit_events_thread_idx','message_audit_events_actor_idx','message_audit_events_target_idx','message_read_positions_message_idx')")" = "5"
+      - name: Verify index rollback
+        run: |
+          psql -v ON_ERROR_STOP=1 -f supabase/rollback/20260804115800_remove_internal_messaging_supporting_indexes.sql
+          test "$(psql -Atq -c "select count(*) from pg_indexes where schemaname = 'public' and indexname in ('message_threads_created_by_idx','message_audit_events_thread_idx','message_audit_events_actor_idx','message_audit_events_target_idx','message_read_positions_message_idx')")" = "0"
+          test "$(psql -Atq -c "select count(*) from pg_tables where schemaname = 'public' and tablename in ('message_threads','message_thread_members','messages','message_read_positions','message_audit_events')")" = "5"
