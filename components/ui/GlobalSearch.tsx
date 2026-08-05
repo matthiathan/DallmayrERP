@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { isNavItemAllowed, navSections } from '@/lib/auth/permissions';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type SearchResult = {
   id: string;
-  type: 'Work' | 'Customer' | 'Machine' | 'Stock' | 'Delivery' | 'Service';
+  type: 'Page' | 'Work' | 'Customer' | 'Machine' | 'Stock' | 'Delivery' | 'Service';
   title: string;
   subtitle: string;
   href: string;
@@ -20,8 +22,15 @@ type GlobalSearchProps = {
   triggerLabel?: string;
 };
 
+const OPEN_SEARCH_EVENT = 'dallmayr-open-global-search';
+const MESSAGING_ENABLED = process.env.NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED !== 'false';
+
 function safeFilterTerm(value: string) {
   return value.trim().replace(/[(),]/g, ' ').replace(/\s+/g, ' ');
+}
+
+function includesTerm(value: string | undefined, term: string) {
+  return Boolean(value?.toLocaleLowerCase().includes(term.toLocaleLowerCase()));
 }
 
 export function GlobalSearch({
@@ -30,15 +39,65 @@ export function GlobalSearch({
   triggerClassName = '',
   triggerLabel = 'Search records',
 }: GlobalSearchProps = {}) {
+  const { userDetails } = useAuth();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [recordResults, setRecordResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const requestRef = useRef(0);
 
+  const availablePages = useMemo<SearchResult[]>(() => {
+    if (!userDetails?.role) return [];
+    const seen = new Set<string>();
+    const pages = navSections.flatMap((section) => section.items
+      .filter((item) => isNavItemAllowed(userDetails.role, item))
+      .map((item) => ({
+        id: item.href,
+        type: 'Page' as const,
+        title: item.label,
+        subtitle: `${section.heading}${item.description ? ` • ${item.description}` : ''}`,
+        href: item.href,
+      })));
+
+    if (MESSAGING_ENABLED) {
+      pages.unshift({
+        id: '/work/messages',
+        type: 'Page',
+        title: 'Messages',
+        subtitle: 'Communications • Direct and group conversations with colleagues.',
+        href: '/work/messages',
+      });
+    }
+
+    return pages.filter((page) => {
+      if (seen.has(page.href)) return false;
+      seen.add(page.href);
+      return true;
+    });
+  }, [userDetails?.role]);
+
+  const pageResults = useMemo(() => {
+    const term = safeFilterTerm(query);
+    if (term.length < 2) return [];
+    return availablePages.filter((page) => (
+      includesTerm(page.title, term)
+      || includesTerm(page.subtitle, term)
+      || includesTerm(page.href.replaceAll('/', ' '), term)
+    )).slice(0, 10);
+  }, [availablePages, query]);
+
+  const results = useMemo(
+    () => [...pageResults, ...recordResults].slice(0, 30),
+    [pageResults, recordResults],
+  );
+
   useEffect(() => {
+    function openSearch() {
+      setOpen(true);
+    }
+
     function handleShortcut(event: KeyboardEvent) {
       if (enableShortcut && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
@@ -46,8 +105,13 @@ export function GlobalSearch({
       }
       if (event.key === 'Escape') setOpen(false);
     }
+
     window.addEventListener('keydown', handleShortcut);
-    return () => window.removeEventListener('keydown', handleShortcut);
+    if (enableShortcut) window.addEventListener(OPEN_SEARCH_EVENT, openSearch);
+    return () => {
+      window.removeEventListener('keydown', handleShortcut);
+      if (enableShortcut) window.removeEventListener(OPEN_SEARCH_EVENT, openSearch);
+    };
   }, [enableShortcut]);
 
   useEffect(() => {
@@ -64,7 +128,7 @@ export function GlobalSearch({
     if (!open) return;
     const term = safeFilterTerm(query);
     if (term.length < 2) {
-      setResults([]);
+      setRecordResults([]);
       setLoading(false);
       setError(null);
       return;
@@ -133,11 +197,11 @@ export function GlobalSearch({
             href: `/operations/service-jobs?job=${row.id}`,
           })),
         ];
-        setResults(nextResults.slice(0, 30));
+        setRecordResults(nextResults);
       } catch (searchError) {
         if (requestId !== requestRef.current) return;
-        setError(searchError instanceof Error ? searchError.message : 'Search could not be completed.');
-        setResults([]);
+        setError(searchError instanceof Error ? searchError.message : 'Record search could not be completed. Page results are still available.');
+        setRecordResults([]);
       } finally {
         if (requestId === requestRef.current) setLoading(false);
       }
@@ -148,23 +212,23 @@ export function GlobalSearch({
   function closeSearch() {
     setOpen(false);
     setQuery('');
-    setResults([]);
+    setRecordResults([]);
     setError(null);
   }
 
   const dialog = open ? createPortal(
     <div className="global-search-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeSearch(); }}>
-      <section aria-label="Find a record or task" aria-modal="true" className="global-search-dialog" role="dialog">
+      <section aria-label="Find a page, record or task" aria-modal="true" className="global-search-dialog" role="dialog">
         <div className="global-search-input-row">
-          <input aria-label="Search by customer, work number, machine, barcode, order or service job" onChange={(event) => setQuery(event.target.value)} placeholder="Search customer, job, serial, barcode or order..." ref={inputRef} type="search" value={query} />
+          <input aria-label="Search pages, customers, work numbers, machines, barcodes, orders or service jobs" onChange={(event) => setQuery(event.target.value)} placeholder="Search pages, customers, jobs, serials, barcodes or orders..." ref={inputRef} type="search" value={query} />
           <button aria-label="Close search" className="button secondary" onClick={closeSearch} type="button">Close</button>
         </div>
         <div className="global-search-quick-actions"><Link href="/work" onClick={closeSearch}>Review actions</Link><Link href="/customers" onClick={closeSearch}>Find a customer</Link><Link href="/operations/service-jobs" onClick={closeSearch}>Find a service job</Link><Link href="/warehouse/stock" onClick={closeSearch}>Check stock</Link><Link href="/operations/assets" onClick={closeSearch}>Find a machine</Link></div>
         <div aria-live="polite" className="global-search-results">
           {loading ? <div className="global-search-state">Searching records…</div> : null}
           {error ? <div className="error">{error}</div> : null}
-          {!loading && !error && query.trim().length < 2 ? <div className="global-search-state">Type at least two characters. Press Esc to close.</div> : null}
-          {!loading && !error && query.trim().length >= 2 && results.length === 0 ? <div className="global-search-state">No matching records found. Check the spelling or try a different identifier.</div> : null}
+          {!loading && !error && query.trim().length < 2 ? <div className="global-search-state">Type at least two characters. You can search for a page such as Assets or a record identifier.</div> : null}
+          {!loading && query.trim().length >= 2 && results.length === 0 ? <div className="global-search-state">No matching pages or records found. Check the spelling or try a different identifier.</div> : null}
           {results.map((result) => <Link className="global-search-result" href={result.href} key={`${result.type}-${result.id}`} onClick={closeSearch}><span className="global-search-result-type">{result.type}</span><strong>{result.title}</strong><span>{result.subtitle}</span></Link>)}
         </div>
       </section>

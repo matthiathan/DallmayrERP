@@ -24,9 +24,10 @@
     "lint": "next lint",
     "test": "npm run typecheck",
     "stylecheck": "node scripts/check-style-architecture.mjs",
+    "mobile:interaction-check": "node scripts/check-mobile-interactions.mjs",
     "security:pentest": "node scripts/security-pentest.mjs",
     "typecheck": "tsc --noEmit",
-    "check": "npm run stylecheck && npm run typecheck && npm run build"
+    "check": "npm run stylecheck && npm run mobile:interaction-check && npm run typecheck && npm run build"
   },
   "dependencies": {
     "@capacitor/android": "8.5.0",
