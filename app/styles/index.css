@@ -93,3 +93,6 @@
 
 /* 10. ERP workbench system. Keep last so shell, page rhythm, grids and panels share one authority. */
 @import '../erp-workbench-system.css';
+
+/* 11. Approved Dallmayr cream/white workspace with dark navigation and gold accents. */
+@import '../reference-ui-redesign.css';

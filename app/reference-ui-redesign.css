@@ -1,0 +1,234 @@
+/* Application-wide visual contract based on the approved Dallmayr ERP mockups. */
+:root,
+html[data-theme-tone='light'],
+html[data-theme-tone='dark'] {
+  --bg: #f6f3ed;
+  --bg-deep: #eee9df;
+  --surface: #ffffff;
+  --surface-2: #fbfaf7;
+  --surface-3: #f3eee5;
+  --text: #27231e;
+  --muted: #746d63;
+  --gold: #c7973e;
+  --gold-2: #d8ae61;
+  --gold-dark: #8b6423;
+  --danger: #b9473f;
+  --success: #168a63;
+  --user-accent: #c7973e;
+  --user-theme: #eee5d7;
+  --user-background: #f6f3ed;
+  --content-surface: #ffffff;
+  --content-surface-raised: #fbfaf7;
+  --content-text: #27231e;
+  --content-strong: #17140f;
+  --content-muted: #6f685e;
+  --content-subtle: #857d71;
+  --content-border: #ded8ce;
+  --content-accent-text: #8b6423;
+  --content-focus: #a8792c;
+  --content-chart-track: #ece7df;
+  --accent-ink: #ffffff;
+  --accent-on-light: #8b6423;
+  --accent-on-dark: #e3bd76;
+  --accent-text: #8b6423;
+  color-scheme: light;
+}
+
+html,
+body {
+  color: var(--content-text) !important;
+  background: var(--bg) !important;
+}
+
+body::before,
+body::after { display: none !important; }
+
+.app-shell,
+.application-shell-v2,
+.monday-shell-phase-1 {
+  background: var(--bg) !important;
+}
+
+.application-header {
+  background: rgba(255,255,255,.96) !important;
+  border-bottom: 1px solid var(--content-border) !important;
+  box-shadow: 0 2px 12px rgba(54,43,28,.06) !important;
+}
+
+.application-header-inner,
+.application-status-strip {
+  background: transparent !important;
+  color: var(--content-text) !important;
+}
+
+.application-brand { color: #2e2820 !important; }
+.application-brand-mark {
+  color: #fff !important;
+  background: linear-gradient(180deg,#d8ae61,#b5812e) !important;
+  box-shadow: none !important;
+}
+.application-page-context span,
+.application-page-context small,
+.application-status-strip { color: var(--content-muted) !important; }
+.application-page-context strong { color: var(--content-strong) !important; }
+
+.desktop-navigation-rail,
+.desktop-nav-rail,
+.application-navigation,
+.sidebar,
+.neo-sidebar {
+  background: linear-gradient(180deg,#302d28 0%,#24221e 100%) !important;
+  border-color: rgba(255,255,255,.08) !important;
+  box-shadow: none !important;
+  color: #f7f2e8 !important;
+}
+
+.desktop-navigation-rail *,
+.desktop-nav-rail *,
+.application-navigation *,
+.sidebar * { color: inherit; }
+
+.nav-link,
+.desktop-navigation-rail a,
+.desktop-nav-rail a {
+  border: 0 !important;
+  border-radius: 7px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #f0ece4 !important;
+}
+.nav-link:hover,
+.nav-link.active,
+.desktop-navigation-rail a:hover,
+.desktop-navigation-rail a[aria-current='page'],
+.desktop-nav-rail a:hover,
+.desktop-nav-rail a[aria-current='page'] {
+  color: #fff !important;
+  background: rgba(215,174,97,.17) !important;
+  box-shadow: inset 3px 0 0 var(--gold) !important;
+  transform: none !important;
+}
+
+.application-main,
+.top-main,
+.main {
+  color: var(--content-text) !important;
+  background: var(--bg) !important;
+}
+
+.erp-page,
+.workbench-page,
+.monday-board-page,
+.page-template-frame { color: var(--content-text) !important; }
+
+.erp-page-header,
+.page-header,
+.hero-panel {
+  color: var(--content-text) !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+h1,h2,h3,h4,h5,h6,
+.erp-page-header h1,
+.erp-page-header h2 { color: var(--content-strong) !important; text-shadow: none !important; }
+p,small,label,.muted { color: var(--content-muted); }
+
+.card,
+.neo-card,
+.erp-panel,
+.workbench-panel,
+.monday-card,
+.board-card,
+.kpi-card,
+.summary-card,
+.hero-panel,
+.table-wrap,
+.data-panel,
+.form-panel,
+.detail-panel {
+  color: var(--content-text) !important;
+  background: #fff !important;
+  border: 1px solid var(--content-border) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(54,43,28,.045) !important;
+}
+.card::before,.card::after,.neo-card::before,.neo-card::after,.hero-panel::before,.hero-panel::after,.table-wrap::before { display:none !important; }
+
+input,select,textarea,
+.search-input,
+.global-search input {
+  color: var(--content-text) !important;
+  background: #fff !important;
+  border: 1px solid #d9d4cb !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+input::placeholder,textarea::placeholder { color:#8a8379 !important; }
+input:focus,select:focus,textarea:focus {
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 0 3px rgba(199,151,62,.14) !important;
+}
+
+.button,
+button.button,
+a.button {
+  color: #fff !important;
+  background: linear-gradient(180deg,#d4a751,#bd8730) !important;
+  border: 1px solid #b77f27 !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  transform: none !important;
+}
+.button:hover { filter: brightness(.97); transform:none !important; box-shadow:none !important; }
+.button.secondary {
+  color: #50483e !important;
+  background: #fff !important;
+  border-color: #d9d4cb !important;
+}
+.button.danger { background:#b9473f !important; border-color:#a43c35 !important; }
+
+.badge,
+.status-badge,
+.pill,
+.erp-badge {
+  color: #6d501f !important;
+  background: #f5ead3 !important;
+  border: 1px solid #e5cf9f !important;
+  box-shadow: none !important;
+  text-shadow:none !important;
+}
+
+.table-wrap { overflow:auto; }
+table { background:#fff !important; color:var(--content-text) !important; }
+th {
+  color:#5f584f !important;
+  background:#faf8f4 !important;
+  border-bottom:1px solid var(--content-border) !important;
+  box-shadow:none !important;
+  text-transform:none !important;
+}
+td { color:var(--content-text) !important; border-bottom:1px solid #ece8e1 !important; }
+tr:hover td { background:#fbf7ef !important; }
+
+.kpi-value,.metric-value,.stat-value { color:var(--content-strong) !important; text-shadow:none !important; }
+
+.error { color:#842d27 !important; background:#fff0ee !important; border-color:#edc3be !important; box-shadow:none !important; }
+.success { color:#136548 !important; background:#edf9f4 !important; border-color:#bde2d4 !important; box-shadow:none !important; }
+
+.breadcrumbs,
+.breadcrumbs a { color:var(--content-muted) !important; }
+
+.mobile-quick-bar,
+.mobile-navigation-drawer { background:#2b2823 !important; }
+
+/* Keep dense operational pages readable and aligned with the reference. */
+.form-grid,.grid,.grid-2,.grid-3 { gap:16px; }
+.action-row { gap:10px; }
+
+@media (max-width: 980px) {
+  .application-main,.top-main,.main { padding:16px !important; }
+  .card,.neo-card,.erp-panel,.workbench-panel { border-radius:7px !important; }
+}
