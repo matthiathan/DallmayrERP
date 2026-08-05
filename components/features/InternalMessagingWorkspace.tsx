@@ -58,6 +58,7 @@ export function InternalMessagingWorkspace() {
   const [readPositions, setReadPositions] = useState<ReadPosition[]>([]);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [participantSearch, setParticipantSearch] = useState('');
   const [groupTitle, setGroupTitle] = useState('');
   const [body, setBody] = useState('');
   const [messageSearch, setMessageSearch] = useState('');
@@ -77,6 +78,18 @@ export function InternalMessagingWorkspace() {
   const selectedThread = useMemo(() => threads.find((thread) => thread.id === selectedThreadId) ?? null, [selectedThreadId, threads]);
   const currentUser = businessUser ? directoryById.get(businessUser.id) : undefined;
   const ownMentions = useMemo(() => mentionTokens(currentUser), [currentUser]);
+  const selectableDirectory = useMemo(() => directory.filter((user) => user.id !== businessUser?.id), [businessUser?.id, directory]);
+  const selectedUsers = useMemo(() => selectedUserIds.map((id) => directoryById.get(id)).filter((user): user is DirectoryUser => Boolean(user)), [directoryById, selectedUserIds]);
+  const filteredDirectory = useMemo(() => {
+    const query = participantSearch.trim().toLowerCase();
+    const users = query
+      ? selectableDirectory.filter((user) => user.label.toLowerCase().includes(query) || user.email.toLowerCase().includes(query))
+      : selectableDirectory;
+    return [...users].sort((left, right) => {
+      const onlineDifference = Number(onlineUserIds.has(right.id)) - Number(onlineUserIds.has(left.id));
+      return onlineDifference || left.label.localeCompare(right.label);
+    });
+  }, [onlineUserIds, participantSearch, selectableDirectory]);
 
   const filteredMessages = useMemo(() => {
     const query = messageSearch.trim().toLowerCase();
@@ -285,6 +298,7 @@ export function InternalMessagingWorkspace() {
     setCreating(false);
     if (result.error) { setError(result.error.message); return; }
     setSelectedUserIds([]);
+    setParticipantSearch('');
     setGroupTitle('');
     await loadThreads();
     setSelectedThreadId(String(result.data));
@@ -309,6 +323,12 @@ export function InternalMessagingWorkspace() {
     await Promise.all([loadMessages(selectedThreadId), loadThreads()]);
   }
 
+  function toggleParticipant(userId: string) {
+    setSelectedUserIds((current) => current.includes(userId)
+      ? current.filter((id) => id !== userId)
+      : [...current, userId]);
+  }
+
   function handleBodyChange(value: string) {
     setBody(value);
     broadcastTyping(Boolean(value.trim()));
@@ -327,15 +347,55 @@ export function InternalMessagingWorkspace() {
         <aside className="messages-v2-sidebar">
           <form className="messages-v2-create" onSubmit={createConversation}>
             <strong>New conversation</strong>
-            <select aria-label="Conversation participants" multiple value={selectedUserIds} onChange={(event) => setSelectedUserIds(Array.from(event.currentTarget.selectedOptions, (option) => option.value))}>
-              {directory.filter((user) => user.id !== businessUser.id).map((user) => <option key={user.id} value={user.id}>{user.label} — {onlineUserIds.has(user.id) ? 'online' : 'offline'}</option>)}
-            </select>
+            <input
+              aria-label="Search company directory"
+              autoComplete="off"
+              placeholder="Search by name or email"
+              type="search"
+              value={participantSearch}
+              onChange={(event) => setParticipantSearch(event.target.value)}
+            />
+            {selectedUsers.length > 0 ? (
+              <div aria-label="Selected participants" className="messages-v2-selected-people" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                {selectedUsers.map((user) => (
+                  <button aria-label={`Remove ${user.label}`} className="button secondary" key={user.id} onClick={() => toggleParticipant(user.id)} type="button">
+                    {user.label} ×
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            <div
+              aria-label="Company directory"
+              className="messages-v2-people-picker"
+              role="listbox"
+              style={{ maxHeight: '18rem', minHeight: '7rem', overflowY: 'auto', overscrollBehavior: 'contain' }}
+            >
+              {filteredDirectory.map((user) => {
+                const selected = selectedUserIds.includes(user.id);
+                return (
+                  <button
+                    aria-selected={selected}
+                    className={selected ? 'is-selected' : ''}
+                    key={user.id}
+                    onClick={() => toggleParticipant(user.id)}
+                    role="option"
+                    type="button"
+                    style={{ display: 'flex', justifyContent: 'space-between', width: '100%', textAlign: 'left' }}
+                  >
+                    <span><strong>{user.label}</strong><small style={{ display: 'block' }}>{user.email}</small></span>
+                    <span>{selected ? 'Selected' : onlineUserIds.has(user.id) ? 'Online' : 'Offline'}</span>
+                  </button>
+                );
+              })}
+              {!filteredDirectory.length ? <p>No employees match “{participantSearch}”.</p> : null}
+            </div>
+            <small>{filteredDirectory.length} of {selectableDirectory.length} employees shown · {selectedUserIds.length} selected</small>
             {selectedUserIds.length > 1 ? <input aria-label="Group name" maxLength={120} required placeholder="Group name" value={groupTitle} onChange={(event) => setGroupTitle(event.target.value)} /> : null}
-            <button className="button" disabled={creating || !selectedUserIds.length || (selectedUserIds.length > 1 && !groupTitle.trim())} type="submit">{creating ? 'Creating…' : 'Create'}</button>
+            <button className="button" disabled={creating || !selectedUserIds.length || (selectedUserIds.length > 1 && !groupTitle.trim())} type="submit">{creating ? 'Creating…' : selectedUserIds.length > 1 ? 'Create group' : 'Start conversation'}</button>
           </form>
           <nav className="messages-v2-thread-list" aria-label="Conversations">
             {loading ? <p>Loading conversations…</p> : null}
-            {!loading && !threads.length ? <p>No conversations yet. Select one or more colleagues above to start.</p> : null}
+            {!loading && !threads.length ? <p>No conversations yet. Search for one or more colleagues above to start.</p> : null}
             {threads.map((thread) => {
               const unread = isUnread(thread);
               return (
