@@ -78,10 +78,10 @@
 @import '../monday-operational-views-phase-4.css';
 @import '../monday-my-work-phase-5.css';
 
-/* 6. 2026 operations cockpit overhaul. Keep this late so it can normalize legacy surfaces. */
+/* 6. 2026 operations cockpit overhaul. */
 @import '../operations-cockpit.css';
 
-/* 7. Executive ERP redesign contract. This is the current application UI layer. */
+/* 7. Executive ERP redesign contract. */
 @import '../erp-executive-ui.css';
 
 /* 8. Dynamics 365-inspired operating shell. */
@@ -91,8 +91,11 @@
 @import '../ui-readability-layout.css';
 @import '../internal-messaging-v2.css';
 
-/* 10. ERP workbench system. Keep last so shell, page rhythm, grids and panels share one authority. */
+/* 10. ERP workbench system. */
 @import '../erp-workbench-system.css';
 
-/* 11. Approved Dallmayr cream/white workspace with dark navigation and gold accents. */
+/* 11. Transitional colour contract from the approved reference. */
 @import '../reference-ui-redesign.css';
+
+/* 12. Structural full-application rebuild. This is the final visual authority. */
+@import '../full-application-rebuild.css';
