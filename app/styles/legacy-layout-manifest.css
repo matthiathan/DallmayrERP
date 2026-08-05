@@ -1,0 +1,24 @@
+/*
+ * Legacy layout-programme manifest.
+ *
+ * These layers remain temporarily because older routes still use their class
+ * names. The canonical application stylesheet imported after this manifest is
+ * the visual authority. Do not add new layout programmes here.
+ */
+@import '../application-shell-phase-1.css';
+@import '../page-templates-phase-2.css';
+@import '../role-today-workspaces.css';
+@import './navigation-contract.css';
+@import './compatibility-overrides.css';
+@import '../monday-shell-phase-1.css';
+@import '../monday-board-phase-2.css';
+@import '../monday-customer-board-phase-2.css';
+@import '../monday-item-card-phase-3.css';
+@import '../monday-operational-views-phase-4.css';
+@import '../monday-my-work-phase-5.css';
+@import '../operations-cockpit.css';
+@import '../erp-executive-ui.css';
+@import '../dynamics-365-ui.css';
+@import '../ui-readability-layout.css';
+@import '../internal-messaging-v2.css';
+@import '../erp-workbench-system.css';
