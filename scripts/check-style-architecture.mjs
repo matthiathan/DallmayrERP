@@ -18,7 +18,6 @@ function cssImports(source) {
 
 const layout = await readFile(layoutPath, 'utf8');
 const layoutCssImports = [...layout.matchAll(/import\s+['"]([^'"]+\.css)['"];?/g)].map((match) => match[1]);
-
 if (layoutCssImports.length !== 1 || layoutCssImports[0] !== './styles/index.css') {
   fail(`app/layout.tsx must import only ./styles/index.css; found ${JSON.stringify(layoutCssImports)}.`);
 }
@@ -30,10 +29,8 @@ const expectedEntryImports = [
   './legacy-layout-manifest.css',
   './application.css',
 ];
-
 const entry = await readFile(entryPath, 'utf8');
 const entryImports = cssImports(entry);
-
 if (JSON.stringify(entryImports) !== JSON.stringify(expectedEntryImports)) {
   fail(`app/styles/index.css must contain the canonical ordered imports ${JSON.stringify(expectedEntryImports)}; found ${JSON.stringify(entryImports)}.`);
 }
@@ -41,7 +38,6 @@ if (JSON.stringify(entryImports) !== JSON.stringify(expectedEntryImports)) {
 const visited = new Set();
 const activeStack = new Set();
 const registeredTargets = new Map();
-
 async function validateStylesheet(filePath) {
   const normalized = path.normalize(filePath);
   if (activeStack.has(normalized)) {
@@ -49,7 +45,6 @@ async function validateStylesheet(filePath) {
     return;
   }
   if (visited.has(normalized)) return;
-
   activeStack.add(normalized);
   visited.add(normalized);
 
@@ -73,7 +68,6 @@ async function validateStylesheet(filePath) {
     if (/(?:^|\/)\w[\w-]*-final\.css$/i.test(importPath)) {
       fail(`${path.relative(root, normalized)} registers prohibited *-final.css layer ${importPath}.`);
     }
-
     const resolved = path.resolve(path.dirname(normalized), importPath);
     const firstOwner = registeredTargets.get(resolved);
     if (firstOwner && firstOwner !== normalized) {
@@ -83,35 +77,52 @@ async function validateStylesheet(filePath) {
     }
     await validateStylesheet(resolved);
   }
-
   activeStack.delete(normalized);
 }
-
 await validateStylesheet(entryPath);
 
-const legacyFeaturePath = path.join(stylesDirectory, 'legacy-feature-manifest.css');
-const legacyLayoutPath = path.join(stylesDirectory, 'legacy-layout-manifest.css');
-const applicationPath = path.join(stylesDirectory, 'application.css');
-
-for (const manifestPath of [legacyFeaturePath, legacyLayoutPath]) {
+for (const manifestPath of [
+  path.join(stylesDirectory, 'legacy-feature-manifest.css'),
+  path.join(stylesDirectory, 'legacy-layout-manifest.css'),
+]) {
   const source = await readFile(manifestPath, 'utf8');
-  if (!source.includes('Do not add new')) {
-    fail(`${path.relative(root, manifestPath)} must retain its quarantine guidance.`);
-  }
+  if (!source.includes('Do not add new')) fail(`${path.relative(root, manifestPath)} must retain its quarantine guidance.`);
 }
 
+const applicationPath = path.join(stylesDirectory, 'application.css');
 const applicationSource = await readFile(applicationPath, 'utf8');
+const applicationImports = cssImports(applicationSource);
 for (const requiredApplicationImport of [
   '../full-application-rebuild.css',
   '../route-composition-system.css',
   '../dashboard-role-workspace-rebuild.css',
   '../final-route-family-rebuild.css',
   '../navigation-contrast-phase-1.css',
+  '../page-cleanup-phase-4.css',
+  '../component-library-phase-3.css',
+  '../ui-stabilization-contract.css',
 ]) {
-  if (!cssImports(applicationSource).includes(requiredApplicationImport)) {
+  if (!applicationImports.includes(requiredApplicationImport)) {
     fail(`app/styles/application.css is missing canonical import ${requiredApplicationImport}.`);
+  }
+}
+if (applicationImports.at(-1) !== '../ui-stabilization-contract.css') {
+  fail('ui-stabilization-contract.css must remain the final application import.');
+}
+
+const stabilizationPath = path.join(root, 'app', 'ui-stabilization-contract.css');
+const stabilizationSource = await readFile(stabilizationPath, 'utf8');
+for (const requiredRule of [
+  '.dallmayr-sidebar',
+  '.dallmayr-sidebar-link[aria-current=',
+  '--ui-ink: #231f1a',
+  '--ui-canvas: #f5f0e6',
+  'outline: 3px solid',
+]) {
+  if (!stabilizationSource.includes(requiredRule)) {
+    fail(`app/ui-stabilization-contract.css is missing required usability rule ${requiredRule}.`);
   }
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered through five canonical entry manifests.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered through five canonical entry manifests with a locked final stabilization contract.`);
