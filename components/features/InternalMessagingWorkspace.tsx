@@ -22,6 +22,7 @@ type ReadPosition = { thread_id: string; last_read_message_id: string | null; la
 type TypingPayload = { thread_id: string; user_id: string; label: string; typing: boolean };
 
 const PAGE_SIZE = 50;
+const DIRECTORY_LIMIT = 1000;
 const TYPING_TIMEOUT_MS = 2500;
 
 function displayName(details: Record<string, unknown> | undefined, email: string) {
@@ -80,6 +81,7 @@ export function InternalMessagingWorkspace() {
   const ownMentions = useMemo(() => mentionTokens(currentUser), [currentUser]);
   const selectableDirectory = useMemo(() => directory.filter((user) => user.id !== businessUser?.id), [businessUser?.id, directory]);
   const selectedUsers = useMemo(() => selectedUserIds.map((id) => directoryById.get(id)).filter((user): user is DirectoryUser => Boolean(user)), [directoryById, selectedUserIds]);
+
   const filteredDirectory = useMemo(() => {
     const query = participantSearch.trim().toLowerCase();
     const users = query
@@ -103,13 +105,24 @@ export function InternalMessagingWorkspace() {
   const threadLabel = useCallback((thread: Thread) => {
     if (thread.title) return thread.title;
     const other = thread.members.find((member) => member.user_id !== businessUser?.id);
-    return other ? directoryById.get(other.user_id)?.label ?? 'Direct conversation' : 'Conversation';
+    if (!other) return 'Conversation';
+    const user = directoryById.get(other.user_id);
+    return user?.label || user?.email || 'Direct conversation';
   }, [businessUser?.id, directoryById]);
 
+  const senderLabel = useCallback((senderId: string) => {
+    const user = directoryById.get(senderId);
+    if (user) return user.label || user.email;
+    if (selectedThread?.thread_type === 'direct' && senderId !== businessUser?.id) return threadLabel(selectedThread);
+    return `Employee ${senderId.slice(0, 8)}`;
+  }, [businessUser?.id, directoryById, selectedThread, threadLabel]);
+
   const threadPresence = useCallback((thread: Thread) => {
-    const online = thread.members.filter((member) => onlineUserIds.has(member.user_id)).length;
-    return online > 0 ? `${online} online` : 'Offline';
-  }, [onlineUserIds]);
+    const otherMembers = thread.members.filter((member) => member.user_id !== businessUser?.id);
+    const online = otherMembers.filter((member) => onlineUserIds.has(member.user_id)).length;
+    if (thread.thread_type === 'direct') return online ? 'Online' : 'Offline';
+    return `${online} of ${otherMembers.length} online`;
+  }, [businessUser?.id, onlineUserIds]);
 
   const isUnread = useCallback((thread: Thread) => {
     if (!thread.last_message_at) return false;
@@ -126,14 +139,16 @@ export function InternalMessagingWorkspace() {
   const loadDirectory = useCallback(async () => {
     const client = getSupabaseClient();
     const [{ data: users, error: usersError }, { data: details, error: detailsError }] = await Promise.all([
-      client.from('users').select('id,email').eq('is_active', true).order('email'),
-      client.from('user_details').select('user_id,first_name,last_name'),
+      client.from('users').select('id,email').eq('is_active', true).order('email').range(0, DIRECTORY_LIMIT - 1),
+      client.from('user_details').select('user_id,first_name,last_name').range(0, DIRECTORY_LIMIT - 1),
     ]);
     if (usersError) throw usersError;
     if (detailsError) throw detailsError;
     const detailMap = new Map((details ?? []).map((row) => [String(row.user_id), row as Record<string, unknown>]));
     setDirectory((users ?? []).map((row) => ({
-      id: String(row.id), email: String(row.email), label: displayName(detailMap.get(String(row.id)), String(row.email)),
+      id: String(row.id),
+      email: String(row.email),
+      label: displayName(detailMap.get(String(row.id)), String(row.email)),
     })));
   }, []);
 
@@ -162,11 +177,19 @@ export function InternalMessagingWorkspace() {
     (members ?? []).forEach((member) => {
       const key = String(member.thread_id);
       const list = memberMap.get(key) ?? [];
-      list.push({ user_id: String(member.user_id), is_muted: Boolean(member.is_muted), archived_at: member.archived_at ? String(member.archived_at) : null });
+      list.push({
+        user_id: String(member.user_id),
+        is_muted: Boolean(member.is_muted),
+        archived_at: member.archived_at ? String(member.archived_at) : null,
+      });
       memberMap.set(key, list);
     });
 
-    const rows = (threadRows ?? []).map((row) => ({ ...row, id: String(row.id), members: memberMap.get(String(row.id)) ?? [] })) as Thread[];
+    const rows = (threadRows ?? []).map((row) => ({
+      ...row,
+      id: String(row.id),
+      members: memberMap.get(String(row.id)) ?? [],
+    })) as Thread[];
     setThreads(rows);
     setReadPositions((positions ?? []).map((position) => ({
       thread_id: String(position.thread_id),
@@ -347,55 +370,33 @@ export function InternalMessagingWorkspace() {
         <aside className="messages-v2-sidebar">
           <form className="messages-v2-create" onSubmit={createConversation}>
             <strong>New conversation</strong>
-            <input
-              aria-label="Search company directory"
-              autoComplete="off"
-              placeholder="Search by name or email"
-              type="search"
-              value={participantSearch}
-              onChange={(event) => setParticipantSearch(event.target.value)}
-            />
+            <input aria-label="Search company directory" autoComplete="off" placeholder="Search by name or email" type="search" value={participantSearch} onChange={(event) => setParticipantSearch(event.target.value)} />
             {selectedUsers.length > 0 ? (
-              <div aria-label="Selected participants" className="messages-v2-selected-people" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+              <div aria-label="Selected participants" className="messages-v2-selected-people">
                 {selectedUsers.map((user) => (
-                  <button aria-label={`Remove ${user.label}`} className="button secondary" key={user.id} onClick={() => toggleParticipant(user.id)} type="button">
-                    {user.label} ×
-                  </button>
+                  <button aria-label={`Remove ${user.label}`} className="button secondary" key={user.id} onClick={() => toggleParticipant(user.id)} type="button">{user.label} ×</button>
                 ))}
               </div>
             ) : null}
-            <div
-              aria-label="Company directory"
-              className="messages-v2-people-picker"
-              role="listbox"
-              style={{ maxHeight: '18rem', minHeight: '7rem', overflowY: 'auto', overscrollBehavior: 'contain' }}
-            >
+            <div aria-label="All active employees" className="messages-v2-people-picker" role="listbox">
               {filteredDirectory.map((user) => {
                 const selected = selectedUserIds.includes(user.id);
                 return (
-                  <button
-                    aria-selected={selected}
-                    className={selected ? 'is-selected' : ''}
-                    key={user.id}
-                    onClick={() => toggleParticipant(user.id)}
-                    role="option"
-                    type="button"
-                    style={{ display: 'flex', justifyContent: 'space-between', width: '100%', textAlign: 'left' }}
-                  >
-                    <span><strong>{user.label}</strong><small style={{ display: 'block' }}>{user.email}</small></span>
+                  <button aria-selected={selected} className={selected ? 'is-selected' : ''} key={user.id} onClick={() => toggleParticipant(user.id)} role="option" type="button">
+                    <span><strong>{user.label}</strong><small>{user.email}</small></span>
                     <span>{selected ? 'Selected' : onlineUserIds.has(user.id) ? 'Online' : 'Offline'}</span>
                   </button>
                 );
               })}
-              {!filteredDirectory.length ? <p>No employees match “{participantSearch}”.</p> : null}
+              {!filteredDirectory.length ? <p>No active employees match “{participantSearch}”.</p> : null}
             </div>
-            <small>{filteredDirectory.length} of {selectableDirectory.length} employees shown · {selectedUserIds.length} selected</small>
+            <small>{participantSearch ? `${filteredDirectory.length} matching` : `${selectableDirectory.length} active`} employees · {selectedUserIds.length} selected</small>
             {selectedUserIds.length > 1 ? <input aria-label="Group name" maxLength={120} required placeholder="Group name" value={groupTitle} onChange={(event) => setGroupTitle(event.target.value)} /> : null}
             <button className="button" disabled={creating || !selectedUserIds.length || (selectedUserIds.length > 1 && !groupTitle.trim())} type="submit">{creating ? 'Creating…' : selectedUserIds.length > 1 ? 'Create group' : 'Start conversation'}</button>
           </form>
           <nav className="messages-v2-thread-list" aria-label="Conversations">
             {loading ? <p>Loading conversations…</p> : null}
-            {!loading && !threads.length ? <p>No conversations yet. Search for one or more colleagues above to start.</p> : null}
+            {!loading && !threads.length ? <p>No conversations yet. Select one or more active employees above to start.</p> : null}
             {threads.map((thread) => {
               const unread = isUnread(thread);
               return (
@@ -411,7 +412,7 @@ export function InternalMessagingWorkspace() {
           {selectedThread ? <>
             <header>
               <h2>{threadLabel(selectedThread)}</h2>
-              <p>{selectedThread.thread_type === 'group' ? `${selectedThread.members.length} participants` : 'Direct conversation'} · {threadPresence(selectedThread)}</p>
+              <p>{selectedThread.thread_type === 'group' ? `${selectedThread.members.length} participants` : `Conversation with ${threadLabel(selectedThread)}`} · {threadPresence(selectedThread)}</p>
               <input aria-label="Search loaded messages" placeholder="Search latest messages" type="search" value={messageSearch} onChange={(event) => setMessageSearch(event.target.value)} />
             </header>
             <div className="messages-v2-log" role="log" aria-live="polite">
@@ -420,19 +421,16 @@ export function InternalMessagingWorkspace() {
               {!loadingMessages && messages.length > 0 && !filteredMessages.length ? <p>No loaded messages match your search.</p> : null}
               {filteredMessages.map((message) => {
                 const mine = message.sender_id === businessUser.id;
-                const sender = directoryById.get(message.sender_id)?.label ?? 'Colleague';
                 return <article className={mine ? 'is-mine' : ''} key={message.id}>
-                  {!mine ? <strong>{sender}</strong> : null}
+                  {!mine ? <strong>{senderLabel(message.sender_id)}</strong> : null}
                   <p>{renderMessageBody(message.body, ownMentions)}</p><time>{formatTime(message.created_at)}</time>
                 </article>;
               })}
               <div ref={endRef} />
             </div>
-            <div aria-live="polite" className="messages-v2-typing">
-              {typingLabels.length ? `${typingLabels.slice(0, 2).join(', ')} ${typingLabels.length === 1 ? 'is' : 'are'} typing…` : '\u00a0'}
-            </div>
+            <div aria-live="polite" className="messages-v2-typing">{typingLabels.length ? `${typingLabels.slice(0, 2).join(', ')} ${typingLabels.length === 1 ? 'is' : 'are'} typing…` : '\u00a0'}</div>
             <form className="messages-v2-composer" onSubmit={sendMessage}>
-              <textarea aria-label="Message" maxLength={4000} placeholder="Write a message. Use @name to mention a colleague." rows={2} value={body} onChange={(event) => handleBodyChange(event.target.value)} />
+              <textarea aria-label="Message" maxLength={4000} placeholder="Write a message. Use @name to mention an employee." rows={2} value={body} onChange={(event) => handleBodyChange(event.target.value)} />
               <button className="button" disabled={sending || !body.trim()} type="submit">{sending ? 'Sending…' : 'Send'}</button>
             </form>
           </> : <EmptyState title="Choose a conversation" message="Create or select a conversation to begin." />}
