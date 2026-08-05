@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErpPage, ErpPageHeader, ErpStateBanner } from '@/components/ui/ErpLayout';
@@ -18,8 +19,10 @@ type Thread = {
 };
 type Message = { id: string; thread_id: string; sender_id: string; body: string; created_at: string };
 type ReadPosition = { thread_id: string; last_read_message_id: string | null; last_read_at: string | null };
+type TypingPayload = { thread_id: string; user_id: string; label: string; typing: boolean };
 
 const PAGE_SIZE = 50;
+const TYPING_TIMEOUT_MS = 2500;
 
 function displayName(details: Record<string, unknown> | undefined, email: string) {
   const first = typeof details?.first_name === 'string' ? details.first_name : '';
@@ -33,6 +36,20 @@ function formatTime(value: string) {
   }).format(new Date(value));
 }
 
+function mentionTokens(user: DirectoryUser | undefined) {
+  if (!user) return new Set<string>();
+  const names = user.label.split(/\s+/).filter(Boolean);
+  const emailName = user.email.split('@')[0];
+  return new Set([user.label, names[0], emailName].filter(Boolean).map((value) => `@${value}`.toLowerCase()));
+}
+
+function renderMessageBody(body: string, ownMentions: Set<string>) {
+  const parts = body.split(/(@[\p{L}\p{N}._-]+)/gu);
+  return parts.map((part, index) => ownMentions.has(part.toLowerCase())
+    ? <mark key={`${part}-${index}`}>{part}</mark>
+    : part);
+}
+
 export function InternalMessagingWorkspace() {
   const { businessUser } = useAuth();
   const [directory, setDirectory] = useState<DirectoryUser[]>([]);
@@ -43,22 +60,43 @@ export function InternalMessagingWorkspace() {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [groupTitle, setGroupTitle] = useState('');
   const [body, setBody] = useState('');
+  const [messageSearch, setMessageSearch] = useState('');
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
+  const [typingByThread, setTypingByThread] = useState<Record<string, Record<string, string>>>({});
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
+  const realtimeRef = useRef<RealtimeChannel | null>(null);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const directoryById = useMemo(() => new Map(directory.map((user) => [user.id, user])), [directory]);
   const readPositionByThread = useMemo(() => new Map(readPositions.map((position) => [position.thread_id, position])), [readPositions]);
   const selectedThread = useMemo(() => threads.find((thread) => thread.id === selectedThreadId) ?? null, [selectedThreadId, threads]);
+  const currentUser = businessUser ? directoryById.get(businessUser.id) : undefined;
+  const ownMentions = useMemo(() => mentionTokens(currentUser), [currentUser]);
+
+  const filteredMessages = useMemo(() => {
+    const query = messageSearch.trim().toLowerCase();
+    if (!query) return messages;
+    return messages.filter((message) => {
+      const sender = directoryById.get(message.sender_id)?.label ?? '';
+      return message.body.toLowerCase().includes(query) || sender.toLowerCase().includes(query);
+    });
+  }, [directoryById, messageSearch, messages]);
 
   const threadLabel = useCallback((thread: Thread) => {
     if (thread.title) return thread.title;
     const other = thread.members.find((member) => member.user_id !== businessUser?.id);
     return other ? directoryById.get(other.user_id)?.label ?? 'Direct conversation' : 'Conversation';
   }, [businessUser?.id, directoryById]);
+
+  const threadPresence = useCallback((thread: Thread) => {
+    const online = thread.members.filter((member) => onlineUserIds.has(member.user_id)).length;
+    return online > 0 ? `${online} online` : 'Offline';
+  }, [onlineUserIds]);
 
   const isUnread = useCallback((thread: Thread) => {
     if (!thread.last_message_at) return false;
@@ -68,6 +106,9 @@ export function InternalMessagingWorkspace() {
   }, [readPositionByThread]);
 
   const unreadCount = useMemo(() => threads.filter(isUnread).length, [isUnread, threads]);
+  const typingLabels = selectedThreadId
+    ? Object.values(typingByThread[selectedThreadId] ?? {}).filter((label) => label !== currentUser?.label)
+    : [];
 
   const loadDirectory = useCallback(async () => {
     const client = getSupabaseClient();
@@ -164,6 +205,15 @@ export function InternalMessagingWorkspace() {
     window.setTimeout(() => endRef.current?.scrollIntoView({ block: 'end' }), 0);
   }, [markThreadRead]);
 
+  const broadcastTyping = useCallback((typing: boolean) => {
+    if (!selectedThreadId || !businessUser?.id || !currentUser || !realtimeRef.current) return;
+    void realtimeRef.current.send({
+      type: 'broadcast',
+      event: 'typing',
+      payload: { thread_id: selectedThreadId, user_id: businessUser.id, label: currentUser.label, typing } satisfies TypingPayload,
+    });
+  }, [businessUser?.id, currentUser, selectedThreadId]);
+
   useEffect(() => {
     if (!businessUser?.id) return;
     setLoading(true);
@@ -174,13 +224,37 @@ export function InternalMessagingWorkspace() {
 
   useEffect(() => {
     if (!selectedThreadId) { setMessages([]); return; }
+    setMessageSearch('');
     void loadMessages(selectedThreadId);
   }, [loadMessages, selectedThreadId]);
 
   useEffect(() => {
-    if (!businessUser?.id) return;
+    if (!businessUser?.id || !currentUser) return;
     const client = getSupabaseClient();
-    const channel = client.channel(`internal-messaging-${businessUser.id}`)
+    const channel = client.channel('internal-messaging-presence', {
+      config: { presence: { key: businessUser.id }, broadcast: { self: false } },
+    })
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState<{ user_id: string }>();
+        setOnlineUserIds(new Set(Object.values(state).flat().map((presence) => presence.user_id)));
+      })
+      .on('broadcast', { event: 'typing' }, ({ payload }) => {
+        const typing = payload as TypingPayload;
+        if (!typing.thread_id || !typing.user_id) return;
+        setTypingByThread((current) => {
+          const threadState = { ...(current[typing.thread_id] ?? {}) };
+          if (typing.typing) threadState[typing.user_id] = typing.label;
+          else delete threadState[typing.user_id];
+          return { ...current, [typing.thread_id]: threadState };
+        });
+        if (typing.typing) {
+          window.setTimeout(() => setTypingByThread((current) => {
+            const threadState = { ...(current[typing.thread_id] ?? {}) };
+            delete threadState[typing.user_id];
+            return { ...current, [typing.thread_id]: threadState };
+          }), TYPING_TIMEOUT_MS + 750);
+        }
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload) => {
         const changed = payload.new && typeof payload.new === 'object' && 'thread_id' in payload.new ? String(payload.new.thread_id) : null;
         void loadThreads();
@@ -188,9 +262,16 @@ export function InternalMessagingWorkspace() {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'message_thread_members' }, () => void loadThreads())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'message_read_positions' }, () => void loadThreads())
-      .subscribe();
-    return () => { void client.removeChannel(channel); };
-  }, [businessUser?.id, loadMessages, loadThreads, selectedThreadId]);
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') await channel.track({ user_id: businessUser.id, label: currentUser.label, online_at: new Date().toISOString() });
+      });
+    realtimeRef.current = channel;
+    return () => {
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      realtimeRef.current = null;
+      void client.removeChannel(channel);
+    };
+  }, [businessUser?.id, currentUser, loadMessages, loadThreads, selectedThreadId]);
 
   async function createConversation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -215,6 +296,7 @@ export function InternalMessagingWorkspace() {
     if (!selectedThreadId || !copy || !businessUser?.id || sending) return;
     setSending(true);
     setError(null);
+    broadcastTyping(false);
     const clientMessageId = crypto.randomUUID();
     const { error: sendError } = await getSupabaseClient().from('messages').insert({
       thread_id: selectedThreadId,
@@ -227,11 +309,18 @@ export function InternalMessagingWorkspace() {
     await Promise.all([loadMessages(selectedThreadId), loadThreads()]);
   }
 
+  function handleBodyChange(value: string) {
+    setBody(value);
+    broadcastTyping(Boolean(value.trim()));
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => broadcastTyping(false), TYPING_TIMEOUT_MS);
+  }
+
   if (!businessUser) return <EmptyState title="Messages unavailable" message="Your ERP profile is still loading." />;
 
   return (
     <ErpPage className="internal-messaging-page" variant="operational">
-      <ErpPageHeader eyebrow="Communications" title="Messages" description="Secure internal direct and group conversations." />
+      <ErpPageHeader eyebrow="Communications" title="Messages" description="Secure internal direct and group conversations with live presence." />
       {unreadCount > 0 ? <ErpStateBanner title={`${unreadCount} unread conversation${unreadCount === 1 ? '' : 's'}`} message="Unread conversations are highlighted in the conversation list." tone="info" /> : null}
       {error ? <ErpStateBanner title="Messaging needs attention" message={error} tone="danger" /> : null}
       <section className="messages-v2-shell" aria-label="Internal messaging workspace">
@@ -239,7 +328,7 @@ export function InternalMessagingWorkspace() {
           <form className="messages-v2-create" onSubmit={createConversation}>
             <strong>New conversation</strong>
             <select aria-label="Conversation participants" multiple value={selectedUserIds} onChange={(event) => setSelectedUserIds(Array.from(event.currentTarget.selectedOptions, (option) => option.value))}>
-              {directory.filter((user) => user.id !== businessUser.id).map((user) => <option key={user.id} value={user.id}>{user.label} — {user.email}</option>)}
+              {directory.filter((user) => user.id !== businessUser.id).map((user) => <option key={user.id} value={user.id}>{user.label} — {onlineUserIds.has(user.id) ? 'online' : 'offline'}</option>)}
             </select>
             {selectedUserIds.length > 1 ? <input aria-label="Group name" maxLength={120} required placeholder="Group name" value={groupTitle} onChange={(event) => setGroupTitle(event.target.value)} /> : null}
             <button className="button" disabled={creating || !selectedUserIds.length || (selectedUserIds.length > 1 && !groupTitle.trim())} type="submit">{creating ? 'Creating…' : 'Create'}</button>
@@ -252,7 +341,7 @@ export function InternalMessagingWorkspace() {
               return (
                 <button aria-label={`${threadLabel(thread)}${unread ? ', unread' : ''}`} className={`${thread.id === selectedThreadId ? 'is-active' : ''} ${unread ? 'is-unread' : ''}`} key={thread.id} onClick={() => setSelectedThreadId(thread.id)} type="button">
                   <strong>{threadLabel(thread)}{unread ? <span aria-label="Unread messages"> •</span> : null}</strong>
-                  <small>{thread.thread_type === 'group' ? `${thread.members.length} participants` : 'Direct conversation'}{thread.last_message_at ? ` · ${formatTime(thread.last_message_at)}` : ''}</small>
+                  <small>{thread.thread_type === 'group' ? `${thread.members.length} participants` : 'Direct conversation'} · {threadPresence(thread)}{thread.last_message_at ? ` · ${formatTime(thread.last_message_at)}` : ''}</small>
                 </button>
               );
             })}
@@ -260,22 +349,30 @@ export function InternalMessagingWorkspace() {
         </aside>
         <section className="messages-v2-chat">
           {selectedThread ? <>
-            <header><h2>{threadLabel(selectedThread)}</h2><p>{selectedThread.thread_type === 'group' ? `${selectedThread.members.length} participants` : 'Direct conversation'} · newest {PAGE_SIZE} messages</p></header>
+            <header>
+              <h2>{threadLabel(selectedThread)}</h2>
+              <p>{selectedThread.thread_type === 'group' ? `${selectedThread.members.length} participants` : 'Direct conversation'} · {threadPresence(selectedThread)}</p>
+              <input aria-label="Search loaded messages" placeholder="Search latest messages" type="search" value={messageSearch} onChange={(event) => setMessageSearch(event.target.value)} />
+            </header>
             <div className="messages-v2-log" role="log" aria-live="polite">
               {loadingMessages ? <p>Loading messages…</p> : null}
               {!loadingMessages && !messages.length ? <p>No messages yet. Send the first message below.</p> : null}
-              {messages.map((message) => {
+              {!loadingMessages && messages.length > 0 && !filteredMessages.length ? <p>No loaded messages match your search.</p> : null}
+              {filteredMessages.map((message) => {
                 const mine = message.sender_id === businessUser.id;
                 const sender = directoryById.get(message.sender_id)?.label ?? 'Colleague';
                 return <article className={mine ? 'is-mine' : ''} key={message.id}>
                   {!mine ? <strong>{sender}</strong> : null}
-                  <p>{message.body}</p><time>{formatTime(message.created_at)}</time>
+                  <p>{renderMessageBody(message.body, ownMentions)}</p><time>{formatTime(message.created_at)}</time>
                 </article>;
               })}
               <div ref={endRef} />
             </div>
+            <div aria-live="polite" className="messages-v2-typing">
+              {typingLabels.length ? `${typingLabels.slice(0, 2).join(', ')} ${typingLabels.length === 1 ? 'is' : 'are'} typing…` : '\u00a0'}
+            </div>
             <form className="messages-v2-composer" onSubmit={sendMessage}>
-              <textarea aria-label="Message" maxLength={4000} placeholder="Write a message" rows={2} value={body} onChange={(event) => setBody(event.target.value)} />
+              <textarea aria-label="Message" maxLength={4000} placeholder="Write a message. Use @name to mention a colleague." rows={2} value={body} onChange={(event) => handleBodyChange(event.target.value)} />
               <button className="button" disabled={sending || !body.trim()} type="submit">{sending ? 'Sending…' : 'Send'}</button>
             </form>
           </> : <EmptyState title="Choose a conversation" message="Create or select a conversation to begin." />}
