@@ -97,5 +97,8 @@
 /* 11. Transitional colour contract from the approved reference. */
 @import '../reference-ui-redesign.css';
 
-/* 12. Structural full-application rebuild. This is the final visual authority. */
+/* 12. Structural full-application rebuild. */
 @import '../full-application-rebuild.css';
+
+/* 13. Shared route composition system for dashboards, lists, records and forms. */
+@import '../route-composition-system.css';
