@@ -1,113 +1,18 @@
-/* DallmayrERP stylesheet entry point.
-   Import order is intentional. New global CSS must be registered here rather
-   than imported directly from app/layout.tsx. */
-
-/* 1. Stable design-system contract. */
+/*
+ * DallmayrERP global stylesheet entry point.
+ *
+ * Import order is contractual:
+ * 1. design tokens
+ * 2. quarantined route-specific legacy features
+ * 3. shared foundations
+ * 4. quarantined legacy layout programmes
+ * 5. canonical application visual authority
+ *
+ * Do not import global CSS directly from app/layout.tsx and do not add new
+ * legacy imports to either quarantine manifest.
+ */
 @import './tokens.css';
-
-/* 2. Legacy foundations and feature styles, preserved in their established order. */
-@import '../globals.css';
-@import '../hamster-loader.css';
-@import '../feature-widgets.css';
-@import '../navigation.css';
-@import '../spatial-desktop.css';
-@import '../enterprise-ui.css';
-@import '../stock-control.css';
-@import '../professional-ops.css';
-@import '../minimalist-ui.css';
-@import '../minimalist-operations.css';
-@import '../minimalist-ui-polish.css';
-@import '../ux-polish.css';
-@import '../density.css';
-@import '../ultrawide.css';
-@import '../mobile.css';
-@import '../erp-classic-navigation.css';
-@import '../notch-nav-fixes.css';
-@import '../ribbon-background.css';
-@import '../asset-ticket.css';
-@import '../text-visibility-polish.css';
-@import '../contrast-pairing.css';
-@import '../professional-nowrap-layout.css';
-@import '../resizable-tables.css';
-@import '../account-menu.css';
-@import '../account-menu-brand-placement.css';
-@import '../professional-layout-system.css';
-@import '../user-first-layout.css';
-@import '../scanner-feedback-fix.css';
-@import '../dark-bezel-navigation.css';
-@import '../fixed-top-navigation.css';
-@import '../role-workspace-details.css';
-@import '../reliability-machine-search.css';
-@import '../desktop-nav-overflow.css';
-@import '../table-column-filters.css';
-@import '../monthly-service-planning.css';
-@import '../operations-manager.css';
-@import '../admin-user-access-control.css';
-@import '../call-log-creation.css';
-@import '../appearance-panel.css';
-@import '../appearance-customization.css';
-@import '../field-service-workflow.css';
-@import '../operations-dispatch.css';
-@import '../customer-360.css';
-@import '../operations-exceptions.css';
-@import '../user-first-application-shell.css';
-@import '../adaptive-contrast.css';
-@import '../rendered-surface-contrast.css';
-@import '../slate-sand-themes.css';
-@import '../mobile-navigation-drawer.css';
-@import '../mobile-data-views.css';
-@import '../mobile-application-layout.css';
-@import '../mobile-master-detail-actions.css';
-@import '../mobile-offline-field-work.css';
-
-/* 3. Shared primitives and current application layout systems. */
+@import './legacy-feature-manifest.css';
 @import './foundations.css';
-@import '../application-shell-phase-1.css';
-@import '../page-templates-phase-2.css';
-@import '../role-today-workspaces.css';
-
-/* 4. Explicit final contracts and compatibility rules. */
-@import './navigation-contract.css';
-@import './compatibility-overrides.css';
-
-/* 5. Monday-style application programme. */
-@import '../monday-shell-phase-1.css';
-@import '../monday-board-phase-2.css';
-@import '../monday-customer-board-phase-2.css';
-@import '../monday-item-card-phase-3.css';
-@import '../monday-operational-views-phase-4.css';
-@import '../monday-my-work-phase-5.css';
-
-/* 6. 2026 operations cockpit overhaul. */
-@import '../operations-cockpit.css';
-
-/* 7. Executive ERP redesign contract. */
-@import '../erp-executive-ui.css';
-
-/* 8. Dynamics 365-inspired operating shell. */
-@import '../dynamics-365-ui.css';
-
-/* 9. User-first readability and layout guardrails. */
-@import '../ui-readability-layout.css';
-@import '../internal-messaging-v2.css';
-
-/* 10. ERP workbench system. */
-@import '../erp-workbench-system.css';
-
-/* 11. Transitional colour contract from the approved reference. */
-@import '../reference-ui-redesign.css';
-
-/* 12. Structural full-application rebuild. */
-@import '../full-application-rebuild.css';
-
-/* 13. Shared route composition system for dashboards, lists, records and forms. */
-@import '../route-composition-system.css';
-
-/* 14. Role dashboard and Today workspace composition. */
-@import '../dashboard-role-workspace-rebuild.css';
-
-/* 15. Final route-family compositions for operational, master-data and account pages. */
-@import '../final-route-family-rebuild.css';
-
-/* 16. Phase 1 navigation readability and accessibility contract. */
-@import '../navigation-contrast-phase-1.css';
+@import './legacy-layout-manifest.css';
+@import './application.css';
