@@ -37,6 +37,9 @@ jobs:
       - name: Check stylesheet architecture
         run: npm run stylecheck
 
+      - name: Check mobile navigation and search contracts
+        run: npm run mobile:interaction-check
+
       - name: Typecheck application
         run: npm run typecheck
 
