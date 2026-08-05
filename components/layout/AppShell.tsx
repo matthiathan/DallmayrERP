@@ -28,17 +28,18 @@ import { displayProfileName, isProfileComplete } from '@/types/dallmayrerp';
 const FAVORITES_KEY = 'dallmayr-mobile-favorites-v1';
 const RAIL_COLLAPSED_KEY = 'dallmayr-desktop-rail-collapsed-v1';
 const MAX_FAVORITES = 4;
+const MESSAGING_ENABLED = process.env.NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED !== 'false';
 
 const sectionOrderByRole: Record<BusinessRole, string[]> = {
-  admin: ['System', 'Transactions', 'Masters', 'Fixed Assets', 'Sales', 'Reports', 'Batch Reports', 'Utilities'],
-  operations: ['Operations', 'Assets & Maintenance', 'Inventory', 'Reports'],
-  sales: ['Sales', 'Masters', 'Transactions', 'Reports', 'Utilities'],
-  finance: ['Sales', 'Transactions', 'Masters', 'Reports', 'Batch Reports', 'Utilities'],
-  marketing: ['Sales', 'Masters', 'Reports', 'Batch Reports', 'Transactions', 'Utilities'],
-  executive: ['Reports', 'Transactions', 'Fixed Assets', 'Masters', 'Sales', 'Batch Reports', 'Utilities'],
-  warehouse_staff: ['Transactions', 'Masters', 'Reports', 'Batch Reports', 'Utilities'],
-  technician: ['Transactions', 'Fixed Assets', 'Masters', 'Utilities'],
-  road_technician: ['Transactions', 'Fixed Assets', 'Masters', 'Utilities'],
+  admin: ['System', 'Communications', 'Transactions', 'Masters', 'Fixed Assets', 'Sales', 'Reports', 'Batch Reports', 'Utilities'],
+  operations: ['Communications', 'Operations', 'Assets & Maintenance', 'Inventory', 'Reports'],
+  sales: ['Communications', 'Sales', 'Masters', 'Transactions', 'Reports', 'Utilities'],
+  finance: ['Communications', 'Sales', 'Transactions', 'Masters', 'Reports', 'Batch Reports', 'Utilities'],
+  marketing: ['Communications', 'Sales', 'Masters', 'Reports', 'Batch Reports', 'Transactions', 'Utilities'],
+  executive: ['Communications', 'Reports', 'Transactions', 'Fixed Assets', 'Masters', 'Sales', 'Batch Reports', 'Utilities'],
+  warehouse_staff: ['Communications', 'Transactions', 'Masters', 'Reports', 'Batch Reports', 'Utilities'],
+  technician: ['Communications', 'Transactions', 'Fixed Assets', 'Masters', 'Utilities'],
+  road_technician: ['Communications', 'Transactions', 'Fixed Assets', 'Masters', 'Utilities'],
 };
 
 const primaryPathCandidates: Record<BusinessRole, string[]> = {
@@ -205,13 +206,23 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const homePath = getDefaultPathForRole(userDetails.role);
   const allowedPath = canAccessPath(userDetails.role, pathname);
-  const visibleSections = navSections
+  const roleSections = navSections
     .map((section) => ({
       ...section,
       items: section.items.filter((item) => isNavItemAllowed(userDetails.role, item)),
     }))
     .filter((section) => section.items.length > 0);
-  const navigationSections = orderNavigationSections(userDetails.role, visibleSections);
+  const messagingSection: NavSection[] = MESSAGING_ENABLED ? [{
+    heading: 'Communications',
+    items: [{
+      href: '/work/messages',
+      label: 'Messages',
+      code: 'MSG01',
+      roles: 'all',
+      description: 'Direct and group conversations with colleagues.',
+    }],
+  }] : [];
+  const navigationSections = orderNavigationSections(userDetails.role, [...messagingSection, ...roleSections]);
   const allNavigationItems = navigationSections.flatMap((section) => section.items);
   const activeSection = navigationSections.find((section) => section.items.some((item) => isActivePath(pathname, item.href)));
   const activeItem = activeSection?.items.find((item) => isActivePath(pathname, item.href));
@@ -223,6 +234,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     .filter((item): item is NavItem => Boolean(item));
   const visibleHrefs = new Set(allNavigationItems.map((item) => item.href));
   const statusQuickLinks = [
+    ...(MESSAGING_ENABLED ? [{ href: '/work/messages', label: 'Messages' }] : []),
     { href: '/work', label: 'My Work' },
     { href: '/operations/exceptions', label: 'Exceptions' },
     { href: '/operations/dispatch', label: 'Dispatch' },
