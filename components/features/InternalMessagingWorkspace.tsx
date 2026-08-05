@@ -17,6 +17,7 @@ type Thread = {
   members: Array<{ user_id: string; is_muted: boolean; archived_at: string | null }>;
 };
 type Message = { id: string; thread_id: string; sender_id: string; body: string; created_at: string };
+type ReadPosition = { thread_id: string; last_read_message_id: string | null; last_read_at: string | null };
 
 const PAGE_SIZE = 50;
 
@@ -37,6 +38,7 @@ export function InternalMessagingWorkspace() {
   const [directory, setDirectory] = useState<DirectoryUser[]>([]);
   const [threads, setThreads] = useState<Thread[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [readPositions, setReadPositions] = useState<ReadPosition[]>([]);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [groupTitle, setGroupTitle] = useState('');
@@ -44,10 +46,12 @@ export function InternalMessagingWorkspace() {
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
 
   const directoryById = useMemo(() => new Map(directory.map((user) => [user.id, user])), [directory]);
+  const readPositionByThread = useMemo(() => new Map(readPositions.map((position) => [position.thread_id, position])), [readPositions]);
   const selectedThread = useMemo(() => threads.find((thread) => thread.id === selectedThreadId) ?? null, [selectedThreadId, threads]);
 
   const threadLabel = useCallback((thread: Thread) => {
@@ -55,6 +59,15 @@ export function InternalMessagingWorkspace() {
     const other = thread.members.find((member) => member.user_id !== businessUser?.id);
     return other ? directoryById.get(other.user_id)?.label ?? 'Direct conversation' : 'Conversation';
   }, [businessUser?.id, directoryById]);
+
+  const isUnread = useCallback((thread: Thread) => {
+    if (!thread.last_message_at) return false;
+    const position = readPositionByThread.get(thread.id);
+    if (!position?.last_read_at) return true;
+    return new Date(thread.last_message_at).getTime() > new Date(position.last_read_at).getTime();
+  }, [readPositionByThread]);
+
+  const unreadCount = useMemo(() => threads.filter(isUnread).length, [isUnread, threads]);
 
   const loadDirectory = useCallback(async () => {
     const client = getSupabaseClient();
@@ -80,10 +93,16 @@ export function InternalMessagingWorkspace() {
     if (threadError) throw threadError;
 
     const ids = (threadRows ?? []).map((row) => String(row.id));
-    const { data: members, error: memberError } = ids.length
-      ? await client.from('message_thread_members').select('thread_id,user_id,is_muted,archived_at').in('thread_id', ids).is('removed_at', null)
-      : { data: [], error: null };
+    const [{ data: members, error: memberError }, { data: positions, error: positionError }] = await Promise.all([
+      ids.length
+        ? client.from('message_thread_members').select('thread_id,user_id,is_muted,archived_at').in('thread_id', ids).is('removed_at', null)
+        : Promise.resolve({ data: [], error: null }),
+      ids.length
+        ? client.from('message_read_positions').select('thread_id,last_read_message_id,last_read_at').in('thread_id', ids)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
     if (memberError) throw memberError;
+    if (positionError) throw positionError;
 
     const memberMap = new Map<string, Thread['members']>();
     (members ?? []).forEach((member) => {
@@ -95,8 +114,30 @@ export function InternalMessagingWorkspace() {
 
     const rows = (threadRows ?? []).map((row) => ({ ...row, id: String(row.id), members: memberMap.get(String(row.id)) ?? [] })) as Thread[];
     setThreads(rows);
+    setReadPositions((positions ?? []).map((position) => ({
+      thread_id: String(position.thread_id),
+      last_read_message_id: position.last_read_message_id ? String(position.last_read_message_id) : null,
+      last_read_at: position.last_read_at ? String(position.last_read_at) : null,
+    })));
     setSelectedThreadId((current) => current && rows.some((row) => row.id === current) ? current : rows[0]?.id ?? null);
   }, []);
+
+  const markThreadRead = useCallback(async (threadId: string, latestMessage: Message | undefined) => {
+    if (!businessUser?.id) return;
+    const now = new Date().toISOString();
+    const { error: readError } = await getSupabaseClient().from('message_read_positions').upsert({
+      thread_id: threadId,
+      user_id: businessUser.id,
+      last_read_message_id: latestMessage?.id ?? null,
+      last_read_at: now,
+      updated_at: now,
+    }, { onConflict: 'thread_id,user_id' });
+    if (readError) throw readError;
+    setReadPositions((current) => [
+      ...current.filter((position) => position.thread_id !== threadId),
+      { thread_id: threadId, last_read_message_id: latestMessage?.id ?? null, last_read_at: now },
+    ]);
+  }, [businessUser?.id]);
 
   const loadMessages = useCallback(async (threadId: string) => {
     setLoadingMessages(true);
@@ -112,10 +153,16 @@ export function InternalMessagingWorkspace() {
       setLoadingMessages(false);
       return;
     }
-    setMessages(((data ?? []) as Message[]).reverse());
+    const ordered = ((data ?? []) as Message[]).reverse();
+    setMessages(ordered);
+    try {
+      await markThreadRead(threadId, ordered.at(-1));
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not update read position.');
+    }
     setLoadingMessages(false);
     window.setTimeout(() => endRef.current?.scrollIntoView({ block: 'end' }), 0);
-  }, []);
+  }, [markThreadRead]);
 
   useEffect(() => {
     if (!businessUser?.id) return;
@@ -140,18 +187,21 @@ export function InternalMessagingWorkspace() {
         if (changed && changed === selectedThreadId) void loadMessages(changed);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'message_thread_members' }, () => void loadThreads())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'message_read_positions' }, () => void loadThreads())
       .subscribe();
     return () => { void client.removeChannel(channel); };
   }, [businessUser?.id, loadMessages, loadThreads, selectedThreadId]);
 
   async function createConversation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selectedUserIds.length) return;
+    if (!selectedUserIds.length || creating) return;
+    setCreating(true);
     setError(null);
     const client = getSupabaseClient();
     const result = selectedUserIds.length === 1
       ? await client.rpc('create_direct_message_thread', { p_other_user_id: selectedUserIds[0] })
       : await client.rpc('create_group_message_thread', { p_title: groupTitle.trim(), p_member_user_ids: selectedUserIds });
+    setCreating(false);
     if (result.error) { setError(result.error.message); return; }
     setSelectedUserIds([]);
     setGroupTitle('');
@@ -162,7 +212,7 @@ export function InternalMessagingWorkspace() {
   async function sendMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const copy = body.trim();
-    if (!selectedThreadId || !copy || !businessUser?.id) return;
+    if (!selectedThreadId || !copy || !businessUser?.id || sending) return;
     setSending(true);
     setError(null);
     const clientMessageId = crypto.randomUUID();
@@ -181,35 +231,39 @@ export function InternalMessagingWorkspace() {
 
   return (
     <ErpPage className="internal-messaging-page" variant="operational">
-      <ErpPageHeader eyebrow="Communications" title="Messages" description="Feature-flagged, text-only internal conversations." />
+      <ErpPageHeader eyebrow="Communications" title="Messages" description="Secure internal direct and group conversations." />
+      {unreadCount > 0 ? <ErpStateBanner title={`${unreadCount} unread conversation${unreadCount === 1 ? '' : 's'}`} message="Unread conversations are highlighted in the conversation list." tone="info" /> : null}
       {error ? <ErpStateBanner title="Messaging needs attention" message={error} tone="danger" /> : null}
       <section className="messages-v2-shell" aria-label="Internal messaging workspace">
         <aside className="messages-v2-sidebar">
           <form className="messages-v2-create" onSubmit={createConversation}>
             <strong>New conversation</strong>
-            <select multiple value={selectedUserIds} onChange={(event) => setSelectedUserIds(Array.from(event.currentTarget.selectedOptions, (option) => option.value))}>
+            <select aria-label="Conversation participants" multiple value={selectedUserIds} onChange={(event) => setSelectedUserIds(Array.from(event.currentTarget.selectedOptions, (option) => option.value))}>
               {directory.filter((user) => user.id !== businessUser.id).map((user) => <option key={user.id} value={user.id}>{user.label} — {user.email}</option>)}
             </select>
-            {selectedUserIds.length > 1 ? <input maxLength={120} required placeholder="Group name" value={groupTitle} onChange={(event) => setGroupTitle(event.target.value)} /> : null}
-            <button className="button" disabled={!selectedUserIds.length || (selectedUserIds.length > 1 && !groupTitle.trim())} type="submit">Create</button>
+            {selectedUserIds.length > 1 ? <input aria-label="Group name" maxLength={120} required placeholder="Group name" value={groupTitle} onChange={(event) => setGroupTitle(event.target.value)} /> : null}
+            <button className="button" disabled={creating || !selectedUserIds.length || (selectedUserIds.length > 1 && !groupTitle.trim())} type="submit">{creating ? 'Creating…' : 'Create'}</button>
           </form>
           <nav className="messages-v2-thread-list" aria-label="Conversations">
             {loading ? <p>Loading conversations…</p> : null}
-            {!loading && !threads.length ? <p>No conversations yet.</p> : null}
-            {threads.map((thread) => (
-              <button className={thread.id === selectedThreadId ? 'is-active' : ''} key={thread.id} onClick={() => setSelectedThreadId(thread.id)} type="button">
-                <strong>{threadLabel(thread)}</strong>
-                <small>{thread.thread_type === 'group' ? `${thread.members.length} participants` : 'Direct conversation'}</small>
-              </button>
-            ))}
+            {!loading && !threads.length ? <p>No conversations yet. Select one or more colleagues above to start.</p> : null}
+            {threads.map((thread) => {
+              const unread = isUnread(thread);
+              return (
+                <button aria-label={`${threadLabel(thread)}${unread ? ', unread' : ''}`} className={`${thread.id === selectedThreadId ? 'is-active' : ''} ${unread ? 'is-unread' : ''}`} key={thread.id} onClick={() => setSelectedThreadId(thread.id)} type="button">
+                  <strong>{threadLabel(thread)}{unread ? <span aria-label="Unread messages"> •</span> : null}</strong>
+                  <small>{thread.thread_type === 'group' ? `${thread.members.length} participants` : 'Direct conversation'}{thread.last_message_at ? ` · ${formatTime(thread.last_message_at)}` : ''}</small>
+                </button>
+              );
+            })}
           </nav>
         </aside>
         <section className="messages-v2-chat">
           {selectedThread ? <>
-            <header><h2>{threadLabel(selectedThread)}</h2><p>Newest {PAGE_SIZE} messages load first.</p></header>
+            <header><h2>{threadLabel(selectedThread)}</h2><p>{selectedThread.thread_type === 'group' ? `${selectedThread.members.length} participants` : 'Direct conversation'} · newest {PAGE_SIZE} messages</p></header>
             <div className="messages-v2-log" role="log" aria-live="polite">
               {loadingMessages ? <p>Loading messages…</p> : null}
-              {!loadingMessages && !messages.length ? <p>No messages yet.</p> : null}
+              {!loadingMessages && !messages.length ? <p>No messages yet. Send the first message below.</p> : null}
               {messages.map((message) => {
                 const mine = message.sender_id === businessUser.id;
                 const sender = directoryById.get(message.sender_id)?.label ?? 'Colleague';
@@ -221,7 +275,7 @@ export function InternalMessagingWorkspace() {
               <div ref={endRef} />
             </div>
             <form className="messages-v2-composer" onSubmit={sendMessage}>
-              <textarea maxLength={4000} placeholder="Write a message" rows={2} value={body} onChange={(event) => setBody(event.target.value)} />
+              <textarea aria-label="Message" maxLength={4000} placeholder="Write a message" rows={2} value={body} onChange={(event) => setBody(event.target.value)} />
               <button className="button" disabled={sending || !body.trim()} type="submit">{sending ? 'Sending…' : 'Send'}</button>
             </form>
           </> : <EmptyState title="Choose a conversation" message="Create or select a conversation to begin." />}
