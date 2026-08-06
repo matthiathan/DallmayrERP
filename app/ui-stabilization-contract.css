@@ -29,16 +29,16 @@ main[role='main'] { min-width: 0; color: var(--ui-ink) !important; background: v
 .dallmayr-sidebar {
   width: 276px;
   color: #fff !important;
-  background: #181817 !important;
-  border-right: 1px solid #000 !important;
-  box-shadow: 8px 0 30px rgba(0, 0, 0, 0.18) !important;
+  background: #373532 !important;
+  border-right: 1px solid #24221f !important;
+  box-shadow: 8px 0 30px rgba(0, 0, 0, 0.14) !important;
 }
 .dallmayr-sidebar.is-collapsed { width: 82px; }
-.dallmayr-sidebar-brand { background: #181817 !important; }
+.dallmayr-sidebar-brand { background: #373532 !important; }
 .dallmayr-sidebar-brand strong,
-.dallmayr-sidebar-link strong { color: #fff !important; text-shadow: 0 1px 1px rgba(0,0,0,.2); }
+.dallmayr-sidebar-link strong { color: #fff !important; text-shadow: 0 1px 1px rgba(0,0,0,.18); }
 .dallmayr-sidebar-brand small,
-.dallmayr-sidebar-group h2 { color: #d9cdb8 !important; }
+.dallmayr-sidebar-group h2 { color: #f1dfba !important; }
 .dallmayr-sidebar-nav { overflow-y: auto !important; overscroll-behavior: contain; }
 .dallmayr-sidebar-link {
   min-height: 48px !important;
@@ -46,8 +46,8 @@ main[role='main'] { min-width: 0; color: var(--ui-ink) !important; background: v
   background: transparent !important;
   border: 1px solid transparent !important;
 }
-.dallmayr-sidebar-link > span { color: #ffe4a3 !important; background: #302a20 !important; border-color: #7b6337 !important; }
-.dallmayr-sidebar-link:hover { color: #fff !important; background: #33312d !important; border-color: #5b574f !important; }
+.dallmayr-sidebar-link > span { color: #ffe8ad !important; background: #4b4439 !important; border-color: #8b7447 !important; }
+.dallmayr-sidebar-link:hover { color: #fff !important; background: #4c4944 !important; border-color: #6c6861 !important; }
 .dallmayr-sidebar-link[aria-current='page'] {
   color: #211a10 !important;
   background: #f5dfab !important;
