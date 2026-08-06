@@ -31,12 +31,12 @@ const MAX_FAVORITES = 4;
 const MESSAGING_ENABLED = process.env.NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED !== 'false';
 
 const sectionOrderByRole: Record<BusinessRole, string[]> = {
-  admin: ['System', 'Communications', 'Transactions', 'Masters', 'Fixed Assets', 'Sales', 'Reports', 'Batch Reports', 'Utilities'],
+  admin: ['System', 'Telemetry', 'Communications', 'Transactions', 'Masters', 'Fixed Assets', 'Sales', 'Reports', 'Batch Reports', 'Utilities'],
   operations: ['Communications', 'Operations', 'Assets & Maintenance', 'Inventory', 'Reports'],
   sales: ['Communications', 'Sales', 'Masters', 'Transactions', 'Reports', 'Utilities'],
   finance: ['Communications', 'Sales', 'Transactions', 'Masters', 'Reports', 'Batch Reports', 'Utilities'],
   marketing: ['Communications', 'Sales', 'Masters', 'Reports', 'Batch Reports', 'Transactions', 'Utilities'],
-  executive: ['Communications', 'Reports', 'Transactions', 'Fixed Assets', 'Masters', 'Sales', 'Batch Reports', 'Utilities'],
+  executive: ['Communications', 'Reports', 'Telemetry', 'Transactions', 'Fixed Assets', 'Masters', 'Sales', 'Batch Reports', 'Utilities'],
   warehouse_staff: ['Communications', 'Transactions', 'Masters', 'Reports', 'Batch Reports', 'Utilities'],
   technician: ['Communications', 'Transactions', 'Fixed Assets', 'Masters', 'Utilities'],
   road_technician: ['Communications', 'Transactions', 'Fixed Assets', 'Masters', 'Utilities'],
@@ -53,6 +53,30 @@ const primaryPathCandidates: Record<BusinessRole, string[]> = {
   technician: ['/technician', '/work'],
   road_technician: ['/road-tech', '/work'],
 };
+
+function telemetryNavigationForRole(role: BusinessRole): NavSection[] {
+  if (role !== 'admin' && role !== 'executive') return [];
+
+  return [{
+    heading: 'Telemetry',
+    items: [
+      {
+        href: '/telemetry',
+        label: 'Machine Telemetry',
+        code: 'TEL01',
+        roles: ['admin', 'executive'],
+        description: 'Daily, weekly, monthly and six-month machine sales and connectivity reporting.',
+      },
+      ...(role === 'admin' ? [{
+        href: '/telemetry/devices',
+        label: 'Telemetry Devices',
+        code: 'TEL02',
+        roles: ['admin'] as BusinessRole[],
+        description: 'Assign devices to ERP machines and control telemetry ingestion.',
+      }] : []),
+    ],
+  }];
+}
 
 function StatusScreen({
   title,
@@ -205,7 +229,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   const homePath = getDefaultPathForRole(userDetails.role);
-  const allowedPath = canAccessPath(userDetails.role, pathname);
+  const telemetryPathAllowed = pathname === '/telemetry'
+    ? userDetails.role === 'admin' || userDetails.role === 'executive'
+    : pathname.startsWith('/telemetry/devices') && userDetails.role === 'admin';
+  const allowedPath = canAccessPath(userDetails.role, pathname) || telemetryPathAllowed;
   const roleSections = navSections
     .map((section) => ({
       ...section,
@@ -222,7 +249,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       description: 'Direct and group conversations with colleagues.',
     }],
   }] : [];
-  const navigationSections = orderNavigationSections(userDetails.role, [...messagingSection, ...roleSections]);
+  const telemetrySections = telemetryNavigationForRole(userDetails.role);
+  const navigationSections = orderNavigationSections(userDetails.role, [...messagingSection, ...telemetrySections, ...roleSections]);
   const allNavigationItems = navigationSections.flatMap((section) => section.items);
   const activeSection = navigationSections.find((section) => section.items.some((item) => isActivePath(pathname, item.href)));
   const activeItem = activeSection?.items.find((item) => isActivePath(pathname, item.href));
