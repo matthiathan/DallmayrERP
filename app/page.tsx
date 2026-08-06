@@ -51,24 +51,37 @@ export default function DashboardPage() {
 
   return (
     <AppShell>
-      <div className="page-header hero-panel">
-        <div>
-          <div className="badge">Admin command centre</div>
-          <h1>DallmayrERP Dashboard</h1>
-          <p>Live overview from Supabase plus operational reporting for branch and department accountability.</p>
-        </div>
-      </div>
-      {error ? <div className="error">{error}</div> : null}
-      {loading ? <HamsterLoader label="Loading dashboard" /> : null}
-      <div className="grid grid-3" style={{ marginBottom: 20 }}>
-        <KpiCard label="Customers" value={data.customers} helper="JHB, CPT and KZN customer master rows" />
-        <KpiCard label="Contracts" value={data.contracts} helper="All branch contract agreement rows" />
-        <KpiCard label="Machines / Assets" value={data.assets} helper="Fixed assets imported into Supabase" />
-        <KpiCard label="Service Calls" value={data.serviceCalls} helper="JHB, KZN and CPT preventive service logs" />
-        <KpiCard label="Stock Items" value={data.stockItems} helper="Warehouse product records" />
-        <KpiCard label="Business Users" value={data.users} helper="Staff records in public.users" />
-      </div>
-      <ExecutiveReportingPanel />
+      <section className="admin-command-dashboard">
+        <header className="admin-command-header">
+          <div>
+            <span className="admin-command-eyebrow">Admin command centre</span>
+            <h1>DallmayrERP Dashboard</h1>
+            <p>Live overview from Supabase plus operational reporting for branch and department accountability.</p>
+          </div>
+          <div className="admin-command-status" aria-label="Dashboard status">
+            <span>Live data</span>
+            <strong>All branches</strong>
+          </div>
+        </header>
+
+        {error ? <div className="error">{error}</div> : null}
+        {loading ? <HamsterLoader label="Loading dashboard" /> : null}
+
+        <section aria-label="Key performance indicators" className="admin-command-kpis">
+          <KpiCard label="Customers" value={data.customers} helper="JHB, CPT and KZN customer master rows" />
+          <KpiCard label="Contracts" value={data.contracts} helper="All branch contract agreement rows" />
+          <KpiCard label="Machines / Assets" value={data.assets} helper="Fixed assets imported into Supabase" />
+          <KpiCard label="Service Calls" value={data.serviceCalls} helper="JHB, KZN and CPT preventive service logs" />
+          <KpiCard label="Stock Items" value={data.stockItems} helper="Warehouse product records" />
+          <KpiCard label="Business Users" value={data.users} helper="Staff records in public.users" />
+        </section>
+
+        <section className="admin-command-reporting">
+          <ExecutiveReportingPanel />
+        </section>
+
+        <footer className="admin-command-footer">© {new Date().getFullYear()} Dallmayr ERP. All rights reserved.</footer>
+      </section>
     </AppShell>
   );
 }
