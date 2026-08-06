@@ -28,35 +28,50 @@ main[role='main'] { min-width: 0; color: var(--ui-ink) !important; background: v
 
 .dallmayr-sidebar {
   width: 276px;
-  color: #fff !important;
-  background: #373532 !important;
-  border-right: 1px solid #24221f !important;
-  box-shadow: 8px 0 30px rgba(0, 0, 0, 0.14) !important;
+  color: #211f1b !important;
+  background: #eee4d2 !important;
+  border-right: 1px solid #c5b28e !important;
+  box-shadow: 8px 0 30px rgba(71, 54, 31, 0.12) !important;
 }
 .dallmayr-sidebar.is-collapsed { width: 82px; }
-.dallmayr-sidebar-brand { background: #373532 !important; }
+.dallmayr-sidebar-brand {
+  color: #211f1b !important;
+  background: #f4ecde !important;
+  border-bottom-color: #cdbb98 !important;
+}
 .dallmayr-sidebar-brand strong,
-.dallmayr-sidebar-link strong { color: #fff !important; text-shadow: 0 1px 1px rgba(0,0,0,.18); }
+.dallmayr-sidebar-link strong {
+  color: #211f1b !important;
+  text-shadow: none !important;
+}
 .dallmayr-sidebar-brand small,
-.dallmayr-sidebar-group h2 { color: #f1dfba !important; }
+.dallmayr-sidebar-group h2 { color: #6c5630 !important; }
 .dallmayr-sidebar-nav { overflow-y: auto !important; overscroll-behavior: contain; }
 .dallmayr-sidebar-link {
   min-height: 48px !important;
-  color: #fff !important;
+  color: #211f1b !important;
   background: transparent !important;
   border: 1px solid transparent !important;
 }
-.dallmayr-sidebar-link > span { color: #ffe8ad !important; background: #4b4439 !important; border-color: #8b7447 !important; }
-.dallmayr-sidebar-link:hover { color: #fff !important; background: #4c4944 !important; border-color: #6c6861 !important; }
+.dallmayr-sidebar-link > span {
+  color: #5f420e !important;
+  background: #e5d2aa !important;
+  border-color: #b79552 !important;
+}
+.dallmayr-sidebar-link:hover {
+  color: #17140f !important;
+  background: #e2d3b8 !important;
+  border-color: #bca77f !important;
+}
 .dallmayr-sidebar-link[aria-current='page'] {
   color: #211a10 !important;
-  background: #f5dfab !important;
-  border-color: #c99a43 !important;
-  box-shadow: inset 5px 0 0 #9d6c1d !important;
+  background: #f3d995 !important;
+  border-color: #b98224 !important;
+  box-shadow: inset 5px 0 0 #8f6015 !important;
 }
 .dallmayr-sidebar-link[aria-current='page'] strong { color: #211a10 !important; text-shadow: none; }
-.dallmayr-sidebar-link[aria-current='page'] > span { color: #3b280c !important; background: #e7c779 !important; border-color: #9d6c1d !important; }
-.dallmayr-sidebar-account { color: #211f1b !important; background: #fff7e5 !important; border-color: #c9b27d !important; }
+.dallmayr-sidebar-link[aria-current='page'] > span { color: #3b280c !important; background: #dfbd68 !important; border-color: #8f6015 !important; }
+.dallmayr-sidebar-account { color: #211f1b !important; background: #fffaf0 !important; border-color: #c9b27d !important; }
 .dallmayr-account-copy small,
 .dallmayr-account-copy > span { color: #5d5240 !important; }
 .dallmayr-account-copy strong { color: #181611 !important; }
