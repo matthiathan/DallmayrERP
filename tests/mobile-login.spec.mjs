@@ -40,6 +40,7 @@ for (const device of [
     await expect(page.locator('.mobile-nav-portal-root')).toHaveCount(0);
 
     const state = await page.evaluate((query) => {
+      const loginPage = document.querySelector('.login-page');
       const card = document.querySelector('.login-card');
       return {
         queryMatches: window.matchMedia(query).matches,
@@ -48,7 +49,7 @@ for (const device of [
         inlineBodyOverflow: document.body.style.overflow,
         scrollHeight: document.scrollingElement?.scrollHeight ?? 0,
         viewportHeight: window.innerHeight,
-        bodyBackground: getComputedStyle(document.body).backgroundColor,
+        loginBackground: loginPage ? getComputedStyle(loginPage).backgroundColor : '',
         cardBackground: card ? getComputedStyle(card).backgroundColor : '',
       };
     }, responsiveQuery);
@@ -57,7 +58,7 @@ for (const device of [
     expect(state.bodyOverflow).not.toBe('hidden');
     expect(state.htmlOverflow).not.toBe('hidden');
     expect(state.inlineBodyOverflow).not.toBe('hidden');
-    expect(state.bodyBackground).toBe('rgb(245, 240, 230)');
+    expect(state.loginBackground).toBe('rgb(245, 240, 230)');
     expect(state.cardBackground).toBe('rgb(255, 255, 255)');
 
     if (state.scrollHeight > state.viewportHeight + 2) {
