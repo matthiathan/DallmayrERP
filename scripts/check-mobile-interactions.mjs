@@ -9,15 +9,17 @@ const files = {
   styles: path.join(root, 'app', 'ui-stabilization-contract.css'),
   mobileStyles: path.join(root, 'app', 'mobile-functional-experience.css'),
   stackingFix: path.join(root, 'app', 'mobile-menu-stacking-fix.css'),
+  overhaul: path.join(root, 'app', 'mobile-overhaul.css'),
   applicationStyles: path.join(root, 'app', 'styles', 'application.css'),
 };
 
-const [search, mobile, styles, mobileStyles, stackingFix, applicationStyles] = await Promise.all([
+const [search, mobile, styles, mobileStyles, stackingFix, overhaul, applicationStyles] = await Promise.all([
   readFile(files.search, 'utf8'),
   readFile(files.mobile, 'utf8'),
   readFile(files.styles, 'utf8'),
   readFile(files.mobileStyles, 'utf8'),
   readFile(files.stackingFix, 'utf8'),
+  readFile(files.overhaul, 'utf8'),
   readFile(files.applicationStyles, 'utf8'),
 ]);
 
@@ -29,29 +31,33 @@ function requireSource(source, pattern, message) {
 requireSource(search, /type:\s*'Page'/, 'Global Search must support page/module results.');
 requireSource(search, /isNavItemAllowed\(userDetails\.role, item\)/, 'Page results must be filtered by the signed-in role.');
 requireSource(search, /dallmayr-open-global-search/, 'Global Search must expose the direct mobile open event contract.');
-requireSource(search, /Find a page, record or task/, 'Global Search must identify page and record search to assistive technology.');
+requireSource(search, /createPortal\(/, 'Global Search must render outside page stacking contexts.');
+requireSource(mobile, /createPortal\(/, 'Mobile navigation must render through a body portal.');
+requireSource(mobile, /document\.body/, 'Mobile navigation portal must target document.body.');
+requireSource(mobile, /mobile-nav-portal-root/, 'Mobile navigation portal root is missing.');
+requireSource(mobile, /aria-modal="true"/, 'Mobile navigation must expose modal semantics.');
+requireSource(mobile, /document\.body\.style\.overflow\s*=\s*'hidden'/, 'Open mobile navigation must lock page scrolling.');
+requireSource(mobile, /event\.key === 'Escape'/, 'Mobile navigation must close with Escape.');
+requireSource(mobile, /event\.key !== 'Tab'/, 'Mobile navigation must trap keyboard focus.');
 requireSource(mobile, /aria-label="Open global search"/, 'The mobile quick bar must expose an accessible Search action.');
-requireSource(mobile, /window\.dispatchEvent\(new Event\(OPEN_SEARCH_EVENT\)\)/, 'The mobile quick bar must open Global Search directly instead of relying on a hidden drawer trigger.');
-requireSource(mobile, /mobile-nav-panel/, 'The mobile navigation drawer contract is missing.');
-requireSource(styles, /\.mobile-nav-panel[\s\S]*z-index:\s*(?:[2-9]\d{3,}|1\d{4,})/m, 'The base mobile navigation drawer must have an explicit high stacking layer.');
-requireSource(styles, /\.global-search-overlay[\s\S]*z-index:\s*(?:[2-9]\d{3,}|1\d{4,})/m, 'Global Search must render above the mobile shell.');
-requireSource(applicationStyles, /@import ['"]\.\.\/ui-stabilization-contract\.css['"];\s*@import ['"]\.\.\/mobile-functional-experience\.css['"];\s*@import ['"]\.\.\/mobile-menu-stacking-fix\.css['"];/, 'The phone stacking correction must load after the mobile functional experience.');
-requireSource(mobileStyles, /^\/\* Dedicated mobile application experience[\s\S]*@media \(max-width: 760px\) \{/m, 'The dedicated mobile experience must be scoped to the phone breakpoint.');
-requireSource(mobileStyles, /\.mobile-nav-panel:not\(\[hidden\]\)[\s\S]*height:\s*100dvh\s*!important/m, 'The mobile navigation drawer must use the full phone viewport.');
-requireSource(mobileStyles, /\.mobile-nav-directory[\s\S]*overflow-y:\s*auto\s*!important/m, 'The mobile navigation directory must scroll independently.');
-requireSource(mobileStyles, /\.mobile-quick-bar[\s\S]*position:\s*fixed\s*!important/m, 'The mobile bottom navigation must remain fixed and reachable.');
-requireSource(mobileStyles, /\.global-search-dialog[\s\S]*height:\s*100dvh\s*!important/m, 'Mobile Global Search must use a full-height phone sheet.');
-requireSource(mobileStyles, /\.erp-table-scroll[\s\S]*overflow-x:\s*auto\s*!important/m, 'Mobile tables must support contained horizontal scrolling.');
-requireSource(mobileStyles, /font-size:\s*16px\s*!important;\s*\/\* prevents iOS input zoom \*\//m, 'Mobile inputs must prevent iOS focus zoom.');
-requireSource(stackingFix, /\.mobile-menu-open\s+\.application-header[\s\S]*z-index:\s*9020\s*!important/m, 'When the mobile menu is open, its parent header stacking context must sit above the backdrop.');
-requireSource(stackingFix, /\.mobile-nav-panel:not\(\[hidden\]\)[\s\S]*transform:\s*none\s*!important/m, 'The visible mobile drawer must explicitly clear legacy transforms.');
-requireSource(stackingFix, /\.mobile-nav-panel:not\(\[hidden\]\)[\s\S]*visibility:\s*visible\s*!important/m, 'The visible mobile drawer must explicitly clear legacy visibility rules.');
+requireSource(mobile, /window\.dispatchEvent\(new Event\(OPEN_SEARCH_EVENT\)\)/, 'The mobile quick bar must open Global Search directly.');
+requireSource(applicationStyles, /@import ['"]\.\.\/mobile-overhaul\.css['"];/, 'The final mobile overhaul stylesheet must be registered.');
+requireSource(overhaul, /^\/\* Final phone-only usability contract[\s\S]*@media \(max-width: 760px\) \{/m, 'The final mobile overhaul must be scoped to phones.');
+requireSource(overhaul, /\.app-shell\s*>\s*\.mobile-nav-backdrop[\s\S]*display:\s*none\s*!important/m, 'The legacy in-shell mobile backdrop must be disabled on phones.');
+requireSource(overhaul, /\.mobile-nav-portal-root[\s\S]*position:\s*fixed\s*!important/m, 'Portal navigation must own a fixed viewport layer.');
+requireSource(overhaul, /\.mobile-nav-portal-root\s*>\s*\.mobile-nav-panel[\s\S]*height:\s*100dvh\s*!important/m, 'Portal navigation must fill the phone viewport.');
+requireSource(overhaul, /\.mobile-nav-directory[\s\S]*overflow-y:\s*auto\s*!important/m, 'Mobile navigation directory must scroll independently.');
+requireSource(overhaul, /\.global-search-dialog[\s\S]*height:\s*100dvh\s*!important/m, 'Mobile search must fill the phone viewport.');
+requireSource(overhaul, /\.global-search-results[\s\S]*overflow-y:\s*auto\s*!important/m, 'Mobile search results must scroll independently.');
+requireSource(overhaul, /\.erp-table-scroll[\s\S]*overflow-x:\s*auto\s*!important/m, 'Mobile tables must remain horizontally scrollable.');
+requireSource(overhaul, /font-size:\s*16px\s*!important/m, 'Mobile form controls must prevent iOS focus zoom.');
+requireSource(overhaul, /\.messaging-layout[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\)\s*!important/m, 'Messaging must use a phone-safe single-column layout.');
+requireSource(overhaul, /\.mobile-quick-bar[\s\S]*min-height:/m, 'Mobile bottom navigation must reserve a stable touch area.');
 
-for (const source of [mobileStyles, stackingFix]) {
-  const firstMediaIndex = source.indexOf('@media (max-width: 760px)');
-  const firstRuleIndex = source.search(/(^|\n)\s*[^/@\s][^{]*\{/m);
-  if (firstRuleIndex !== -1 && (firstMediaIndex === -1 || firstRuleIndex < firstMediaIndex)) {
-    failures.push('A mobile-only stylesheet contains an unscoped rule that could alter the desktop application.');
+for (const source of [mobileStyles, stackingFix, overhaul]) {
+  const withoutComments = source.replace(/\/\*[\s\S]*?\*\//g, '').trim();
+  if (!withoutComments.startsWith('@media (max-width: 760px) {')) {
+    failures.push('A mobile-only stylesheet contains rules outside the 760px phone scope.');
   }
 }
 
@@ -60,4 +66,4 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log('Mobile interaction contract passed: direct search, full-height navigation, parent stacking context, desktop isolation, touch sizing, mobile tables and scrolling safeguards are present.');
+console.log('Mobile interaction contract passed: portal overlays, focus/scroll management, direct search, touch forms, contained tables, messaging, bottom navigation and desktop isolation safeguards are present.');
