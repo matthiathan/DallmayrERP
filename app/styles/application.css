@@ -3,7 +3,8 @@
  *
  * Desktop composition is owned by the stabilization contract. Responsive work
  * for phones and touch tablets is owned by one final contract so mobile rules
- * do not compete with one another.
+ * do not compete with one another. The small authority bridge only neutralizes
+ * quarantined legacy !important surface rules before the responsive contract.
  */
 @import '../reference-ui-redesign.css';
 @import '../full-application-rebuild.css';
@@ -14,4 +15,5 @@
 @import '../page-cleanup-phase-4.css';
 @import '../component-library-phase-3.css';
 @import '../ui-stabilization-contract.css';
+@import '../responsive-runtime-authority.css';
 @import '../responsive-mobile-tablet.css';
