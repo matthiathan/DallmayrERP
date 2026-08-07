@@ -31,11 +31,12 @@ requireSource(search, /Find a page, record or task/, 'Global Search must identif
 requireSource(mobile, /aria-label="Open global search"/, 'The mobile quick bar must expose an accessible Search action.');
 requireSource(mobile, /window\.dispatchEvent\(new Event\(OPEN_SEARCH_EVENT\)\)/, 'The mobile quick bar must open Global Search directly instead of relying on a hidden drawer trigger.');
 requireSource(mobile, /mobile-nav-panel/, 'The mobile navigation drawer contract is missing.');
-requireSource(styles, /\.mobile-nav-panel[\s\S]*z-index:\s*(?:[2-9]\d{3,}|1\d{4,})/m, 'The mobile navigation drawer must have an explicit high stacking layer.');
+requireSource(styles, /\.mobile-nav-panel[\s\S]*z-index:\s*(?:[2-9]\d{3,}|1\d{4,})/m, 'The base mobile navigation drawer must have an explicit high stacking layer.');
 requireSource(styles, /\.global-search-overlay[\s\S]*z-index:\s*(?:[2-9]\d{3,}|1\d{4,})/m, 'Global Search must render above the mobile shell.');
-requireSource(styles, /\.mobile-nav-panel[\s\S]*overflow-y:\s*auto/m, 'The mobile navigation drawer must scroll independently.');
-requireSource(applicationStyles, /@import ['"]\.\.\/mobile-functional-experience\.css['"];[\s\S]*@import ['"]\.\.\/ui-stabilization-contract\.css['"];/, 'The dedicated mobile stylesheet must be registered immediately before the locked stabilization contract.');
+requireSource(applicationStyles, /@import ['"]\.\.\/ui-stabilization-contract\.css['"];\s*@import ['"]\.\.\/mobile-functional-experience\.css['"];/, 'The mobile-only stylesheet must load after desktop stabilization so phone rules are authoritative.');
 requireSource(mobileStyles, /^\/\* Dedicated mobile application experience[\s\S]*@media \(max-width: 760px\) \{/m, 'The dedicated mobile experience must be scoped to the phone breakpoint.');
+requireSource(mobileStyles, /\.mobile-nav-panel:not\(\[hidden\]\)[\s\S]*height:\s*100dvh\s*!important/m, 'The mobile navigation drawer must use the full phone viewport.');
+requireSource(mobileStyles, /\.mobile-nav-directory[\s\S]*overflow-y:\s*auto\s*!important/m, 'The mobile navigation directory must scroll independently.');
 requireSource(mobileStyles, /\.mobile-quick-bar[\s\S]*position:\s*fixed\s*!important/m, 'The mobile bottom navigation must remain fixed and reachable.');
 requireSource(mobileStyles, /\.global-search-dialog[\s\S]*height:\s*100dvh\s*!important/m, 'Mobile Global Search must use a full-height phone sheet.');
 requireSource(mobileStyles, /\.erp-table-scroll[\s\S]*overflow-x:\s*auto\s*!important/m, 'Mobile tables must support contained horizontal scrolling.');
@@ -52,4 +53,4 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log('Mobile interaction contract passed: navigation, direct search, desktop isolation, touch sizing, mobile tables, stacking and scrolling safeguards are present.');
+console.log('Mobile interaction contract passed: direct search, full-height navigation, desktop isolation, touch sizing, mobile tables, stacking and scrolling safeguards are present.');
