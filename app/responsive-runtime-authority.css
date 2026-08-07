@@ -1,0 +1,76 @@
+/*
+ * Specificity bridge for the canonical responsive contract.
+ *
+ * Some quarantined legacy theme rules use !important with long selectors. This
+ * file does not define responsive layout; it only ensures those legacy surface
+ * declarations cannot override the desktop design tokens once responsive mode
+ * has been positively detected by MobileBrowserHygiene.
+ */
+
+@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  html[data-responsive-surface='mobile-tablet'] body {
+    color: var(--ui-ink, #231f1a) !important;
+    background-color: var(--ui-canvas, #f5f0e6) !important;
+    background-image: none !important;
+  }
+
+  html[data-responsive-surface='mobile-tablet'][data-mobile-route-surface='auth'] body main.login-page.dynamics-login-page,
+  html[data-responsive-surface='mobile-tablet'][data-mobile-route-surface='auth'] body main.login-page,
+  html[data-responsive-surface='mobile-tablet'][data-mobile-route-surface='auth'] body main.auth-state-page {
+    color: var(--ui-ink, #231f1a) !important;
+    background-color: var(--ui-canvas, #f5f0e6) !important;
+    background-image: none !important;
+  }
+
+  html[data-responsive-surface='mobile-tablet'][data-mobile-route-surface='auth'] body main.login-page .login-card.dynamics-login-card,
+  html[data-responsive-surface='mobile-tablet'][data-mobile-route-surface='auth'] body main.login-page .login-card,
+  html[data-responsive-surface='mobile-tablet'][data-mobile-route-surface='auth'] body main.auth-state-page .auth-state-card {
+    color: var(--ui-ink, #231f1a) !important;
+    background-color: var(--ui-surface, #ffffff) !important;
+    background-image: none !important;
+    border-color: var(--ui-border, #d8cdbc) !important;
+    text-shadow: none !important;
+  }
+
+  html[data-responsive-surface='mobile-tablet'] body .application-header,
+  html[data-responsive-surface='mobile-tablet'] body .mobile-quick-bar,
+  html[data-responsive-surface='mobile-tablet'] body .mobile-nav-panel,
+  html[data-responsive-surface='mobile-tablet'] body .global-search-dialog,
+  html[data-responsive-surface='mobile-tablet'] body .erp-panel,
+  html[data-responsive-surface='mobile-tablet'] body .erp-form-section,
+  html[data-responsive-surface='mobile-tablet'] body .erp-record-summary-card,
+  html[data-responsive-surface='mobile-tablet'] body .erp-metric-card,
+  html[data-responsive-surface='mobile-tablet'] body .card,
+  html[data-responsive-surface='mobile-tablet'] body .panel {
+    color: var(--ui-ink, #231f1a) !important;
+    border-color: var(--ui-border, #d8cdbc) !important;
+  }
+
+  html[data-responsive-surface='mobile-tablet'] body .erp-panel,
+  html[data-responsive-surface='mobile-tablet'] body .erp-form-section,
+  html[data-responsive-surface='mobile-tablet'] body .erp-record-summary-card,
+  html[data-responsive-surface='mobile-tablet'] body .erp-metric-card,
+  html[data-responsive-surface='mobile-tablet'] body .card,
+  html[data-responsive-surface='mobile-tablet'] body .panel,
+  html[data-responsive-surface='mobile-tablet'] body .global-search-dialog {
+    background-color: var(--ui-surface, #ffffff) !important;
+    background-image: none !important;
+  }
+
+  html[data-responsive-surface='mobile-tablet'] body :is(input, select, textarea) {
+    color: var(--ui-ink, #231f1a) !important;
+    background-color: var(--ui-surface, #ffffff) !important;
+    background-image: none !important;
+    border-color: var(--ui-border-strong, #bdaa8d) !important;
+  }
+
+  html[data-responsive-surface='mobile-tablet'] body :is(h1, h2, h3, h4, strong) {
+    color: var(--ui-ink, #231f1a) !important;
+    text-shadow: none !important;
+  }
+
+  html[data-responsive-surface='mobile-tablet'] body :is(p, small, .muted) {
+    color: var(--ui-muted, #625b50) !important;
+    text-shadow: none !important;
+  }
+}
