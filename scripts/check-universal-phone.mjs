@@ -3,8 +3,9 @@ import path from 'node:path';
 import process from 'node:process';
 
 const root = process.cwd();
-const [responsive, application, hygiene] = await Promise.all([
+const [responsive, authority, application, hygiene] = await Promise.all([
   readFile(path.join(root, 'app', 'responsive-mobile-tablet.css'), 'utf8'),
+  readFile(path.join(root, 'app', 'responsive-runtime-authority.css'), 'utf8'),
   readFile(path.join(root, 'app', 'styles', 'application.css'), 'utf8'),
   readFile(path.join(root, 'components', 'layout', 'MobileBrowserHygiene.tsx'), 'utf8'),
 ]);
@@ -32,6 +33,15 @@ requireText(responsive, 'orientation: landscape', 'Landscape rules are required.
 requireText(responsive, 'env(safe-area-inset-bottom)', 'Safe-area handling is required.');
 requireText(responsive, "html[data-mobile-route-surface='auth']", 'Authentication pages must have native-scroll responsive rules.');
 requireText(responsive, 'min-height: 100svh !important', 'Authentication pages must use minimum viewport height instead of fixed-height shells.');
+
+requireText(authority, "html[data-responsive-surface='mobile-tablet'] body .application-header", 'Responsive header must have high-specificity palette authority.');
+requireText(authority, 'background-color: var(--ui-surface-soft', 'Responsive chrome must use the desktop surface palette.');
+requireText(authority, "html[data-responsive-surface='mobile-tablet'] body .mobile-quick-bar", 'Responsive bottom navigation must have palette authority.');
+requireText(authority, '@media (max-width: 480px)', 'Narrow-phone dashboard density rules are required.');
+requireText(authority, 'grid-template-columns: minmax(0, 1fr) !important', 'Narrow-phone KPI grids must collapse to one column.');
+requireText(authority, 'border-left-color: var(--ui-gold', 'Responsive KPI accents must use the Dallmayr desktop gold token.');
+requireText(authority, 'overflow-x: hidden !important', 'Responsive shell must prevent page-level horizontal overflow.');
+
 requireText(hygiene, "body.style.removeProperty('overflow')", 'Responsive route hygiene must clear stale overflow locks.');
 requireText(hygiene, "window.addEventListener('pageshow'", 'Responsive route hygiene must recover from back-forward cache restores.');
 requireText(hygiene, "dataset.responsiveSurface = 'mobile-tablet'", 'Responsive runtime state must identify mobile/tablet mode.');
@@ -41,4 +51,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Responsive coverage contract passed: phones, portrait tablets, landscape touch tablets, auth scrolling, desktop palette, navigation, search, forms, tables, messaging and safe areas are covered.');
+console.log('Responsive coverage contract passed: phones, tablets, native scrolling, desktop palette authority, narrow-phone dashboard density, navigation, search, forms, tables, messaging and safe areas are covered.');
