@@ -104,6 +104,7 @@ for (const requiredApplicationImport of [
   '../mobile-functional-experience.css',
   '../mobile-menu-stacking-fix.css',
   '../mobile-overhaul.css',
+  '../mobile-universal-phone.css',
 ]) {
   if (!applicationImports.includes(requiredApplicationImport)) {
     fail(`app/styles/application.css is missing canonical import ${requiredApplicationImport}.`);
@@ -114,9 +115,10 @@ const expectedApplicationTail = [
   '../mobile-functional-experience.css',
   '../mobile-menu-stacking-fix.css',
   '../mobile-overhaul.css',
+  '../mobile-universal-phone.css',
 ];
-if (JSON.stringify(applicationImports.slice(-4)) !== JSON.stringify(expectedApplicationTail)) {
-  fail(`Desktop stabilization must be followed only by the locked mobile contracts; found ${JSON.stringify(applicationImports.slice(-4))}.`);
+if (JSON.stringify(applicationImports.slice(-5)) !== JSON.stringify(expectedApplicationTail)) {
+  fail(`Desktop stabilization must be followed only by the locked mobile contracts; found ${JSON.stringify(applicationImports.slice(-5))}.`);
 }
 
 const stabilizationPath = path.join(root, 'app', 'ui-stabilization-contract.css');
@@ -138,9 +140,16 @@ for (const mobileFile of ['mobile-functional-experience.css', 'mobile-menu-stack
   const mobileSource = await readFile(mobilePath, 'utf8');
   const mobileWithoutComments = mobileSource.replace(/\/\*[\s\S]*?\*\//g, '').trim();
   if (!mobileWithoutComments.startsWith('@media (max-width: 760px) {')) {
-    fail(`${mobileFile} contains rules outside the locked phone media scope.`);
+    fail(`${mobileFile} contains rules outside the locked legacy phone media scope.`);
   }
 }
 
+const universalPath = path.join(root, 'app', 'mobile-universal-phone.css');
+const universalSource = await readFile(universalPath, 'utf8');
+const universalWithoutComments = universalSource.replace(/\/\*[\s\S]*?\*\//g, '').trim();
+if (!universalWithoutComments.startsWith('@media (max-width: 900px) {')) {
+  fail('mobile-universal-phone.css contains rules outside the locked universal phone media scope.');
+}
+
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered through five canonical entry manifests with desktop stabilization and locked mobile-only final contracts.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered through five canonical entry manifests with desktop stabilization, legacy phone contracts and a final 900px universal phone contract.`);
