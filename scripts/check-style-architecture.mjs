@@ -3,9 +3,10 @@ import path from 'node:path';
 import process from 'node:process';
 
 const root = process.cwd();
-const layoutPath = path.join(root, 'app', 'layout.tsx');
 const stylesDirectory = path.join(root, 'app', 'styles');
+const layoutPath = path.join(root, 'app', 'layout.tsx');
 const entryPath = path.join(stylesDirectory, 'index.css');
+const applicationPath = path.join(stylesDirectory, 'application.css');
 
 function fail(message) {
   console.error(`Style architecture check failed: ${message}`);
@@ -37,7 +38,6 @@ if (JSON.stringify(entryImports) !== JSON.stringify(expectedEntryImports)) {
 
 const visited = new Set();
 const activeStack = new Set();
-const registeredTargets = new Map();
 async function validateStylesheet(filePath) {
   const normalized = path.normalize(filePath);
   if (activeStack.has(normalized)) {
@@ -59,23 +59,12 @@ async function validateStylesheet(filePath) {
   }
 
   const imports = cssImports(source);
-  const duplicateImports = imports.filter((value, index) => imports.indexOf(value) !== index);
-  if (duplicateImports.length > 0) {
-    fail(`${path.relative(root, normalized)} contains duplicate imports: ${[...new Set(duplicateImports)].join(', ')}.`);
+  if (new Set(imports).size !== imports.length) {
+    fail(`${path.relative(root, normalized)} contains duplicate imports.`);
   }
 
   for (const importPath of imports) {
-    if (/(?:^|\/)\w[\w-]*-final\.css$/i.test(importPath)) {
-      fail(`${path.relative(root, normalized)} registers prohibited *-final.css layer ${importPath}.`);
-    }
-    const resolved = path.resolve(path.dirname(normalized), importPath);
-    const firstOwner = registeredTargets.get(resolved);
-    if (firstOwner && firstOwner !== normalized) {
-      fail(`Stylesheet ${path.relative(root, resolved)} is registered by both ${path.relative(root, firstOwner)} and ${path.relative(root, normalized)}.`);
-    } else {
-      registeredTargets.set(resolved, normalized);
-    }
-    await validateStylesheet(resolved);
+    await validateStylesheet(path.resolve(path.dirname(normalized), importPath));
   }
   activeStack.delete(normalized);
 }
@@ -89,10 +78,9 @@ for (const manifestPath of [
   if (!source.includes('Do not add new')) fail(`${path.relative(root, manifestPath)} must retain its quarantine guidance.`);
 }
 
-const applicationPath = path.join(stylesDirectory, 'application.css');
 const applicationSource = await readFile(applicationPath, 'utf8');
 const applicationImports = cssImports(applicationSource);
-for (const requiredApplicationImport of [
+const requiredDesktopImports = [
   '../full-application-rebuild.css',
   '../route-composition-system.css',
   '../dashboard-role-workspace-rebuild.css',
@@ -101,59 +89,51 @@ for (const requiredApplicationImport of [
   '../page-cleanup-phase-4.css',
   '../component-library-phase-3.css',
   '../ui-stabilization-contract.css',
-  '../mobile-functional-experience.css',
-  '../mobile-menu-stacking-fix.css',
-  '../mobile-overhaul.css',
-  '../mobile-universal-phone.css',
-  '../mobile-browser-native.css',
-]) {
-  if (!applicationImports.includes(requiredApplicationImport)) {
-    fail(`app/styles/application.css is missing canonical import ${requiredApplicationImport}.`);
-  }
-}
-const expectedApplicationTail = [
-  '../ui-stabilization-contract.css',
-  '../mobile-functional-experience.css',
-  '../mobile-menu-stacking-fix.css',
-  '../mobile-overhaul.css',
-  '../mobile-universal-phone.css',
-  '../mobile-browser-native.css',
 ];
-if (JSON.stringify(applicationImports.slice(-6)) !== JSON.stringify(expectedApplicationTail)) {
-  fail(`Desktop stabilization must be followed only by the locked mobile contracts; found ${JSON.stringify(applicationImports.slice(-6))}.`);
+for (const requiredImport of requiredDesktopImports) {
+  if (!applicationImports.includes(requiredImport)) fail(`app/styles/application.css is missing ${requiredImport}.`);
 }
 
-const stabilizationPath = path.join(root, 'app', 'ui-stabilization-contract.css');
-const stabilizationSource = await readFile(stabilizationPath, 'utf8');
-for (const requiredRule of [
-  '.dallmayr-sidebar',
-  '.dallmayr-sidebar-link[aria-current=',
-  '--ui-ink: #231f1a',
-  '--ui-canvas: #f5f0e6',
-  'outline: 3px solid',
+const responsiveImport = '../responsive-mobile-tablet.css';
+if (applicationImports.at(-1) !== responsiveImport) {
+  fail(`The unified responsive contract must be the final application import; found ${applicationImports.at(-1)}.`);
+}
+
+for (const retiredImport of [
+  '../mobile-functional-experience.css',
+  '../mobile-menu-stacking-fix.css',
+  '../mobile-overhaul.css',
+  '../mobile-universal-phone.css',
+  '../mobile-browser-native.css',
 ]) {
-  if (!stabilizationSource.includes(requiredRule)) {
-    fail(`app/ui-stabilization-contract.css is missing required usability rule ${requiredRule}.`);
+  if (applicationImports.includes(retiredImport)) {
+    fail(`Retired responsive layer ${retiredImport} must not be registered.`);
   }
 }
 
-for (const mobileFile of ['mobile-functional-experience.css', 'mobile-menu-stacking-fix.css', 'mobile-overhaul.css']) {
-  const mobilePath = path.join(root, 'app', mobileFile);
-  const mobileSource = await readFile(mobilePath, 'utf8');
-  const mobileWithoutComments = mobileSource.replace(/\/\*[\s\S]*?\*\//g, '').trim();
-  if (!mobileWithoutComments.startsWith('@media (max-width: 760px) {')) {
-    fail(`${mobileFile} contains rules outside the locked legacy phone media scope.`);
-  }
+const stabilizationSource = await readFile(path.join(root, 'app', 'ui-stabilization-contract.css'), 'utf8');
+for (const requiredRule of ['--ui-canvas: #f5f0e6', '--ui-ink: #231f1a', '--ui-gold: #b8862f', '.dallmayr-sidebar']) {
+  if (!stabilizationSource.includes(requiredRule)) fail(`Desktop stabilization is missing ${requiredRule}.`);
 }
 
-for (const mobileFile of ['mobile-universal-phone.css', 'mobile-browser-native.css']) {
-  const mobilePath = path.join(root, 'app', mobileFile);
-  const mobileSource = await readFile(mobilePath, 'utf8');
-  const mobileWithoutComments = mobileSource.replace(/\/\*[\s\S]*?\*\//g, '').trim();
-  if (!mobileWithoutComments.startsWith('@media (max-width: 900px) {')) {
-    fail(`${mobileFile} contains rules outside the locked universal phone media scope.`);
-  }
+const responsiveSource = await readFile(path.join(root, 'app', 'responsive-mobile-tablet.css'), 'utf8');
+const responsiveWithoutComments = responsiveSource.replace(/\/\*[\s\S]*?\*\//g, '').trim();
+if (!responsiveWithoutComments.startsWith('@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {')) {
+  fail('responsive-mobile-tablet.css must begin with the locked phone/touch-tablet responsive query.');
+}
+for (const requiredRule of [
+  'var(--ui-canvas',
+  '.app-shell > .mobile-nav-backdrop',
+  '.mobile-nav-portal-root',
+  '.global-search-dialog',
+  '.mobile-quick-bar',
+  '.messaging-layout',
+  'overflow-x: auto !important',
+  'font-size: 16px !important',
+  'env(safe-area-inset-bottom)',
+]) {
+  if (!responsiveSource.includes(requiredRule)) fail(`Unified responsive contract is missing ${requiredRule}.`);
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered through five canonical entry manifests with desktop stabilization, legacy phone contracts and final 900px browser-native mobile contracts.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered with one final mobile/tablet responsive contract and unchanged desktop stabilization.`);

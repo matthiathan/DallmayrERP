@@ -39,6 +39,32 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || (href !== '/' && pathname.startsWith(`${href}/`));
 }
 
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'DU';
+  return parts.slice(0, 2).map((part) => part[0]?.toUpperCase()).join('');
+}
+
+function navGlyph(label: string, href: string) {
+  const value = `${label} ${href}`.toLowerCase();
+  if (value.includes('dashboard') || value.includes('today') || value.includes('home')) return '⌂';
+  if (value.includes('work') || value.includes('job') || value.includes('task')) return '✓';
+  if (value.includes('message') || value.includes('inbox')) return '◌';
+  if (value.includes('alert') || value.includes('notification')) return '♢';
+  if (value.includes('customer')) return '◎';
+  if (value.includes('machine') || value.includes('asset') || value.includes('equipment')) return '◇';
+  if (value.includes('stock') || value.includes('inventory') || value.includes('warehouse') || value.includes('part')) return '□';
+  if (value.includes('report') || value.includes('executive')) return '▥';
+  if (value.includes('sales')) return '↗';
+  if (value.includes('finance')) return '$';
+  if (value.includes('marketing')) return '◉';
+  if (value.includes('telemetry')) return '⌁';
+  if (value.includes('user') || value.includes('admin')) return '♙';
+  if (value.includes('setting')) return '⚙';
+  if (value.includes('scan')) return '▣';
+  return '›';
+}
+
 export function MobileNavigationDrawer({
   activeTitle,
   favoriteHrefs,
@@ -82,17 +108,14 @@ export function MobileNavigationDrawer({
       }
 
       if (event.key !== 'Tab' || !panelRef.current) return;
-
       const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>(
         'a[href], button:not([disabled]), summary, input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
       )).filter((element) => element.getAttribute('aria-hidden') !== 'true' && !element.hasAttribute('hidden'));
 
       if (focusable.length === 0) return;
-
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
       const active = document.activeElement;
-
       if (event.shiftKey && active === first) {
         event.preventDefault();
         last.focus();
@@ -103,7 +126,6 @@ export function MobileNavigationDrawer({
     }
 
     document.addEventListener('keydown', handleKeyDown);
-
     return () => {
       window.cancelAnimationFrame(focusFrame);
       document.removeEventListener('keydown', handleKeyDown);
@@ -118,11 +140,9 @@ export function MobileNavigationDrawer({
 
   const allItems = useMemo(() => {
     const items = new Map<string, NavSection['items'][number]>();
-    sections.forEach((section) => {
-      section.items.forEach((item) => {
-        if (!items.has(item.href)) items.set(item.href, item);
-      });
-    });
+    sections.forEach((section) => section.items.forEach((item) => {
+      if (!items.has(item.href)) items.set(item.href, item);
+    }));
     return Array.from(items.values());
   }, [sections]);
 
@@ -136,79 +156,92 @@ export function MobileNavigationDrawer({
   if (!mounted || !open) return null;
 
   return createPortal(
-    <div className="mobile-nav-portal-root" data-mobile-overlay="navigation">
+    <div className="mobile-nav-portal-root mobile-menu-v2" data-mobile-overlay="navigation">
       <button aria-label="Close navigation menu" className="mobile-nav-backdrop" onClick={() => setOpen(false)} type="button" />
       <div
         aria-labelledby="mobile-navigation-title"
         aria-modal="true"
-        className="mobile-nav-panel"
+        className="mobile-nav-panel mobile-menu-v2-panel"
         id="mobile-navigation"
         ref={panelRef}
         role="dialog"
       >
-        <div className="mobile-nav-header">
-          <div>
-            <span>Menu</span>
-            <h2 id="mobile-navigation-title">{activeTitle}</h2>
+        <header className="mobile-menu-v2-profile">
+          <div className="mobile-menu-v2-avatar" aria-hidden="true">
+            <span>{initials(userName)}</span><i />
           </div>
-          <button aria-label="Close navigation menu" className="mobile-nav-close" onClick={() => setOpen(false)} ref={closeButtonRef} type="button">
-            <span aria-hidden="true">×</span><span>Close</span>
+          <div className="mobile-menu-v2-identity">
+            <h2 id="mobile-navigation-title">{userName}</h2>
+            <strong>{roleLabel}</strong>
+            {!profileComplete ? <small>Profile setup required</small> : null}
+          </div>
+          <button aria-label="Close navigation menu" className="mobile-menu-v2-close" onClick={() => setOpen(false)} ref={closeButtonRef} type="button">×</button>
+        </header>
+
+        <nav aria-label="Mobile navigation" className="mobile-menu-v2-nav">
+          <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} className="mobile-menu-v2-link mobile-menu-v2-home" href={homePath} onClick={() => setOpen(false)}>
+            <span className="mobile-menu-v2-icon" aria-hidden="true">⌂</span>
+            <span className="mobile-menu-v2-copy"><strong>Dashboard</strong></span>
+          </Link>
+
+          <Link aria-current={isActivePath(pathname, '/work') ? 'page' : undefined} className="mobile-menu-v2-link" href="/work" onClick={() => setOpen(false)}>
+            <span className="mobile-menu-v2-icon" aria-hidden="true">✓</span>
+            <span className="mobile-menu-v2-copy"><strong>My Work</strong></span>
+            <span className="mobile-menu-v2-chevron" aria-hidden="true">›</span>
+          </Link>
+
+          <button className="mobile-menu-v2-link mobile-menu-v2-button" onClick={() => { setOpen(false); window.dispatchEvent(new Event('dallmayr-open-alerts')); }} type="button">
+            <span className="mobile-menu-v2-icon" aria-hidden="true">♢</span>
+            <span className="mobile-menu-v2-copy"><strong>Inbox & Alerts</strong></span>
+            <span className="mobile-menu-v2-chevron" aria-hidden="true">›</span>
           </button>
-        </div>
 
-        <div className="mobile-nav-search">
-          <GlobalSearch enableShortcut={false} showShortcut={false} triggerClassName="mobile-global-search-trigger" triggerLabel="Search pages, customers, jobs, machines and stock" />
-        </div>
+          <div className="mobile-menu-v2-search-row">
+            <span className="mobile-menu-v2-icon" aria-hidden="true">⌕</span>
+            <GlobalSearch enableShortcut={false} showShortcut={false} triggerClassName="mobile-global-search-trigger mobile-menu-v2-search-trigger" triggerLabel="Search" />
+            <span className="mobile-menu-v2-chevron" aria-hidden="true">›</span>
+          </div>
 
-        <div className="user-chip mobile-user-chip">
-          <span>{userName}</span><strong>{roleLabel}</strong>{!profileComplete ? <em>Profile setup required</em> : null}
-        </div>
-
-        <div className="mobile-primary-actions">
-          <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} href={homePath} onClick={() => setOpen(false)}><span aria-hidden="true">⌂</span><strong>Today</strong></Link>
-          <Link aria-current={isActivePath(pathname, '/work') ? 'page' : undefined} href="/work" onClick={() => setOpen(false)}><span aria-hidden="true">✓</span><strong>My Work</strong></Link>
-          <button onClick={() => { setOpen(false); window.dispatchEvent(new Event('dallmayr-open-alerts')); }} type="button"><span aria-hidden="true">♢</span><strong>Inbox</strong></button>
-        </div>
-
-        {favoriteItems.length > 0 ? (
-          <section aria-label="Pinned pages" className="mobile-nav-shortcuts">
-            <div className="mobile-nav-shortcut-heading"><strong>Pinned</strong><span>{favoriteItems.length}/{MAX_FAVORITES}</span></div>
-            <div className="mobile-nav-shortcut-grid">
-              {favoriteItems.map((item) => <Link href={item.href} key={item.href} onClick={() => setOpen(false)}>{item.label}</Link>)}
-            </div>
-          </section>
-        ) : null}
-
-        <nav aria-label="Mobile navigation" className="mobile-nav-directory">
-          {sections.map((section) => {
-            const sectionActive = section.items.some((item) => isActivePath(pathname, item.href));
-            return (
-              <details className="mobile-nav-section" key={`${section.heading}-${pathname}`} open={sectionActive || undefined}>
-                <summary><span>{section.heading}</span><span>{section.items.length}</span></summary>
-                <div className="mobile-nav-section-links">
-                  {section.items.map((item) => {
-                    const active = isActivePath(pathname, item.href);
-                    const pinned = favoriteHrefs.includes(item.href);
-                    const pinDisabled = !pinned && favoriteHrefs.length >= MAX_FAVORITES;
-                    return (
-                      <div className="mobile-nav-item-row" key={item.href}>
-                        <Link aria-current={active ? 'page' : undefined} className={`nav-link mobile-nav-card ${active ? 'active' : ''}`} href={item.href} onClick={() => setOpen(false)}>
-                          <span className="nav-card-copy"><strong>{item.label}</strong>{item.description ? <small>{item.description}</small> : null}</span>
-                        </Link>
-                        <button aria-label={pinned ? `Unpin ${item.label}` : `Pin ${item.label}`} aria-pressed={pinned} className="mobile-nav-pin" disabled={pinDisabled} onClick={() => onToggleFavorite(item.href)} title={pinDisabled ? `You can pin up to ${MAX_FAVORITES} pages` : undefined} type="button">
-                          <span aria-hidden="true">{pinned ? '★' : '☆'}</span>
-                        </button>
-                      </div>
-                    );
-                  })}
+          {favoriteItems.length > 0 ? (
+            <section className="mobile-menu-v2-group mobile-menu-v2-favorites" aria-label="Pinned pages">
+              <p className="mobile-menu-v2-section-label">Pinned</p>
+              {favoriteItems.map((item) => (
+                <div className="mobile-menu-v2-item-with-action" key={`fav-${item.href}`}>
+                  <Link className="mobile-menu-v2-link" href={item.href} onClick={() => setOpen(false)}>
+                    <span className="mobile-menu-v2-icon" aria-hidden="true">{navGlyph(item.label, item.href)}</span>
+                    <span className="mobile-menu-v2-copy"><strong>{item.label}</strong>{item.description ? <small>{item.description}</small> : null}</span>
+                    <span className="mobile-menu-v2-chevron" aria-hidden="true">›</span>
+                  </Link>
+                  <button aria-label={`Unpin ${item.label}`} className="mobile-menu-v2-pin" onClick={() => onToggleFavorite(item.href)} type="button">★</button>
                 </div>
-              </details>
-            );
-          })}
+              ))}
+            </section>
+          ) : null}
+
+          {sections.map((section) => (
+            <section className="mobile-menu-v2-group" key={section.heading}>
+              <p className="mobile-menu-v2-section-label">{section.heading}</p>
+              {section.items.map((item) => {
+                const active = isActivePath(pathname, item.href);
+                const pinned = favoriteHrefs.includes(item.href);
+                const pinDisabled = !pinned && favoriteHrefs.length >= MAX_FAVORITES;
+                return (
+                  <div className="mobile-menu-v2-item-with-action" key={item.href}>
+                    <Link aria-current={active ? 'page' : undefined} className={`mobile-menu-v2-link ${active ? 'is-active' : ''}`} href={item.href} onClick={() => setOpen(false)}>
+                      <span className="mobile-menu-v2-icon" aria-hidden="true">{navGlyph(item.label, item.href)}</span>
+                      <span className="mobile-menu-v2-copy"><strong>{item.label}</strong>{item.description ? <small>{item.description}</small> : null}</span>
+                      <span className="mobile-menu-v2-chevron" aria-hidden="true">›</span>
+                    </Link>
+                    <button aria-label={pinned ? `Unpin ${item.label}` : `Pin ${item.label}`} aria-pressed={pinned} className="mobile-menu-v2-pin" disabled={pinDisabled} onClick={() => onToggleFavorite(item.href)} title={pinDisabled ? `You can pin up to ${MAX_FAVORITES} pages` : undefined} type="button">{pinned ? '★' : '☆'}</button>
+                  </div>
+                );
+              })}
+            </section>
+          ))}
         </nav>
 
-        <footer className="mobile-nav-footer">
-          <div><strong>Account and appearance</strong><small>Change theme or sign out.</small></div>
+        <footer className="mobile-menu-v2-footer">
+          <div className="mobile-menu-v2-footer-heading"><strong>Account & appearance</strong><small>Profile, theme and sign out</small></div>
           <div className="mobile-account-menu-target" id="mobile-account-menu-target" />
         </footer>
       </div>

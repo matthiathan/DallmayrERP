@@ -3,51 +3,42 @@ import path from 'node:path';
 import process from 'node:process';
 
 const root = process.cwd();
-const css = await readFile(path.join(root, 'app', 'mobile-universal-phone.css'), 'utf8');
-const browserNative = await readFile(path.join(root, 'app', 'mobile-browser-native.css'), 'utf8');
-const application = await readFile(path.join(root, 'app', 'styles', 'application.css'), 'utf8');
-const workflow = await readFile(path.join(root, 'components', 'ui', 'MobileWorkflowEnhancer.tsx'), 'utf8');
-const hygiene = await readFile(path.join(root, 'components', 'layout', 'MobileBrowserHygiene.tsx'), 'utf8');
+const [responsive, application, hygiene] = await Promise.all([
+  readFile(path.join(root, 'app', 'responsive-mobile-tablet.css'), 'utf8'),
+  readFile(path.join(root, 'app', 'styles', 'application.css'), 'utf8'),
+  readFile(path.join(root, 'components', 'layout', 'MobileBrowserHygiene.tsx'), 'utf8'),
+]);
 
 const failures = [];
 function requireText(source, text, message) {
   if (!source.includes(text)) failures.push(message);
 }
 
-const noComments = css.replace(/\/\*[\s\S]*?\*\//g, '').trim();
-if (!noComments.startsWith('@media (max-width: 900px) {')) {
-  failures.push('Universal phone CSS must be entirely scoped to max-width: 900px.');
-}
-const browserNativeNoComments = browserNative.replace(/\/\*[\s\S]*?\*\//g, '').trim();
-if (!browserNativeNoComments.startsWith('@media (max-width: 900px) {')) {
-  failures.push('Browser-native recovery CSS must be entirely scoped to max-width: 900px.');
+requireText(application, "@import '../responsive-mobile-tablet.css';", 'Unified responsive CSS must be registered.');
+if (!application.trim().endsWith("@import '../responsive-mobile-tablet.css';")) {
+  failures.push('Unified responsive CSS must remain the final application import.');
 }
 
-requireText(application, "@import '../mobile-universal-phone.css';", 'Universal phone CSS must be registered.');
-requireText(application, "@import '../mobile-browser-native.css';", 'Browser-native mobile recovery CSS must be registered.');
-if (!application.trim().endsWith("@import '../mobile-browser-native.css';")) {
-  failures.push('Browser-native recovery CSS must remain the final application import.');
-}
-requireText(workflow, "const MOBILE_QUERY = '(max-width: 900px)'", 'Mobile workflow behavior must match the 900px universal phone breakpoint.');
-requireText(css, '--phone-canvas: #f5f0e6', 'Phone canvas must match the desktop Dallmayr palette.');
-requireText(css, '--phone-gold: #b8862f', 'Phone gold must match the desktop Dallmayr palette.');
-requireText(css, '.mobile-nav-portal-root', 'Phone navigation must use the body portal layer.');
-requireText(css, '.global-search-dialog', 'Phone search sheet styles are required.');
-requireText(css, 'overflow-x: auto !important', 'Phone data surfaces must provide contained horizontal scrolling.');
-requireText(css, 'font-size: 16px !important', 'Phone form controls must prevent iOS input zoom.');
-requireText(css, '.messaging-layout', 'Phone messaging layout rules are required.');
-requireText(css, '.mobile-quick-bar', 'Phone bottom navigation rules are required.');
-requireText(css, '@media (max-height: 500px) and (orientation: landscape)', 'Landscape phone rules are required.');
-requireText(css, 'env(safe-area-inset-bottom)', 'Phone safe-area handling is required.');
-requireText(browserNative, "html[data-mobile-route-surface='auth']", 'Authentication pages must have a native-scroll recovery contract.');
-requireText(browserNative, 'min-height: 100svh !important', 'Authentication pages must use a minimum viewport height instead of a fixed mobile viewport.');
-requireText(browserNative, 'overflow-y: auto !important', 'Browser-native recovery must explicitly restore vertical scrolling.');
-requireText(hygiene, "body.style.removeProperty('overflow')", 'Mobile route hygiene must clear stale inline overflow locks.');
-requireText(hygiene, "window.addEventListener('pageshow'", 'Mobile route hygiene must recover from back-forward cache restores.');
+requireText(responsive, '@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse)', 'Responsive CSS must cover phones and touch tablets.');
+requireText(responsive, 'var(--ui-canvas', 'Responsive canvas must inherit the desktop palette.');
+requireText(responsive, 'var(--ui-gold', 'Responsive accents must inherit the desktop palette.');
+requireText(responsive, '.mobile-nav-portal-root', 'Responsive navigation must use the body portal layer.');
+requireText(responsive, '.global-search-dialog', 'Responsive search sheet styles are required.');
+requireText(responsive, 'overflow-x: auto !important', 'Data surfaces must provide contained horizontal scrolling.');
+requireText(responsive, 'font-size: 16px !important', 'Form controls must prevent iOS input zoom.');
+requireText(responsive, '.messaging-layout', 'Responsive messaging layout rules are required.');
+requireText(responsive, '.mobile-quick-bar', 'Responsive bottom navigation rules are required.');
+requireText(responsive, 'orientation: landscape', 'Landscape rules are required.');
+requireText(responsive, 'env(safe-area-inset-bottom)', 'Safe-area handling is required.');
+requireText(responsive, "html[data-mobile-route-surface='auth']", 'Authentication pages must have native-scroll responsive rules.');
+requireText(responsive, 'min-height: 100svh !important', 'Authentication pages must use minimum viewport height instead of fixed-height shells.');
+requireText(hygiene, "body.style.removeProperty('overflow')", 'Responsive route hygiene must clear stale overflow locks.');
+requireText(hygiene, "window.addEventListener('pageshow'", 'Responsive route hygiene must recover from back-forward cache restores.');
+requireText(hygiene, "dataset.responsiveSurface = 'mobile-tablet'", 'Responsive runtime state must identify mobile/tablet mode.');
 
 if (failures.length) {
-  failures.forEach((failure) => console.error(`Universal phone check failed: ${failure}`));
+  failures.forEach((failure) => console.error(`Responsive coverage check failed: ${failure}`));
   process.exit(1);
 }
 
-console.log('Universal phone contract passed: 320-900px mobile mode, browser-native scrolling, login recovery, desktop palette, navigation, search, forms, tables, messaging, landscape and safe-area safeguards are present.');
+console.log('Responsive coverage contract passed: phones, portrait tablets, landscape touch tablets, auth scrolling, desktop palette, navigation, search, forms, tables, messaging and safe areas are covered.');

@@ -1,0 +1,1012 @@
+/*
+ * Canonical responsive contract for phones and touch tablets.
+ *
+ * Desktop remains owned by ui-stabilization-contract.css. This file applies to
+ * all narrow viewports and to larger touch-first tablet viewports. It uses the
+ * exact desktop UI tokens instead of maintaining a second colour system.
+ */
+
+@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  :root {
+    --responsive-canvas: var(--ui-canvas, #f5f0e6);
+    --responsive-surface: var(--ui-surface, #ffffff);
+    --responsive-surface-soft: var(--ui-surface-soft, #fbf8f1);
+    --responsive-ink: var(--ui-ink, #231f1a);
+    --responsive-muted: var(--ui-muted, #625b50);
+    --responsive-border: var(--ui-border, #d8cdbc);
+    --responsive-border-strong: var(--ui-border-strong, #bdaa8d);
+    --responsive-gold: var(--ui-gold, #b8862f);
+    --responsive-gold-dark: var(--ui-gold-dark, #6d4b16);
+    --responsive-focus: var(--ui-focus, #2563eb);
+    --responsive-danger: var(--ui-danger, #a32222);
+    --responsive-radius: 14px;
+    --responsive-edge: clamp(12px, 3vw, 24px);
+    --responsive-header: 64px;
+    --responsive-bottom: 72px;
+  }
+
+  html,
+  body {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-x: clip !important;
+    overflow-y: auto !important;
+    color: var(--responsive-ink) !important;
+    background: var(--responsive-canvas) !important;
+    overscroll-behavior-y: auto !important;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100svh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    touch-action: pan-y pinch-zoom;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* A modal may lock the document. Normal routes must never do so. */
+  html.mobile-navigation-dialog-open,
+  html.mobile-navigation-dialog-open body {
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
+  }
+
+  /* The responsive shell replaces the desktop rail without changing desktop CSS. */
+  .dallmayr-sidebar,
+  .desktop-navigation-rail,
+  .desktop-alerts-target,
+  .desktop-account-menu-target,
+  .application-header-search,
+  .application-header-actions,
+  .application-status-strip,
+  .desktop-only,
+  [data-desktop-only='true'] {
+    display: none !important;
+  }
+
+  .app-shell,
+  .top-shell,
+  .application-shell-v2,
+  .erp-app-shell,
+  .dallmayr-app-shell {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 100svh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: var(--responsive-canvas) !important;
+  }
+
+  /* The old in-shell backdrop is redundant. The portal owns the modal backdrop. */
+  .app-shell > .mobile-nav-backdrop {
+    display: none !important;
+  }
+
+  .application-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 7000 !important;
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: calc(var(--responsive-header) + env(safe-area-inset-top)) !important;
+    color: var(--responsive-ink) !important;
+    background: color-mix(in srgb, var(--responsive-surface-soft) 96%, transparent) !important;
+    border-bottom: 1px solid var(--responsive-border) !important;
+    box-shadow: 0 3px 16px rgba(55, 43, 25, .08) !important;
+    backdrop-filter: blur(12px);
+  }
+
+  .application-header-inner {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 12px !important;
+    min-height: var(--responsive-header) !important;
+    padding: max(8px, env(safe-area-inset-top)) var(--responsive-edge) 8px !important;
+  }
+
+  .application-brand {
+    display: none !important;
+  }
+
+  .application-page-context {
+    display: grid !important;
+    min-width: 0 !important;
+    gap: 2px !important;
+  }
+
+  .application-page-context > span,
+  .application-page-context > strong,
+  .application-page-context > small {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .application-page-context > span {
+    color: var(--responsive-gold-dark) !important;
+    font-size: .68rem !important;
+    font-weight: 850 !important;
+    letter-spacing: .07em !important;
+    text-transform: uppercase !important;
+  }
+
+  .application-page-context > strong {
+    color: var(--responsive-ink) !important;
+    font-size: 1rem !important;
+    line-height: 1.15 !important;
+  }
+
+  .application-page-context > small {
+    color: var(--responsive-muted) !important;
+    font-size: .72rem !important;
+  }
+
+  .application-mobile-menu-button,
+  .hamburger-button.notch-mobile-button {
+    display: grid !important;
+    place-content: center !important;
+    gap: 4px !important;
+    width: 48px !important;
+    min-width: 48px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: var(--responsive-ink) !important;
+    background: var(--responsive-surface) !important;
+    border: 1px solid var(--responsive-border-strong) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 8px rgba(55, 43, 25, .08) !important;
+  }
+
+  .application-mobile-menu-button span,
+  .hamburger-button.notch-mobile-button span {
+    display: block !important;
+    width: 21px !important;
+    height: 2px !important;
+    background: var(--responsive-gold-dark) !important;
+    border-radius: 999px !important;
+  }
+
+  .application-main,
+  .top-main,
+  main#main-content,
+  main[role='main'] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: calc(100svh - var(--responsive-header)) !important;
+    margin: 0 !important;
+    padding: 0 0 calc(var(--responsive-bottom) + env(safe-area-inset-bottom) + 20px) !important;
+    overflow: visible !important;
+    color: var(--responsive-ink) !important;
+    background: var(--responsive-canvas) !important;
+  }
+
+  .erp-page,
+  .route-page,
+  .page-template-frame,
+  .admin-command-dashboard,
+  .main > .erp-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: clamp(12px, 2.5vw, 24px) var(--responsive-edge) !important;
+    overflow: visible !important;
+  }
+
+  .breadcrumbs,
+  .breadcrumb,
+  [aria-label='Breadcrumb'] {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overscroll-behavior-x: contain;
+    white-space: nowrap !important;
+    scrollbar-width: none;
+  }
+
+  .erp-page-header,
+  .page-header,
+  .admin-command-header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 0 14px !important;
+    padding: 4px 0 14px !important;
+    border-bottom: 1px solid var(--responsive-border) !important;
+  }
+
+  .erp-page-header h1,
+  .page-header h1,
+  .admin-command-header h1 {
+    max-width: 100% !important;
+    margin: 0 !important;
+    color: var(--responsive-ink) !important;
+    font-size: clamp(1.35rem, 5vw, 1.95rem) !important;
+    line-height: 1.15 !important;
+    letter-spacing: -.025em !important;
+    overflow-wrap: anywhere;
+  }
+
+  .erp-page-header p,
+  .page-header p,
+  .admin-command-header p {
+    max-width: 70ch !important;
+    margin: 4px 0 0 !important;
+    color: var(--responsive-muted) !important;
+    font-size: .92rem !important;
+    line-height: 1.45 !important;
+  }
+
+  /* Flexible grids reflow naturally instead of forcing desktop columns. */
+  .grid,
+  .grid-2,
+  .grid-3,
+  .erp-content-grid,
+  .erp-metric-grid,
+  .erp-split-view,
+  .erp-record-layout,
+  .admin-command-kpis,
+  .admin-command-reporting .grid-2,
+  .form-grid,
+  [class*='two-column'],
+  [class*='three-column'] {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)) !important;
+    gap: clamp(10px, 2vw, 16px) !important;
+    min-width: 0 !important;
+  }
+
+  .erp-page-header-side,
+  .erp-page-header-actions,
+  .erp-toolbar,
+  .erp-toolbar-primary,
+  .erp-toolbar-secondary,
+  .erp-filter-bar,
+  .erp-filter-controls,
+  .erp-filter-summary,
+  .action-row,
+  .form-actions,
+  .button-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    gap: 8px !important;
+  }
+
+  .erp-page-header-actions > *,
+  .erp-toolbar-primary > *,
+  .erp-toolbar-secondary > *,
+  .erp-filter-controls > *,
+  .erp-filter-summary > *,
+  .action-row > *,
+  .form-actions > *,
+  .button-row > * {
+    min-width: min(100%, 150px) !important;
+    flex: 1 1 150px !important;
+  }
+
+  .erp-panel,
+  .erp-form-section,
+  .erp-record-summary-card,
+  .erp-metric-card,
+  .card,
+  .panel,
+  .neo-card,
+  .admin-command-reporting {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    color: var(--responsive-ink) !important;
+    background: var(--responsive-surface) !important;
+    border-color: var(--responsive-border) !important;
+    border-radius: var(--responsive-radius) !important;
+    box-shadow: 0 4px 16px rgba(55, 43, 25, .07) !important;
+    overflow-wrap: anywhere;
+  }
+
+  .erp-panel-header,
+  .erp-table-toolbar,
+  .erp-table-footer {
+    background: var(--responsive-surface-soft) !important;
+    border-color: var(--responsive-border) !important;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  strong {
+    color: var(--responsive-ink);
+    text-shadow: none !important;
+  }
+
+  p,
+  small,
+  .muted {
+    color: var(--responsive-muted);
+  }
+
+  /* Touch controls remain usable and iOS does not zoom focused fields. */
+  button,
+  .button,
+  .erp-button,
+  input,
+  select,
+  textarea,
+  .erp-input,
+  .erp-select,
+  .erp-textarea,
+  [role='button'] {
+    max-width: 100% !important;
+    font: inherit;
+  }
+
+  button,
+  .button,
+  .erp-button,
+  input,
+  select,
+  textarea,
+  .erp-input,
+  .erp-select,
+  .erp-textarea {
+    min-height: 48px !important;
+    border-radius: 12px !important;
+  }
+
+  input,
+  select,
+  textarea,
+  .erp-input,
+  .erp-select,
+  .erp-textarea {
+    width: 100% !important;
+    min-width: 0 !important;
+    color: var(--responsive-ink) !important;
+    background: var(--responsive-surface) !important;
+    border: 1px solid var(--responsive-border-strong) !important;
+    font-size: 16px !important;
+  }
+
+  textarea,
+  .erp-textarea {
+    min-height: 112px !important;
+  }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    width: 22px !important;
+    min-width: 22px !important;
+    height: 22px !important;
+    min-height: 22px !important;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 3px solid var(--responsive-focus) !important;
+    outline-offset: 2px !important;
+  }
+
+  /* Tables keep their columns and scroll locally instead of widening the page. */
+  .erp-table-shell,
+  .enterprise-table-shell,
+  .table-shell,
+  .table-container,
+  .erp-table-scroll,
+  .table-scroll,
+  .data-table-wrapper,
+  .table-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .erp-table-scroll,
+  .enterprise-table-shell,
+  .table-scroll,
+  .data-table-wrapper,
+  .table-wrap {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+
+  .erp-table-scroll table,
+  .enterprise-table-shell table,
+  .table-scroll table,
+  .data-table-wrapper table,
+  .table-wrap table {
+    width: max-content !important;
+    min-width: 100% !important;
+    max-width: none !important;
+  }
+
+  th,
+  td {
+    padding: 11px 12px !important;
+    font-size: .86rem !important;
+    white-space: nowrap;
+  }
+
+  .erp-pagination {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .erp-pagination > div {
+    display: flex !important;
+    max-width: 100% !important;
+    gap: 6px !important;
+    overflow-x: auto !important;
+  }
+
+  /* Portal navigation is the only mobile/tablet menu surface. */
+  .mobile-nav-portal-root {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 30000 !important;
+    display: block !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    pointer-events: none !important;
+  }
+
+  .mobile-nav-portal-root > .mobile-nav-backdrop {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 1 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: rgba(35, 31, 26, .48) !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    pointer-events: auto !important;
+  }
+
+  .mobile-nav-portal-root > .mobile-nav-panel {
+    position: absolute !important;
+    inset: 0 auto 0 0 !important;
+    z-index: 2 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: min(100%, 480px) !important;
+    max-width: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: none !important;
+    color: var(--responsive-ink) !important;
+    background: var(--responsive-canvas) !important;
+    border: 0 !important;
+    border-right: 1px solid var(--responsive-border) !important;
+    border-radius: 0 !important;
+    box-shadow: 16px 0 40px rgba(35, 31, 26, .18) !important;
+  }
+
+  .mobile-nav-header,
+  .mobile-nav-search,
+  .mobile-user-chip,
+  .mobile-primary-actions,
+  .mobile-nav-shortcuts,
+  .mobile-nav-footer {
+    flex: 0 0 auto !important;
+  }
+
+  .mobile-nav-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    min-height: calc(68px + env(safe-area-inset-top)) !important;
+    padding: max(10px, env(safe-area-inset-top)) 16px 10px !important;
+    background: var(--responsive-surface-soft) !important;
+    border-bottom: 1px solid var(--responsive-border) !important;
+  }
+
+  .mobile-nav-header h2 {
+    margin: 2px 0 0 !important;
+    color: var(--responsive-ink) !important;
+    font-size: 1.15rem !important;
+  }
+
+  .mobile-nav-header > div > span {
+    color: var(--responsive-gold-dark) !important;
+    font-size: .7rem !important;
+    font-weight: 850 !important;
+    letter-spacing: .08em !important;
+    text-transform: uppercase !important;
+  }
+
+  .mobile-nav-close {
+    min-width: 84px !important;
+    min-height: 46px !important;
+    color: var(--responsive-ink) !important;
+    background: var(--responsive-surface) !important;
+    border: 1px solid var(--responsive-border-strong) !important;
+  }
+
+  .mobile-nav-search,
+  .mobile-user-chip,
+  .mobile-primary-actions,
+  .mobile-nav-shortcuts {
+    padding-inline: 14px !important;
+  }
+
+  .mobile-nav-search {
+    padding-top: 12px !important;
+  }
+
+  .mobile-global-search-trigger {
+    width: 100% !important;
+  }
+
+  .mobile-user-chip {
+    margin: 10px 14px 0 !important;
+    padding: 12px !important;
+    color: var(--responsive-ink) !important;
+    background: var(--responsive-surface) !important;
+    border: 1px solid var(--responsive-border) !important;
+    border-radius: 12px !important;
+  }
+
+  .mobile-primary-actions {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    padding-top: 10px !important;
+  }
+
+  .mobile-primary-actions > * {
+    display: grid !important;
+    place-items: center !important;
+    min-width: 0 !important;
+    min-height: 64px !important;
+    padding: 8px !important;
+    color: var(--responsive-ink) !important;
+    background: var(--responsive-surface) !important;
+    border: 1px solid var(--responsive-border) !important;
+    border-radius: 12px !important;
+    text-align: center !important;
+  }
+
+  .mobile-nav-directory {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    margin-top: 10px !important;
+    padding: 0 14px 16px !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobile-nav-section {
+    margin: 0 0 8px !important;
+    background: var(--responsive-surface) !important;
+    border: 1px solid var(--responsive-border) !important;
+    border-radius: 12px !important;
+    overflow: clip !important;
+  }
+
+  .mobile-nav-section > summary {
+    min-height: 48px !important;
+    padding: 12px !important;
+    color: var(--responsive-ink) !important;
+    background: var(--responsive-surface-soft) !important;
+    cursor: pointer;
+  }
+
+  .mobile-nav-item-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 48px !important;
+    gap: 6px !important;
+    padding: 5px 8px !important;
+  }
+
+  .mobile-nav-card {
+    min-width: 0 !important;
+    color: var(--responsive-ink) !important;
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .mobile-nav-card.active,
+  .mobile-nav-card[aria-current='page'] {
+    background: color-mix(in srgb, var(--responsive-gold) 22%, var(--responsive-surface)) !important;
+    border-color: var(--responsive-gold) !important;
+  }
+
+  .mobile-nav-card small {
+    color: var(--responsive-muted) !important;
+  }
+
+  .mobile-nav-pin {
+    width: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+  }
+
+  .mobile-nav-footer {
+    padding: 10px 14px max(12px, env(safe-area-inset-bottom)) !important;
+    background: var(--responsive-surface-soft) !important;
+    border-top: 1px solid var(--responsive-border) !important;
+  }
+
+  /* Search is a viewport-safe sheet on phones and a centered panel on tablets. */
+  .global-search-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 31000 !important;
+    background: rgba(35, 31, 26, .5) !important;
+  }
+
+  .global-search-dialog {
+    position: fixed !important;
+    inset: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom)) !important;
+    z-index: 31001 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: auto !important;
+    max-width: 720px !important;
+    height: auto !important;
+    max-height: calc(100dvh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    margin: auto !important;
+    color: var(--responsive-ink) !important;
+    background: var(--responsive-surface) !important;
+    border: 1px solid var(--responsive-border) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 22px 60px rgba(35, 31, 26, .24) !important;
+    overflow: hidden !important;
+  }
+
+  .global-search-results {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Standard dialogs stay inside the visual viewport and scroll internally. */
+  [role='dialog'],
+  .modal,
+  .dialog,
+  .sheet,
+  .erp-modal,
+  .erp-dialog {
+    max-width: calc(100vw - 20px) !important;
+    max-height: calc(100dvh - 20px) !important;
+  }
+
+  /* Messaging reflows; phone uses one screen at a time, tablet can retain split view. */
+  .messaging-layout,
+  .messages-layout,
+  .communication-layout {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    gap: 12px !important;
+  }
+
+  .messaging-sidebar,
+  .message-directory,
+  .conversation-directory,
+  .messaging-thread,
+  .conversation-panel,
+  .message-thread {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .message-list,
+  .conversation-messages,
+  .messaging-thread-body {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .message-composer,
+  .messaging-composer,
+  .conversation-composer {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 4 !important;
+    padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    background: var(--responsive-surface) !important;
+  }
+
+  /* Bottom actions are large, safe-area aware and never affect document width. */
+  .mobile-quick-bar {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 6500 !important;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    min-height: calc(var(--responsive-bottom) + env(safe-area-inset-bottom)) !important;
+    margin: 0 !important;
+    padding: 6px max(6px, env(safe-area-inset-left)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-right)) !important;
+    color: var(--responsive-ink) !important;
+    background: color-mix(in srgb, var(--responsive-surface-soft) 97%, transparent) !important;
+    border-top: 1px solid var(--responsive-border) !important;
+    box-shadow: 0 -4px 18px rgba(55, 43, 25, .09) !important;
+    backdrop-filter: blur(12px);
+  }
+
+  .mobile-quick-bar > * {
+    display: grid !important;
+    place-items: center !important;
+    align-content: center !important;
+    gap: 3px !important;
+    min-width: 0 !important;
+    min-height: 56px !important;
+    margin: 0 !important;
+    padding: 4px 2px !important;
+    color: var(--responsive-ink) !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+    text-align: center !important;
+  }
+
+  .mobile-quick-bar > *[aria-current='page'] {
+    color: var(--responsive-gold-dark) !important;
+    background: color-mix(in srgb, var(--responsive-gold) 18%, var(--responsive-surface)) !important;
+  }
+
+  .mobile-quick-bar strong {
+    max-width: 100% !important;
+    font-size: clamp(.62rem, 2.6vw, .76rem) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .mobile-quick-bar span {
+    font-size: 1.15rem !important;
+    line-height: 1 !important;
+  }
+
+  /* Authentication behaves like a normal document, not a fixed app shell. */
+  html[data-mobile-route-surface='auth'],
+  html[data-mobile-route-surface='auth'] body {
+    position: static !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+    overflow-y: auto !important;
+    touch-action: pan-y pinch-zoom !important;
+  }
+
+  html[data-mobile-route-surface='auth'] .login-page,
+  html[data-mobile-route-surface='auth'] .dynamics-login-page,
+  html[data-mobile-route-surface='auth'] .auth-state-page {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: start !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 100svh !important;
+    padding: max(14px, env(safe-area-inset-top)) var(--responsive-edge) max(22px, env(safe-area-inset-bottom)) !important;
+    overflow: visible !important;
+    background: var(--responsive-canvas) !important;
+  }
+
+  html[data-mobile-route-surface='auth'] .dynamics-login-card,
+  html[data-mobile-route-surface='auth'] .login-card,
+  html[data-mobile-route-surface='auth'] .auth-state-card {
+    order: 1 !important;
+    place-self: start center !important;
+    width: min(100%, 480px) !important;
+    max-width: 480px !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 8px auto 18px !important;
+    padding: clamp(18px, 4vw, 26px) !important;
+    overflow: visible !important;
+    color: var(--responsive-ink) !important;
+    background: var(--responsive-surface) !important;
+    border-color: var(--responsive-border) !important;
+  }
+
+  html[data-mobile-route-surface='auth'] .dynamics-login-intro {
+    order: 2 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    padding: clamp(18px, 4vw, 28px) !important;
+    color: var(--responsive-ink) !important;
+    background: var(--responsive-surface-soft) !important;
+    border: 1px solid var(--responsive-border) !important;
+    border-radius: 16px !important;
+    overflow: visible !important;
+  }
+
+  html[data-mobile-route-surface='auth'] .dynamics-login-copy h1,
+  html[data-mobile-route-surface='auth'] .login-card h1 {
+    color: var(--responsive-ink) !important;
+    text-shadow: none !important;
+  }
+
+  html[data-mobile-route-surface='auth'] .dynamics-login-copy p,
+  html[data-mobile-route-surface='auth'] .login-card p {
+    color: var(--responsive-muted) !important;
+  }
+
+  html[data-mobile-route-surface='auth'] .dynamics-login-modules {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Small phones: single-column actions and full-width modal surfaces. */
+@media (max-width: 600px) {
+  .erp-page-header-actions,
+  .erp-toolbar-primary,
+  .erp-toolbar-secondary,
+  .erp-filter-controls,
+  .action-row,
+  .form-actions,
+  .button-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .erp-page-header-actions > *,
+  .erp-toolbar-primary > *,
+  .erp-toolbar-secondary > *,
+  .erp-filter-controls > *,
+  .action-row > *,
+  .form-actions > *,
+  .button-row > * {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .mobile-nav-portal-root > .mobile-nav-panel {
+    width: 100% !important;
+    border-right: 0 !important;
+  }
+
+  .global-search-dialog {
+    inset: 0 !important;
+    width: 100vw !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .messaging-layout,
+  .messages-layout,
+  .communication-layout {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+/* Medium phones and portrait tablets: still one messaging column. */
+@media (min-width: 601px) and (max-width: 900px) {
+  .messaging-layout,
+  .messages-layout,
+  .communication-layout {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+/* Touch tablets in landscape can use space efficiently without becoming desktop. */
+@media (min-width: 901px) and (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  :root {
+    --responsive-edge: clamp(18px, 2.4vw, 30px);
+    --responsive-bottom: 76px;
+  }
+
+  .application-header-inner {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    max-width: 1180px !important;
+    margin-inline: auto !important;
+  }
+
+  .erp-page,
+  .route-page,
+  .page-template-frame,
+  .admin-command-dashboard {
+    max-width: 1180px !important;
+    margin-inline: auto !important;
+  }
+
+  .messaging-layout,
+  .messages-layout,
+  .communication-layout {
+    display: grid !important;
+    grid-template-columns: minmax(280px, 34%) minmax(0, 1fr) !important;
+  }
+
+  html[data-mobile-route-surface='auth'] .login-page,
+  html[data-mobile-route-surface='auth'] .dynamics-login-page {
+    grid-template-columns: minmax(320px, 480px) minmax(0, 1fr) !important;
+    align-items: start !important;
+    gap: 24px !important;
+    max-width: 1120px !important;
+    margin-inline: auto !important;
+  }
+
+  html[data-mobile-route-surface='auth'] .dynamics-login-card,
+  html[data-mobile-route-surface='auth'] .login-card {
+    order: 1 !important;
+    margin-top: 20px !important;
+  }
+
+  html[data-mobile-route-surface='auth'] .dynamics-login-intro {
+    order: 2 !important;
+    margin-top: 20px !important;
+  }
+}
+
+/* Short landscape phones: preserve content space and let the browser scroll normally. */
+@media (max-width: 900px) and (max-height: 520px) and (orientation: landscape) {
+  :root {
+    --responsive-header: 56px;
+    --responsive-bottom: 62px;
+  }
+
+  .application-header-inner {
+    min-height: var(--responsive-header) !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+
+  .application-mobile-menu-button,
+  .hamburger-button.notch-mobile-button {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  html[data-mobile-route-surface='auth'] .dynamics-login-intro {
+    display: none !important;
+  }
+
+  html[data-mobile-route-surface='auth'] .dynamics-login-card,
+  html[data-mobile-route-surface='auth'] .login-card {
+    margin-top: 4px !important;
+  }
+}
