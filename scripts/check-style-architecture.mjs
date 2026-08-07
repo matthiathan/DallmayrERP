@@ -102,6 +102,7 @@ for (const requiredApplicationImport of [
   '../component-library-phase-3.css',
   '../ui-stabilization-contract.css',
   '../mobile-functional-experience.css',
+  '../mobile-menu-stacking-fix.css',
 ]) {
   if (!applicationImports.includes(requiredApplicationImport)) {
     fail(`app/styles/application.css is missing canonical import ${requiredApplicationImport}.`);
@@ -110,9 +111,10 @@ for (const requiredApplicationImport of [
 const expectedApplicationTail = [
   '../ui-stabilization-contract.css',
   '../mobile-functional-experience.css',
+  '../mobile-menu-stacking-fix.css',
 ];
-if (JSON.stringify(applicationImports.slice(-2)) !== JSON.stringify(expectedApplicationTail)) {
-  fail(`Desktop stabilization must be followed only by the mobile-only contract; found ${JSON.stringify(applicationImports.slice(-2))}.`);
+if (JSON.stringify(applicationImports.slice(-3)) !== JSON.stringify(expectedApplicationTail)) {
+  fail(`Desktop stabilization must be followed only by the locked mobile contracts; found ${JSON.stringify(applicationImports.slice(-3))}.`);
 }
 
 const stabilizationPath = path.join(root, 'app', 'ui-stabilization-contract.css');
@@ -129,15 +131,14 @@ for (const requiredRule of [
   }
 }
 
-const mobilePath = path.join(root, 'app', 'mobile-functional-experience.css');
-const mobileSource = await readFile(mobilePath, 'utf8');
-if (!mobileSource.startsWith('/* Dedicated mobile application experience. Desktop/tablet-wide layouts are intentionally untouched. */\n@media (max-width: 760px) {')) {
-  fail('app/mobile-functional-experience.css must begin inside the locked 760px mobile media scope.');
-}
-const mobileWithoutComments = mobileSource.replace(/\/\*[\s\S]*?\*\//g, '').trim();
-if (!mobileWithoutComments.startsWith('@media (max-width: 760px) {')) {
-  fail('Mobile functional styles contain rules outside the phone media scope.');
+for (const mobileFile of ['mobile-functional-experience.css', 'mobile-menu-stacking-fix.css']) {
+  const mobilePath = path.join(root, 'app', mobileFile);
+  const mobileSource = await readFile(mobilePath, 'utf8');
+  const mobileWithoutComments = mobileSource.replace(/\/\*[\s\S]*?\*\//g, '').trim();
+  if (!mobileWithoutComments.startsWith('@media (max-width: 760px) {')) {
+    fail(`${mobileFile} contains rules outside the locked phone media scope.`);
+  }
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered through five canonical entry manifests with desktop stabilization and a locked mobile-only final contract.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered through five canonical entry manifests with desktop stabilization and locked mobile-only final contracts.`);
