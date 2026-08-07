@@ -32,6 +32,7 @@ type MobileQuickBarProps = {
 };
 
 const MAX_FAVORITES = 4;
+const OPEN_SEARCH_EVENT = 'dallmayr-open-global-search';
 
 function isActivePath(pathname: string, href: string) {
   return pathname === href || (href !== '/' && pathname.startsWith(`${href}/`));
@@ -151,7 +152,7 @@ export function MobileNavigationDrawer({
           enableShortcut={false}
           showShortcut={false}
           triggerClassName="mobile-global-search-trigger"
-          triggerLabel="Search customers, jobs, machines and stock"
+          triggerLabel="Search pages, customers, jobs, machines and stock"
         />
       </div>
 
@@ -270,12 +271,8 @@ export function MobileQuickBar({
   const primary = quickLabels[role];
 
   function openSearch() {
-    const trigger = document.querySelector<HTMLButtonElement>('.mobile-global-search-trigger');
-    if (trigger) {
-      trigger.click();
-      return;
-    }
-    setMenuOpen(true);
+    setMenuOpen(false);
+    window.dispatchEvent(new Event(OPEN_SEARCH_EVENT));
   }
 
   function openAlerts() {
