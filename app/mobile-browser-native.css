@@ -1,0 +1,133 @@
+/* Browser-native mobile recovery contract. Keep normal pages scrollable; lock only real modal states. */
+@media (max-width: 900px) {
+  html,
+  body {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: auto !important;
+  }
+
+  body {
+    min-height: 100svh !important;
+    touch-action: pan-y pinch-zoom;
+  }
+
+  /* Explicit modal states are the only places where document scrolling may be locked. */
+  html.mobile-navigation-dialog-open,
+  html.mobile-navigation-dialog-open body {
+    overflow-y: hidden !important;
+    overscroll-behavior-y: none !important;
+  }
+
+  /* Public authentication surfaces must always behave like normal web pages. */
+  html[data-mobile-route-surface='auth'],
+  html[data-mobile-route-surface='auth'] body {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+    overflow-y: auto !important;
+    overscroll-behavior: auto !important;
+    position: static !important;
+    touch-action: pan-y pinch-zoom !important;
+  }
+
+  html[data-mobile-route-surface='auth'] .login-page,
+  html[data-mobile-route-surface='auth'] .dynamics-login-page,
+  html[data-mobile-route-surface='auth'] .auth-state-page {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: start !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 100svh !important;
+    padding: max(14px, env(safe-area-inset-top)) 14px max(20px, env(safe-area-inset-bottom)) !important;
+    overflow: visible !important;
+    background: #f5f0e6 !important;
+  }
+
+  /* Put sign-in first so credentials are immediately reachable on every phone. */
+  html[data-mobile-route-surface='auth'] .dynamics-login-card,
+  html[data-mobile-route-surface='auth'] .login-card,
+  html[data-mobile-route-surface='auth'] .auth-state-card {
+    order: 1 !important;
+    place-self: start center !important;
+    width: min(100%, 456px) !important;
+    max-width: 456px !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 8px auto 18px !important;
+    padding: 22px !important;
+    overflow: visible !important;
+  }
+
+  html[data-mobile-route-surface='auth'] .dynamics-login-intro {
+    order: 2 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 22px 18px !important;
+    border-radius: 16px !important;
+    overflow: visible !important;
+  }
+
+  html[data-mobile-route-surface='auth'] .dynamics-login-copy h1 {
+    font-size: clamp(1.65rem, 8vw, 2.35rem) !important;
+  }
+
+  html[data-mobile-route-surface='auth'] .dynamics-login-modules {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    margin-top: 18px !important;
+  }
+
+  html[data-mobile-route-surface='auth'] :is(input, select, textarea, button, .button) {
+    min-height: 48px !important;
+    font-size: 16px !important;
+  }
+
+  /* Signed-in pages retain browser document scrolling; components own only local horizontal scrolling. */
+  html[data-mobile-route-surface='application'] body,
+  html[data-mobile-route-surface='application'] .app-shell,
+  html[data-mobile-route-surface='application'] .application-shell-v2,
+  html[data-mobile-route-surface='application'] .application-main,
+  html[data-mobile-route-surface='application'] main#main-content {
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+  }
+
+  html[data-mobile-route-surface='application'] .application-main,
+  html[data-mobile-route-surface='application'] main#main-content {
+    min-height: calc(100svh - 64px) !important;
+  }
+
+  .erp-table-scroll,
+  .enterprise-table-shell,
+  .table-scroll,
+  .data-table-wrapper {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+
+  /* Fixed bars must not intercept the document outside their own visible area. */
+  .mobile-quick-bar {
+    touch-action: manipulation;
+  }
+
+  @media (max-height: 520px) and (orientation: landscape) {
+    html[data-mobile-route-surface='auth'] .dynamics-login-page,
+    html[data-mobile-route-surface='auth'] .login-page {
+      padding-top: 8px !important;
+    }
+
+    html[data-mobile-route-surface='auth'] .dynamics-login-intro {
+      display: none !important;
+    }
+
+    html[data-mobile-route-surface='auth'] .dynamics-login-card,
+    html[data-mobile-route-surface='auth'] .login-card {
+      margin-top: 4px !important;
+      margin-bottom: 12px !important;
+    }
+  }
+}
