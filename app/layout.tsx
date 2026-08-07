@@ -8,6 +8,7 @@ import { RenderedSurfaceContrastSync } from '@/components/appearance/RenderedSur
 import { FieldServiceOfflineManager } from '@/components/features/FieldServiceOfflineManager';
 import { MobileAppExperience } from '@/components/features/MobileAppExperience';
 import { GlobalAccountMenu } from '@/components/layout/GlobalAccountMenu';
+import { MobileBrowserHygiene } from '@/components/layout/MobileBrowserHygiene';
 import { PageTemplateFrame } from '@/components/layout/PageTemplateFrame';
 import { MobileWorkflowEnhancer } from '@/components/ui/MobileWorkflowEnhancer';
 
@@ -131,6 +132,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <AuthProvider>
           <AppearanceProvider>
             <RenderedSurfaceContrastSync />
+            <MobileBrowserHygiene />
             <AccessStatusGuard>
               <PageTemplateFrame />
               <FieldServiceOfflineManager />
