@@ -103,6 +103,7 @@ for (const requiredApplicationImport of [
   '../ui-stabilization-contract.css',
   '../mobile-functional-experience.css',
   '../mobile-menu-stacking-fix.css',
+  '../mobile-overhaul.css',
 ]) {
   if (!applicationImports.includes(requiredApplicationImport)) {
     fail(`app/styles/application.css is missing canonical import ${requiredApplicationImport}.`);
@@ -112,9 +113,10 @@ const expectedApplicationTail = [
   '../ui-stabilization-contract.css',
   '../mobile-functional-experience.css',
   '../mobile-menu-stacking-fix.css',
+  '../mobile-overhaul.css',
 ];
-if (JSON.stringify(applicationImports.slice(-3)) !== JSON.stringify(expectedApplicationTail)) {
-  fail(`Desktop stabilization must be followed only by the locked mobile contracts; found ${JSON.stringify(applicationImports.slice(-3))}.`);
+if (JSON.stringify(applicationImports.slice(-4)) !== JSON.stringify(expectedApplicationTail)) {
+  fail(`Desktop stabilization must be followed only by the locked mobile contracts; found ${JSON.stringify(applicationImports.slice(-4))}.`);
 }
 
 const stabilizationPath = path.join(root, 'app', 'ui-stabilization-contract.css');
@@ -131,7 +133,7 @@ for (const requiredRule of [
   }
 }
 
-for (const mobileFile of ['mobile-functional-experience.css', 'mobile-menu-stacking-fix.css']) {
+for (const mobileFile of ['mobile-functional-experience.css', 'mobile-menu-stacking-fix.css', 'mobile-overhaul.css']) {
   const mobilePath = path.join(root, 'app', mobileFile);
   const mobileSource = await readFile(mobilePath, 'utf8');
   const mobileWithoutComments = mobileSource.replace(/\/\*[\s\S]*?\*\//g, '').trim();
