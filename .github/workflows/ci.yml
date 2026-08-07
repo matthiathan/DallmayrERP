@@ -46,8 +46,10 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Install Chromium for mobile browser smoke tests
-        run: npx --yes @playwright/test@1.55.0 install --with-deps chromium
+      - name: Install mobile browser test runner and Chromium
+        run: |
+          npm install --no-save --no-package-lock --no-audit --no-fund @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
 
       - name: Run security and real-browser mobile tests against local production server
         shell: bash
@@ -71,7 +73,7 @@ jobs:
           for attempt in {1..45}; do
             if curl -fsS "$SECURITY_PENTEST_TARGET/login" > /dev/null; then
               npm run security:pentest
-              npx --yes @playwright/test@1.55.0 test tests/mobile-login.spec.mjs --reporter=line
+              npx playwright test tests/mobile-login.spec.mjs --reporter=line
               exit 0
             fi
             sleep 2
