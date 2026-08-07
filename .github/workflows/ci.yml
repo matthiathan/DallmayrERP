@@ -15,9 +15,9 @@ concurrency:
 
 jobs:
   build:
-    name: Typecheck and build Next.js app
+    name: Typecheck, build and browser-test Next.js app
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://egbiiizxsqlarqpnzxxs.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-build-key
@@ -46,10 +46,14 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Run security pentest against local production server
+      - name: Install Chromium for mobile browser smoke tests
+        run: npx --yes @playwright/test@1.55.0 install --with-deps chromium
+
+      - name: Run security and real-browser mobile tests against local production server
         shell: bash
         env:
           SECURITY_PENTEST_TARGET: http://localhost:3000
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
         run: |
           npm run start > next-server.log 2>&1 &
           server_pid="$!"
@@ -67,6 +71,7 @@ jobs:
           for attempt in {1..45}; do
             if curl -fsS "$SECURITY_PENTEST_TARGET/login" > /dev/null; then
               npm run security:pentest
+              npx --yes @playwright/test@1.55.0 test tests/mobile-login.spec.mjs --reporter=line
               exit 0
             fi
             sleep 2
