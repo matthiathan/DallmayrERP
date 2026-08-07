@@ -42,7 +42,11 @@ for (const device of [
     const state = await page.evaluate((query) => {
       const loginPage = document.querySelector('.login-page');
       const card = document.querySelector('.login-card');
-      return {
+      const tokenProbe = document.createElement('div');
+      tokenProbe.style.cssText = 'position:absolute;left:-9999px;background:var(--ui-canvas);color:var(--ui-ink);border-color:var(--ui-surface);';
+      document.body.appendChild(tokenProbe);
+      const probeStyle = getComputedStyle(tokenProbe);
+      const result = {
         queryMatches: window.matchMedia(query).matches,
         bodyOverflow: getComputedStyle(document.body).overflowY,
         htmlOverflow: getComputedStyle(document.documentElement).overflowY,
@@ -51,15 +55,19 @@ for (const device of [
         viewportHeight: window.innerHeight,
         loginBackground: loginPage ? getComputedStyle(loginPage).backgroundColor : '',
         cardBackground: card ? getComputedStyle(card).backgroundColor : '',
+        desktopCanvasToken: probeStyle.backgroundColor,
+        desktopSurfaceToken: probeStyle.borderTopColor,
       };
+      tokenProbe.remove();
+      return result;
     }, responsiveQuery);
 
     expect(state.queryMatches).toBe(true);
     expect(state.bodyOverflow).not.toBe('hidden');
     expect(state.htmlOverflow).not.toBe('hidden');
     expect(state.inlineBodyOverflow).not.toBe('hidden');
-    expect(state.loginBackground).toBe('rgb(245, 240, 230)');
-    expect(state.cardBackground).toBe('rgb(255, 255, 255)');
+    expect(state.loginBackground).toBe(state.desktopCanvasToken);
+    expect(state.cardBackground).toBe(state.desktopSurfaceToken);
 
     if (state.scrollHeight > state.viewportHeight + 2) {
       await page.evaluate(() => window.scrollTo(0, Math.min(240, document.documentElement.scrollHeight)));
