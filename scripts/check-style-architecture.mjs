@@ -105,6 +105,7 @@ for (const requiredApplicationImport of [
   '../mobile-menu-stacking-fix.css',
   '../mobile-overhaul.css',
   '../mobile-universal-phone.css',
+  '../mobile-browser-native.css',
 ]) {
   if (!applicationImports.includes(requiredApplicationImport)) {
     fail(`app/styles/application.css is missing canonical import ${requiredApplicationImport}.`);
@@ -116,9 +117,10 @@ const expectedApplicationTail = [
   '../mobile-menu-stacking-fix.css',
   '../mobile-overhaul.css',
   '../mobile-universal-phone.css',
+  '../mobile-browser-native.css',
 ];
-if (JSON.stringify(applicationImports.slice(-5)) !== JSON.stringify(expectedApplicationTail)) {
-  fail(`Desktop stabilization must be followed only by the locked mobile contracts; found ${JSON.stringify(applicationImports.slice(-5))}.`);
+if (JSON.stringify(applicationImports.slice(-6)) !== JSON.stringify(expectedApplicationTail)) {
+  fail(`Desktop stabilization must be followed only by the locked mobile contracts; found ${JSON.stringify(applicationImports.slice(-6))}.`);
 }
 
 const stabilizationPath = path.join(root, 'app', 'ui-stabilization-contract.css');
@@ -144,12 +146,14 @@ for (const mobileFile of ['mobile-functional-experience.css', 'mobile-menu-stack
   }
 }
 
-const universalPath = path.join(root, 'app', 'mobile-universal-phone.css');
-const universalSource = await readFile(universalPath, 'utf8');
-const universalWithoutComments = universalSource.replace(/\/\*[\s\S]*?\*\//g, '').trim();
-if (!universalWithoutComments.startsWith('@media (max-width: 900px) {')) {
-  fail('mobile-universal-phone.css contains rules outside the locked universal phone media scope.');
+for (const mobileFile of ['mobile-universal-phone.css', 'mobile-browser-native.css']) {
+  const mobilePath = path.join(root, 'app', mobileFile);
+  const mobileSource = await readFile(mobilePath, 'utf8');
+  const mobileWithoutComments = mobileSource.replace(/\/\*[\s\S]*?\*\//g, '').trim();
+  if (!mobileWithoutComments.startsWith('@media (max-width: 900px) {')) {
+    fail(`${mobileFile} contains rules outside the locked universal phone media scope.`);
+  }
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered through five canonical entry manifests with desktop stabilization, legacy phone contracts and a final 900px universal phone contract.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered through five canonical entry manifests with desktop stabilization, legacy phone contracts and final 900px browser-native mobile contracts.`);

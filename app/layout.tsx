@@ -5,11 +5,10 @@ import { AccessStatusGuard } from '@/components/auth/AccessStatusGuard';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { AppearanceProvider } from '@/components/appearance/AppearanceProvider';
 import { RenderedSurfaceContrastSync } from '@/components/appearance/RenderedSurfaceContrastSync';
-import { FieldServiceOfflineManager } from '@/components/features/FieldServiceOfflineManager';
-import { MobileAppExperience } from '@/components/features/MobileAppExperience';
+import { AuthenticatedMobileRuntime } from '@/components/layout/AuthenticatedMobileRuntime';
 import { GlobalAccountMenu } from '@/components/layout/GlobalAccountMenu';
+import { MobileBrowserHygiene } from '@/components/layout/MobileBrowserHygiene';
 import { PageTemplateFrame } from '@/components/layout/PageTemplateFrame';
-import { MobileWorkflowEnhancer } from '@/components/ui/MobileWorkflowEnhancer';
 
 const APPEARANCE_BOOT_SCRIPT = `
 (function () {
@@ -131,11 +130,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <AuthProvider>
           <AppearanceProvider>
             <RenderedSurfaceContrastSync />
+            <MobileBrowserHygiene />
             <AccessStatusGuard>
               <PageTemplateFrame />
-              <FieldServiceOfflineManager />
-              <MobileAppExperience />
-              <MobileWorkflowEnhancer />
+              <AuthenticatedMobileRuntime />
               <GlobalAccountMenu />
               {children}
             </AccessStatusGuard>
