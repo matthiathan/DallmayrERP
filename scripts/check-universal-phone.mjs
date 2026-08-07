@@ -4,8 +4,10 @@ import process from 'node:process';
 
 const root = process.cwd();
 const css = await readFile(path.join(root, 'app', 'mobile-universal-phone.css'), 'utf8');
+const browserNative = await readFile(path.join(root, 'app', 'mobile-browser-native.css'), 'utf8');
 const application = await readFile(path.join(root, 'app', 'styles', 'application.css'), 'utf8');
 const workflow = await readFile(path.join(root, 'components', 'ui', 'MobileWorkflowEnhancer.tsx'), 'utf8');
+const hygiene = await readFile(path.join(root, 'components', 'layout', 'MobileBrowserHygiene.tsx'), 'utf8');
 
 const failures = [];
 function requireText(source, text, message) {
@@ -16,10 +18,15 @@ const noComments = css.replace(/\/\*[\s\S]*?\*\//g, '').trim();
 if (!noComments.startsWith('@media (max-width: 900px) {')) {
   failures.push('Universal phone CSS must be entirely scoped to max-width: 900px.');
 }
+const browserNativeNoComments = browserNative.replace(/\/\*[\s\S]*?\*\//g, '').trim();
+if (!browserNativeNoComments.startsWith('@media (max-width: 900px) {')) {
+  failures.push('Browser-native recovery CSS must be entirely scoped to max-width: 900px.');
+}
 
-requireText(application, "@import '../mobile-universal-phone.css';", 'Universal phone CSS must be registered as the final application layer.');
-if (!application.trim().endsWith("@import '../mobile-universal-phone.css';")) {
-  failures.push('Universal phone CSS must remain the final application import.');
+requireText(application, "@import '../mobile-universal-phone.css';", 'Universal phone CSS must be registered.');
+requireText(application, "@import '../mobile-browser-native.css';", 'Browser-native mobile recovery CSS must be registered.');
+if (!application.trim().endsWith("@import '../mobile-browser-native.css';")) {
+  failures.push('Browser-native recovery CSS must remain the final application import.');
 }
 requireText(workflow, "const MOBILE_QUERY = '(max-width: 900px)'", 'Mobile workflow behavior must match the 900px universal phone breakpoint.');
 requireText(css, '--phone-canvas: #f5f0e6', 'Phone canvas must match the desktop Dallmayr palette.');
@@ -32,10 +39,15 @@ requireText(css, '.messaging-layout', 'Phone messaging layout rules are required
 requireText(css, '.mobile-quick-bar', 'Phone bottom navigation rules are required.');
 requireText(css, '@media (max-height: 500px) and (orientation: landscape)', 'Landscape phone rules are required.');
 requireText(css, 'env(safe-area-inset-bottom)', 'Phone safe-area handling is required.');
+requireText(browserNative, "html[data-mobile-route-surface='auth']", 'Authentication pages must have a native-scroll recovery contract.');
+requireText(browserNative, 'min-height: 100svh !important', 'Authentication pages must use a minimum viewport height instead of a fixed mobile viewport.');
+requireText(browserNative, 'overflow-y: auto !important', 'Browser-native recovery must explicitly restore vertical scrolling.');
+requireText(hygiene, "body.style.removeProperty('overflow')", 'Mobile route hygiene must clear stale inline overflow locks.');
+requireText(hygiene, "window.addEventListener('pageshow'", 'Mobile route hygiene must recover from back-forward cache restores.');
 
 if (failures.length) {
   failures.forEach((failure) => console.error(`Universal phone check failed: ${failure}`));
   process.exit(1);
 }
 
-console.log('Universal phone contract passed: 320-900px mobile mode, desktop palette, navigation, search, forms, tables, messaging, landscape and safe-area safeguards are present.');
+console.log('Universal phone contract passed: 320-900px mobile mode, browser-native scrolling, login recovery, desktop palette, navigation, search, forms, tables, messaging, landscape and safe-area safeguards are present.');
