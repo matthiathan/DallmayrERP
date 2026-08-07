@@ -1,9 +1,9 @@
 /*
  * Canonical DallmayrERP application stylesheet.
  *
- * New global visual work belongs in this contract or in a component-scoped
- * stylesheet imported by it. This manifest is loaded after quarantined legacy
- * styles and therefore owns the final shell, navigation and page composition.
+ * Desktop composition is owned by the stabilization contract. Responsive work
+ * for phones and touch tablets is owned by one final contract so mobile rules
+ * do not compete with one another.
  */
 @import '../reference-ui-redesign.css';
 @import '../full-application-rebuild.css';
@@ -14,8 +14,4 @@
 @import '../page-cleanup-phase-4.css';
 @import '../component-library-phase-3.css';
 @import '../ui-stabilization-contract.css';
-@import '../mobile-functional-experience.css';
-@import '../mobile-menu-stacking-fix.css';
-@import '../mobile-overhaul.css';
-@import '../mobile-universal-phone.css';
-@import '../mobile-browser-native.css';
+@import '../responsive-mobile-tablet.css';
