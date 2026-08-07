@@ -1,0 +1,25 @@
+/* Mobile menu stacking-context correction. Desktop/tablet-wide layouts are intentionally untouched. */
+@media (max-width: 760px) {
+  .mobile-menu-open .application-header {
+    z-index: 9020 !important;
+  }
+
+  .mobile-nav-panel:not([hidden]) {
+    display: flex !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 9030 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: none !important;
+  }
+
+  .mobile-nav-backdrop {
+    z-index: 9000 !important;
+  }
+
+  .global-search-overlay {
+    z-index: 10000 !important;
+  }
+}
