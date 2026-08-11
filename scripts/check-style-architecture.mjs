@@ -77,6 +77,7 @@ const legacyLayoutSource = await readFile(path.join(stylesDirectory, 'legacy-lay
 for (const retiredLayout of [
   "@import '../monday-shell-phase-1.css'",
   "@import '../application-shell-phase-1.css'",
+  "@import '../page-templates-phase-2.css'",
   "@import '../operations-cockpit.css'",
   "@import '../erp-executive-ui.css'",
   "@import '../dynamics-365-ui.css'",
@@ -164,7 +165,14 @@ for (const requiredAlias of ['--monday-shell-bg:', '--monday-divider:', '--monda
 }
 
 const foundationsSource = await readFile(path.join(stylesDirectory, 'foundations.css'), 'utf8');
-for (const requiredRule of ['.workspace-template-frame', ':focus-visible']) {
+for (const requiredRule of [
+  '.workspace-template-frame',
+  'align-content: start',
+  '.workspace-command-controls > summary',
+  '@media (max-width: 760px)',
+  ':focus-visible',
+  '@media (prefers-reduced-motion: reduce)',
+]) {
   if (!foundationsSource.includes(requiredRule)) fail(`Shared foundations are missing ${requiredRule}.`);
 }
 
@@ -306,4 +314,4 @@ for (const requiredRule of [
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered with retired legacy shell/full-app reskins replaced by canonical Concentrix ownership, shared foundations, shell utilities and the final mobile/tablet authority.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered with retired legacy shell/full-app/page-template programmes replaced by canonical Concentrix ownership, shared foundations, shell utilities and the final mobile/tablet authority.`);
