@@ -1,0 +1,7 @@
+/* Active Role Today workspace boundary.
+ *
+ * The underlying selector family remains in role-today-workspaces.css because it
+ * still provides live Today workspace composition. Keep it explicit and separate
+ * from retired full-application layout programmes.
+ */
+@import '../role-today-workspaces.css';
