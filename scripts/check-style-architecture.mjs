@@ -90,6 +90,7 @@ const requiredDesktopImports = [
   '../concentrix-dallmayr-shell.css',
   '../concentrix-dallmayr-dashboard.css',
   '../concentrix-operational-pages.css',
+  '../concentrix-specialist-workspaces.css',
 ];
 for (const requiredImport of requiredDesktopImports) {
   if (!applicationImports.includes(requiredImport)) fail(`app/styles/application.css is missing ${requiredImport}.`);
@@ -101,6 +102,7 @@ const professionalUiIndex = applicationImports.indexOf('../professional-ui-syste
 const concentrixShellIndex = applicationImports.indexOf('../concentrix-dallmayr-shell.css');
 const concentrixDashboardIndex = applicationImports.indexOf('../concentrix-dallmayr-dashboard.css');
 const concentrixOperationalIndex = applicationImports.indexOf('../concentrix-operational-pages.css');
+const concentrixSpecialistIndex = applicationImports.indexOf('../concentrix-specialist-workspaces.css');
 const responsiveAuthorityIndex = applicationImports.indexOf('../responsive-runtime-authority.css');
 if (!(
   desktopReferenceIndex >= 0
@@ -109,9 +111,10 @@ if (!(
   && concentrixShellIndex === professionalUiIndex + 1
   && concentrixDashboardIndex === concentrixShellIndex + 1
   && concentrixOperationalIndex === concentrixDashboardIndex + 1
-  && responsiveAuthorityIndex > concentrixOperationalIndex
+  && concentrixSpecialistIndex === concentrixOperationalIndex + 1
+  && responsiveAuthorityIndex > concentrixSpecialistIndex
 )) {
-  fail('Desktop reference/fixes/professional UI and Concentrix shell/dashboard/operational phases must load consecutively before responsive authority.');
+  fail('Desktop reference/fixes/professional UI and Concentrix shell/dashboard/operational/specialist phases must load consecutively before responsive authority.');
 }
 
 const responsiveImport = '../responsive-mobile-tablet.css';
@@ -154,6 +157,11 @@ for (const requiredRule of ['@media (min-width: 901px)', '.workspace-template-fr
   if (!concentrixOperationalSource.includes(requiredRule)) fail(`Concentrix-derived operational pages are missing ${requiredRule}.`);
 }
 
+const concentrixSpecialistSource = await readFile(path.join(root, 'app', 'concentrix-specialist-workspaces.css'), 'utf8');
+for (const requiredRule of ['@media (min-width: 901px)', '--cx-specialist-control-height: 42px', '.admin-access-stage', '.messages-v2-shell', '.global-search-dialog', '.appearance-editor', '.spatial-dashboard', '@media (min-width: 901px) and (max-width: 1180px)']) {
+  if (!concentrixSpecialistSource.includes(requiredRule)) fail(`Concentrix-derived specialist workspaces are missing ${requiredRule}.`);
+}
+
 const desktopRailSource = await readFile(path.join(root, 'components', 'layout', 'DesktopNavigationRail.tsx'), 'utf8');
 if (desktopRailSource.includes('id="desktop-account-menu-target"')) fail('DesktopNavigationRail must not duplicate the header desktop-account-menu-target id.');
 if (!desktopRailSource.includes('dallmayr-sidebar-account-menu-target')) fail('DesktopNavigationRail must retain the sidebar account-menu mount class.');
@@ -170,4 +178,4 @@ for (const requiredRule of ['var(--ui-canvas', '.app-shell > .mobile-nav-backdro
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered with Concentrix shell/dashboard/operational phases before the final mobile/tablet authority.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered with Concentrix shell/dashboard/operational/specialist phases before the final mobile/tablet authority.`);
