@@ -22,6 +22,8 @@ const retiredImports = [
   "@import '../mobile-application-layout.css'",
   "@import '../mobile-master-detail-actions.css'",
   "@import '../mobile-offline-field-work.css'",
+  "@import '../minimalist-ui-polish.css'",
+  "@import '../professional-layout-system.css'",
 ];
 
 for (const retiredImport of retiredImports) {
@@ -33,10 +35,15 @@ for (const retiredImport of retiredImports) {
 
 for (const requiredActiveImport of [
   "@import '../account-menu.css'",
+  "@import '../minimalist-operations.css'",
+  "@import '../ux-polish.css'",
+  "@import '../adaptive-contrast.css'",
+  "@import '../rendered-surface-contrast.css'",
+  "@import '../slate-sand-themes.css'",
   "@import './active-mobile-workspaces.css'",
 ]) {
   if (!manifest.includes(requiredActiveImport)) {
-    console.error(`Active navigation/account/mobile owner must remain registered: ${requiredActiveImport}`);
+    console.error(`Active feature/appearance owner must remain registered: ${requiredActiveImport}`);
     process.exitCode = 1;
   }
 }
@@ -90,9 +97,32 @@ for (const obsoleteHook of [
 }
 
 const applicationManifest = await readFile(path.join(root, 'app', 'styles', 'application.css'), 'utf8');
-if (!applicationManifest.includes("@import '../canonical-navigation-baseline.css'")) {
-  console.error('Canonical application manifest must register canonical-navigation-baseline.css.');
-  process.exitCode = 1;
+for (const requiredCanonicalImport of [
+  "@import '../canonical-navigation-baseline.css'",
+  "@import '../professional-ui-system.css'",
+  "@import '../concentrix-dallmayr-shell.css'",
+  "@import '../concentrix-execution-details.css'",
+  "@import '../responsive-mobile-tablet.css'",
+]) {
+  if (!applicationManifest.includes(requiredCanonicalImport)) {
+    console.error(`Canonical application manifest must retain ${requiredCanonicalImport}`);
+    process.exitCode = 1;
+  }
+}
+
+const professionalUi = await readFile(path.join(root, 'app', 'professional-ui-system.css'), 'utf8');
+for (const requiredRule of [
+  '.erp-panel',
+  '.erp-table-shell',
+  '.erp-toolbar',
+  '.status-badge',
+  ':focus-visible',
+  '.dallmayr-sidebar-link svg',
+]) {
+  if (!professionalUi.includes(requiredRule)) {
+    console.error(`Canonical professional UI is missing predecessor replacement rule: ${requiredRule}`);
+    process.exitCode = 1;
+  }
 }
 
 const navigationBaseline = await readFile(path.join(root, 'app', 'canonical-navigation-baseline.css'), 'utf8');
@@ -138,4 +168,4 @@ for (const requiredRule of [
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('Retired shell/navigation/mobile guard passed: obsolete top/notch/bezel/general-mobile programmes remain unregistered, active mobile feature styles are bundled in stable order, and canonical safety/navigation owners are present.');
+console.log('Retired shell/navigation/mobile/generic-visual guard passed: obsolete programmes remain unregistered, active structural/appearance/mobile feature styles remain owned, and canonical professional/navigation/safety/responsive layers are present.');
