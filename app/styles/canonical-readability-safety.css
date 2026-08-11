@@ -1,9 +1,16 @@
 /* Canonical readability and spatial safety.
  *
- * This layer contains neutral invariants only. It must not own shell colour,
- * button/status theming, desktop composition or phone/touch-tablet responsive
- * layout. Those concerns remain with the canonical Dallmayr/Concentrix layers.
+ * This layer contains neutral invariants and semantic compatibility only. It
+ * must not own shell colour, generic tab/navigation presentation, desktop
+ * composition or phone/touch-tablet responsive layout. Those concerns remain
+ * with the canonical Dallmayr/Concentrix and responsive layers.
  */
+
+:root {
+  /* Compatibility alias for active mobile feature styles that need to clear the
+     canonical five-action quick bar. The responsive authority owns its height. */
+  --mobile-quick-bar-height: calc(var(--responsive-bottom, 72px) + env(safe-area-inset-bottom, 0px));
+}
 
 html[data-visual-theme] {
   color-scheme: light;
@@ -53,6 +60,60 @@ html[data-visual-theme] body :is(
   .drawer-form
 ) {
   min-width: 0;
+}
+
+/* Semantic descendants must retain their container tone instead of inheriting
+   stale feature-level text colours. */
+.error *,
+.badge.danger *,
+.status-badge.danger *,
+.status-badge.is-danger *,
+[role='alert'].danger *,
+.success *,
+.badge.success *,
+.status-badge.success *,
+.status-badge.is-success *,
+.warning *,
+.badge.warning *,
+.status-badge.warning *,
+.status-badge.is-warning *,
+.info *,
+.badge.info *,
+.status-badge.info *,
+.status-badge.is-info * {
+  color: inherit !important;
+}
+
+.appearance-save-state.is-saved {
+  color: var(--adaptive-success-text) !important;
+  background: var(--adaptive-success-bg) !important;
+  border: 1px solid var(--adaptive-success-border) !important;
+}
+
+.appearance-save-state.is-error,
+.appearance-sync-error {
+  color: var(--adaptive-danger-text) !important;
+  background: var(--adaptive-danger-bg) !important;
+  border-color: var(--adaptive-danger-border) !important;
+}
+
+.appearance-save-state.is-saving,
+.appearance-save-state.is-loading {
+  color: var(--adaptive-warning-text) !important;
+  background: var(--adaptive-warning-bg) !important;
+  border: 1px solid var(--adaptive-warning-border) !important;
+}
+
+.global-search-result {
+  color: var(--adaptive-text) !important;
+}
+
+.global-search-result strong {
+  color: var(--adaptive-strong) !important;
+}
+
+.global-search-result > span:not(.global-search-result-type) {
+  color: var(--adaptive-muted) !important;
 }
 
 html[data-visual-theme] body .application-main {
