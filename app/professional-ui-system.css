@@ -1,0 +1,329 @@
+/*
+ * Professional DallmayrERP UI system.
+ * Shared visual language only: no route, data, permission or workflow changes.
+ * Desktop authority loads after reference/regression layers; responsive contracts load after this file.
+ */
+:root {
+  --pro-canvas: var(--ui-canvas, #f5f0e6);
+  --pro-surface: var(--ui-surface, #ffffff);
+  --pro-surface-soft: var(--ui-surface-soft, #fbf8f1);
+  --pro-ink: var(--ui-ink, #231f1a);
+  --pro-muted: var(--ui-muted, #625b50);
+  --pro-border: color-mix(in srgb, var(--ui-border, #d8cdbc) 82%, white);
+  --pro-border-strong: var(--ui-border-strong, #bdaa8d);
+  --pro-accent: var(--user-accent, var(--ui-gold, #b8862f));
+  --pro-gold: var(--ui-gold, #b8862f);
+  --pro-danger: #b42318;
+  --pro-success: #1f7a46;
+  --pro-warning: #9a6700;
+  --pro-info: #1f5f99;
+  --pro-radius-sm: 8px;
+  --pro-radius-md: 12px;
+  --pro-radius-lg: 16px;
+  --pro-shadow-xs: 0 1px 2px rgba(53, 42, 28, .05);
+  --pro-shadow-sm: 0 4px 14px rgba(53, 42, 28, .07);
+  --pro-shadow-md: 0 10px 30px rgba(53, 42, 28, .10);
+  --pro-transition: 160ms cubic-bezier(.2, 0, 0, 1);
+}
+
+/* Predictable typography and rhythm. */
+body {
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 { color: var(--pro-ink); text-wrap: balance; }
+p, li, td, th, label, input, select, textarea, button { letter-spacing: -.005em; }
+
+.erp-eyebrow,
+.admin-command-eyebrow,
+[class*='eyebrow'] {
+  color: var(--pro-gold) !important;
+  font-size: .75rem !important;
+  font-weight: 800 !important;
+  letter-spacing: .075em !important;
+  text-transform: uppercase;
+}
+
+/* Shared professional surfaces. */
+.erp-panel,
+.erp-table-shell,
+.erp-form-section,
+.erp-record-summary-card,
+.erp-metric-card,
+.neo-card,
+.card,
+.panel,
+.summary-card,
+.metric-card,
+.kpi-card,
+.form-card,
+.table-card,
+.detail-card {
+  border-color: var(--pro-border) !important;
+  border-radius: var(--pro-radius-md) !important;
+  box-shadow: var(--pro-shadow-xs) !important;
+  transition: border-color var(--pro-transition), box-shadow var(--pro-transition), transform var(--pro-transition);
+}
+
+.erp-panel:hover,
+.erp-record-summary-card:hover,
+.erp-metric-card:hover,
+.summary-card:hover,
+.metric-card:hover,
+.kpi-card:hover {
+  border-color: var(--pro-border-strong) !important;
+  box-shadow: var(--pro-shadow-sm) !important;
+}
+
+.erp-panel-header,
+.erp-table-toolbar,
+.erp-table-footer,
+.erp-form-section-header {
+  padding: 16px 18px !important;
+  background: var(--pro-surface-soft) !important;
+  border-color: var(--pro-border) !important;
+}
+
+.erp-panel-body,
+.erp-form-section-body { padding: 18px !important; }
+
+.erp-panel-header h2,
+.erp-form-section-header h3,
+.erp-record-summary-card h2 {
+  margin: 0 !important;
+  font-size: 1rem !important;
+  font-weight: 750 !important;
+  letter-spacing: -.015em !important;
+}
+
+.erp-panel-header p,
+.erp-form-section-header p { margin: 4px 0 0 !important; color: var(--pro-muted) !important; font-size: .875rem !important; }
+
+/* Buttons: one hierarchy, no visual noise. */
+button,
+.button,
+.erp-button,
+[role='button'] {
+  min-height: 42px;
+  padding-inline: 14px;
+  border-radius: var(--pro-radius-sm) !important;
+  font-weight: 700 !important;
+  transition: background-color var(--pro-transition), border-color var(--pro-transition), box-shadow var(--pro-transition), transform var(--pro-transition), color var(--pro-transition);
+}
+
+button:not(:disabled):active,
+.button:not([aria-disabled='true']):active,
+.erp-button:not(:disabled):active { transform: translateY(1px); }
+
+button:disabled,
+.erp-button:disabled { cursor: not-allowed; opacity: .58; }
+
+.button.secondary,
+button.secondary,
+.erp-button[data-variant='secondary'] {
+  color: var(--pro-ink) !important;
+  background: var(--pro-surface) !important;
+  border: 1px solid var(--pro-border-strong) !important;
+}
+
+.button.secondary:hover,
+button.secondary:hover,
+.erp-button[data-variant='secondary']:hover { background: var(--pro-surface-soft) !important; }
+
+/* Form controls. */
+label { color: var(--pro-ink); font-size: .875rem; font-weight: 650; }
+input,
+select,
+textarea,
+.erp-input,
+.erp-select,
+.erp-textarea {
+  min-height: 44px !important;
+  padding: 9px 12px !important;
+  color: var(--pro-ink) !important;
+  background: var(--pro-surface) !important;
+  border: 1px solid var(--pro-border-strong) !important;
+  border-radius: var(--pro-radius-sm) !important;
+  box-shadow: inset 0 1px 1px rgba(53,42,28,.025) !important;
+  transition: border-color var(--pro-transition), box-shadow var(--pro-transition), background-color var(--pro-transition);
+}
+
+input:hover,
+select:hover,
+textarea:hover { border-color: color-mix(in srgb, var(--pro-accent) 45%, var(--pro-border-strong)) !important; }
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--pro-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pro-accent) 18%, transparent) !important;
+  outline: 0 !important;
+}
+
+/* Tables: dense enough for ERP data, still readable. */
+.erp-table-shell { overflow: hidden; }
+.erp-table-scroll { background: var(--pro-surface); }
+table { font-size: .875rem; }
+thead th {
+  height: 44px;
+  padding: 10px 14px !important;
+  color: #4c4338 !important;
+  background: #f5efe4 !important;
+  border-bottom: 1px solid var(--pro-border-strong) !important;
+  font-size: .75rem !important;
+  font-weight: 800 !important;
+  letter-spacing: .035em !important;
+  text-transform: uppercase !important;
+}
+tbody td {
+  min-height: 46px;
+  padding: 12px 14px !important;
+  vertical-align: middle;
+  border-bottom: 1px solid color-mix(in srgb, var(--pro-border) 72%, white) !important;
+}
+tbody tr:last-child td { border-bottom: 0 !important; }
+tbody tr:hover td { background: #fff8e9 !important; }
+
+/* Toolbars and filters. */
+.erp-toolbar,
+.erp-filter-bar {
+  gap: 12px !important;
+  padding: 14px 16px !important;
+  background: var(--pro-surface) !important;
+  border: 1px solid var(--pro-border) !important;
+  border-radius: var(--pro-radius-md) !important;
+  box-shadow: var(--pro-shadow-xs) !important;
+}
+
+.erp-filter-controls { gap: 10px !important; }
+
+/* Status language is semantic and consistent. */
+[data-status],
+.status-badge,
+.badge,
+.chip,
+.erp-status {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px !important;
+  font-size: .75rem !important;
+  font-weight: 750 !important;
+  line-height: 1.2;
+}
+
+[data-status='active'], [data-status='complete'], [data-status='completed'], [data-status='success'], .badge.success {
+  color: #155b36 !important; background: #e9f6ee !important; border-color: #b8dec7 !important;
+}
+[data-status='pending'], [data-status='warning'], [data-status='in_progress'], .badge.warning {
+  color: #7a4d00 !important; background: #fff4d6 !important; border-color: #e9cf8f !important;
+}
+[data-status='danger'], [data-status='overdue'], [data-status='cancelled'], .badge.danger {
+  color: #922018 !important; background: #feeeee !important; border-color: #efc0bc !important;
+}
+[data-status='info'], .badge.info {
+  color: #174f7c !important; background: #edf5fb !important; border-color: #bfd9eb !important;
+}
+
+/* Empty/error/loading surfaces. */
+.erp-empty-state,
+.empty-state,
+.erp-state-banner,
+.error,
+[role='alert'] {
+  border-radius: var(--pro-radius-md) !important;
+}
+.error,
+[role='alert'].error {
+  color: #812018 !important;
+  background: #fff1ef !important;
+  border: 1px solid #efc1bc !important;
+}
+
+/* Focus and accessibility. */
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--pro-accent) 55%, white) !important;
+  outline-offset: 2px !important;
+}
+
+@media (min-width: 901px) {
+  /* Navigation iconography and restraint. */
+  .dallmayr-sidebar-link > span {
+    color: #51483d !important;
+    background: transparent !important;
+    border: 0 !important;
+  }
+  .dallmayr-sidebar-link svg {
+    width: 21px;
+    height: 21px;
+    stroke-width: 1.8;
+  }
+  .dallmayr-sidebar-link[aria-current='page'] > span { color: var(--pro-gold) !important; }
+  .dallmayr-sidebar-link:hover > span { color: #6f4d16 !important; }
+  .dallmayr-sidebar-group h2 { color: #8d7245 !important; }
+
+  /* Page hierarchy. */
+  .erp-page-header,
+  .page-template-header,
+  .board-header,
+  .workbench-header {
+    margin-bottom: 22px !important;
+  }
+  .erp-page-header h1,
+  .page-template-header h1,
+  .board-header h1,
+  .workbench-header h1 {
+    font-size: clamp(1.75rem, 2.1vw, 2.35rem) !important;
+    font-weight: 760 !important;
+    letter-spacing: -.035em !important;
+  }
+  .erp-page-header p,
+  .page-template-header p,
+  .board-header p,
+  .workbench-header p {
+    max-width: 72ch;
+    color: var(--pro-muted) !important;
+    line-height: 1.6;
+  }
+
+  /* Dashboard: less colour noise, stronger hierarchy. */
+  .admin-command-kpis .erp-metric-card {
+    min-height: 168px !important;
+    padding: 22px 24px !important;
+    background: linear-gradient(180deg, #fff 0%, #fffdf9 100%) !important;
+    border-color: var(--pro-border) !important;
+    box-shadow: var(--pro-shadow-sm) !important;
+  }
+  .admin-command-kpis .erp-metric-card::before { width: 3px !important; background: var(--pro-gold) !important; }
+  .admin-command-kpis .erp-metric-card span { color: #68502b !important; font-size: .76rem !important; }
+  .admin-command-kpis .erp-metric-card strong { font-size: clamp(2rem, 2.4vw, 2.65rem) !important; letter-spacing: -.04em; }
+  .admin-command-kpis .erp-metric-card p { max-width: 34ch; color: var(--pro-muted) !important; }
+
+  /* Top bar: understated utilities. */
+  .application-header { box-shadow: 0 1px 0 rgba(75,58,34,.04) !important; }
+  .application-header-actions button,
+  .application-header-actions .global-search-trigger {
+    box-shadow: none !important;
+  }
+  .global-search-trigger {
+    color: #4f473d !important;
+    background: #fff !important;
+    border: 1px solid var(--pro-border) !important;
+    border-radius: 10px !important;
+  }
+  .global-search-trigger:hover { border-color: var(--pro-border-strong) !important; background: #fffdf8 !important; }
+
+  /* Account pop-out: clean hierarchy. */
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-panel {
+    border-color: var(--pro-border) !important;
+    box-shadow: var(--pro-shadow-md) !important;
+  }
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-appearance-toggle,
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-signout {
+    font-size: .9rem !important;
+  }
+}
