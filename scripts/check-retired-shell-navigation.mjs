@@ -25,6 +25,8 @@ const retiredImports = [
   "@import '../minimalist-ui-polish.css'",
   "@import '../professional-layout-system.css'",
   "@import '../user-first-layout.css'",
+  "@import '../adaptive-contrast.css'",
+  "@import '../rendered-surface-contrast.css'",
 ];
 
 for (const retiredImport of retiredImports) {
@@ -39,8 +41,8 @@ for (const requiredActiveImport of [
   "@import '../minimalist-operations.css'",
   "@import '../ux-polish.css'",
   "@import '../reliability-machine-search.css'",
-  "@import '../adaptive-contrast.css'",
-  "@import '../rendered-surface-contrast.css'",
+  "@import '../appearance-panel.css'",
+  "@import '../appearance-customization.css'",
   "@import '../slate-sand-themes.css'",
   "@import './active-mobile-workspaces.css'",
 ]) {
@@ -121,10 +123,36 @@ for (const requiredCanonicalImport of [
   "@import '../professional-ui-system.css'",
   "@import '../concentrix-dallmayr-shell.css'",
   "@import '../concentrix-execution-details.css'",
+  "@import '../canonical-appearance-runtime.css'",
   "@import '../responsive-mobile-tablet.css'",
 ]) {
   if (!applicationManifest.includes(requiredCanonicalImport)) {
     console.error(`Canonical application manifest must retain ${requiredCanonicalImport}`);
+    process.exitCode = 1;
+  }
+}
+
+const appearanceRuntimeIndex = applicationManifest.indexOf("@import '../canonical-appearance-runtime.css'");
+const responsiveRuntimeIndex = applicationManifest.indexOf("@import '../responsive-runtime-authority.css'");
+if (appearanceRuntimeIndex < 0 || responsiveRuntimeIndex < 0 || appearanceRuntimeIndex >= responsiveRuntimeIndex) {
+  console.error('Canonical appearance runtime must load immediately before the responsive authority group.');
+  process.exitCode = 1;
+}
+
+const appearanceRuntime = await readFile(path.join(root, 'app', 'canonical-appearance-runtime.css'), 'utf8');
+for (const requiredRule of [
+  "html[data-visual-theme]",
+  '--appearance-runtime-accent: var(--user-accent',
+  '--appearance-content-surface: var(--content-surface',
+  '--user-accent: var(--appearance-runtime-accent',
+  '--content-surface: var(--appearance-content-surface',
+  '--design-accent: var(--appearance-runtime-accent',
+  '--adaptive-text: var(--appearance-content-text',
+  "html[data-theme-tone='dark']",
+  "html[data-theme-tone='light']",
+]) {
+  if (!appearanceRuntime.includes(requiredRule)) {
+    console.error(`Canonical appearance runtime is missing persisted/runtime bridge rule: ${requiredRule}`);
     process.exitCode = 1;
   }
 }
@@ -187,4 +215,4 @@ for (const requiredRule of [
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('Retired shell/navigation/mobile/generic-visual guard passed: obsolete programmes remain unregistered, active structural/appearance/mobile feature styles remain owned, migrated readability/reliability compatibility is canonicalized, and current professional/navigation/responsive layers are present.');
+console.log('Retired shell/navigation/mobile/generic-visual/contrast guard passed: obsolete programmes remain unregistered, active structural/curated appearance/mobile feature styles remain owned, runtime appearance values bridge into the curated theme without shadowing, and current professional/navigation/responsive layers are present.');
