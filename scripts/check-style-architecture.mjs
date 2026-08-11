@@ -334,8 +334,11 @@ if (!onboardingSource.includes('className="concentrix-onboarding-stage"')) fail(
 const desktopRailSource = await readFile(path.join(root, 'components', 'layout', 'DesktopNavigationRail.tsx'), 'utf8');
 if (desktopRailSource.includes('id="desktop-account-menu-target"')) fail('DesktopNavigationRail must not duplicate the header desktop-account-menu-target id.');
 if (!desktopRailSource.includes('dallmayr-sidebar-account-menu-target')) fail('DesktopNavigationRail must retain the sidebar account-menu mount class.');
-if (!desktopRailSource.includes('function NavIcon') || !desktopRailSource.includes('<svg')) fail('DesktopNavigationRail must use consistent SVG navigation icons.');
-if (desktopRailSource.includes('navigationGlyph(')) fail('DesktopNavigationRail must not regress to generated text-abbreviation icons.');
+if (!desktopRailSource.includes('NavigationIcon') || !desktopRailSource.includes('navigationIconKind')) fail('DesktopNavigationRail must use the shared SVG navigation icon contract.');
+if (desktopRailSource.includes('navigationGlyph(') || desktopRailSource.includes('function NavIcon')) fail('DesktopNavigationRail must not regress to generated or local legacy navigation icons.');
+
+const navigationIconSource = await readFile(path.join(root, 'components', 'layout', 'NavigationIcon.tsx'), 'utf8');
+if (!navigationIconSource.includes('export function NavigationIcon') || !navigationIconSource.includes('<svg')) fail('Shared NavigationIcon must provide SVG navigation icons.');
 
 const responsiveSource = await readFile(path.join(root, 'app', 'responsive-mobile-tablet.css'), 'utf8');
 const responsiveWithoutComments = responsiveSource.replace(/\/\*[\s\S]*?\*\//g, '').trim();
