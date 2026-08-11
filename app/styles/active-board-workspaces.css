@@ -1,0 +1,15 @@
+/*
+ * Active board/workspace feature bundle.
+ *
+ * These styles are still required by live board interactions and are therefore
+ * not retired legacy reskins. Keep their established load order while the
+ * remaining monday-* component hooks are migrated incrementally to canonical
+ * component names. Desktop visual normalization remains owned by the Concentrix
+ * final-audit layer; phone/touch-tablet behavior remains owned by the final
+ * responsive contract.
+ */
+@import '../monday-board-phase-2.css';
+@import '../monday-customer-board-phase-2.css';
+@import '../monday-item-card-phase-3.css';
+@import '../monday-operational-views-phase-4.css';
+@import '../monday-my-work-phase-5.css';
