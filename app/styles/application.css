@@ -7,8 +7,8 @@
  * then adapt the desktop presentation. Canonical shell utilities own cross-route
  * overlays such as the notification inbox. The canonical appearance runtime
  * bridges persisted theme/accent tokens into the remaining curated appearance
- * presentation. Responsive work for phones and touch tablets remains the final
- * authority.
+ * presentation without interrupting the contiguous desktop authority block.
+ * Responsive work for phones and touch tablets remains the final authority.
  */
 @import '../reference-ui-redesign.css';
 @import '../full-application-rebuild.css';
@@ -20,6 +20,7 @@
 @import '../component-library-phase-3.css';
 @import '../ui-stabilization-contract.css';
 @import '../canonical-navigation-baseline.css';
+@import '../canonical-appearance-runtime.css';
 @import '../desktop-reference-layout.css';
 @import '../desktop-layout-regression-fixes.css';
 @import '../professional-ui-system.css';
@@ -31,7 +32,6 @@
 @import '../concentrix-execution-details.css';
 @import '../concentrix-final-audit.css';
 @import '../canonical-shell-utilities.css';
-@import '../canonical-appearance-runtime.css';
 @import '../responsive-runtime-authority.css';
 @import '../responsive-mobile-menu-v2.css';
 @import '../responsive-mobile-tablet.css';
