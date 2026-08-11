@@ -1,0 +1,110 @@
+/* Canonical readability and spatial safety.
+ *
+ * This layer contains neutral invariants only. It must not own shell colour,
+ * button/status theming, desktop composition or phone/touch-tablet responsive
+ * layout. Those concerns remain with the canonical Dallmayr/Concentrix layers.
+ */
+
+html[data-visual-theme] {
+  color-scheme: light;
+}
+
+html[data-visual-theme] body *,
+html[data-visual-theme] body *::before,
+html[data-visual-theme] body *::after {
+  box-sizing: border-box;
+}
+
+html[data-visual-theme] body :is(a, button, summary, input, select, textarea, [tabindex]) {
+  scroll-margin-top: calc(var(--application-header-height, 88px) + 16px);
+}
+
+html[data-visual-theme] body :is(a, button, summary, input, select, textarea, [role='button']):focus-visible {
+  outline: 3px solid var(--ds-focus, var(--content-focus, #2563eb));
+  outline-offset: 2px;
+}
+
+html[data-visual-theme] body :is(img, svg, canvas, video) {
+  max-width: 100%;
+}
+
+html[data-visual-theme] body :is(
+  .application-main,
+  .application-main *,
+  .global-search-dialog,
+  .dallmayr-account-panel,
+  .notification-inbox-panel,
+  .mobile-nav-panel,
+  .mobile-filter-sheet,
+  .enterprise-table-shell,
+  .remote-table-shell,
+  .data-table-wrapper,
+  .resizable-table-shell,
+  .monday-board-table-wrap,
+  form,
+  .form-grid,
+  .input-grid,
+  .field-grid,
+  .workspace-filter-bar,
+  .remote-table-filters,
+  .monday-board-filter-grid,
+  .filter-grid,
+  .modal-form,
+  .drawer-form
+) {
+  min-width: 0;
+}
+
+html[data-visual-theme] body .application-main {
+  overflow-x: clip;
+}
+
+html[data-visual-theme] body .application-main :is(
+  h1,
+  h2,
+  h3,
+  p,
+  small,
+  label,
+  strong,
+  a,
+  button,
+  td,
+  th,
+  .nav-card-copy,
+  .monday-board-cell,
+  .minimal-list-item,
+  .today-work-row,
+  .today-attention-card
+) {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+html[data-visual-theme] body :is(.sr-only, .visually-hidden) {
+  overflow-wrap: normal;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .enterprise-table-shell,
+  .remote-table-shell,
+  .data-table-wrapper,
+  .resizable-table-shell,
+  .monday-board-table-wrap,
+  .enterprise-table-wrap,
+  .table-wrap
+) {
+  max-width: 100%;
+}
+
+html[data-visual-theme] body .application-main :is(.enterprise-table-desktop-view, .table-scroll-frame) {
+  max-width: 100%;
+  min-width: 0;
+}
+
+html[data-visual-theme] body .application-main .table-scroll-primary {
+  max-width: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+}
