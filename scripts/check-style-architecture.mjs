@@ -76,9 +76,11 @@ for (const manifestPath of [
 const legacyLayoutSource = await readFile(path.join(stylesDirectory, 'legacy-layout-manifest.css'), 'utf8');
 for (const retiredLayout of [
   "@import '../monday-shell-phase-1.css'",
+  "@import '../application-shell-phase-1.css'",
   "@import '../operations-cockpit.css'",
   "@import '../erp-executive-ui.css'",
   "@import '../dynamics-365-ui.css'",
+  "@import '../erp-workbench-system.css'",
 ]) {
   if (legacyLayoutSource.includes(retiredLayout)) {
     fail(`Retired layout programme ${retiredLayout} must not be registered in legacy-layout-manifest.css.`);
@@ -159,6 +161,11 @@ for (const retiredImport of [
 const tokenSource = await readFile(path.join(stylesDirectory, 'tokens.css'), 'utf8');
 for (const requiredAlias of ['--monday-shell-bg:', '--monday-divider:', '--monday-accent:']) {
   if (!tokenSource.includes(requiredAlias)) fail(`Design-system tokens are missing legacy board compatibility alias ${requiredAlias}.`);
+}
+
+const foundationsSource = await readFile(path.join(stylesDirectory, 'foundations.css'), 'utf8');
+for (const requiredRule of ['.workspace-template-frame', ':focus-visible']) {
+  if (!foundationsSource.includes(requiredRule)) fail(`Shared foundations are missing ${requiredRule}.`);
 }
 
 const stabilizationSource = await readFile(path.join(root, 'app', 'ui-stabilization-contract.css'), 'utf8');
@@ -299,4 +306,4 @@ for (const requiredRule of [
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered with retired legacy shell/full-app reskins replaced by canonical Concentrix ownership, shell utilities and the final mobile/tablet authority.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered with retired legacy shell/full-app reskins replaced by canonical Concentrix ownership, shared foundations, shell utilities and the final mobile/tablet authority.`);
