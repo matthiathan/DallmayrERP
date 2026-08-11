@@ -16,21 +16,61 @@ const retiredImports = [
   "@import '../fixed-top-navigation.css'",
   "@import '../desktop-nav-overflow.css'",
   "@import '../user-first-application-shell.css'",
+  "@import '../mobile.css'",
+  "@import '../mobile-navigation-drawer.css'",
+  "@import '../mobile-data-views.css'",
+  "@import '../mobile-application-layout.css'",
+  "@import '../mobile-master-detail-actions.css'",
+  "@import '../mobile-offline-field-work.css'",
 ];
 
 for (const retiredImport of retiredImports) {
   if (manifest.includes(retiredImport)) {
-    console.error(`Retired shell/navigation programme must not be re-registered: ${retiredImport}`);
+    console.error(`Retired or consolidated legacy registration must not be reintroduced: ${retiredImport}`);
     process.exitCode = 1;
   }
 }
 
 for (const requiredActiveImport of [
   "@import '../account-menu.css'",
-  "@import '../mobile-navigation-drawer.css'",
+  "@import './active-mobile-workspaces.css'",
 ]) {
   if (!manifest.includes(requiredActiveImport)) {
-    console.error(`Active navigation/account feature owner must remain registered: ${requiredActiveImport}`);
+    console.error(`Active navigation/account/mobile owner must remain registered: ${requiredActiveImport}`);
+    process.exitCode = 1;
+  }
+}
+
+const activeMobileBundle = await readFile(path.join(root, 'app', 'styles', 'active-mobile-workspaces.css'), 'utf8');
+const expectedMobileImports = [
+  "@import '../mobile-navigation-drawer.css'",
+  "@import '../mobile-data-views.css'",
+  "@import '../mobile-application-layout.css'",
+  "@import '../mobile-master-detail-actions.css'",
+  "@import '../mobile-offline-field-work.css'",
+];
+let previousMobileImportIndex = -1;
+for (const activeImport of expectedMobileImports) {
+  const importIndex = activeMobileBundle.indexOf(activeImport);
+  if (importIndex < 0) {
+    console.error(`Active mobile workspace bundle is missing ${activeImport}`);
+    process.exitCode = 1;
+    continue;
+  }
+  if (importIndex <= previousMobileImportIndex) {
+    console.error(`Active mobile workspace bundle must preserve import order; ${activeImport} is out of order.`);
+    process.exitCode = 1;
+  }
+  previousMobileImportIndex = importIndex;
+}
+
+const readabilitySafety = await readFile(path.join(root, 'app', 'styles', 'canonical-readability-safety.css'), 'utf8');
+for (const requiredRule of [
+  'touch-action: manipulation',
+  ':is(img, svg, canvas, video)',
+]) {
+  if (!readabilitySafety.includes(requiredRule)) {
+    console.error(`Canonical readability safety is missing migrated mobile invariant: ${requiredRule}`);
     process.exitCode = 1;
   }
 }
@@ -98,4 +138,4 @@ for (const requiredRule of [
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('Retired shell/navigation guard passed: legacy top/notch/bezel/navigation programmes remain unregistered and canonical accessibility/account/mobile owners are present.');
+console.log('Retired shell/navigation/mobile guard passed: obsolete top/notch/bezel/general-mobile programmes remain unregistered, active mobile feature styles are bundled in stable order, and canonical safety/navigation owners are present.');
