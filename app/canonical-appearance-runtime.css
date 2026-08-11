@@ -1,0 +1,119 @@
+/* Canonical appearance runtime bridge.
+ *
+ * AppearanceProvider and RenderedSurfaceContrastSync publish runtime aliases on
+ * the document root. This late layer maps those aliases into the compatibility
+ * variables consumed by the remaining curated appearance presentation without
+ * introducing another page/shell reskin.
+ *
+ * Do not hard-code a selected accent or content palette here. Runtime values are
+ * the authority so persisted user preferences and calculated contrast survive
+ * the legacy theme cascade.
+ */
+
+html[data-theme-tone='dark'] {
+  color-scheme: dark;
+}
+
+html[data-theme-tone='light'] {
+  color-scheme: light;
+}
+
+html[data-visual-theme] body {
+  --user-accent: var(--appearance-runtime-accent, #a67828);
+  --user-theme: var(--appearance-runtime-theme, #e6d7bf);
+  --user-background: var(--appearance-runtime-background, #f5efe5);
+  --accent-ink: var(--appearance-runtime-accent-ink, #11100d);
+  --accent-on-light: var(--appearance-runtime-accent-on-light, #7a4d13);
+  --accent-on-dark: var(--appearance-runtime-accent-on-dark, #f0cf65);
+  --accent-text: var(--appearance-content-accent-text, var(--appearance-runtime-accent-on-light, #7a4d13));
+  --focus-contrast: var(--appearance-content-focus, #8c5d18);
+  --theme-ink: var(--appearance-runtime-theme-ink, #1f1812);
+  --background-ink: var(--appearance-runtime-background-ink, #1f1812);
+
+  --content-surface: var(--appearance-content-surface, #fffaf2);
+  --content-surface-raised: var(--appearance-content-surface-raised, #f2e5d3);
+  --content-text: var(--appearance-content-text, #2b2118);
+  --content-strong: var(--appearance-content-strong, #1f1812);
+  --content-muted: var(--appearance-content-muted, #65584a);
+  --content-subtle: var(--appearance-content-subtle, #766858);
+  --content-border: var(--appearance-content-border, #bda98a);
+  --content-accent-text: var(--appearance-content-accent-text, #7a4d13);
+  --content-focus: var(--appearance-content-focus, #8c5d18);
+  --content-chart-track: var(--appearance-content-chart-track, #ded4c6);
+
+  /* Compatibility variables consumed by the curated theme stylesheet. */
+  --design-background: var(--appearance-runtime-background, #f5efe5);
+  --design-background-raised: color-mix(in srgb, var(--appearance-runtime-background, #f5efe5) 84%, var(--appearance-content-surface, #fffaf2));
+  --design-panel: var(--appearance-content-surface, #fffaf2);
+  --design-panel-raised: var(--appearance-content-surface-raised, #f2e5d3);
+  --design-panel-hover: color-mix(in srgb, var(--appearance-content-surface-raised, #f2e5d3) 88%, var(--appearance-content-focus, #8c5d18));
+  --design-input: var(--appearance-content-surface, #fffaf2);
+  --design-track: var(--appearance-content-chart-track, #ded4c6);
+  --design-text: var(--appearance-content-text, #2b2118);
+  --design-strong: var(--appearance-content-strong, #1f1812);
+  --design-muted: var(--appearance-content-muted, #65584a);
+  --design-subtle: var(--appearance-content-subtle, #766858);
+  --design-border: var(--appearance-content-border, #bda98a);
+  --design-border-strong: color-mix(in srgb, var(--appearance-content-border, #bda98a) 72%, var(--appearance-content-strong, #1f1812));
+  --design-accent: var(--appearance-runtime-accent, #a67828);
+  --design-accent-hover: var(--appearance-content-focus, #8c5d18);
+  --design-accent-ink: var(--appearance-runtime-accent-ink, #11100d);
+  --design-link: var(--appearance-content-accent-text, #7a4d13);
+
+  /* Neutral compatibility aliases retained for canonical semantic/readability
+     rules while the old adaptive-contrast programme is inactive. */
+  --adaptive-text: var(--appearance-content-text, #2b2118);
+  --adaptive-strong: var(--appearance-content-strong, #1f1812);
+  --adaptive-muted: var(--appearance-content-muted, #65584a);
+  --adaptive-subtle: var(--appearance-content-subtle, #766858);
+  --adaptive-border: var(--appearance-content-border, #bda98a);
+  --adaptive-control-bg: var(--appearance-content-surface, #fffaf2);
+  --adaptive-control-text: var(--appearance-content-text, #2b2118);
+  --adaptive-control-placeholder: var(--appearance-content-subtle, #766858);
+  --adaptive-neutral-button: var(--appearance-content-surface-raised, #f2e5d3);
+  --adaptive-neutral-button-hover: color-mix(in srgb, var(--appearance-content-surface-raised, #f2e5d3) 88%, var(--appearance-content-focus, #8c5d18));
+}
+
+html[data-theme-tone='dark'] body {
+  --adaptive-danger-bg: #7f1d1d;
+  --adaptive-danger-text: #ffffff;
+  --adaptive-danger-border: #fca5a5;
+  --adaptive-success-bg: #14532d;
+  --adaptive-success-text: #ffffff;
+  --adaptive-success-border: #86efac;
+  --adaptive-warning-bg: #78350f;
+  --adaptive-warning-text: #ffffff;
+  --adaptive-warning-border: #fcd34d;
+  --adaptive-info-bg: #1e3a8a;
+  --adaptive-info-text: #ffffff;
+  --adaptive-info-border: #93c5fd;
+}
+
+html[data-theme-tone='light'] body {
+  --adaptive-danger-bg: #fee2e2;
+  --adaptive-danger-text: #7f1d1d;
+  --adaptive-danger-border: #dc2626;
+  --adaptive-success-bg: #dcfce7;
+  --adaptive-success-text: #14532d;
+  --adaptive-success-border: #15803d;
+  --adaptive-warning-bg: #fef3c7;
+  --adaptive-warning-text: #78350f;
+  --adaptive-warning-border: #b45309;
+  --adaptive-info-bg: #dbeafe;
+  --adaptive-info-text: #1e3a8a;
+  --adaptive-info-border: #2563eb;
+}
+
+@media (forced-colors: active) {
+  html[data-visual-theme] body {
+    --design-background: Canvas;
+    --design-panel: Canvas;
+    --design-panel-raised: Canvas;
+    --design-text: CanvasText;
+    --design-strong: CanvasText;
+    --design-muted: CanvasText;
+    --design-subtle: CanvasText;
+    --design-border: CanvasText;
+    --design-border-strong: CanvasText;
+  }
+}
