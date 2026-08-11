@@ -92,6 +92,7 @@ const requiredDesktopImports = [
   '../concentrix-operational-pages.css',
   '../concentrix-specialist-workspaces.css',
   '../concentrix-access-entry.css',
+  '../concentrix-execution-details.css',
 ];
 for (const requiredImport of requiredDesktopImports) {
   if (!applicationImports.includes(requiredImport)) fail(`app/styles/application.css is missing ${requiredImport}.`);
@@ -105,6 +106,7 @@ const concentrixDashboardIndex = applicationImports.indexOf('../concentrix-dallm
 const concentrixOperationalIndex = applicationImports.indexOf('../concentrix-operational-pages.css');
 const concentrixSpecialistIndex = applicationImports.indexOf('../concentrix-specialist-workspaces.css');
 const concentrixAccessIndex = applicationImports.indexOf('../concentrix-access-entry.css');
+const concentrixExecutionIndex = applicationImports.indexOf('../concentrix-execution-details.css');
 const responsiveAuthorityIndex = applicationImports.indexOf('../responsive-runtime-authority.css');
 if (!(
   desktopReferenceIndex >= 0
@@ -115,9 +117,10 @@ if (!(
   && concentrixOperationalIndex === concentrixDashboardIndex + 1
   && concentrixSpecialistIndex === concentrixOperationalIndex + 1
   && concentrixAccessIndex === concentrixSpecialistIndex + 1
-  && responsiveAuthorityIndex > concentrixAccessIndex
+  && concentrixExecutionIndex === concentrixAccessIndex + 1
+  && responsiveAuthorityIndex > concentrixExecutionIndex
 )) {
-  fail('Desktop reference/fixes/professional UI and Concentrix shell/dashboard/operational/specialist/access-entry phases must load consecutively before responsive authority.');
+  fail('Desktop reference/fixes/professional UI and Concentrix shell/dashboard/operational/specialist/access-entry/execution-detail phases must load consecutively before responsive authority.');
 }
 
 const responsiveImport = '../responsive-mobile-tablet.css';
@@ -179,6 +182,23 @@ for (const requiredRule of [
 }
 if (concentrixAccessSource.includes('pointer: coarse')) fail('Concentrix access-entry phase must not define a coarse-pointer responsive authority.');
 
+const concentrixExecutionSource = await readFile(path.join(root, 'app', 'concentrix-execution-details.css'), 'utf8');
+for (const requiredRule of [
+  '@media (min-width: 901px) and (hover: hover) and (pointer: fine), (min-width: 1367px)',
+  '--cx-execution-control-height: 42px',
+  '.field-service-workspace',
+  '.minimal-panel',
+  '.status-timeline',
+  '.live-scanner-box',
+  '.scanner-match-card',
+  '.asset-ticket',
+  '.enterprise-table-shell',
+  '@media (min-width: 901px) and (max-width: 1180px) and (hover: hover) and (pointer: fine)',
+]) {
+  if (!concentrixExecutionSource.includes(requiredRule)) fail(`Concentrix-derived execution-detail surfaces are missing ${requiredRule}.`);
+}
+if (concentrixExecutionSource.includes('pointer: coarse')) fail('Concentrix execution-detail phase must not define a coarse-pointer responsive authority.');
+
 const onboardingSource = await readFile(path.join(root, 'app', 'onboarding', 'page.tsx'), 'utf8');
 if (!onboardingSource.includes('className="concentrix-onboarding-stage"')) fail('Onboarding must retain the Phase 5 presentation hook.');
 
@@ -198,4 +218,4 @@ for (const requiredRule of ['var(--ui-canvas', '.app-shell > .mobile-nav-backdro
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered with Concentrix shell/dashboard/operational/specialist/access-entry phases before the final mobile/tablet authority.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered with Concentrix shell/dashboard/operational/specialist/access-entry/execution-detail phases before the final mobile/tablet authority.`);
