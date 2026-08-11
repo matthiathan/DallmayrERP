@@ -73,6 +73,11 @@ for (const manifestPath of [
   if (!source.includes('Do not add new')) fail(`${path.relative(root, manifestPath)} must retain its quarantine guidance.`);
 }
 
+const legacyLayoutSource = await readFile(path.join(stylesDirectory, 'legacy-layout-manifest.css'), 'utf8');
+if (legacyLayoutSource.includes("@import '../monday-shell-phase-1.css'")) {
+  fail('The obsolete Monday shell programme must remain retired from legacy-layout-manifest.css.');
+}
+
 const applicationSource = await readFile(applicationPath, 'utf8');
 const applicationImports = cssImports(applicationSource);
 const requiredDesktopImports = [
@@ -94,6 +99,7 @@ const requiredDesktopImports = [
   '../concentrix-access-entry.css',
   '../concentrix-execution-details.css',
   '../concentrix-final-audit.css',
+  '../canonical-shell-utilities.css',
 ];
 for (const requiredImport of requiredDesktopImports) {
   if (!applicationImports.includes(requiredImport)) fail(`app/styles/application.css is missing ${requiredImport}.`);
@@ -109,6 +115,7 @@ const concentrixSpecialistIndex = applicationImports.indexOf('../concentrix-spec
 const concentrixAccessIndex = applicationImports.indexOf('../concentrix-access-entry.css');
 const concentrixExecutionIndex = applicationImports.indexOf('../concentrix-execution-details.css');
 const concentrixFinalAuditIndex = applicationImports.indexOf('../concentrix-final-audit.css');
+const shellUtilitiesIndex = applicationImports.indexOf('../canonical-shell-utilities.css');
 const responsiveAuthorityIndex = applicationImports.indexOf('../responsive-runtime-authority.css');
 if (!(
   desktopReferenceIndex >= 0
@@ -121,9 +128,10 @@ if (!(
   && concentrixAccessIndex === concentrixSpecialistIndex + 1
   && concentrixExecutionIndex === concentrixAccessIndex + 1
   && concentrixFinalAuditIndex === concentrixExecutionIndex + 1
-  && responsiveAuthorityIndex > concentrixFinalAuditIndex
+  && shellUtilitiesIndex === concentrixFinalAuditIndex + 1
+  && responsiveAuthorityIndex === shellUtilitiesIndex + 1
 )) {
-  fail('Desktop reference/fixes/professional UI and Concentrix shell/dashboard/operational/specialist/access-entry/execution-detail/final-audit phases must load consecutively before responsive authority.');
+  fail('Desktop reference/fixes/professional UI, Concentrix migration layers and canonical shell utilities must load consecutively before responsive authority.');
 }
 
 const responsiveImport = '../responsive-mobile-tablet.css';
@@ -141,6 +149,11 @@ for (const retiredImport of [
   if (applicationImports.includes(retiredImport)) fail(`Retired responsive layer ${retiredImport} must not be registered.`);
 }
 
+const tokenSource = await readFile(path.join(stylesDirectory, 'tokens.css'), 'utf8');
+for (const requiredAlias of ['--monday-shell-bg:', '--monday-divider:', '--monday-accent:']) {
+  if (!tokenSource.includes(requiredAlias)) fail(`Design-system tokens are missing legacy board compatibility alias ${requiredAlias}.`);
+}
+
 const stabilizationSource = await readFile(path.join(root, 'app', 'ui-stabilization-contract.css'), 'utf8');
 for (const requiredRule of ['--ui-canvas: #f5f0e6', '--ui-ink: #231f1a', '--ui-gold: #b8862f', '.dallmayr-sidebar']) {
   if (!stabilizationSource.includes(requiredRule)) fail(`Desktop stabilization is missing ${requiredRule}.`);
@@ -152,7 +165,16 @@ for (const requiredRule of ['--pro-radius-md: 12px', '.erp-panel', '.erp-table-s
 }
 
 const concentrixShellSource = await readFile(path.join(root, 'app', 'concentrix-dallmayr-shell.css'), 'utf8');
-for (const requiredRule of ['--cx-sidebar: 264px', '--cx-header: 88px', 'width: min(100%, 1600px)', 'box-shadow: inset 3px 0 0 var(--cx-gold)']) {
+for (const requiredRule of [
+  '--cx-sidebar: 264px',
+  '--cx-header: 88px',
+  '--application-header-height: var(--cx-header)',
+  '.application-shell-v2',
+  'padding-left: var(--cx-sidebar) !important',
+  '.dallmayr-sidebar',
+  'width: min(100%, 1600px)',
+  'box-shadow: inset 3px 0 0 var(--cx-gold)',
+]) {
   if (!concentrixShellSource.includes(requiredRule)) fail(`Concentrix-derived shell is missing ${requiredRule}.`);
 }
 
@@ -222,6 +244,20 @@ for (const requiredRule of [
 if (concentrixFinalAuditSource.includes('pointer: coarse')) fail('Concentrix final-audit phase must not define a coarse-pointer responsive authority.');
 if (concentrixFinalAuditSource.includes('display: none')) fail('Concentrix final-audit phase must not hide existing functionality.');
 
+const shellUtilitiesSource = await readFile(path.join(root, 'app', 'canonical-shell-utilities.css'), 'utf8');
+for (const requiredRule of [
+  '--shell-util-surface:',
+  '.notification-inbox-trigger',
+  '.notification-inbox-panel',
+  '.notification-card',
+  '.mobile-primary-actions',
+  '@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse)',
+  'env(safe-area-inset-bottom, 0px)',
+]) {
+  if (!shellUtilitiesSource.includes(requiredRule)) fail(`Canonical shell utilities are missing ${requiredRule}.`);
+}
+if (shellUtilitiesSource.includes('var(--monday-')) fail('Canonical shell utilities must not depend on retired Monday theme variables.');
+
 const onboardingSource = await readFile(path.join(root, 'app', 'onboarding', 'page.tsx'), 'utf8');
 if (!onboardingSource.includes('className="concentrix-onboarding-stage"')) fail('Onboarding must retain the Phase 5 presentation hook.');
 
@@ -241,4 +277,4 @@ for (const requiredRule of ['var(--ui-canvas', '.app-shell > .mobile-nav-backdro
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered with Concentrix shell/dashboard/operational/specialist/access-entry/execution-detail/final-audit phases before the final mobile/tablet authority.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered with the retired Monday shell replaced by canonical Concentrix shell ownership, shell utilities and the final mobile/tablet authority.`);
