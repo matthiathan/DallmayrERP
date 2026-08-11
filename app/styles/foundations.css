@@ -255,3 +255,39 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Canonical motion contract for shell transitions. */
+@media (prefers-reduced-motion: reduce) {
+  .dallmayr-sidebar,
+  .application-main,
+  .application-shell-v2 {
+    transition: none !important;
+  }
+}
+
+/* Printing removes interactive shell chrome while preserving route content. */
+@media print {
+  .application-header,
+  .dallmayr-sidebar,
+  .desktop-navigation-rail,
+  .mobile-quick-bar,
+  .mobile-nav-panel,
+  .mobile-nav-backdrop,
+  .notification-inbox-trigger,
+  .notification-inbox-backdrop,
+  .notification-inbox-panel {
+    display: none !important;
+  }
+
+  .application-shell-v2 {
+    padding-top: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .application-main {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
