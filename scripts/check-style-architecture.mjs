@@ -91,6 +91,7 @@ const requiredDesktopImports = [
   '../concentrix-dallmayr-dashboard.css',
   '../concentrix-operational-pages.css',
   '../concentrix-specialist-workspaces.css',
+  '../concentrix-access-entry.css',
 ];
 for (const requiredImport of requiredDesktopImports) {
   if (!applicationImports.includes(requiredImport)) fail(`app/styles/application.css is missing ${requiredImport}.`);
@@ -103,6 +104,7 @@ const concentrixShellIndex = applicationImports.indexOf('../concentrix-dallmayr-
 const concentrixDashboardIndex = applicationImports.indexOf('../concentrix-dallmayr-dashboard.css');
 const concentrixOperationalIndex = applicationImports.indexOf('../concentrix-operational-pages.css');
 const concentrixSpecialistIndex = applicationImports.indexOf('../concentrix-specialist-workspaces.css');
+const concentrixAccessIndex = applicationImports.indexOf('../concentrix-access-entry.css');
 const responsiveAuthorityIndex = applicationImports.indexOf('../responsive-runtime-authority.css');
 if (!(
   desktopReferenceIndex >= 0
@@ -112,9 +114,10 @@ if (!(
   && concentrixDashboardIndex === concentrixShellIndex + 1
   && concentrixOperationalIndex === concentrixDashboardIndex + 1
   && concentrixSpecialistIndex === concentrixOperationalIndex + 1
-  && responsiveAuthorityIndex > concentrixSpecialistIndex
+  && concentrixAccessIndex === concentrixSpecialistIndex + 1
+  && responsiveAuthorityIndex > concentrixAccessIndex
 )) {
-  fail('Desktop reference/fixes/professional UI and Concentrix shell/dashboard/operational/specialist phases must load consecutively before responsive authority.');
+  fail('Desktop reference/fixes/professional UI and Concentrix shell/dashboard/operational/specialist/access-entry phases must load consecutively before responsive authority.');
 }
 
 const responsiveImport = '../responsive-mobile-tablet.css';
@@ -162,6 +165,23 @@ for (const requiredRule of ['@media (min-width: 901px)', '--cx-specialist-contro
   if (!concentrixSpecialistSource.includes(requiredRule)) fail(`Concentrix-derived specialist workspaces are missing ${requiredRule}.`);
 }
 
+const concentrixAccessSource = await readFile(path.join(root, 'app', 'concentrix-access-entry.css'), 'utf8');
+for (const requiredRule of [
+  '@media (min-width: 901px) and (hover: hover) and (pointer: fine), (min-width: 1367px)',
+  '--cx-access-control-height: 46px',
+  '.dynamics-login-page',
+  '.login-remember-me',
+  '.auth-state-page',
+  '.concentrix-onboarding-stage',
+  '@media (min-width: 901px) and (max-width: 1180px) and (hover: hover) and (pointer: fine)',
+]) {
+  if (!concentrixAccessSource.includes(requiredRule)) fail(`Concentrix-derived access-entry surfaces are missing ${requiredRule}.`);
+}
+if (concentrixAccessSource.includes('pointer: coarse')) fail('Concentrix access-entry phase must not define a coarse-pointer responsive authority.');
+
+const onboardingSource = await readFile(path.join(root, 'app', 'onboarding', 'page.tsx'), 'utf8');
+if (!onboardingSource.includes('className="concentrix-onboarding-stage"')) fail('Onboarding must retain the Phase 5 presentation hook.');
+
 const desktopRailSource = await readFile(path.join(root, 'components', 'layout', 'DesktopNavigationRail.tsx'), 'utf8');
 if (desktopRailSource.includes('id="desktop-account-menu-target"')) fail('DesktopNavigationRail must not duplicate the header desktop-account-menu-target id.');
 if (!desktopRailSource.includes('dallmayr-sidebar-account-menu-target')) fail('DesktopNavigationRail must retain the sidebar account-menu mount class.');
@@ -178,4 +198,4 @@ for (const requiredRule of ['var(--ui-canvas', '.app-shell > .mobile-nav-backdro
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered with Concentrix shell/dashboard/operational/specialist phases before the final mobile/tablet authority.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered with Concentrix shell/dashboard/operational/specialist/access-entry phases before the final mobile/tablet authority.`);
