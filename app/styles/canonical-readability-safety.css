@@ -26,6 +26,10 @@ html[data-visual-theme] body :is(a, button, summary, input, select, textarea, [t
   scroll-margin-top: calc(var(--application-header-height, 88px) + 16px);
 }
 
+html[data-visual-theme] body :is(a, button, summary, input, select, textarea, [role='button']) {
+  touch-action: manipulation;
+}
+
 html[data-visual-theme] body :is(a, button, summary, input, select, textarea, [role='button']):focus-visible {
   outline: 3px solid var(--ds-focus, var(--content-focus, #2563eb));
   outline-offset: 2px;
