@@ -7,9 +7,11 @@ const manifestPath = path.join(root, 'app', 'styles', 'legacy-feature-manifest.c
 const manifest = await readFile(manifestPath, 'utf8');
 
 const retiredImports = [
+  "@import '../navigation.css'",
   "@import '../erp-classic-navigation.css'",
   "@import '../notch-nav-fixes.css'",
   "@import '../ribbon-background.css'",
+  "@import '../account-menu-brand-placement.css'",
   "@import '../dark-bezel-navigation.css'",
   "@import '../fixed-top-navigation.css'",
   "@import '../desktop-nav-overflow.css'",
@@ -19,6 +21,16 @@ const retiredImports = [
 for (const retiredImport of retiredImports) {
   if (manifest.includes(retiredImport)) {
     console.error(`Retired shell/navigation programme must not be re-registered: ${retiredImport}`);
+    process.exitCode = 1;
+  }
+}
+
+for (const requiredActiveImport of [
+  "@import '../account-menu.css'",
+  "@import '../mobile-navigation-drawer.css'",
+]) {
+  if (!manifest.includes(requiredActiveImport)) {
+    console.error(`Active navigation/account feature owner must remain registered: ${requiredActiveImport}`);
     process.exitCode = 1;
   }
 }
@@ -37,10 +49,23 @@ for (const obsoleteHook of [
   }
 }
 
-const navigation = await readFile(path.join(root, 'app', 'navigation.css'), 'utf8');
-for (const requiredRule of ['.skip-link', '.skip-link:focus']) {
-  if (!navigation.includes(requiredRule)) {
-    console.error(`Active navigation foundation is missing accessibility rule: ${requiredRule}`);
+const applicationManifest = await readFile(path.join(root, 'app', 'styles', 'application.css'), 'utf8');
+if (!applicationManifest.includes("@import '../canonical-navigation-baseline.css'")) {
+  console.error('Canonical application manifest must register canonical-navigation-baseline.css.');
+  process.exitCode = 1;
+}
+
+const navigationBaseline = await readFile(path.join(root, 'app', 'canonical-navigation-baseline.css'), 'utf8');
+for (const requiredRule of [
+  '.skip-link',
+  '.skip-link:focus',
+  '.application-mobile-menu-button',
+  '.hamburger-button.notch-mobile-button',
+  '.mobile-menu-open',
+  '@media (prefers-reduced-motion: reduce)',
+]) {
+  if (!navigationBaseline.includes(requiredRule)) {
+    console.error(`Canonical navigation baseline is missing migrated rule: ${requiredRule}`);
     process.exitCode = 1;
   }
 }
@@ -73,4 +98,4 @@ for (const requiredRule of [
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('Retired shell/navigation guard passed: legacy notch/bezel/fixed-top programmes remain unregistered and current shell/accessibility/mobile owners are present.');
+console.log('Retired shell/navigation guard passed: legacy top/notch/bezel/navigation programmes remain unregistered and canonical accessibility/account/mobile owners are present.');
