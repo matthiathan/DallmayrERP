@@ -92,7 +92,7 @@
   }
 }
 
-/* Smaller desktop/laptop widths need a compact rail and simpler header.
+/* Smaller desktop/laptop widths need a compact rail and denser top bar.
  * Touch tablets in this range are still taken over by the responsive layer
  * that loads after this file.
  */
@@ -106,21 +106,48 @@
   }
 
   .application-header-inner {
-    grid-template-columns: minmax(0, 1fr) auto !important;
-    gap: 14px !important;
-    padding-inline: 22px !important;
+    grid-template-columns: minmax(140px, 1fr) minmax(150px, 220px) auto !important;
+    gap: 10px !important;
+    padding-inline: 18px !important;
   }
 
   .application-page-context {
     grid-column: 1 !important;
   }
 
+  .application-page-context > strong {
+    overflow: hidden;
+    font-size: 22px !important;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .application-header-search {
+    display: block !important;
+    grid-column: 2 !important;
+    min-width: 0 !important;
+  }
+
+  .application-header-search .global-search-trigger {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .application-header-search .global-search-trigger > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .application-header-search .global-search-trigger kbd {
     display: none !important;
   }
 
   .application-header-actions {
-    grid-column: 2 !important;
+    grid-column: 3 !important;
+    gap: 6px !important;
   }
 
   .application-main {
