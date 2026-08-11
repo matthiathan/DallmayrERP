@@ -4,9 +4,9 @@
  * These layers remain temporarily because older routes still use their class
  * names. The canonical application stylesheet imported after this manifest is
  * the visual authority. Do not add new layout programmes here. The obsolete
- * Monday shell, Operations Cockpit and ERP Executive full-app reskin programmes
- * have been retired; still-needed board token aliases and Inbox utility styling
- * now live in canonical layers.
+ * Monday shell, Operations Cockpit, ERP Executive and Dynamics 365 full-app
+ * reskin programmes have been retired; still-needed board token aliases, auth
+ * presentation and Inbox utility styling now live in canonical layers.
  */
 @import '../application-shell-phase-1.css';
 @import '../page-templates-phase-2.css';
@@ -18,7 +18,6 @@
 @import '../monday-item-card-phase-3.css';
 @import '../monday-operational-views-phase-4.css';
 @import '../monday-my-work-phase-5.css';
-@import '../dynamics-365-ui.css';
 @import '../ui-readability-layout.css';
 @import '../internal-messaging-v2.css';
 @import '../erp-workbench-system.css';
