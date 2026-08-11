@@ -38,9 +38,7 @@ The migration uses the Concentrix information architecture and spacing model whi
 
 ## Phase 4 — Specialist workspaces
 
-**Status: implementation checkpoint; validate before approval**
-
-The original continuation handoff did not prescribe a detailed Phase 4 family. The scope is therefore the remaining specialist desktop surfaces that can be migrated without changing business logic:
+**Status: complete and approved**
 
 - administration and user-access workspaces
 - personal appearance/settings presentation inside the existing account menu
@@ -48,17 +46,33 @@ The original continuation handoff did not prescribe a detailed Phase 4 family. T
 - global search overlay and result hierarchy
 - telemetry and reporting cards/charts
 - compatible specialist utility surfaces
+- presentation/layout only; existing business logic and responsive authority preserved
+
+## Phase 5 — Access Entry & First-Login
+
+**Status: implementation checkpoint; validate before approval**
+
+This phase applies the Concentrix secure-entry composition to the remaining access-boundary surfaces while retaining the richer DallmayrERP authentication and onboarding behaviour:
+
+- desktop login and activation presentation
+- Remember Me presentation without changing persistence semantics
+- secure loading/access-pending/role-assignment status surfaces
+- first-login profile completion and assigned-access presentation
+- Dallmayr charcoal/cream/gold treatment derived from the Concentrix contained authentication hierarchy
 
 Implementation rules:
 
 - presentation/layout only
-- preserve routes, Supabase queries and mutations, authentication and permissions
-- preserve messaging subscriptions, conversation creation and send logic
-- preserve account-menu anchoring, upward desktop pop-out behaviour, sign out and password/settings actions
-- preserve search queries and navigation targets
-- do not create another responsive system
-- load the Phase 4 desktop layer after Phase 3 and before responsive authority
+- preserve Supabase sign-in and activation calls
+- preserve Remember Me preference and remembered-email behaviour
+- preserve login/activation modes, validation and error states
+- preserve role/default-path redirects and onboarding redirects
+- preserve access-invite and user-details guard logic
+- preserve onboarding validation, `user_details` updates and `refreshProfile` flow
+- do not introduce a coarse-pointer responsive authority
+- the 901–1366 coarse-pointer phone/touch-tablet contract remains unchanged and authoritative
+- load the Phase 5 desktop layer after Phase 4 and before responsive authority
 
 ## Approval boundary
 
-Each phase must be fully implemented and validated before the next phase starts. Phase 4 must stop at its approval checkpoint after CI passes; no later migration phase should begin without explicit user approval.
+Each phase must be fully implemented and validated before the next phase starts. Phase 5 must stop at its approval checkpoint after CI passes; no later migration phase should begin without explicit user approval.
