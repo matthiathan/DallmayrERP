@@ -88,6 +88,11 @@ html[data-visual-theme] body :is(
   color: inherit !important;
 }
 
+.field-note.danger {
+  color: var(--adaptive-danger-text, var(--ui-danger, #a32222));
+  font-weight: 650;
+}
+
 .appearance-save-state.is-saved {
   color: var(--adaptive-success-text) !important;
   background: var(--adaptive-success-bg) !important;
@@ -174,9 +179,9 @@ html[data-visual-theme] body .application-main .table-scroll-primary {
   scrollbar-gutter: stable both-edges;
 }
 
-/* Neutral content-containment invariants migrated from the retired
-   user-first-layout programme. These rules deliberately avoid colours,
-   shell composition and responsive breakpoints. */
+/* Neutral content-containment invariants migrated from retired generic safety
+   programmes. These rules deliberately avoid colours, shell composition and
+   responsive breakpoints. */
 html[data-visual-theme] body :is(button, input, select, textarea) {
   font-synthesis: none;
 }
@@ -285,6 +290,24 @@ html[data-visual-theme] body :is(
   max-width: 100%;
 }
 
+html[data-visual-theme] body :is(
+  .record-timeline-item,
+  .record-comment,
+  .record-comment p,
+  .page-toolbar,
+  .page-toolbar p,
+  .page-toolbar-heading,
+  .feature-list
+) {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+html[data-visual-theme] body .page-toolbar-heading {
+  align-items: flex-start;
+  gap: 12px;
+}
+
 html[data-visual-theme] body .application-main :is(
   .table-wrap,
   .enterprise-table-wrap,
@@ -302,4 +325,5 @@ html[data-visual-theme] body :is(.resizable-th-content, .table-sort-button, .tab
 html[data-visual-theme] body .table-sort-button {
   justify-content: flex-start;
   text-align: left;
+  white-space: normal;
 }
