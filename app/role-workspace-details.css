@@ -1,10 +1,15 @@
 /* Role-aware Start Page details.
    Loaded after the shared layout system so identity, metrics and shortcuts remain readable on every screen size. */
 
-.corrected-start-page {
+.corrected-start-page,
+.role-workspace-stage {
   display: grid;
   gap: 20px;
   min-width: 0;
+}
+
+.role-workspace-stage {
+  gap: 14px;
 }
 
 .workspace-profile-panel {
@@ -184,12 +189,31 @@
 }
 
 .role-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   align-items: stretch;
+  gap: 10px;
 }
 
 .role-action-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
   min-width: 0;
+  min-height: 122px;
+  padding: 16px;
   overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  border: 1px solid var(--ds-border, #d9dee6);
+  border-radius: var(--ds-radius-md, 12px);
+  background: var(--ds-surface, #ffffff);
+}
+
+.role-action-card:hover,
+.role-action-card:focus-visible {
+  border-color: var(--ds-accent, #b8862f);
+  background: var(--ds-surface-raised, #fbf8f1);
 }
 
 .role-action-card > div {
@@ -198,8 +222,14 @@
 
 .role-action-card h3,
 .role-action-card p {
+  margin: 0;
   white-space: normal !important;
   overflow-wrap: anywhere !important;
+}
+
+.role-action-card p {
+  margin-top: 6px;
+  color: var(--ds-muted, #667085);
 }
 
 @media (max-width: 1100px) {
@@ -262,11 +292,16 @@
     width: 100%;
   }
 
-  .role-metric-grid {
+  .role-metric-grid,
+  .role-action-grid {
     grid-template-columns: 1fr !important;
   }
 
   .role-metric-card {
+    min-height: 0;
+  }
+
+  .role-action-card {
     min-height: 0;
   }
 }
