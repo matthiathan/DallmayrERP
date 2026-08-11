@@ -90,16 +90,12 @@ export function DesktopNavigationRail({
         ))}
       </nav>
 
-      <div className="dallmayr-sidebar-account" title={collapsed ? roleLabel : undefined}>
-        <span aria-hidden="true" className="dallmayr-account-avatar">{roleLabel.slice(0, 1).toUpperCase()}</span>
-        {!collapsed ? (
-          <span className="dallmayr-account-copy">
-            <small>Signed in as</small>
-            <strong>{roleLabel}</strong>
-            <span>Active ERP account</span>
-          </span>
-        ) : null}
-      </div>
+      <div
+        aria-label={`Account menu for ${roleLabel}`}
+        className="dallmayr-sidebar-account dallmayr-sidebar-account-menu-target"
+        id="desktop-account-menu-target"
+        title={collapsed ? `${roleLabel} account menu` : undefined}
+      />
     </aside>
   );
 }
