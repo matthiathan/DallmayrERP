@@ -5,8 +5,10 @@
  * reference layout and professional UI system. Concentrix-derived shell, dashboard,
  * operational, specialist, access-entry, execution-detail and final-audit layers
  * then adapt the desktop presentation. Canonical shell utilities own cross-route
- * overlays such as the notification inbox. Responsive work for phones and touch
- * tablets remains the final authority.
+ * overlays such as the notification inbox. The canonical appearance runtime
+ * bridges persisted theme/accent tokens into the remaining curated appearance
+ * presentation. Responsive work for phones and touch tablets remains the final
+ * authority.
  */
 @import '../reference-ui-redesign.css';
 @import '../full-application-rebuild.css';
@@ -29,6 +31,7 @@
 @import '../concentrix-execution-details.css';
 @import '../concentrix-final-audit.css';
 @import '../canonical-shell-utilities.css';
+@import '../canonical-appearance-runtime.css';
 @import '../responsive-runtime-authority.css';
 @import '../responsive-mobile-menu-v2.css';
 @import '../responsive-mobile-tablet.css';
