@@ -1,0 +1,6 @@
+/* Active internal-messaging workspace boundary.
+ *
+ * internal-messaging-v2.css still owns live directory/chat composition and is
+ * therefore retained as an active feature stylesheet rather than legacy chrome.
+ */
+@import '../internal-messaging-v2.css';
