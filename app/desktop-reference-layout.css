@@ -1,0 +1,474 @@
+/*
+ * Desktop visual contract based on the approved DallmayrERP reference.
+ * Presentation only: routes, permissions, data access and component behaviour stay unchanged.
+ */
+@media (min-width: 901px) {
+  :root {
+    --reference-sidebar-width: 350px;
+    --reference-header-height: 88px;
+    --reference-canvas: #f8f4ec;
+    --reference-paper: #ffffff;
+    --reference-cream: #fbf7ef;
+    --reference-line: #e1d7c7;
+    --reference-gold: var(--ui-gold, #b8862f);
+    --reference-gold-dark: var(--ui-gold-dark, #6d4b16);
+    --reference-ink: var(--ui-ink, #231f1a);
+    --reference-muted: var(--ui-muted, #625b50);
+    --reference-shadow: 0 7px 22px rgba(66, 49, 25, .075);
+  }
+
+  body { background: var(--reference-canvas) !important; }
+
+  .application-shell-v2,
+  .application-shell-v2.desktop-rail-collapsed {
+    min-height: 100dvh;
+    padding-left: var(--reference-sidebar-width) !important;
+    background: var(--reference-canvas) !important;
+  }
+  .application-shell-v2.desktop-rail-collapsed { --reference-sidebar-width: 88px; }
+
+  .dallmayr-sidebar {
+    display: grid !important;
+    position: fixed !important;
+    inset: 0 auto 0 0 !important;
+    z-index: 120 !important;
+    width: var(--reference-sidebar-width) !important;
+    grid-template-rows: auto minmax(0, 1fr) auto !important;
+    color: var(--reference-ink) !important;
+    background: #fffdf9 !important;
+    border-right: 1px solid var(--reference-line) !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    transition: width .2s ease;
+  }
+  .dallmayr-sidebar.is-collapsed { width: 88px !important; }
+
+  .dallmayr-sidebar-brand {
+    min-height: var(--reference-header-height) !important;
+    padding: 18px 20px !important;
+    color: var(--reference-ink) !important;
+    background: #fffdf9 !important;
+    border-bottom: 1px solid var(--reference-line) !important;
+  }
+  .dallmayr-sidebar-brand > a { gap: 12px !important; color: var(--reference-ink) !important; }
+  .dallmayr-sidebar-brand strong {
+    color: var(--reference-ink) !important;
+    font-size: 22px !important;
+    font-weight: 800 !important;
+    letter-spacing: -.03em;
+  }
+  .dallmayr-sidebar-brand strong::after { content: 'ERP'; margin-left: 2px; color: var(--reference-gold); }
+  .dallmayr-sidebar-brand small {
+    margin-top: 7px !important;
+    color: #3e382f !important;
+    font-size: 10px !important;
+    font-weight: 700;
+    letter-spacing: .09em !important;
+    text-transform: uppercase;
+  }
+  .dallmayr-crest {
+    width: 48px !important;
+    height: 48px !important;
+    color: var(--reference-gold-dark) !important;
+    background: #fbf2dc !important;
+    border: 1px solid #d7b96f !important;
+    border-radius: 50% !important;
+    font-size: 20px !important;
+  }
+  .dallmayr-sidebar-brand button {
+    width: 36px !important;
+    height: 36px !important;
+    color: #4b4439 !important;
+    background: #fff !important;
+    border: 1px solid var(--reference-line) !important;
+    border-radius: 10px !important;
+  }
+
+  .dallmayr-sidebar-nav {
+    padding: 22px 18px 26px !important;
+    background: #fffdf9 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  .dallmayr-sidebar-primary { padding-bottom: 12px; border-bottom: 1px solid var(--reference-line); }
+  .dallmayr-sidebar-group { margin-top: 13px; }
+  .dallmayr-sidebar-group h2 {
+    margin: 14px 8px 6px !important;
+    color: #8c6a2c !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: .08em !important;
+    text-transform: uppercase;
+  }
+  .dallmayr-sidebar-link {
+    position: relative;
+    grid-template-columns: 40px minmax(0, 1fr) !important;
+    min-height: 50px !important;
+    margin: 3px 0 !important;
+    padding: 6px 10px !important;
+    color: #27231e !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+  }
+  .dallmayr-sidebar-link > span {
+    width: 31px !important;
+    height: 31px !important;
+    color: #4a4135 !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    font-size: 10px !important;
+    font-weight: 800;
+  }
+  .dallmayr-sidebar-link strong { color: #27231e !important; font-size: 14px !important; font-weight: 650 !important; }
+  .dallmayr-sidebar-link:hover { color: var(--reference-ink) !important; background: #f7f0e4 !important; border-color: #efe3d0 !important; }
+  .dallmayr-sidebar-link[aria-current='page'] {
+    color: #5b3d0d !important;
+    background: #f3eadb !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+  .dallmayr-sidebar-link[aria-current='page']::before {
+    position: absolute;
+    inset: 8px auto 8px 0;
+    width: 3px;
+    content: '';
+    background: var(--reference-gold);
+    border-radius: 0 4px 4px 0;
+  }
+  .dallmayr-sidebar-link[aria-current='page'] strong,
+  .dallmayr-sidebar-link[aria-current='page'] > span {
+    color: #6d4b16 !important;
+    background: transparent !important;
+    border-color: transparent !important;
+  }
+
+  .dallmayr-sidebar-account-menu-target {
+    min-height: 112px !important;
+    padding: 14px 18px 20px !important;
+    background: #fffdf9 !important;
+    border-top: 1px solid var(--reference-line) !important;
+    overflow: visible !important;
+  }
+  .dallmayr-sidebar-account-menu-target > .dallmayr-account-menu,
+  .dallmayr-account-menu.is-sidebar { position: relative !important; width: 100% !important; min-width: 0 !important; }
+  .dallmayr-account-menu.is-sidebar > summary.dallmayr-account-trigger {
+    display: grid !important;
+    grid-template-columns: 58px minmax(0, 1fr) 30px !important;
+    gap: 12px !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-height: 78px !important;
+    padding: 10px 12px !important;
+    color: var(--reference-ink) !important;
+    background: #fff8e9 !important;
+    border: 1px solid #d9b86c !important;
+    border-radius: 12px !important;
+    box-shadow: 0 5px 14px rgba(90, 64, 21, .08) !important;
+    cursor: pointer;
+  }
+  .dallmayr-account-menu.is-sidebar > summary::-webkit-details-marker { display: none; }
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-avatar {
+    width: 52px !important;
+    height: 52px !important;
+    color: #231c10 !important;
+    background: #ecd08c !important;
+    border: 1px solid #c9973c !important;
+    border-radius: 50% !important;
+    font-size: 16px !important;
+  }
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-identity { display: grid !important; gap: 3px !important; min-width: 0; }
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-identity small:first-child {
+    color: #5d5549 !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-identity strong { color: #181510 !important; font-size: 14px !important; }
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-identity small:last-child { color: #6b6256 !important; font-size: 11px !important; }
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-chevron {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    color: #6f4f16 !important;
+    background: #fff !important;
+    border: 1px dashed #c99c45;
+    border-radius: 9px;
+    transition: transform .18s ease;
+  }
+  .dallmayr-account-menu.is-sidebar[open] .dallmayr-account-chevron { transform: rotate(180deg); }
+
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-panel {
+    position: absolute !important;
+    top: auto !important;
+    right: 0 !important;
+    bottom: calc(100% + 12px) !important;
+    left: auto !important;
+    z-index: 500 !important;
+    width: min(290px, calc(100vw - 40px)) !important;
+    max-height: min(70vh, 660px) !important;
+    padding: 10px !important;
+    overflow-y: auto !important;
+    color: var(--reference-ink) !important;
+    background: #fff !important;
+    border: 1px solid #ddd2c1 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 14px 38px rgba(46, 35, 19, .18) !important;
+  }
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-panel::after {
+    position: absolute;
+    right: 28px;
+    bottom: -7px;
+    width: 14px;
+    height: 14px;
+    content: '';
+    background: #fff;
+    border-right: 1px solid #ddd2c1;
+    border-bottom: 1px solid #ddd2c1;
+    transform: rotate(45deg);
+  }
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-panel.is-customizing { width: min(440px, calc(100vw - 40px)) !important; }
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-appearance-toggle,
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-signout {
+    width: 100% !important;
+    min-height: 58px !important;
+    padding: 10px 12px !important;
+    color: #211d17 !important;
+    background: #fff !important;
+    border: 0 !important;
+    border-radius: 9px !important;
+    box-shadow: none !important;
+    text-align: left;
+  }
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-appearance-toggle:hover { background: #fbf6ec !important; }
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-signout {
+    margin-top: 6px;
+    color: #9f2525 !important;
+    border-top: 1px solid #eee5d8 !important;
+    border-radius: 0 0 9px 9px !important;
+  }
+
+  .application-header {
+    display: block !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 90 !important;
+    height: var(--reference-header-height) !important;
+    color: var(--reference-ink) !important;
+    background: rgba(255,255,255,.96) !important;
+    border-bottom: 1px solid var(--reference-line) !important;
+    box-shadow: none !important;
+    backdrop-filter: blur(10px);
+  }
+  .application-header-inner {
+    display: grid !important;
+    grid-template-columns: minmax(190px, auto) minmax(260px, 520px) auto !important;
+    gap: 18px !important;
+    align-items: center !important;
+    width: 100% !important;
+    height: var(--reference-header-height) !important;
+    padding: 0 28px !important;
+  }
+  .application-brand,
+  .application-status-strip,
+  .application-mobile-menu-button { display: none !important; }
+  .application-page-context {
+    display: grid !important;
+    grid-column: 1 !important;
+    gap: 2px;
+    align-content: center;
+  }
+  .application-page-context > span,
+  .application-page-context > small { display: none !important; }
+  .application-page-context > strong {
+    color: #181510 !important;
+    font-size: 28px !important;
+    font-weight: 750 !important;
+    letter-spacing: -.025em;
+  }
+  .application-header-search { display: block !important; grid-column: 2 !important; min-width: 0; }
+  .application-header-actions {
+    display: flex !important;
+    grid-column: 3 !important;
+    gap: 10px !important;
+    align-items: center !important;
+    justify-self: end;
+  }
+  .desktop-account-menu-target { display: none !important; }
+
+  .application-main {
+    width: 100% !important;
+    max-width: none !important;
+    min-height: calc(100dvh - var(--reference-header-height)) !important;
+    margin: 0 !important;
+    padding: 34px clamp(28px, 4vw, 64px) 48px !important;
+    color: var(--reference-ink) !important;
+    background: radial-gradient(circle at 72% 4%, rgba(190, 142, 55, .065), transparent 30%), var(--reference-canvas) !important;
+  }
+  .application-main > .breadcrumbs { display: none !important; }
+
+  .admin-command-dashboard { width: min(100%, 1240px) !important; margin: 0 auto !important; padding: 0 !important; }
+  .admin-command-header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 360px) !important;
+    gap: 42px !important;
+    align-items: start !important;
+    margin: 0 0 34px !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+  .admin-command-eyebrow { display: none !important; }
+  .admin-command-header h1 {
+    margin: 0 !important;
+    color: #17140f !important;
+    font-size: clamp(30px, 2.6vw, 42px) !important;
+    line-height: 1.08 !important;
+    letter-spacing: -.04em !important;
+  }
+  .admin-command-header p {
+    max-width: 650px !important;
+    margin: 12px 0 0 !important;
+    color: #59534b !important;
+    font-size: 16px !important;
+    line-height: 1.55 !important;
+  }
+  .admin-command-status {
+    position: relative;
+    display: grid !important;
+    gap: 10px !important;
+    min-width: 0 !important;
+    min-height: 126px !important;
+    padding: 24px 76px 22px 24px !important;
+    color: var(--reference-ink) !important;
+    background: #fffaf1 !important;
+    border: 1px solid #e4cfaa !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 14px rgba(89, 63, 25, .04) !important;
+    text-align: left !important;
+  }
+  .admin-command-status::after {
+    position: absolute;
+    top: 28px;
+    right: 24px;
+    display: grid;
+    width: 50px;
+    height: 50px;
+    place-items: center;
+    content: '▦';
+    color: #9e6c18;
+    background: #f4e9d2;
+    border-radius: 50%;
+    font-size: 24px;
+  }
+  .admin-command-status span { color: #8b5d13 !important; font-size: 12px !important; font-weight: 850 !important; letter-spacing: .04em !important; }
+  .admin-command-status strong { color: #17140f !important; font-size: 20px !important; }
+
+  .admin-command-kpis {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 20px 26px !important;
+    margin: 0 0 28px !important;
+  }
+  .admin-command-kpis .erp-metric-card {
+    position: relative !important;
+    display: grid !important;
+    min-height: 184px !important;
+    padding: 26px 58px 24px 28px !important;
+    overflow: hidden !important;
+    color: var(--reference-ink) !important;
+    background: var(--reference-paper) !important;
+    border: 1px solid #e4dfd7 !important;
+    border-radius: 14px !important;
+    box-shadow: var(--reference-shadow) !important;
+  }
+  .admin-command-kpis .erp-metric-card::before {
+    position: absolute !important;
+    inset: 0 auto 0 0 !important;
+    width: 4px !important;
+    content: '' !important;
+    background: var(--reference-gold) !important;
+  }
+  .admin-command-kpis .erp-metric-card:nth-child(1)::before,
+  .admin-command-kpis .erp-metric-card:nth-child(2)::before { background: #1473d1 !important; }
+  .admin-command-kpis .erp-metric-card:nth-child(3)::before { background: #159239 !important; }
+  .admin-command-kpis .erp-metric-card:nth-child(4)::before { background: #7232bd !important; }
+  .admin-command-kpis .erp-metric-card:nth-child(5)::before { background: #dc5b24 !important; }
+  .admin-command-kpis .erp-metric-card:nth-child(6)::before { background: #b17a0b !important; }
+  .admin-command-kpis .erp-metric-card::after {
+    position: absolute;
+    top: 50%;
+    right: 26px;
+    content: '›';
+    color: #514b43;
+    font-size: 36px;
+    font-weight: 300;
+    transform: translateY(-50%);
+  }
+  .admin-command-kpis .erp-metric-card > div { display: grid !important; gap: 12px !important; align-content: center; }
+  .admin-command-kpis .erp-metric-card span {
+    color: #4c4a46 !important;
+    font-size: 13px !important;
+    font-weight: 850 !important;
+    letter-spacing: .015em !important;
+    text-transform: uppercase !important;
+  }
+  .admin-command-kpis .erp-metric-card:nth-child(1) span { color: #075dae !important; }
+  .admin-command-kpis .erp-metric-card:nth-child(2) span { color: #4c9de9 !important; }
+  .admin-command-kpis .erp-metric-card:nth-child(3) span { color: #08742b !important; }
+  .admin-command-kpis .erp-metric-card:nth-child(4) span { color: #6324aa !important; }
+  .admin-command-kpis .erp-metric-card:nth-child(5) span { color: #c94c13 !important; }
+  .admin-command-kpis .erp-metric-card:nth-child(6) span { color: #996600 !important; }
+  .admin-command-kpis .erp-metric-card strong {
+    color: #141210 !important;
+    font-size: clamp(30px, 2.5vw, 40px) !important;
+    line-height: 1 !important;
+    letter-spacing: -.035em;
+  }
+  .admin-command-kpis .erp-metric-card p {
+    max-width: 30ch;
+    margin: 0 !important;
+    color: #5f5a52 !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+  }
+
+  .admin-command-reporting { padding: 0 !important; background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+  .admin-command-reporting .grid-2,
+  .admin-command-reporting .spatial-dashboard { gap: 22px !important; }
+  .admin-command-reporting .grid-2 > *,
+  .admin-command-reporting .stat-strip,
+  .admin-command-reporting [class*='stat-strip'] {
+    background: #fff !important;
+    border: 1px solid #e4dfd7 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 5px 18px rgba(55, 43, 25, .06) !important;
+  }
+  .admin-command-footer { padding-top: 30px !important; color: #83796b !important; }
+
+  .erp-page,
+  .page-template-frame,
+  .route-page { width: min(100%, 1240px) !important; margin-inline: auto !important; }
+  .erp-panel,
+  .erp-table-shell,
+  .erp-form-section,
+  .erp-record-summary-card,
+  .card,
+  .panel {
+    border-color: #e4dfd7 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 5px 18px rgba(55, 43, 25, .055) !important;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1180px) {
+  :root { --reference-sidebar-width: 276px; }
+  .application-shell-v2.desktop-rail-collapsed { --reference-sidebar-width: 88px; }
+  .application-header-inner { grid-template-columns: minmax(150px, auto) minmax(180px, 1fr) auto !important; padding-inline: 20px !important; }
+  .application-main { padding-inline: 28px !important; }
+  .admin-command-header { gap: 24px !important; }
+  .admin-command-status { min-width: 240px !important; }
+}
