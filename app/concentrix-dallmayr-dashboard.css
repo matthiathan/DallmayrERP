@@ -1,0 +1,236 @@
+/* Phase 2: Concentrix-derived dashboard composition for DallmayrERP.
+ * Visual/layout only. Existing data, links, permissions and reporting components remain unchanged.
+ */
+@media (min-width: 901px) {
+  .cx-dashboard {
+    width: min(100%, 1600px) !important;
+    margin-inline: auto !important;
+    padding: 30px 32px 48px !important;
+  }
+
+  .cx-dashboard-hero {
+    display: flex !important;
+    align-items: end !important;
+    justify-content: space-between !important;
+    gap: 28px !important;
+    margin: 0 0 18px !important;
+    padding: 30px !important;
+    color: var(--cx-ink) !important;
+    background:
+      linear-gradient(115deg, color-mix(in srgb, var(--cx-gold) 12%, var(--cx-surface-raised)) 0%, var(--cx-surface-raised) 62%) !important;
+    border: 1px solid var(--cx-border) !important;
+    border-radius: 20px !important;
+    box-shadow: var(--cx-shadow) !important;
+  }
+
+  .cx-dashboard-hero-copy {
+    display: grid !important;
+    gap: 10px !important;
+    max-width: 820px;
+  }
+
+  .cx-dashboard-live {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: fit-content;
+    color: var(--cx-gold) !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    letter-spacing: .03em;
+  }
+
+  .cx-dashboard-live i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--cx-gold);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--cx-gold) 16%, transparent);
+  }
+
+  .cx-dashboard-hero h1 {
+    max-width: 760px !important;
+    margin: 0 !important;
+    color: var(--cx-ink) !important;
+    font-size: clamp(30px, 3vw, 42px) !important;
+    font-weight: 780 !important;
+    line-height: 1.08 !important;
+    letter-spacing: -.04em !important;
+    text-shadow: none !important;
+  }
+
+  .cx-dashboard-hero p {
+    max-width: 760px !important;
+    margin: 0 !important;
+    color: var(--cx-muted) !important;
+    font-size: 15px !important;
+    line-height: 1.6 !important;
+  }
+
+  .cx-dashboard-hero-status {
+    flex: 0 0 260px;
+    display: grid !important;
+    gap: 4px !important;
+    padding: 18px 20px !important;
+    color: var(--cx-ink) !important;
+    background: color-mix(in srgb, var(--cx-gold) 6%, var(--cx-surface)) !important;
+    border: 1px solid var(--cx-border) !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
+  }
+
+  .cx-dashboard-hero-status span {
+    color: var(--cx-gold) !important;
+    font-size: 10px !important;
+    font-weight: 850 !important;
+    letter-spacing: .12em !important;
+    text-transform: uppercase;
+  }
+
+  .cx-dashboard-hero-status strong {
+    color: var(--cx-ink) !important;
+    font-size: 18px !important;
+    font-weight: 760 !important;
+  }
+
+  .cx-dashboard-hero-status small {
+    color: var(--cx-muted) !important;
+    font-size: 12px !important;
+  }
+
+  .cx-dashboard-kpis {
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    gap: 13px !important;
+    margin: 0 0 18px !important;
+  }
+
+  .cx-dashboard-kpis .erp-metric-card {
+    min-width: 0 !important;
+    min-height: 142px !important;
+    padding: 18px !important;
+    background: var(--cx-surface-raised) !important;
+    border: 1px solid var(--cx-border) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 6px 20px rgba(54, 42, 26, .055) !important;
+  }
+
+  .cx-dashboard-kpis .erp-metric-card::before,
+  .cx-dashboard-kpis .erp-metric-card::after {
+    display: none !important;
+  }
+
+  .cx-dashboard-kpis .erp-metric-card > div {
+    display: grid !important;
+    gap: 5px !important;
+    align-content: start;
+  }
+
+  .cx-dashboard-kpis .erp-metric-card span {
+    color: var(--cx-muted) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+  }
+
+  .cx-dashboard-kpis .erp-metric-card strong {
+    margin-top: 2px !important;
+    color: var(--cx-ink) !important;
+    font-size: clamp(24px, 2vw, 31px) !important;
+    font-weight: 780 !important;
+    line-height: 1 !important;
+    letter-spacing: -.035em !important;
+  }
+
+  .cx-dashboard-kpis .erp-metric-card p {
+    margin: 3px 0 0 !important;
+    color: var(--cx-muted) !important;
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+
+  .cx-dashboard-kpis .erp-metric-card:hover {
+    transform: translateY(-1px) !important;
+    border-color: color-mix(in srgb, var(--cx-gold) 38%, var(--cx-border)) !important;
+    box-shadow: 0 10px 24px rgba(54, 42, 26, .075) !important;
+  }
+
+  .cx-dashboard-reporting {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .cx-dashboard-section-heading {
+    display: flex !important;
+    align-items: end !important;
+    justify-content: space-between !important;
+    gap: 20px !important;
+    margin: 26px 0 14px !important;
+  }
+
+  .cx-dashboard-section-heading > div {
+    display: grid !important;
+    gap: 4px !important;
+  }
+
+  .cx-dashboard-section-heading span {
+    color: var(--cx-gold) !important;
+    font-size: 10px !important;
+    font-weight: 850 !important;
+    letter-spacing: .12em !important;
+    text-transform: uppercase;
+  }
+
+  .cx-dashboard-section-heading h2 {
+    margin: 0 !important;
+    color: var(--cx-ink) !important;
+    font-size: 18px !important;
+    font-weight: 750 !important;
+    letter-spacing: -.02em !important;
+  }
+
+  .cx-dashboard-section-heading p {
+    margin: 0 !important;
+    color: var(--cx-muted) !important;
+    font-size: 12px !important;
+  }
+
+  .cx-dashboard-reporting .grid-2,
+  .cx-dashboard-reporting .spatial-dashboard,
+  .cx-dashboard-reporting [class*='grid'] {
+    gap: 16px !important;
+  }
+
+  .cx-dashboard-reporting .erp-panel,
+  .cx-dashboard-reporting .card,
+  .cx-dashboard-reporting .panel,
+  .cx-dashboard-reporting .neo-card,
+  .cx-dashboard-reporting .stat-strip,
+  .cx-dashboard-reporting [class*='stat-strip'] {
+    background: var(--cx-surface-raised) !important;
+    border: 1px solid var(--cx-border) !important;
+    border-radius: 17px !important;
+    box-shadow: 0 6px 20px rgba(54, 42, 26, .055) !important;
+  }
+
+  .cx-dashboard .admin-command-footer {
+    padding-top: 26px !important;
+    color: var(--cx-muted) !important;
+    font-size: 12px !important;
+  }
+
+  @media (max-width: 1380px) {
+    .cx-dashboard-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  }
+
+  @media (max-width: 1080px) {
+    .cx-dashboard-hero { align-items: start !important; flex-direction: column !important; }
+    .cx-dashboard-hero-status { flex-basis: auto; width: min(100%, 360px); }
+    .cx-dashboard-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    .cx-dashboard-section-heading { align-items: start !important; flex-direction: column !important; gap: 6px !important; }
+  }
+}
