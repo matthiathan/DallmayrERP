@@ -21,9 +21,6 @@
 @import '../density.css';
 @import '../ultrawide.css';
 @import '../mobile.css';
-@import '../erp-classic-navigation.css';
-@import '../notch-nav-fixes.css';
-@import '../ribbon-background.css';
 @import '../asset-ticket.css';
 @import '../text-visibility-polish.css';
 @import '../contrast-pairing.css';
@@ -34,11 +31,8 @@
 @import '../professional-layout-system.css';
 @import '../user-first-layout.css';
 @import '../scanner-feedback-fix.css';
-@import '../dark-bezel-navigation.css';
-@import '../fixed-top-navigation.css';
 @import '../role-workspace-details.css';
 @import '../reliability-machine-search.css';
-@import '../desktop-nav-overflow.css';
 @import '../table-column-filters.css';
 @import '../monthly-service-planning.css';
 @import '../operations-manager.css';
@@ -50,7 +44,6 @@
 @import '../operations-dispatch.css';
 @import '../customer-360.css';
 @import '../operations-exceptions.css';
-@import '../user-first-application-shell.css';
 @import '../adaptive-contrast.css';
 @import '../rendered-surface-contrast.css';
 @import '../slate-sand-themes.css';
