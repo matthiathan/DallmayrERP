@@ -1,23 +1,22 @@
 /*
  * Legacy layout-programme manifest.
  *
- * These layers remain temporarily because older routes still use their class
- * names. The canonical application stylesheet imported after this manifest is
- * the visual authority. Do not add new legacy layout programmes here. The obsolete
- * Monday shell, original application shell, Phase 2 page-template presentation,
- * Operations Cockpit, ERP Executive, Dynamics 365 and ERP Workbench full-app
- * programmes have been retired; route template classification remains active
- * through PageTemplateFrame, while neutral frame/disclosure structure lives in
- * shared foundations and visual ownership lives in canonical page-family layers.
+ * This manifest now contains only compatibility/transition registrations plus
+ * explicit active feature boundaries whose selectors are still used by live UI.
+ * The canonical application stylesheet imported after this manifest remains the
+ * visual authority. Do not add new legacy layout programmes here.
  *
- * The active board/workspace bundle below is intentionally retained because its
- * live selectors still provide board resizing, filter drawers, item-card overlays,
- * operational views and My Work layout behavior. It is grouped behind one active
- * feature boundary rather than registered here as five separate legacy programmes.
+ * Retired presentation programmes include the Monday shell, original application
+ * shell, Phase 2 page-template presentation, Operations Cockpit, ERP Executive,
+ * Dynamics 365, ERP Workbench and the old ui-readability full-app reskin.
+ *
+ * Active feature wrappers preserve existing selector behavior and load order:
+ * Role Today, board/customer/item/operational/My Work, and internal messaging.
+ * Neutral focus/overflow/readability invariants live in canonical-readability-safety.css.
  */
-@import '../role-today-workspaces.css';
+@import './active-role-today-workspace.css';
 @import './navigation-contract.css';
 @import './compatibility-overrides.css';
 @import './active-board-workspaces.css';
-@import '../ui-readability-layout.css';
-@import '../internal-messaging-v2.css';
+@import './canonical-readability-safety.css';
+@import './active-messaging-workspace.css';
