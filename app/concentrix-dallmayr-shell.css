@@ -1,0 +1,182 @@
+/* Phase 1: Concentrix-derived desktop shell for DallmayrERP.
+ * Visual/layout only. Business logic, routes, permissions and responsive runtime are unchanged.
+ * The phone/tablet authority loads after this file and remains authoritative below its breakpoints.
+ */
+@media (min-width: 901px) {
+  :root {
+    --cx-canvas: var(--ui-canvas, #f5efe5);
+    --cx-surface: var(--ui-surface, #fffaf2);
+    --cx-surface-raised: var(--ui-surface-raised, #ffffff);
+    --cx-ink: var(--ui-ink, #2b2118);
+    --cx-muted: var(--ui-muted, #6f6254);
+    --cx-border: color-mix(in srgb, var(--ui-gold, #b58a2b) 22%, #d8cbb8);
+    --cx-gold: var(--ui-gold, #b58a2b);
+    --cx-sidebar: 264px;
+    --cx-header: 88px;
+    --cx-radius: 16px;
+    --cx-shadow: 0 10px 30px rgba(54, 42, 26, .07);
+  }
+
+  html, body { background: var(--cx-canvas); color: var(--cx-ink); }
+  body::before, body::after { display: none !important; }
+
+  .app-shell {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: var(--cx-sidebar) minmax(0, 1fr) !important;
+    background: var(--cx-canvas) !important;
+  }
+
+  .sidebar,
+  .app-sidebar,
+  aside.sidebar {
+    width: var(--cx-sidebar) !important;
+    height: 100vh;
+    position: sticky !important;
+    top: 0;
+    overflow-y: auto;
+    padding: 22px 16px !important;
+    background: var(--cx-surface) !important;
+    border-right: 1px solid var(--cx-border) !important;
+    box-shadow: none !important;
+  }
+
+  .brand,
+  .sidebar-brand {
+    margin: 0 8px 22px !important;
+    padding: 0 0 18px !important;
+    border-bottom: 1px solid var(--cx-border);
+    color: var(--cx-ink) !important;
+  }
+
+  .brand strong,
+  .sidebar-brand strong { color: var(--cx-ink) !important; font-weight: 800; letter-spacing: -.02em; }
+  .brand span,
+  .brand-subtitle,
+  .sidebar-brand span { color: var(--cx-muted) !important; }
+
+  .nav-section { margin-bottom: 18px !important; }
+  .nav-heading {
+    margin: 0 10px 7px !important;
+    color: var(--cx-muted) !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: .12em !important;
+    text-transform: uppercase;
+  }
+
+  .nav-link,
+  .sidebar nav a,
+  .sidebar nav button {
+    min-height: 42px;
+    margin: 2px 0 !important;
+    padding: 10px 12px !important;
+    border: 0 !important;
+    border-radius: 10px !important;
+    background: transparent !important;
+    color: var(--cx-muted) !important;
+    box-shadow: none !important;
+    transform: none !important;
+    font-weight: 650;
+  }
+
+  .nav-link:hover,
+  .nav-link.active,
+  .sidebar nav a:hover,
+  .sidebar nav a.active,
+  .sidebar nav button:hover,
+  .sidebar nav button.active {
+    background: color-mix(in srgb, var(--cx-gold) 10%, var(--cx-surface)) !important;
+    color: var(--cx-ink) !important;
+    box-shadow: inset 3px 0 0 var(--cx-gold) !important;
+  }
+
+  .app-main,
+  .main,
+  .app-shell > main {
+    min-width: 0;
+    padding: 0 !important;
+    background: var(--cx-canvas) !important;
+  }
+
+  .app-topbar,
+  .topbar,
+  .app-shell > main > header {
+    min-height: var(--cx-header);
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex !important;
+    align-items: center;
+    gap: 16px;
+    padding: 0 32px !important;
+    background: color-mix(in srgb, var(--cx-surface) 94%, transparent) !important;
+    border-bottom: 1px solid var(--cx-border) !important;
+    box-shadow: 0 4px 18px rgba(54, 42, 26, .035) !important;
+    backdrop-filter: blur(12px);
+  }
+
+  .main-content,
+  .content,
+  .page-content,
+  .app-shell > main > section {
+    width: min(100%, 1600px);
+    margin-inline: auto;
+    padding: 30px 32px 48px !important;
+  }
+
+  .page-header { margin-bottom: 22px !important; }
+  .page-header h1,
+  .app-topbar h1,
+  .topbar h1 { color: var(--cx-ink) !important; letter-spacing: -.035em; }
+
+  .card,
+  .neo-card,
+  .panel,
+  .dashboard-card,
+  .kpi-card,
+  .stat-card {
+    background: var(--cx-surface-raised) !important;
+    color: var(--cx-ink) !important;
+    border: 1px solid var(--cx-border) !important;
+    border-radius: var(--cx-radius) !important;
+    box-shadow: var(--cx-shadow) !important;
+  }
+
+  .card::before, .card::after, .neo-card::before, .neo-card::after { display: none !important; }
+
+  .kpi-grid,
+  .stats-grid,
+  .dashboard-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px !important;
+  }
+
+  .table-wrap {
+    background: var(--cx-surface-raised) !important;
+    border: 1px solid var(--cx-border) !important;
+    border-radius: var(--cx-radius) !important;
+    box-shadow: var(--cx-shadow) !important;
+  }
+
+  .table-wrap::before { display: none !important; }
+  th { background: color-mix(in srgb, var(--cx-gold) 7%, var(--cx-surface)) !important; color: var(--cx-muted) !important; box-shadow: none !important; }
+  td { color: var(--cx-ink) !important; }
+
+  .user-chip,
+  .sidebar-account-target,
+  [data-account-menu-target='sidebar'] {
+    background: color-mix(in srgb, var(--cx-gold) 7%, var(--cx-surface)) !important;
+    border: 1px solid var(--cx-border) !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+  }
+
+  @media (max-width: 1180px) {
+    :root { --cx-sidebar: 232px; }
+    .app-topbar, .topbar, .app-shell > main > header { padding-inline: 22px !important; }
+    .main-content, .content, .page-content, .app-shell > main > section { padding-inline: 22px !important; }
+    .kpi-grid, .stats-grid, .dashboard-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+}
