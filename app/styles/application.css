@@ -3,7 +3,7 @@
  *
  * Desktop composition is owned by the stabilization contract plus the approved
  * reference layout and professional UI system. Concentrix-derived shell, dashboard,
- * operational and specialist workspace layers then adapt the desktop presentation.
+ * operational, specialist and access-entry layers then adapt the desktop presentation.
  * Responsive work for phones and touch tablets remains the final authority.
  */
 @import '../reference-ui-redesign.css';
@@ -22,6 +22,7 @@
 @import '../concentrix-dallmayr-dashboard.css';
 @import '../concentrix-operational-pages.css';
 @import '../concentrix-specialist-workspaces.css';
+@import '../concentrix-access-entry.css';
 @import '../responsive-runtime-authority.css';
 @import '../responsive-mobile-menu-v2.css';
 @import '../responsive-mobile-tablet.css';
