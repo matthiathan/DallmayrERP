@@ -23,7 +23,7 @@
     "mobile:run:ios": "cap run ios",
     "lint": "next lint",
     "test": "npm run typecheck",
-    "stylecheck": "node scripts/check-style-architecture.mjs",
+    "stylecheck": "node scripts/check-style-architecture.mjs && node -e \"const fs=require('node:fs');const s=fs.readFileSync('app/styles/legacy-layout-manifest.css','utf8');if(s.includes(\\\"@import '../erp-workbench-system.css'\\\")){console.error('Retired ERP Workbench stylesheet must not be re-registered.');process.exit(1)}\"",
     "mobile:interaction-check": "node scripts/check-mobile-interactions.mjs && node scripts/check-universal-phone.mjs",
     "security:pentest": "node scripts/security-pentest.mjs",
     "typecheck": "tsc --noEmit",
