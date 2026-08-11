@@ -24,6 +24,7 @@ const retiredImports = [
   "@import '../mobile-offline-field-work.css'",
   "@import '../minimalist-ui-polish.css'",
   "@import '../professional-layout-system.css'",
+  "@import '../user-first-layout.css'",
 ];
 
 for (const retiredImport of retiredImports) {
@@ -37,6 +38,7 @@ for (const requiredActiveImport of [
   "@import '../account-menu.css'",
   "@import '../minimalist-operations.css'",
   "@import '../ux-polish.css'",
+  "@import '../reliability-machine-search.css'",
   "@import '../adaptive-contrast.css'",
   "@import '../rendered-surface-contrast.css'",
   "@import '../slate-sand-themes.css'",
@@ -75,9 +77,26 @@ const readabilitySafety = await readFile(path.join(root, 'app', 'styles', 'canon
 for (const requiredRule of [
   'touch-action: manipulation',
   ':is(img, svg, canvas, video)',
+  ":is(input, select, textarea)",
+  "input[type='checkbox']",
+  ":is(button, .button, a.button, [role='button'])",
+  '.scanner-actions',
+  '.table-sort-button',
 ]) {
   if (!readabilitySafety.includes(requiredRule)) {
-    console.error(`Canonical readability safety is missing migrated mobile invariant: ${requiredRule}`);
+    console.error(`Canonical readability safety is missing migrated invariant: ${requiredRule}`);
+    process.exitCode = 1;
+  }
+}
+
+const reliabilitySearch = await readFile(path.join(root, 'app', 'reliability-machine-search.css'), 'utf8');
+for (const requiredRule of [
+  '.machine-match-options',
+  '.machine-match-list',
+  '.machine-match-option',
+]) {
+  if (!reliabilitySearch.includes(requiredRule)) {
+    console.error(`Reliability machine-search owner is missing migrated compatibility rule: ${requiredRule}`);
     process.exitCode = 1;
   }
 }
@@ -168,4 +187,4 @@ for (const requiredRule of [
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('Retired shell/navigation/mobile/generic-visual guard passed: obsolete programmes remain unregistered, active structural/appearance/mobile feature styles remain owned, and canonical professional/navigation/safety/responsive layers are present.');
+console.log('Retired shell/navigation/mobile/generic-visual guard passed: obsolete programmes remain unregistered, active structural/appearance/mobile feature styles remain owned, migrated readability/reliability compatibility is canonicalized, and current professional/navigation/responsive layers are present.');
