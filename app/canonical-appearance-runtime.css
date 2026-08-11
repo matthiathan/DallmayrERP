@@ -1,14 +1,15 @@
 /* Canonical appearance runtime bridge.
  *
  * AppearanceProvider and RenderedSurfaceContrastSync publish their live custom
- * properties on the document root. This late layer snapshots those root values
- * into separate aliases, then maps the aliases into the compatibility variables
- * consumed by the remaining curated appearance presentation without introducing
- * another page/shell reskin.
+ * properties on the document root. This late canonical layer snapshots those
+ * root values into separate aliases, then maps the aliases into the compatibility
+ * variables consumed by the remaining curated appearance presentation without
+ * introducing another page/shell reskin.
  *
- * Do not hard-code a selected accent or content palette here. Runtime values are
- * the authority so persisted user preferences and calculated contrast survive
- * the legacy theme cascade.
+ * It loads after the quarantined appearance files but before the contiguous
+ * desktop/Concentrix authority block. Do not hard-code a selected accent or
+ * content palette here: runtime values are authoritative so persisted user
+ * preferences and calculated contrast survive the legacy theme cascade.
  */
 
 html[data-visual-theme] {
