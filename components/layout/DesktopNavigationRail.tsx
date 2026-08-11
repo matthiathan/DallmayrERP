@@ -6,7 +6,6 @@ import type { NavItem, NavSection } from '@/lib/auth/permissions';
 
 type DesktopNavigationRailProps = {
   collapsed: boolean;
-  dashboardPath: string;
   homePath: string;
   onToggleCollapse: () => void;
   onToggleFavorite: (href: string) => void;
@@ -53,13 +52,13 @@ function findItem(items: NavItem[], href: string) {
 
 export function DesktopNavigationRail({
   collapsed,
-  dashboardPath,
   homePath,
   onToggleCollapse,
   pathname,
   roleLabel,
   sections,
 }: DesktopNavigationRailProps) {
+  const dashboardPath = roleLabel === 'Administrator' ? '/' : homePath;
   const allItems = sections.flatMap((section) => section.items);
   const reports = sections.find((section) => section.heading === 'Reports')?.items[0];
   const alerts = findItem(allItems, '/operations/exceptions');
