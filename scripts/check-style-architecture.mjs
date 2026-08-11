@@ -89,9 +89,18 @@ const requiredDesktopImports = [
   '../page-cleanup-phase-4.css',
   '../component-library-phase-3.css',
   '../ui-stabilization-contract.css',
+  '../desktop-reference-layout.css',
+  '../desktop-layout-regression-fixes.css',
 ];
 for (const requiredImport of requiredDesktopImports) {
   if (!applicationImports.includes(requiredImport)) fail(`app/styles/application.css is missing ${requiredImport}.`);
+}
+
+const desktopReferenceIndex = applicationImports.indexOf('../desktop-reference-layout.css');
+const desktopFixIndex = applicationImports.indexOf('../desktop-layout-regression-fixes.css');
+const responsiveAuthorityIndex = applicationImports.indexOf('../responsive-runtime-authority.css');
+if (!(desktopReferenceIndex >= 0 && desktopFixIndex === desktopReferenceIndex + 1 && responsiveAuthorityIndex > desktopFixIndex)) {
+  fail('Desktop regression fixes must load immediately after the approved desktop reference and before responsive authority.');
 }
 
 const responsiveImport = '../responsive-mobile-tablet.css';
@@ -116,6 +125,40 @@ for (const requiredRule of ['--ui-canvas: #f5f0e6', '--ui-ink: #231f1a', '--ui-g
   if (!stabilizationSource.includes(requiredRule)) fail(`Desktop stabilization is missing ${requiredRule}.`);
 }
 
+const desktopReferenceSource = await readFile(path.join(root, 'app', 'desktop-reference-layout.css'), 'utf8');
+for (const requiredRule of [
+  '@media (min-width: 901px)',
+  '--reference-sidebar-width: 350px',
+  'bottom: calc(100% + 12px) !important',
+  '.application-header',
+  '.admin-command-kpis',
+]) {
+  if (!desktopReferenceSource.includes(requiredRule)) fail(`Approved desktop reference is missing ${requiredRule}.`);
+}
+
+const desktopFixSource = await readFile(path.join(root, 'app', 'desktop-layout-regression-fixes.css'), 'utf8');
+for (const requiredRule of [
+  '@media (min-width: 901px)',
+  '@media (min-width: 901px) and (max-width: 1180px)',
+  '.dallmayr-sidebar.is-collapsed .dallmayr-account-menu.is-sidebar .dallmayr-account-panel',
+  'left: calc(100% + 14px) !important',
+  '.dallmayr-account-panel.is-compact',
+  'overflow: visible !important',
+  '.application-header-search',
+  'display: none !important',
+  'overflow-x: clip',
+]) {
+  if (!desktopFixSource.includes(requiredRule)) fail(`Desktop regression contract is missing ${requiredRule}.`);
+}
+
+const desktopRailSource = await readFile(path.join(root, 'components', 'layout', 'DesktopNavigationRail.tsx'), 'utf8');
+if (desktopRailSource.includes('id="desktop-account-menu-target"')) {
+  fail('DesktopNavigationRail must not duplicate the header desktop-account-menu-target id.');
+}
+if (!desktopRailSource.includes('dallmayr-sidebar-account-menu-target')) {
+  fail('DesktopNavigationRail must retain the sidebar account-menu mount class.');
+}
+
 const responsiveSource = await readFile(path.join(root, 'app', 'responsive-mobile-tablet.css'), 'utf8');
 const responsiveWithoutComments = responsiveSource.replace(/\/\*[\s\S]*?\*\//g, '').trim();
 if (!responsiveWithoutComments.startsWith('@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {')) {
@@ -136,4 +179,4 @@ for (const requiredRule of [
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered with one final mobile/tablet responsive contract and unchanged desktop stabilization.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered with guarded desktop reference/fix layers and one final mobile/tablet responsive contract.`);

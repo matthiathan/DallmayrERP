@@ -1,0 +1,172 @@
+/*
+ * Targeted corrections for the approved desktop reference layout.
+ * This file is desktop-only and must load after desktop-reference-layout.css
+ * but before the responsive phone/tablet authority.
+ */
+@media (min-width: 901px) {
+  .application-shell-v2 {
+    min-width: 0 !important;
+    overflow-x: clip;
+  }
+
+  .application-header-inner,
+  .application-header-inner > *,
+  .application-main {
+    min-width: 0 !important;
+  }
+
+  .application-header-actions {
+    max-width: 100%;
+    white-space: nowrap;
+  }
+
+  /* Compact account menu: keep the speech-bubble pointer visible. */
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-panel.is-compact {
+    overflow: visible !important;
+  }
+
+  /* Expanded settings can scroll independently without pushing off-screen. */
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-panel.is-customizing {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+  }
+
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-panel.is-customizing::after {
+    display: none !important;
+  }
+
+  /* Collapsed rail remains usable and its account menu opens into the workspace. */
+  .dallmayr-sidebar.is-collapsed .dallmayr-sidebar-account-menu-target {
+    min-height: 88px !important;
+    padding: 12px 8px !important;
+  }
+
+  .dallmayr-sidebar.is-collapsed .dallmayr-account-menu.is-sidebar > summary.dallmayr-account-trigger {
+    grid-template-columns: 1fr !important;
+    width: 60px !important;
+    min-height: 60px !important;
+    margin-inline: auto !important;
+    padding: 7px !important;
+    place-items: center !important;
+  }
+
+  .dallmayr-sidebar.is-collapsed .dallmayr-account-menu.is-sidebar .dallmayr-account-avatar {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .dallmayr-sidebar.is-collapsed .dallmayr-account-menu.is-sidebar .dallmayr-account-identity,
+  .dallmayr-sidebar.is-collapsed .dallmayr-account-menu.is-sidebar .dallmayr-account-chevron {
+    display: none !important;
+  }
+
+  .dallmayr-sidebar.is-collapsed .dallmayr-account-menu.is-sidebar .dallmayr-account-panel {
+    right: auto !important;
+    bottom: 0 !important;
+    left: calc(100% + 14px) !important;
+    width: min(320px, calc(100vw - 130px)) !important;
+  }
+
+  .dallmayr-sidebar.is-collapsed .dallmayr-account-menu.is-sidebar .dallmayr-account-panel::after {
+    display: none !important;
+  }
+
+  /* Prevent dashboard/report cards from forcing page-level horizontal scroll. */
+  .admin-command-dashboard,
+  .admin-command-header,
+  .admin-command-kpis,
+  .admin-command-reporting,
+  .erp-page,
+  .erp-panel,
+  .erp-table-shell {
+    min-width: 0 !important;
+    max-width: 100%;
+  }
+
+  .erp-table-scroll,
+  .table-scroll,
+  .data-table-wrapper {
+    max-width: 100%;
+    overflow-x: auto !important;
+  }
+}
+
+/* Smaller desktop/laptop widths need a compact rail and denser top bar.
+ * Touch tablets in this range are still taken over by the responsive layer
+ * that loads after this file.
+ */
+@media (min-width: 901px) and (max-width: 1180px) {
+  .application-shell-v2 {
+    --reference-sidebar-width: 280px;
+  }
+
+  .application-shell-v2.desktop-rail-collapsed {
+    --reference-sidebar-width: 88px;
+  }
+
+  .application-header-inner {
+    grid-template-columns: minmax(140px, 1fr) minmax(150px, 220px) auto !important;
+    gap: 10px !important;
+    padding-inline: 18px !important;
+  }
+
+  .application-page-context {
+    grid-column: 1 !important;
+  }
+
+  .application-page-context > strong {
+    overflow: hidden;
+    font-size: 22px !important;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .application-header-search {
+    display: block !important;
+    grid-column: 2 !important;
+    min-width: 0 !important;
+  }
+
+  .application-header-search .global-search-trigger {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .application-header-search .global-search-trigger > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .application-header-search .global-search-trigger kbd {
+    display: none !important;
+  }
+
+  .application-header-actions {
+    grid-column: 3 !important;
+    gap: 6px !important;
+  }
+
+  .application-main {
+    padding: 28px 24px 42px !important;
+  }
+
+  .admin-command-header {
+    grid-template-columns: 1fr !important;
+    gap: 18px !important;
+  }
+
+  .admin-command-status {
+    width: min(100%, 360px) !important;
+    justify-self: start !important;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1020px) {
+  .admin-command-kpis {
+    grid-template-columns: 1fr !important;
+  }
+}
