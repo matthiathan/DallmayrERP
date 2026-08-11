@@ -120,10 +120,10 @@ for (const obsoleteHook of [
 const applicationManifest = await readFile(path.join(root, 'app', 'styles', 'application.css'), 'utf8');
 for (const requiredCanonicalImport of [
   "@import '../canonical-navigation-baseline.css'",
+  "@import '../canonical-appearance-runtime.css'",
   "@import '../professional-ui-system.css'",
   "@import '../concentrix-dallmayr-shell.css'",
   "@import '../concentrix-execution-details.css'",
-  "@import '../canonical-appearance-runtime.css'",
   "@import '../responsive-mobile-tablet.css'",
 ]) {
   if (!applicationManifest.includes(requiredCanonicalImport)) {
@@ -133,9 +133,16 @@ for (const requiredCanonicalImport of [
 }
 
 const appearanceRuntimeIndex = applicationManifest.indexOf("@import '../canonical-appearance-runtime.css'");
+const desktopReferenceIndex = applicationManifest.indexOf("@import '../desktop-reference-layout.css'");
 const responsiveRuntimeIndex = applicationManifest.indexOf("@import '../responsive-runtime-authority.css'");
-if (appearanceRuntimeIndex < 0 || responsiveRuntimeIndex < 0 || appearanceRuntimeIndex >= responsiveRuntimeIndex) {
-  console.error('Canonical appearance runtime must load immediately before the responsive authority group.');
+if (
+  appearanceRuntimeIndex < 0
+  || desktopReferenceIndex < 0
+  || responsiveRuntimeIndex < 0
+  || appearanceRuntimeIndex >= desktopReferenceIndex
+  || appearanceRuntimeIndex >= responsiveRuntimeIndex
+) {
+  console.error('Canonical appearance runtime must load after legacy appearance CSS and before the contiguous desktop/Concentrix and responsive authority blocks.');
   process.exitCode = 1;
 }
 
