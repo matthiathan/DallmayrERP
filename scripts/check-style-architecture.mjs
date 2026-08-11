@@ -93,6 +93,7 @@ const requiredDesktopImports = [
   '../concentrix-specialist-workspaces.css',
   '../concentrix-access-entry.css',
   '../concentrix-execution-details.css',
+  '../concentrix-final-audit.css',
 ];
 for (const requiredImport of requiredDesktopImports) {
   if (!applicationImports.includes(requiredImport)) fail(`app/styles/application.css is missing ${requiredImport}.`);
@@ -107,6 +108,7 @@ const concentrixOperationalIndex = applicationImports.indexOf('../concentrix-ope
 const concentrixSpecialistIndex = applicationImports.indexOf('../concentrix-specialist-workspaces.css');
 const concentrixAccessIndex = applicationImports.indexOf('../concentrix-access-entry.css');
 const concentrixExecutionIndex = applicationImports.indexOf('../concentrix-execution-details.css');
+const concentrixFinalAuditIndex = applicationImports.indexOf('../concentrix-final-audit.css');
 const responsiveAuthorityIndex = applicationImports.indexOf('../responsive-runtime-authority.css');
 if (!(
   desktopReferenceIndex >= 0
@@ -118,9 +120,10 @@ if (!(
   && concentrixSpecialistIndex === concentrixOperationalIndex + 1
   && concentrixAccessIndex === concentrixSpecialistIndex + 1
   && concentrixExecutionIndex === concentrixAccessIndex + 1
-  && responsiveAuthorityIndex > concentrixExecutionIndex
+  && concentrixFinalAuditIndex === concentrixExecutionIndex + 1
+  && responsiveAuthorityIndex > concentrixFinalAuditIndex
 )) {
-  fail('Desktop reference/fixes/professional UI and Concentrix shell/dashboard/operational/specialist/access-entry/execution-detail phases must load consecutively before responsive authority.');
+  fail('Desktop reference/fixes/professional UI and Concentrix shell/dashboard/operational/specialist/access-entry/execution-detail/final-audit phases must load consecutively before responsive authority.');
 }
 
 const responsiveImport = '../responsive-mobile-tablet.css';
@@ -199,6 +202,26 @@ for (const requiredRule of [
 }
 if (concentrixExecutionSource.includes('pointer: coarse')) fail('Concentrix execution-detail phase must not define a coarse-pointer responsive authority.');
 
+const concentrixFinalAuditSource = await readFile(path.join(root, 'app', 'concentrix-final-audit.css'), 'utf8');
+for (const requiredRule of [
+  '@media (min-width: 901px) and (hover: hover) and (pointer: fine), (min-width: 1367px)',
+  '--cx-final-control-height: 42px',
+  '--monday-accent: var(--cx-final-gold)',
+  '--d365-blue: var(--cx-final-gold)',
+  '--erp-workbench-blue: var(--cx-final-gold)',
+  '.today-workspace-stage',
+  '.monday-board-header',
+  '.monday-board-surface',
+  '.monday-item-card',
+  '.monday-my-work',
+  '.monday-service-operations',
+  '@media (min-width: 901px) and (max-width: 1180px) and (hover: hover) and (pointer: fine)',
+]) {
+  if (!concentrixFinalAuditSource.includes(requiredRule)) fail(`Concentrix final-audit layer is missing ${requiredRule}.`);
+}
+if (concentrixFinalAuditSource.includes('pointer: coarse')) fail('Concentrix final-audit phase must not define a coarse-pointer responsive authority.');
+if (concentrixFinalAuditSource.includes('display: none')) fail('Concentrix final-audit phase must not hide existing functionality.');
+
 const onboardingSource = await readFile(path.join(root, 'app', 'onboarding', 'page.tsx'), 'utf8');
 if (!onboardingSource.includes('className="concentrix-onboarding-stage"')) fail('Onboarding must retain the Phase 5 presentation hook.');
 
@@ -218,4 +241,4 @@ for (const requiredRule of ['var(--ui-canvas', '.app-shell > .mobile-nav-backdro
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered with Concentrix shell/dashboard/operational/specialist/access-entry/execution-detail phases before the final mobile/tablet authority.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered with Concentrix shell/dashboard/operational/specialist/access-entry/execution-detail/final-audit phases before the final mobile/tablet authority.`);
