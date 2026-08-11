@@ -306,6 +306,20 @@
   }
 }
 
+@media (max-width: 390px) {
+  .field-offline-indicator {
+    width: 40px;
+    max-width: 40px;
+    min-height: 40px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .field-offline-indicator strong {
+    display: none;
+  }
+}
+
 @media (max-width: 380px) {
   .field-offline-sheet > footer {
     grid-template-columns: 1fr;
