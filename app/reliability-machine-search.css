@@ -161,6 +161,62 @@ button.reliability-machine-result {
   line-height: 1.4;
 }
 
+/* Compatibility owner for ambiguous partial machine-match choices previously
+   embedded in the retired user-first layout programme. */
+.machine-match-options {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  padding: 12px;
+  border: 1px solid #fedf89;
+  border-radius: 10px;
+  background: #fffaeb;
+}
+
+.machine-match-options > p {
+  margin: 0;
+  color: #7a2e0e;
+  font-weight: 650;
+}
+
+.machine-match-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 8px;
+}
+
+.machine-match-option {
+  display: grid;
+  justify-items: start;
+  gap: 3px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1a1d21;
+  text-align: left;
+}
+
+.machine-match-option:hover,
+.machine-match-option:focus-visible {
+  border-color: #d4af37;
+  background: #fbf4d8;
+}
+
+.machine-match-option strong,
+.machine-match-option span,
+.machine-match-option small {
+  width: 100%;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.machine-match-option small {
+  color: #667085;
+}
+
 @media (max-width: 760px) {
   .reliability-machine-results {
     grid-template-columns: 1fr;
@@ -180,6 +236,10 @@ button.reliability-machine-result {
 
   .reliability-selected-machine .button {
     width: 100%;
+  }
+
+  .machine-match-list {
+    grid-template-columns: 1fr;
   }
 }
 
