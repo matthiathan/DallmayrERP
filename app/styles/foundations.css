@@ -7,6 +7,15 @@
   gap: var(--ds-space-6);
 }
 
+.workspace-template-frame {
+  align-content: start;
+  min-width: 0;
+}
+
+.workspace-template-frame > * {
+  min-width: 0;
+}
+
 .ds-stack[data-gap='sm'] {
   gap: var(--ds-space-3);
 }
@@ -135,6 +144,16 @@
   gap: var(--ds-space-4);
 }
 
+.workspace-command-controls {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+}
+
+.workspace-command-controls > summary {
+  display: none;
+}
+
 .ds-command-bar__body,
 .workspace-command-body,
 .page-toolbar-controls-body {
@@ -237,6 +256,29 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .workspace-command-controls > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ds-space-3);
+    min-height: 44px;
+    padding: var(--ds-space-3);
+    border: 1px solid var(--ds-border);
+    border-radius: var(--ds-radius-md);
+    background: var(--ds-surface);
+    color: var(--ds-strong);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .workspace-command-controls > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .workspace-command-controls > summary small {
+    color: var(--ds-muted);
+  }
+
   .ds-command-bar__body,
   .workspace-command-body,
   .page-toolbar-controls-body,
@@ -256,12 +298,16 @@
   }
 }
 
-/* Canonical motion contract for shell transitions. */
+/* Canonical motion contract for shell and template transitions. */
 @media (prefers-reduced-motion: reduce) {
   .dallmayr-sidebar,
   .application-main,
-  .application-shell-v2 {
+  .application-shell-v2,
+  .workspace-template-frame *,
+  .workspace-template-frame *::before,
+  .workspace-template-frame *::after {
     transition: none !important;
+    scroll-behavior: auto !important;
   }
 }
 
