@@ -82,10 +82,24 @@ for (const retiredLayout of [
   "@import '../erp-executive-ui.css'",
   "@import '../dynamics-365-ui.css'",
   "@import '../erp-workbench-system.css'",
+  "@import '../ui-readability-layout.css'",
+  "@import './navigation-contract.css'",
+  "@import './compatibility-overrides.css'",
 ]) {
   if (legacyLayoutSource.includes(retiredLayout)) {
     fail(`Retired layout programme ${retiredLayout} must not be registered in legacy-layout-manifest.css.`);
   }
+}
+
+const expectedActiveLayoutImports = [
+  './active-role-today-workspace.css',
+  './active-board-workspaces.css',
+  './canonical-readability-safety.css',
+  './active-messaging-workspace.css',
+];
+const legacyLayoutImports = cssImports(legacyLayoutSource);
+if (JSON.stringify(legacyLayoutImports) !== JSON.stringify(expectedActiveLayoutImports)) {
+  fail(`legacy-layout-manifest.css must contain only the active feature/safety boundaries ${JSON.stringify(expectedActiveLayoutImports)}; found ${JSON.stringify(legacyLayoutImports)}.`);
 }
 
 const applicationSource = await readFile(applicationPath, 'utf8');
@@ -174,6 +188,38 @@ for (const requiredRule of [
   '@media (prefers-reduced-motion: reduce)',
 ]) {
   if (!foundationsSource.includes(requiredRule)) fail(`Shared foundations are missing ${requiredRule}.`);
+}
+
+const readabilitySafetySource = await readFile(path.join(stylesDirectory, 'canonical-readability-safety.css'), 'utf8');
+for (const requiredRule of [
+  '--mobile-quick-bar-height:',
+  '[role=\'alert\'].danger *',
+  '.appearance-save-state.is-saved',
+  '.appearance-save-state.is-error',
+  '.global-search-result',
+  'scrollbar-gutter: stable both-edges',
+]) {
+  if (!readabilitySafetySource.includes(requiredRule)) fail(`Canonical readability/semantic safety is missing ${requiredRule}.`);
+}
+if (readabilitySafetySource.includes('--ui-safe-blue')) fail('Canonical readability safety must not restore the retired blue visual programme.');
+
+const mobileDataViewsSource = await readFile(path.join(root, 'app', 'mobile-data-views.css'), 'utf8');
+for (const requiredRule of [
+  '.mobile-record-card-details > div:has(.button)',
+  '.low-stock-alerts > .grid',
+  '.document-grid',
+  'var(--mobile-quick-bar-height, 0px)',
+]) {
+  if (!mobileDataViewsSource.includes(requiredRule)) fail(`Mobile data views are missing migrated compatibility rule ${requiredRule}.`);
+}
+
+const mobileOfflineSource = await readFile(path.join(root, 'app', 'mobile-offline-field-work.css'), 'utf8');
+for (const requiredRule of [
+  'var(--mobile-quick-bar-height, 66px)',
+  '@media (max-width: 390px)',
+  '.field-offline-indicator strong',
+]) {
+  if (!mobileOfflineSource.includes(requiredRule)) fail(`Offline field-work presentation is missing migrated navigation compatibility rule ${requiredRule}.`);
 }
 
 const stabilizationSource = await readFile(path.join(root, 'app', 'ui-stabilization-contract.css'), 'utf8');
@@ -314,4 +360,4 @@ for (const requiredRule of [
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered with retired legacy shell/full-app/page-template programmes replaced by canonical Concentrix ownership, shared foundations, shell utilities and the final mobile/tablet authority.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered with obsolete shell/full-app/page-template/navigation/compatibility programmes retired, active feature layouts explicitly bundled, semantic/readability safety isolated, and canonical Concentrix plus final mobile/tablet ownership enforced.`);
