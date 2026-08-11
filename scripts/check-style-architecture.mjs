@@ -87,6 +87,13 @@ const requiredDesktopImports = [
   '../desktop-reference-layout.css',
   '../desktop-layout-regression-fixes.css',
   '../professional-ui-system.css',
+  '../concentrix-dallmayr-shell.css',
+  '../concentrix-dallmayr-dashboard.css',
+  '../concentrix-operational-pages.css',
+  '../concentrix-specialist-workspaces.css',
+  '../concentrix-access-entry.css',
+  '../concentrix-execution-details.css',
+  '../concentrix-final-audit.css',
 ];
 for (const requiredImport of requiredDesktopImports) {
   if (!applicationImports.includes(requiredImport)) fail(`app/styles/application.css is missing ${requiredImport}.`);
@@ -95,9 +102,28 @@ for (const requiredImport of requiredDesktopImports) {
 const desktopReferenceIndex = applicationImports.indexOf('../desktop-reference-layout.css');
 const desktopFixIndex = applicationImports.indexOf('../desktop-layout-regression-fixes.css');
 const professionalUiIndex = applicationImports.indexOf('../professional-ui-system.css');
+const concentrixShellIndex = applicationImports.indexOf('../concentrix-dallmayr-shell.css');
+const concentrixDashboardIndex = applicationImports.indexOf('../concentrix-dallmayr-dashboard.css');
+const concentrixOperationalIndex = applicationImports.indexOf('../concentrix-operational-pages.css');
+const concentrixSpecialistIndex = applicationImports.indexOf('../concentrix-specialist-workspaces.css');
+const concentrixAccessIndex = applicationImports.indexOf('../concentrix-access-entry.css');
+const concentrixExecutionIndex = applicationImports.indexOf('../concentrix-execution-details.css');
+const concentrixFinalAuditIndex = applicationImports.indexOf('../concentrix-final-audit.css');
 const responsiveAuthorityIndex = applicationImports.indexOf('../responsive-runtime-authority.css');
-if (!(desktopReferenceIndex >= 0 && desktopFixIndex === desktopReferenceIndex + 1 && professionalUiIndex === desktopFixIndex + 1 && responsiveAuthorityIndex > professionalUiIndex)) {
-  fail('Desktop reference, regression fixes and professional UI system must load consecutively before responsive authority.');
+if (!(
+  desktopReferenceIndex >= 0
+  && desktopFixIndex === desktopReferenceIndex + 1
+  && professionalUiIndex === desktopFixIndex + 1
+  && concentrixShellIndex === professionalUiIndex + 1
+  && concentrixDashboardIndex === concentrixShellIndex + 1
+  && concentrixOperationalIndex === concentrixDashboardIndex + 1
+  && concentrixSpecialistIndex === concentrixOperationalIndex + 1
+  && concentrixAccessIndex === concentrixSpecialistIndex + 1
+  && concentrixExecutionIndex === concentrixAccessIndex + 1
+  && concentrixFinalAuditIndex === concentrixExecutionIndex + 1
+  && responsiveAuthorityIndex > concentrixFinalAuditIndex
+)) {
+  fail('Desktop reference/fixes/professional UI and Concentrix shell/dashboard/operational/specialist/access-entry/execution-detail/final-audit phases must load consecutively before responsive authority.');
 }
 
 const responsiveImport = '../responsive-mobile-tablet.css';
@@ -120,39 +146,84 @@ for (const requiredRule of ['--ui-canvas: #f5f0e6', '--ui-ink: #231f1a', '--ui-g
   if (!stabilizationSource.includes(requiredRule)) fail(`Desktop stabilization is missing ${requiredRule}.`);
 }
 
-const desktopReferenceSource = await readFile(path.join(root, 'app', 'desktop-reference-layout.css'), 'utf8');
-for (const requiredRule of ['@media (min-width: 901px)', '--reference-sidebar-width: 350px', 'bottom: calc(100% + 12px) !important', '.application-header', '.admin-command-kpis']) {
-  if (!desktopReferenceSource.includes(requiredRule)) fail(`Approved desktop reference is missing ${requiredRule}.`);
-}
-
-const desktopFixSource = await readFile(path.join(root, 'app', 'desktop-layout-regression-fixes.css'), 'utf8');
-for (const requiredRule of [
-  '@media (min-width: 901px)',
-  '@media (min-width: 901px) and (max-width: 1180px)',
-  '.dallmayr-sidebar.is-collapsed .dallmayr-account-menu.is-sidebar .dallmayr-account-panel',
-  'left: calc(100% + 14px) !important',
-  '.dallmayr-account-panel.is-compact',
-  'overflow: visible !important',
-  '.application-header-search',
-  'overflow-x: clip',
-]) {
-  if (!desktopFixSource.includes(requiredRule)) fail(`Desktop regression contract is missing ${requiredRule}.`);
-}
-
 const professionalUiSource = await readFile(path.join(root, 'app', 'professional-ui-system.css'), 'utf8');
-for (const requiredRule of [
-  '--pro-radius-md: 12px',
-  '--pro-shadow-sm:',
-  '.erp-panel',
-  '.erp-table-shell',
-  '.erp-toolbar',
-  '.status-badge',
-  ':focus-visible',
-  '.dallmayr-sidebar-link svg',
-  '.admin-command-kpis .erp-metric-card',
-]) {
+for (const requiredRule of ['--pro-radius-md: 12px', '.erp-panel', '.erp-table-shell', '.erp-toolbar', '.status-badge', ':focus-visible', '.dallmayr-sidebar-link svg']) {
   if (!professionalUiSource.includes(requiredRule)) fail(`Professional UI system is missing ${requiredRule}.`);
 }
+
+const concentrixShellSource = await readFile(path.join(root, 'app', 'concentrix-dallmayr-shell.css'), 'utf8');
+for (const requiredRule of ['--cx-sidebar: 264px', '--cx-header: 88px', 'width: min(100%, 1600px)', 'box-shadow: inset 3px 0 0 var(--cx-gold)']) {
+  if (!concentrixShellSource.includes(requiredRule)) fail(`Concentrix-derived shell is missing ${requiredRule}.`);
+}
+
+const concentrixDashboardSource = await readFile(path.join(root, 'app', 'concentrix-dallmayr-dashboard.css'), 'utf8');
+for (const requiredRule of ['.cx-dashboard-hero', '.cx-dashboard-kpis', 'grid-template-columns: repeat(6, minmax(0, 1fr))', '.cx-dashboard-reporting']) {
+  if (!concentrixDashboardSource.includes(requiredRule)) fail(`Concentrix-derived dashboard is missing ${requiredRule}.`);
+}
+
+const concentrixOperationalSource = await readFile(path.join(root, 'app', 'concentrix-operational-pages.css'), 'utf8');
+for (const requiredRule of ['@media (min-width: 901px)', '.workspace-template-frame:is(.template-list, .template-record, .template-operational, .template-form)', '--cx-op-control-height: 42px', 'overflow-x: clip', '@media (max-width: 1180px)']) {
+  if (!concentrixOperationalSource.includes(requiredRule)) fail(`Concentrix-derived operational pages are missing ${requiredRule}.`);
+}
+
+const concentrixSpecialistSource = await readFile(path.join(root, 'app', 'concentrix-specialist-workspaces.css'), 'utf8');
+for (const requiredRule of ['@media (min-width: 901px)', '--cx-specialist-control-height: 42px', '.admin-access-stage', '.messages-v2-shell', '.global-search-dialog', '.appearance-editor', '.spatial-dashboard', '@media (min-width: 901px) and (max-width: 1180px)']) {
+  if (!concentrixSpecialistSource.includes(requiredRule)) fail(`Concentrix-derived specialist workspaces are missing ${requiredRule}.`);
+}
+
+const concentrixAccessSource = await readFile(path.join(root, 'app', 'concentrix-access-entry.css'), 'utf8');
+for (const requiredRule of [
+  '@media (min-width: 901px) and (hover: hover) and (pointer: fine), (min-width: 1367px)',
+  '--cx-access-control-height: 46px',
+  '.dynamics-login-page',
+  '.login-remember-me',
+  '.auth-state-page',
+  '.concentrix-onboarding-stage',
+  '@media (min-width: 901px) and (max-width: 1180px) and (hover: hover) and (pointer: fine)',
+]) {
+  if (!concentrixAccessSource.includes(requiredRule)) fail(`Concentrix-derived access-entry surfaces are missing ${requiredRule}.`);
+}
+if (concentrixAccessSource.includes('pointer: coarse')) fail('Concentrix access-entry phase must not define a coarse-pointer responsive authority.');
+
+const concentrixExecutionSource = await readFile(path.join(root, 'app', 'concentrix-execution-details.css'), 'utf8');
+for (const requiredRule of [
+  '@media (min-width: 901px) and (hover: hover) and (pointer: fine), (min-width: 1367px)',
+  '--cx-execution-control-height: 42px',
+  '.field-service-workspace',
+  '.minimal-panel',
+  '.status-timeline',
+  '.live-scanner-box',
+  '.scanner-match-card',
+  '.asset-ticket',
+  '.enterprise-table-shell',
+  '@media (min-width: 901px) and (max-width: 1180px) and (hover: hover) and (pointer: fine)',
+]) {
+  if (!concentrixExecutionSource.includes(requiredRule)) fail(`Concentrix-derived execution-detail surfaces are missing ${requiredRule}.`);
+}
+if (concentrixExecutionSource.includes('pointer: coarse')) fail('Concentrix execution-detail phase must not define a coarse-pointer responsive authority.');
+
+const concentrixFinalAuditSource = await readFile(path.join(root, 'app', 'concentrix-final-audit.css'), 'utf8');
+for (const requiredRule of [
+  '@media (min-width: 901px) and (hover: hover) and (pointer: fine), (min-width: 1367px)',
+  '--cx-final-control-height: 42px',
+  '--monday-accent: var(--cx-final-gold)',
+  '--d365-blue: var(--cx-final-gold)',
+  '--erp-workbench-blue: var(--cx-final-gold)',
+  '.today-workspace-stage',
+  '.monday-board-header',
+  '.monday-board-surface',
+  '.monday-item-card',
+  '.monday-my-work',
+  '.monday-service-operations',
+  '@media (min-width: 901px) and (max-width: 1180px) and (hover: hover) and (pointer: fine)',
+]) {
+  if (!concentrixFinalAuditSource.includes(requiredRule)) fail(`Concentrix final-audit layer is missing ${requiredRule}.`);
+}
+if (concentrixFinalAuditSource.includes('pointer: coarse')) fail('Concentrix final-audit phase must not define a coarse-pointer responsive authority.');
+if (concentrixFinalAuditSource.includes('display: none')) fail('Concentrix final-audit phase must not hide existing functionality.');
+
+const onboardingSource = await readFile(path.join(root, 'app', 'onboarding', 'page.tsx'), 'utf8');
+if (!onboardingSource.includes('className="concentrix-onboarding-stage"')) fail('Onboarding must retain the Phase 5 presentation hook.');
 
 const desktopRailSource = await readFile(path.join(root, 'components', 'layout', 'DesktopNavigationRail.tsx'), 'utf8');
 if (desktopRailSource.includes('id="desktop-account-menu-target"')) fail('DesktopNavigationRail must not duplicate the header desktop-account-menu-target id.');
@@ -165,19 +236,9 @@ const responsiveWithoutComments = responsiveSource.replace(/\/\*[\s\S]*?\*\//g, 
 if (!responsiveWithoutComments.startsWith('@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {')) {
   fail('responsive-mobile-tablet.css must begin with the locked phone/touch-tablet responsive query.');
 }
-for (const requiredRule of [
-  'var(--ui-canvas',
-  '.app-shell > .mobile-nav-backdrop',
-  '.mobile-nav-portal-root',
-  '.global-search-dialog',
-  '.mobile-quick-bar',
-  '.messaging-layout',
-  'overflow-x: auto !important',
-  'font-size: 16px !important',
-  'env(safe-area-inset-bottom)',
-]) {
+for (const requiredRule of ['var(--ui-canvas', '.app-shell > .mobile-nav-backdrop', '.mobile-nav-portal-root', '.global-search-dialog', '.mobile-quick-bar', '.messaging-layout', 'overflow-x: auto !important', 'font-size: 16px !important', 'env(safe-area-inset-bottom)']) {
   if (!responsiveSource.includes(requiredRule)) fail(`Unified responsive contract is missing ${requiredRule}.`);
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered with guarded desktop layers, one professional UI system and one final mobile/tablet responsive contract.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered with Concentrix shell/dashboard/operational/specialist/access-entry/execution-detail/final-audit phases before the final mobile/tablet authority.`);

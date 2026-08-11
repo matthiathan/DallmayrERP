@@ -51,23 +51,24 @@ export default function DashboardPage() {
 
   return (
     <AppShell>
-      <section className="admin-command-dashboard">
-        <header className="admin-command-header">
-          <div>
-            <span className="admin-command-eyebrow">Admin command centre</span>
-            <h1>DallmayrERP Dashboard</h1>
-            <p>Live overview from Supabase plus operational reporting for branch and department accountability.</p>
+      <section className="admin-command-dashboard cx-dashboard">
+        <section className="cx-dashboard-hero">
+          <div className="cx-dashboard-hero-copy">
+            <span className="cx-dashboard-live"><i aria-hidden="true" />Live DallmayrERP data</span>
+            <h1>Dallmayr South Africa operations at a glance.</h1>
+            <p>Customers, contracts, equipment, service activity, stock and ERP users in one operational workspace.</p>
           </div>
-          <div className="admin-command-status" aria-label="Dashboard status">
-            <span>Live data</span>
+          <div className="cx-dashboard-hero-status" aria-label="Dashboard status">
+            <span>Workspace</span>
             <strong>All branches</strong>
+            <small>Supabase operational overview</small>
           </div>
-        </header>
+        </section>
 
         {error ? <div className="error">{error}</div> : null}
         {loading ? <HamsterLoader label="Loading dashboard" /> : null}
 
-        <section aria-label="Key performance indicators" className="admin-command-kpis">
+        <section aria-label="Key performance indicators" className="admin-command-kpis cx-dashboard-kpis">
           <KpiCard label="Customers" value={data.customers} helper="JHB, CPT and KZN customer master rows" />
           <KpiCard label="Contracts" value={data.contracts} helper="All branch contract agreement rows" />
           <KpiCard label="Machines / Assets" value={data.assets} helper="Fixed assets imported into Supabase" />
@@ -76,7 +77,14 @@ export default function DashboardPage() {
           <KpiCard label="Business Users" value={data.users} helper="Staff records in public.users" />
         </section>
 
-        <section className="admin-command-reporting">
+        <section className="admin-command-reporting cx-dashboard-reporting">
+          <div className="cx-dashboard-section-heading">
+            <div>
+              <span>Operational reporting</span>
+              <h2>Performance and accountability</h2>
+            </div>
+            <p>Existing DallmayrERP reporting data and controls are unchanged.</p>
+          </div>
           <ExecutiveReportingPanel />
         </section>
 

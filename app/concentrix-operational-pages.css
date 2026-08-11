@@ -1,0 +1,314 @@
+/* Phase 3: Concentrix-derived operational page family for DallmayrERP.
+ * Visual/layout only. Business logic, routes, permissions, queries, mutations and workflows are unchanged.
+ * This layer is desktop-only. Responsive phone/tablet authority is imported after it.
+ */
+@media (min-width: 901px) {
+  :root {
+    --cx-op-surface: var(--cx-surface-raised, var(--ui-surface-raised, #ffffff));
+    --cx-op-surface-soft: color-mix(in srgb, var(--cx-canvas, #f5efe5) 58%, #ffffff);
+    --cx-op-ink: var(--cx-ink, var(--ui-ink, #2b2118));
+    --cx-op-muted: var(--cx-muted, var(--ui-muted, #6f6254));
+    --cx-op-gold: var(--cx-gold, var(--ui-gold, #b58a2b));
+    --cx-op-border: color-mix(in srgb, var(--cx-op-gold) 18%, #d8cbb8);
+    --cx-op-border-soft: color-mix(in srgb, var(--cx-op-border) 64%, #ffffff);
+    --cx-op-radius: 16px;
+    --cx-op-control-height: 42px;
+    --cx-op-shadow: 0 10px 28px rgba(54, 42, 26, .065);
+    --cx-op-shadow-soft: 0 4px 16px rgba(54, 42, 26, .045);
+  }
+
+  /* Keep Phase 3 isolated to list, record, operational and form templates. */
+  .workspace-template-frame:is(.template-list, .template-record, .template-operational, .template-form) {
+    min-width: 0;
+    overflow-x: clip;
+  }
+
+  .workspace-template-frame:is(.template-list, .template-record, .template-operational, .template-form)
+  :is(.erp-page[data-erp-page], .page-template, .page-stage, .workspace-stage) {
+    width: min(100%, 1600px) !important;
+    max-width: 1600px;
+    min-width: 0;
+    margin-inline: auto !important;
+  }
+
+  /* Page hierarchy: raised Concentrix-style header panel with Dallmayr colour mapping. */
+  .workspace-template-frame:is(.template-list, .template-record, .template-operational, .template-form)
+  :is(.erp-page-header, .page-template-header, .board-header, .workbench-header) {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 22px !important;
+    min-width: 0;
+    margin: 0 0 18px !important;
+    padding: 20px 22px !important;
+    border: 1px solid var(--cx-op-border) !important;
+    border-radius: 18px !important;
+    background:
+      linear-gradient(112deg, color-mix(in srgb, var(--cx-op-gold) 7%, #ffffff) 0%, #ffffff 48%, #fffdf9 100%) !important;
+    box-shadow: var(--cx-op-shadow-soft) !important;
+  }
+
+  .workspace-template-frame:is(.template-list, .template-record, .template-operational, .template-form)
+  :is(.erp-page-header, .page-template-header, .board-header, .workbench-header) > :first-child {
+    min-width: 0;
+  }
+
+  .workspace-template-frame:is(.template-list, .template-record, .template-operational, .template-form)
+  :is(.erp-page-header h1, .page-template-header h1, .board-header h1, .workbench-header h1) {
+    margin: 0 !important;
+    color: var(--cx-op-ink) !important;
+    font-size: clamp(1.65rem, 2.15vw, 2.25rem) !important;
+    font-weight: 800 !important;
+    line-height: 1.08 !important;
+    letter-spacing: -.038em !important;
+  }
+
+  .workspace-template-frame:is(.template-list, .template-record, .template-operational, .template-form)
+  :is(.erp-page-header p, .page-template-header p, .board-header p, .workbench-header p) {
+    max-width: 76ch;
+    margin: 7px 0 0 !important;
+    color: var(--cx-op-muted) !important;
+    font-size: .94rem !important;
+    line-height: 1.55 !important;
+  }
+
+  .workspace-template-frame:is(.template-list, .template-record, .template-operational, .template-form)
+  :is(.erp-eyebrow, .admin-command-eyebrow, [class*='eyebrow']) {
+    color: var(--cx-op-gold) !important;
+  }
+
+  .workspace-template-frame:is(.template-list, .template-record, .template-operational, .template-form)
+  :is(.erp-page-header-actions, .page-header-actions, .board-header-actions, .workbench-header-actions) {
+    display: flex !important;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 9px !important;
+  }
+
+  /* Command bars, filter surfaces and table toolbars. */
+  .workspace-template-frame:is(.template-list, .template-record, .template-operational, .template-form)
+  :is(.erp-toolbar, .erp-filter-bar, .page-toolbar, .board-toolbar, .table-toolbar, .filters, .filter-bar, .search-toolbar, .erp-table-toolbar) {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 10px 12px !important;
+    min-width: 0;
+    min-height: 62px;
+    margin-bottom: 16px !important;
+    padding: 14px 16px !important;
+    border: 1px solid var(--cx-op-border) !important;
+    border-radius: var(--cx-op-radius) !important;
+    background: var(--cx-op-surface) !important;
+    box-shadow: var(--cx-op-shadow-soft) !important;
+  }
+
+  .workspace-template-frame:is(.template-list, .template-record, .template-operational, .template-form)
+  :is(.erp-toolbar, .erp-filter-bar, .page-toolbar, .board-toolbar, .table-toolbar, .filters, .filter-bar, .search-toolbar, .erp-table-toolbar)
+  :is(input, select, .ui-control) {
+    min-height: var(--cx-op-control-height) !important;
+  }
+
+  .workspace-template-frame:is(.template-list, .template-record, .template-operational, .template-form)
+  :is(.erp-toolbar, .erp-filter-bar, .page-toolbar, .board-toolbar, .table-toolbar, .filters, .filter-bar, .search-toolbar, .erp-table-toolbar)
+  input[type='search'],
+  .workspace-template-frame.template-list :is(.erp-toolbar, .erp-filter-bar, .table-toolbar, .search-toolbar) input:not([type]),
+  .workspace-template-frame.template-list :is(.erp-toolbar, .erp-filter-bar, .table-toolbar, .search-toolbar) input[type='text'] {
+    flex: 1 1 280px;
+    min-width: 220px;
+    max-width: 520px;
+  }
+
+  /* Enterprise list tables. */
+  .workspace-template-frame.template-list
+  :is(.erp-table-shell, .remote-table-shell, .table-container, .data-table-wrapper, .enterprise-data-table, .table-scroll),
+  .workspace-template-frame.template-record
+  :is(.erp-table-shell, .remote-table-shell, .table-container, .data-table-wrapper, .enterprise-data-table, .table-scroll),
+  .workspace-template-frame.template-operational
+  :is(.erp-table-shell, .remote-table-shell, .table-container, .data-table-wrapper, .enterprise-data-table, .table-scroll) {
+    min-width: 0;
+    overflow-x: auto !important;
+    border: 1px solid var(--cx-op-border) !important;
+    border-radius: var(--cx-op-radius) !important;
+    background: var(--cx-op-surface) !important;
+    box-shadow: var(--cx-op-shadow-soft) !important;
+  }
+
+  .workspace-template-frame:is(.template-list, .template-record, .template-operational)
+  :is(.erp-table-shell, .remote-table-shell, .table-container, .data-table-wrapper, .enterprise-data-table, .table-scroll) table {
+    width: 100%;
+    border-spacing: 0;
+    background: var(--cx-op-surface) !important;
+  }
+
+  .workspace-template-frame:is(.template-list, .template-record, .template-operational) thead th {
+    height: 42px !important;
+    padding: 10px 12px !important;
+    color: #4e4336 !important;
+    background: linear-gradient(180deg, #f8f0df 0%, #f4ead6 100%) !important;
+    border-bottom: 1px solid var(--cx-op-border) !important;
+    font-size: .72rem !important;
+    font-weight: 800 !important;
+    letter-spacing: .045em !important;
+    text-transform: uppercase !important;
+    white-space: nowrap;
+  }
+
+  .workspace-template-frame:is(.template-list, .template-record, .template-operational) tbody td {
+    padding: 11px 12px !important;
+    border-bottom: 1px solid var(--cx-op-border-soft) !important;
+    vertical-align: middle;
+  }
+
+  .workspace-template-frame:is(.template-list, .template-record, .template-operational) tbody tr:hover td {
+    background: color-mix(in srgb, var(--cx-op-gold) 5%, #ffffff) !important;
+  }
+
+  .workspace-template-frame:is(.template-list, .template-record, .template-operational)
+  :is(.erp-table-footer, .pagination, .erp-pagination, .table-pagination) {
+    min-height: 54px;
+    padding: 11px 14px !important;
+    color: var(--cx-op-muted) !important;
+    background: #fffdf9 !important;
+    border-top: 1px solid var(--cx-op-border-soft) !important;
+  }
+
+  /* Record/detail family. */
+  .workspace-template-frame.template-record
+  :is(.erp-panel, .erp-record-summary-card, .record-workspace, .record-detail-stage, .asset-detail-stage, .customer-detail-stage, .customer-360-stage, .customer360-stage, .detail-panel, .detail-card, .card, .panel) {
+    min-width: 0;
+    border-color: var(--cx-op-border) !important;
+    border-radius: var(--cx-op-radius) !important;
+    background: var(--cx-op-surface) !important;
+    box-shadow: var(--cx-op-shadow-soft) !important;
+  }
+
+  .workspace-template-frame.template-record
+  :is(.erp-panel-header, .card-header, .panel-header, .detail-panel > header) {
+    padding: 15px 17px !important;
+    background: linear-gradient(180deg, #fffefb 0%, #fbf6ec 100%) !important;
+    border-bottom-color: var(--cx-op-border-soft) !important;
+  }
+
+  .workspace-template-frame.template-record
+  :is(.erp-panel-body, .card-body, .panel-body) {
+    padding: 17px !important;
+  }
+
+  .workspace-template-frame.template-record
+  :is(.erp-record-layout, .master-detail-layout, .record-split, .split-layout) {
+    min-width: 0;
+    gap: 18px !important;
+  }
+
+  .workspace-template-frame.template-record
+  :is(.erp-record-main, .master-detail, .record-detail, .detail-pane) {
+    min-width: 0;
+  }
+
+  /* Operational split views: preserve interaction and width allocation. */
+  .workspace-template-frame.template-operational
+  :is(.exception-centre-layout, .operations-dispatch-layout, .field-service-workspace, .admin-user-access-stage, .admin-access-layout, .mobile-master-detail-root, [data-mobile-master-detail], .master-detail-layout, .operational-split, .split-layout) {
+    min-width: 0;
+    gap: 18px !important;
+  }
+
+  .workspace-template-frame.template-operational
+  :is(.master-list, .operational-queue, .queue-panel, .directory-panel, .detail-panel, .operational-detail, .master-detail) {
+    min-width: 0;
+    border-color: var(--cx-op-border) !important;
+    border-radius: var(--cx-op-radius) !important;
+    background: var(--cx-op-surface) !important;
+    box-shadow: var(--cx-op-shadow-soft) !important;
+  }
+
+  /* Form-heavy operational pages. */
+  .workspace-template-frame.template-form
+  :is(.erp-form-section, .form-section, .form-card, fieldset) {
+    min-width: 0;
+    margin-bottom: 16px !important;
+    padding: 17px !important;
+    border: 1px solid var(--cx-op-border) !important;
+    border-radius: var(--cx-op-radius) !important;
+    background: var(--cx-op-surface) !important;
+    box-shadow: var(--cx-op-shadow-soft) !important;
+  }
+
+  .workspace-template-frame.template-form
+  :is(.erp-form-section-header, .form-card > header) {
+    margin: -17px -17px 16px !important;
+    padding: 15px 17px !important;
+    border-bottom: 1px solid var(--cx-op-border-soft) !important;
+    border-radius: var(--cx-op-radius) var(--cx-op-radius) 0 0;
+    background: linear-gradient(180deg, #fffefb 0%, #fbf6ec 100%) !important;
+  }
+
+  .workspace-template-frame.template-form
+  :is(.form-grid, .field-grid, .erp-form-section-body) {
+    gap: 14px 16px !important;
+  }
+
+  .workspace-template-frame.template-form
+  :is(input, select, textarea, .erp-input, .erp-select, .erp-textarea, .ui-control) {
+    min-height: var(--cx-op-control-height) !important;
+    border-color: color-mix(in srgb, var(--cx-op-border) 80%, #a99d8b) !important;
+    border-radius: 9px !important;
+    background: #ffffff !important;
+  }
+
+  .workspace-template-frame.template-form
+  :is(.erp-form-section-actions, .form-actions, .sticky-form-actions) {
+    gap: 9px !important;
+    padding-top: 15px !important;
+    margin-top: 15px !important;
+    border-top-color: var(--cx-op-border-soft) !important;
+  }
+
+  /* Tabs retain existing behaviour but adopt the operational page rhythm. */
+  .workspace-template-frame:is(.template-record, .template-operational)
+  :is(.erp-tab-bar, .tabs, .record-tabs) {
+    gap: 3px !important;
+    margin-bottom: 16px !important;
+    border-bottom-color: var(--cx-op-border) !important;
+  }
+
+  .workspace-template-frame:is(.template-record, .template-operational)
+  :is(.erp-tab-bar [aria-selected='true'], .tabs .active, .record-tabs .active) {
+    color: var(--cx-op-ink) !important;
+    border-bottom-color: var(--cx-op-gold) !important;
+  }
+
+  /* Medium desktop: relieve density by wrapping, never by hiding functionality. */
+  @media (max-width: 1180px) {
+    .workspace-template-frame:is(.template-list, .template-record, .template-operational, .template-form)
+    :is(.erp-page-header, .page-template-header, .board-header, .workbench-header) {
+      align-items: flex-start !important;
+      flex-wrap: wrap !important;
+      padding: 18px 19px !important;
+    }
+
+    .workspace-template-frame:is(.template-list, .template-record, .template-operational, .template-form)
+    :is(.erp-page-header-actions, .page-header-actions, .board-header-actions, .workbench-header-actions) {
+      flex: 1 1 100%;
+      justify-content: flex-start;
+    }
+
+    .workspace-template-frame:is(.template-list, .template-record, .template-operational, .template-form)
+    :is(.erp-toolbar, .erp-filter-bar, .page-toolbar, .board-toolbar, .table-toolbar, .filters, .filter-bar, .search-toolbar, .erp-table-toolbar) {
+      align-items: flex-start !important;
+      padding: 13px 14px !important;
+    }
+
+    .workspace-template-frame:is(.template-list, .template-record, .template-operational, .template-form)
+    :is(.erp-toolbar, .erp-filter-bar, .page-toolbar, .board-toolbar, .table-toolbar, .filters, .filter-bar, .search-toolbar, .erp-table-toolbar) > * {
+      max-width: 100%;
+    }
+
+    .workspace-template-frame:is(.template-list, .template-record, .template-operational)
+    :is(.erp-record-layout, .master-detail-layout, .operational-split, .split-layout) {
+      grid-template-columns: minmax(220px, 30%) minmax(0, 1fr) !important;
+      gap: 14px !important;
+    }
+  }
+}

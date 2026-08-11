@@ -1,0 +1,658 @@
+/* Phase 7: final Concentrix/Dallmayr visual audit and compatibility polish.
+ * Presentation only. This layer normalises the remaining quarantined board,
+ * Today, My Work and legacy workbench visual tokens without changing component
+ * behaviour, routes, data access, permissions or responsive authority.
+ * Touch-tablet/mobile remains owned by the responsive layers imported after it.
+ */
+@media (min-width: 901px) and (hover: hover) and (pointer: fine), (min-width: 1367px) {
+  :root {
+    --cx-final-canvas: var(--cx-canvas, var(--ui-canvas, #f5f0e6));
+    --cx-final-surface: var(--cx-surface-raised, var(--ui-surface, #ffffff));
+    --cx-final-soft: var(--cx-op-surface-soft, var(--ui-surface-soft, #fbf8f1));
+    --cx-final-ink: var(--cx-ink, var(--ui-ink, #231f1a));
+    --cx-final-muted: var(--cx-muted, var(--ui-muted, #625b50));
+    --cx-final-subtle: #8a7b68;
+    --cx-final-gold: var(--cx-gold, var(--ui-gold, #b8862f));
+    --cx-final-gold-dark: var(--ui-gold-dark, #6d4b16);
+    --cx-final-border: color-mix(in srgb, var(--cx-final-gold) 20%, #d8cdbc);
+    --cx-final-border-soft: color-mix(in srgb, var(--cx-final-border) 62%, #ffffff);
+    --cx-final-gold-soft: color-mix(in srgb, var(--cx-final-gold) 10%, #ffffff);
+    --cx-final-gold-selected: color-mix(in srgb, var(--cx-final-gold) 17%, #ffffff);
+    --cx-final-radius: 16px;
+    --cx-final-control-height: 42px;
+    --cx-final-shadow: 0 8px 24px rgba(53, 42, 28, .065);
+    --cx-final-shadow-raised: 0 18px 44px rgba(53, 42, 28, .12);
+
+    /* Retire old programme branding variables while retaining their selectors. */
+    --monday-shell-bg: var(--cx-final-surface);
+    --monday-shell-raised: var(--cx-final-soft);
+    --monday-page-bg: var(--cx-final-canvas);
+    --monday-text: var(--cx-final-ink);
+    --monday-strong: #1d1812;
+    --monday-muted: var(--cx-final-muted);
+    --monday-subtle: var(--cx-final-subtle);
+    --monday-border: var(--cx-final-border);
+    --monday-divider: var(--cx-final-border-soft);
+    --monday-hover: var(--cx-final-gold-soft);
+    --monday-selected: var(--cx-final-gold-selected);
+    --monday-accent: var(--cx-final-gold);
+
+    --cockpit-bg: var(--cx-final-canvas);
+    --cockpit-bg-strong: #eadfce;
+    --cockpit-ink: var(--cx-final-ink);
+    --cockpit-muted: var(--cx-final-muted);
+    --cockpit-subtle: var(--cx-final-subtle);
+    --cockpit-panel: var(--cx-final-surface);
+    --cockpit-panel-alt: var(--cx-final-soft);
+    --cockpit-line: var(--cx-final-border);
+    --cockpit-line-strong: #bdaa8d;
+    --cockpit-gold: var(--cx-final-gold);
+    --cockpit-gold-soft: var(--cx-final-gold-soft);
+    --cockpit-teal: var(--cx-final-gold);
+    --cockpit-teal-soft: var(--cx-final-gold-soft);
+
+    --d365-blue: var(--cx-final-gold);
+    --d365-blue-dark: var(--cx-final-gold-dark);
+    --d365-blue-hover: #9d7226;
+    --d365-blue-soft: var(--cx-final-gold-selected);
+    --d365-blue-pale: var(--cx-final-gold-soft);
+    --d365-bg: var(--cx-final-canvas);
+    --d365-bg-2: var(--cx-final-soft);
+    --d365-surface: var(--cx-final-surface);
+    --d365-surface-alt: var(--cx-final-soft);
+    --d365-line: var(--cx-final-border-soft);
+    --d365-line-strong: var(--cx-final-border);
+    --d365-text: var(--cx-final-ink);
+    --d365-heading: #1d1812;
+    --d365-muted: var(--cx-final-muted);
+    --d365-soft: var(--cx-final-subtle);
+
+    --erp-workbench-blue: var(--cx-final-gold);
+    --erp-workbench-blue-hover: #9d7226;
+    --erp-workbench-blue-dark: var(--cx-final-gold-dark);
+    --erp-workbench-blue-soft: var(--cx-final-gold-selected);
+    --erp-workbench-blue-pale: var(--cx-final-gold-soft);
+    --erp-workbench-page: var(--cx-final-canvas);
+    --erp-workbench-page-alt: var(--cx-final-soft);
+    --erp-workbench-surface: var(--cx-final-surface);
+    --erp-workbench-surface-muted: var(--cx-final-soft);
+    --erp-workbench-header-surface: var(--cx-final-soft);
+    --erp-workbench-border: var(--cx-final-border-soft);
+    --erp-workbench-border-strong: var(--cx-final-border);
+    --erp-workbench-text: var(--cx-final-ink);
+    --erp-workbench-heading: #1d1812;
+    --erp-workbench-muted: var(--cx-final-muted);
+    --erp-workbench-subtle: var(--cx-final-subtle);
+  }
+
+  /* Final code-level safety: legacy workspaces may not force page overflow. */
+  :is(
+    .today-workspace-stage,
+    .monday-customer-board,
+    .monday-my-work,
+    .monday-service-operations,
+    .monday-board-surface,
+    .monday-item-card,
+    .monday-service-coordinate-map
+  ) {
+    min-width: 0 !important;
+    max-width: 100%;
+  }
+
+  /* Role Today surfaces. */
+  .today-workspace-stage {
+    gap: 18px !important;
+    color: var(--cx-final-ink) !important;
+  }
+
+  .today-workspace-hero,
+  .today-section {
+    border: 1px solid var(--cx-final-border) !important;
+    background: var(--cx-final-surface) !important;
+    color: var(--cx-final-ink) !important;
+    box-shadow: var(--cx-final-shadow) !important;
+  }
+
+  .today-workspace-hero {
+    min-height: 0 !important;
+    padding: 22px 24px !important;
+    border-radius: 18px !important;
+    background:
+      linear-gradient(135deg, var(--cx-final-gold-soft) 0%, #fff 68%) !important;
+  }
+
+  .today-user-avatar {
+    width: 58px !important;
+    height: 58px !important;
+    border-color: color-mix(in srgb, var(--cx-final-gold) 42%, var(--cx-final-border)) !important;
+    border-radius: 14px !important;
+    background: var(--cx-final-gold-soft) !important;
+    color: var(--cx-final-gold-dark) !important;
+  }
+
+  .today-workspace-heading > span,
+  .today-section-heading span {
+    color: var(--cx-final-gold) !important;
+  }
+
+  .today-workspace-heading h1,
+  .today-section-heading h2,
+  .today-attention-card strong,
+  .today-work-row strong,
+  .today-metric-row strong,
+  .today-link-list strong,
+  .today-clear-state strong {
+    color: var(--cx-final-ink) !important;
+    -webkit-text-fill-color: var(--cx-final-ink) !important;
+  }
+
+  .today-workspace-heading p,
+  .today-section-heading p,
+  .today-work-row p,
+  .today-attention-card p,
+  .today-metric-row p,
+  .today-refresh-block small {
+    color: var(--cx-final-muted) !important;
+    -webkit-text-fill-color: var(--cx-final-muted) !important;
+  }
+
+  .today-context-row span,
+  .today-work-count {
+    border-color: var(--cx-final-border-soft) !important;
+    background: var(--cx-final-soft) !important;
+    color: var(--cx-final-muted) !important;
+  }
+
+  .today-section {
+    padding: 18px !important;
+    border-radius: var(--cx-final-radius) !important;
+  }
+
+  .today-attention-grid {
+    gap: 10px !important;
+  }
+
+  .today-attention-card,
+  .today-work-row,
+  .today-clear-state {
+    border-color: var(--cx-final-border-soft) !important;
+    border-radius: 13px !important;
+    background: #fffdf9 !important;
+    color: var(--cx-final-ink) !important;
+    transform: none !important;
+  }
+
+  .today-attention-card:hover,
+  .today-work-row:hover,
+  .today-work-row.is-primary {
+    border-color: color-mix(in srgb, var(--cx-final-gold) 38%, var(--cx-final-border)) !important;
+    background: var(--cx-final-gold-soft) !important;
+    transform: none !important;
+  }
+
+  .today-attention-count,
+  .today-work-rank,
+  .today-clear-state > span {
+    background: var(--cx-final-gold-soft) !important;
+    color: var(--cx-final-gold-dark) !important;
+  }
+
+  .today-work-arrow,
+  .today-attention-card > span:last-child {
+    color: var(--cx-final-gold) !important;
+  }
+
+  /* Monday/reference boards. */
+  .monday-board-header {
+    align-items: flex-start !important;
+    margin: 0 !important;
+    padding: 20px 22px !important;
+    border: 1px solid var(--cx-final-border) !important;
+    border-radius: 18px !important;
+    background: linear-gradient(135deg, #fff 0%, var(--cx-final-gold-soft) 100%) !important;
+    box-shadow: var(--cx-final-shadow) !important;
+  }
+
+  .monday-board-eyebrow,
+  .monday-board-surface-heading > div:first-child > span,
+  .monday-board-filter-drawer > header > div > span {
+    color: var(--cx-final-gold) !important;
+  }
+
+  .monday-board-title-row h1,
+  .monday-board-surface-heading h2,
+  .monday-board-command-summary strong,
+  .monday-board-record-link strong {
+    color: var(--cx-final-ink) !important;
+  }
+
+  .monday-board-header-copy > p,
+  .monday-board-header-meta,
+  .monday-board-command-summary span {
+    color: var(--cx-final-muted) !important;
+  }
+
+  .monday-board-header-meta {
+    border-color: var(--cx-final-border-soft) !important;
+    background: #fff !important;
+  }
+
+  .monday-board-view-tabs {
+    margin-top: 2px;
+    border-bottom-color: var(--cx-final-border) !important;
+  }
+
+  .monday-board-view-tab {
+    min-height: var(--cx-final-control-height) !important;
+    color: var(--cx-final-muted) !important;
+  }
+
+  .monday-board-view-tab:hover {
+    background: var(--cx-final-gold-soft) !important;
+    color: var(--cx-final-ink) !important;
+  }
+
+  .monday-board-view-tab[aria-selected='true'] {
+    color: var(--cx-final-ink) !important;
+  }
+
+  .monday-board-view-tab[aria-selected='true']::after {
+    background: var(--cx-final-gold) !important;
+  }
+
+  .monday-board-command-bar {
+    top: calc(var(--cx-header, 88px) + 8px) !important;
+    gap: 8px !important;
+    padding: 12px !important;
+    border-color: var(--cx-final-border) !important;
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, .96) !important;
+    box-shadow: var(--cx-final-shadow) !important;
+    backdrop-filter: blur(12px);
+  }
+
+  .monday-board-search input,
+  .monday-board-inline-select select,
+  .monday-board-filter-grid input,
+  .monday-board-filter-grid select,
+  .monday-board-save-view-popover input {
+    min-height: var(--cx-final-control-height) !important;
+    border-color: var(--cx-final-border) !important;
+    border-radius: 9px !important;
+    background-color: #fff !important;
+    color: var(--cx-final-ink) !important;
+    box-shadow: none !important;
+  }
+
+  .monday-board-command-button,
+  .monday-board-menu > summary {
+    min-height: var(--cx-final-control-height) !important;
+    border-radius: 9px !important;
+    color: var(--cx-final-muted) !important;
+  }
+
+  .monday-board-command-button:hover,
+  .monday-board-menu > summary:hover,
+  .monday-board-command-button[data-active='true'],
+  .monday-board-menu[open] > summary,
+  .monday-board-inline-select:hover,
+  .monday-board-inline-select:focus-within {
+    border-color: var(--cx-final-border) !important;
+    background: var(--cx-final-gold-soft) !important;
+    color: var(--cx-final-ink) !important;
+  }
+
+  .monday-board-surface {
+    overflow: hidden;
+    border-color: var(--cx-final-border) !important;
+    border-radius: var(--cx-final-radius) !important;
+    background: var(--cx-final-surface) !important;
+    box-shadow: var(--cx-final-shadow) !important;
+  }
+
+  .monday-board-surface-heading {
+    min-height: 56px !important;
+    padding: 14px 16px !important;
+    border-bottom-color: var(--cx-final-border-soft) !important;
+    background: linear-gradient(180deg, #fff 0%, var(--cx-final-soft) 100%) !important;
+  }
+
+  .monday-board-table {
+    background: #fff !important;
+    color: var(--cx-final-ink) !important;
+  }
+
+  .monday-board-table th,
+  .monday-board-table td {
+    border-color: var(--cx-final-border-soft) !important;
+  }
+
+  .monday-board-table thead th {
+    background: #f4ead9 !important;
+    color: #544839 !important;
+  }
+
+  .monday-board-table tbody tr:not(.monday-board-group-row):hover td {
+    background: #fff8e9 !important;
+  }
+
+  .monday-board-table tbody tr.is-selected td {
+    background: #fff2cf !important;
+  }
+
+  .monday-board-group-row td {
+    background: var(--cx-final-gold-soft) !important;
+    color: var(--cx-final-ink) !important;
+  }
+
+  .monday-board-group-row td span::before,
+  .monday-board-column-resizer:hover::after,
+  .monday-board-column-resizer[data-active='true']::after {
+    background: var(--cx-final-gold) !important;
+  }
+
+  .monday-board-record-link:hover strong,
+  .monday-board-sort-button > span.is-active {
+    color: var(--cx-final-gold-dark) !important;
+  }
+
+  .monday-board-pagination {
+    border-top-color: var(--cx-final-border-soft) !important;
+    background: var(--cx-final-soft) !important;
+    color: var(--cx-final-muted) !important;
+  }
+
+  .monday-board-pagination select {
+    min-height: 38px !important;
+    border-color: var(--cx-final-border) !important;
+    background: #fff !important;
+    color: var(--cx-final-ink) !important;
+  }
+
+  /* Board filter/save popovers and drawers. */
+  .monday-board-menu-content,
+  .monday-board-save-view-popover,
+  .monday-board-filter-drawer {
+    border-color: var(--cx-final-border) !important;
+    background: #fff !important;
+    color: var(--cx-final-ink) !important;
+    box-shadow: var(--cx-final-shadow-raised) !important;
+  }
+
+  .monday-board-filter-drawer > header,
+  .monday-board-filter-drawer > footer {
+    border-color: var(--cx-final-border-soft) !important;
+    background: var(--cx-final-soft) !important;
+  }
+
+  /* Focused item-card drawer. */
+  .monday-item-card-backdrop {
+    background: rgba(35, 31, 26, .34) !important;
+  }
+
+  .monday-item-card {
+    border-left-color: var(--cx-final-border) !important;
+    background: #fff !important;
+    color: var(--cx-final-ink) !important;
+    box-shadow: -20px 0 48px rgba(53, 42, 28, .18) !important;
+  }
+
+  .monday-item-card-header,
+  .monday-item-card-actions,
+  .monday-item-card-tabs {
+    border-color: var(--cx-final-border-soft) !important;
+  }
+
+  .monday-item-card-header {
+    background: linear-gradient(180deg, #fff 0%, var(--cx-final-soft) 100%) !important;
+  }
+
+  .monday-item-card-identity > span,
+  .monday-item-card-section > header span,
+  .monday-item-card-identity p,
+  .monday-item-card-tabs button,
+  .monday-item-card-metrics span,
+  .monday-item-card-metrics small {
+    color: var(--cx-final-muted) !important;
+  }
+
+  .monday-item-card-identity h2,
+  .monday-item-card-metrics strong {
+    color: var(--cx-final-ink) !important;
+  }
+
+  .monday-item-card-tabs button.is-active {
+    color: var(--cx-final-ink) !important;
+  }
+
+  .monday-item-card-tabs button.is-active::after {
+    background: var(--cx-final-gold) !important;
+  }
+
+  .monday-item-card-metrics button,
+  .monday-item-card-section,
+  .monday-item-card-loading,
+  .monday-item-card-file-empty {
+    border-color: var(--cx-final-border-soft) !important;
+    background: #fffdf9 !important;
+  }
+
+  .monday-item-card-metrics button:hover,
+  .monday-item-card-metrics button:focus-visible {
+    border-color: color-mix(in srgb, var(--cx-final-gold) 38%, var(--cx-final-border)) !important;
+    background: var(--cx-final-gold-soft) !important;
+  }
+
+  /* My Work / personal queue. */
+  .monday-my-work {
+    gap: 18px !important;
+  }
+
+  .monday-my-work-create,
+  .monday-my-work-empty,
+  .monday-my-work-calendar,
+  .monday-my-work-dashboard-grid > section {
+    border-color: var(--cx-final-border) !important;
+    border-radius: var(--cx-final-radius) !important;
+    background: #fff !important;
+    box-shadow: var(--cx-final-shadow) !important;
+  }
+
+  .monday-my-work-create > header,
+  .monday-my-work-calendar > header,
+  .monday-my-work-dashboard-grid > section > header {
+    padding: 15px 17px !important;
+    border-bottom-color: var(--cx-final-border-soft) !important;
+    background: var(--cx-final-soft) !important;
+  }
+
+  .monday-my-work-create > header span,
+  .monday-my-work-calendar > header span,
+  .monday-my-work-card-heading span {
+    color: var(--cx-final-gold) !important;
+  }
+
+  .monday-my-work-create form {
+    gap: 14px !important;
+    padding: 17px !important;
+  }
+
+  .monday-my-work-card,
+  .monday-my-work-board > section {
+    border-color: var(--cx-final-border-soft) !important;
+    border-radius: 12px !important;
+    background: #fffdf9 !important;
+    color: var(--cx-final-ink) !important;
+  }
+
+  .monday-my-work-card:hover,
+  .monday-my-work-card:focus-visible {
+    border-color: color-mix(in srgb, var(--cx-final-gold) 38%, var(--cx-final-border)) !important;
+    background: var(--cx-final-gold-soft) !important;
+    transform: none !important;
+  }
+
+  .monday-my-work-list > section > header,
+  .monday-my-work-board > section > header {
+    border-color: var(--cx-final-border-soft) !important;
+    background: var(--cx-final-soft) !important;
+  }
+
+  .monday-my-work-card > p,
+  .monday-my-work-empty p,
+  .monday-my-work-list > section > header small,
+  .monday-my-work-card-meta span {
+    color: var(--cx-final-muted) !important;
+  }
+
+  .monday-my-work-card-meta span,
+  .monday-my-work-list > section > header > span,
+  .monday-my-work-board > section > header > span {
+    background: var(--cx-final-soft) !important;
+  }
+
+  .monday-my-work-calendar-grid > section {
+    border-right-color: var(--cx-final-border-soft) !important;
+  }
+
+  /* Service board variants: kanban, calendar, workload and coordinate map. */
+  .monday-service-create-panel,
+  .monday-service-view-tabs,
+  .monday-service-calendar-controls,
+  .monday-service-lane,
+  .monday-service-job-card,
+  .monday-service-calendar section,
+  .monday-service-map-canvas {
+    border-color: var(--cx-final-border) !important;
+    background: #fff !important;
+    color: var(--cx-final-ink) !important;
+    box-shadow: none !important;
+  }
+
+  .monday-service-create-panel,
+  .monday-service-view-tabs,
+  .monday-service-calendar-controls,
+  .monday-service-lane,
+  .monday-service-map-canvas {
+    border-radius: 12px !important;
+  }
+
+  .monday-service-create-panel[open] > summary,
+  .monday-service-view-tabs button.is-active,
+  .monday-service-calendar section.is-today,
+  .monday-service-calendar a:hover,
+  .monday-service-calendar a:focus-visible {
+    background: var(--cx-final-gold-soft) !important;
+  }
+
+  .monday-service-view-tabs button.is-active {
+    color: var(--cx-final-ink) !important;
+    box-shadow: inset 0 -2px 0 var(--cx-final-gold) !important;
+  }
+
+  .monday-service-view-tabs small,
+  .monday-service-view-heading span,
+  .monday-service-view-heading > strong,
+  .monday-service-summary dt,
+  .monday-service-calendar time {
+    color: var(--cx-final-muted) !important;
+  }
+
+  .monday-service-lane > header > span {
+    background: var(--cx-final-soft) !important;
+    color: var(--cx-final-muted) !important;
+  }
+
+  .monday-service-job-card:hover {
+    border-color: color-mix(in srgb, var(--cx-final-gold) 38%, var(--cx-final-border)) !important;
+  }
+
+  .monday-service-calendar section.is-today {
+    border-color: color-mix(in srgb, var(--cx-final-gold) 46%, var(--cx-final-border)) !important;
+    box-shadow: inset 0 3px 0 var(--cx-final-gold) !important;
+  }
+
+  .monday-service-calendar a {
+    border-color: var(--cx-final-border-soft) !important;
+    border-left-color: var(--cx-final-gold) !important;
+    background: #fffdf9 !important;
+  }
+
+  .monday-service-map-canvas {
+    background:
+      radial-gradient(circle at 35% 26%, var(--cx-final-gold-soft), transparent 38%),
+      var(--cx-final-soft) !important;
+  }
+
+  /* Generic legacy-workbench surfaces that sit outside earlier named phases. */
+  :is(.workbench, .erp-workbench, .role-workspace, .workspace-board, .operations-workspace)
+  :is(.card, .panel, .neo-card, .summary-card, .metric-card, .form-card, .table-card) {
+    border-color: var(--cx-final-border) !important;
+    background: var(--cx-final-surface) !important;
+    color: var(--cx-final-ink) !important;
+    box-shadow: var(--cx-final-shadow) !important;
+  }
+
+  :is(.workbench, .erp-workbench, .role-workspace, .workspace-board, .operations-workspace)
+  :is(.card, .panel, .neo-card, .summary-card, .metric-card, .form-card, .table-card)
+  :is(h2, h3, strong) {
+    color: var(--cx-final-ink) !important;
+  }
+
+  :is(.workbench, .erp-workbench, .role-workspace, .workspace-board, .operations-workspace)
+  :is(.card, .panel, .neo-card, .summary-card, .metric-card, .form-card, .table-card)
+  :is(p, small, .muted) {
+    color: var(--cx-final-muted) !important;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1180px) and (hover: hover) and (pointer: fine) {
+  .today-workspace-hero {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+  }
+
+  .today-refresh-block {
+    grid-column: 1 / -1;
+    justify-items: start !important;
+  }
+
+  .today-attention-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .today-primary-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .today-snapshot-section {
+    position: static !important;
+  }
+
+  .monday-board-header {
+    flex-wrap: wrap !important;
+    gap: 14px !important;
+    padding: 18px !important;
+  }
+
+  .monday-board-header-actions {
+    flex: 1 1 100%;
+    justify-content: flex-start !important;
+  }
+
+  .monday-board-command-bar {
+    align-items: flex-start !important;
+  }
+
+  .monday-board-command-summary {
+    margin-left: 0 !important;
+    text-align: left !important;
+  }
+
+  .monday-my-work-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .monday-service-coordinate-map {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
