@@ -59,13 +59,8 @@ async function validateStylesheet(filePath) {
   }
 
   const imports = cssImports(source);
-  if (new Set(imports).size !== imports.length) {
-    fail(`${path.relative(root, normalized)} contains duplicate imports.`);
-  }
-
-  for (const importPath of imports) {
-    await validateStylesheet(path.resolve(path.dirname(normalized), importPath));
-  }
+  if (new Set(imports).size !== imports.length) fail(`${path.relative(root, normalized)} contains duplicate imports.`);
+  for (const importPath of imports) await validateStylesheet(path.resolve(path.dirname(normalized), importPath));
   activeStack.delete(normalized);
 }
 await validateStylesheet(entryPath);
@@ -91,6 +86,7 @@ const requiredDesktopImports = [
   '../ui-stabilization-contract.css',
   '../desktop-reference-layout.css',
   '../desktop-layout-regression-fixes.css',
+  '../professional-ui-system.css',
 ];
 for (const requiredImport of requiredDesktopImports) {
   if (!applicationImports.includes(requiredImport)) fail(`app/styles/application.css is missing ${requiredImport}.`);
@@ -98,9 +94,10 @@ for (const requiredImport of requiredDesktopImports) {
 
 const desktopReferenceIndex = applicationImports.indexOf('../desktop-reference-layout.css');
 const desktopFixIndex = applicationImports.indexOf('../desktop-layout-regression-fixes.css');
+const professionalUiIndex = applicationImports.indexOf('../professional-ui-system.css');
 const responsiveAuthorityIndex = applicationImports.indexOf('../responsive-runtime-authority.css');
-if (!(desktopReferenceIndex >= 0 && desktopFixIndex === desktopReferenceIndex + 1 && responsiveAuthorityIndex > desktopFixIndex)) {
-  fail('Desktop regression fixes must load immediately after the approved desktop reference and before responsive authority.');
+if (!(desktopReferenceIndex >= 0 && desktopFixIndex === desktopReferenceIndex + 1 && professionalUiIndex === desktopFixIndex + 1 && responsiveAuthorityIndex > professionalUiIndex)) {
+  fail('Desktop reference, regression fixes and professional UI system must load consecutively before responsive authority.');
 }
 
 const responsiveImport = '../responsive-mobile-tablet.css';
@@ -115,9 +112,7 @@ for (const retiredImport of [
   '../mobile-universal-phone.css',
   '../mobile-browser-native.css',
 ]) {
-  if (applicationImports.includes(retiredImport)) {
-    fail(`Retired responsive layer ${retiredImport} must not be registered.`);
-  }
+  if (applicationImports.includes(retiredImport)) fail(`Retired responsive layer ${retiredImport} must not be registered.`);
 }
 
 const stabilizationSource = await readFile(path.join(root, 'app', 'ui-stabilization-contract.css'), 'utf8');
@@ -126,13 +121,7 @@ for (const requiredRule of ['--ui-canvas: #f5f0e6', '--ui-ink: #231f1a', '--ui-g
 }
 
 const desktopReferenceSource = await readFile(path.join(root, 'app', 'desktop-reference-layout.css'), 'utf8');
-for (const requiredRule of [
-  '@media (min-width: 901px)',
-  '--reference-sidebar-width: 350px',
-  'bottom: calc(100% + 12px) !important',
-  '.application-header',
-  '.admin-command-kpis',
-]) {
+for (const requiredRule of ['@media (min-width: 901px)', '--reference-sidebar-width: 350px', 'bottom: calc(100% + 12px) !important', '.application-header', '.admin-command-kpis']) {
   if (!desktopReferenceSource.includes(requiredRule)) fail(`Approved desktop reference is missing ${requiredRule}.`);
 }
 
@@ -145,19 +134,31 @@ for (const requiredRule of [
   '.dallmayr-account-panel.is-compact',
   'overflow: visible !important',
   '.application-header-search',
-  'display: none !important',
   'overflow-x: clip',
 ]) {
   if (!desktopFixSource.includes(requiredRule)) fail(`Desktop regression contract is missing ${requiredRule}.`);
 }
 
+const professionalUiSource = await readFile(path.join(root, 'app', 'professional-ui-system.css'), 'utf8');
+for (const requiredRule of [
+  '--pro-radius-md: 12px',
+  '--pro-shadow-sm:',
+  '.erp-panel',
+  '.erp-table-shell',
+  '.erp-toolbar',
+  '.status-badge',
+  ':focus-visible',
+  '.dallmayr-sidebar-link svg',
+  '.admin-command-kpis .erp-metric-card',
+]) {
+  if (!professionalUiSource.includes(requiredRule)) fail(`Professional UI system is missing ${requiredRule}.`);
+}
+
 const desktopRailSource = await readFile(path.join(root, 'components', 'layout', 'DesktopNavigationRail.tsx'), 'utf8');
-if (desktopRailSource.includes('id="desktop-account-menu-target"')) {
-  fail('DesktopNavigationRail must not duplicate the header desktop-account-menu-target id.');
-}
-if (!desktopRailSource.includes('dallmayr-sidebar-account-menu-target')) {
-  fail('DesktopNavigationRail must retain the sidebar account-menu mount class.');
-}
+if (desktopRailSource.includes('id="desktop-account-menu-target"')) fail('DesktopNavigationRail must not duplicate the header desktop-account-menu-target id.');
+if (!desktopRailSource.includes('dallmayr-sidebar-account-menu-target')) fail('DesktopNavigationRail must retain the sidebar account-menu mount class.');
+if (!desktopRailSource.includes('function NavIcon') || !desktopRailSource.includes('<svg')) fail('DesktopNavigationRail must use consistent SVG navigation icons.');
+if (desktopRailSource.includes('navigationGlyph(')) fail('DesktopNavigationRail must not regress to generated text-abbreviation icons.');
 
 const responsiveSource = await readFile(path.join(root, 'app', 'responsive-mobile-tablet.css'), 'utf8');
 const responsiveWithoutComments = responsiveSource.replace(/\/\*[\s\S]*?\*\//g, '').trim();
@@ -179,4 +180,4 @@ for (const requiredRule of [
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered with guarded desktop reference/fix layers and one final mobile/tablet responsive contract.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered with guarded desktop layers, one professional UI system and one final mobile/tablet responsive contract.`);
