@@ -93,7 +93,6 @@ export function DesktopNavigationRail({
       <div
         aria-label={`Account menu for ${roleLabel}`}
         className="dallmayr-sidebar-account dallmayr-sidebar-account-menu-target"
-        id="desktop-account-menu-target"
         title={collapsed ? `${roleLabel} account menu` : undefined}
       />
     </aside>
