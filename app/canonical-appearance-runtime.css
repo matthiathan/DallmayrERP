@@ -1,14 +1,36 @@
 /* Canonical appearance runtime bridge.
  *
- * AppearanceProvider and RenderedSurfaceContrastSync publish runtime aliases on
- * the document root. This late layer maps those aliases into the compatibility
- * variables consumed by the remaining curated appearance presentation without
- * introducing another page/shell reskin.
+ * AppearanceProvider and RenderedSurfaceContrastSync publish their live custom
+ * properties on the document root. This late layer snapshots those root values
+ * into separate aliases, then maps the aliases into the compatibility variables
+ * consumed by the remaining curated appearance presentation without introducing
+ * another page/shell reskin.
  *
  * Do not hard-code a selected accent or content palette here. Runtime values are
  * the authority so persisted user preferences and calculated contrast survive
  * the legacy theme cascade.
  */
+
+html[data-visual-theme] {
+  --appearance-runtime-accent: var(--user-accent, #a67828);
+  --appearance-runtime-theme: var(--user-theme, #e6d7bf);
+  --appearance-runtime-background: var(--user-background, #f5efe5);
+  --appearance-runtime-accent-ink: var(--accent-ink, #11100d);
+  --appearance-runtime-accent-on-light: var(--accent-on-light, #7a4d13);
+  --appearance-runtime-accent-on-dark: var(--accent-on-dark, #f0cf65);
+  --appearance-runtime-theme-ink: var(--theme-ink, #1f1812);
+  --appearance-runtime-background-ink: var(--background-ink, #1f1812);
+  --appearance-content-surface: var(--content-surface, #fffaf2);
+  --appearance-content-surface-raised: var(--content-surface-raised, #f2e5d3);
+  --appearance-content-text: var(--content-text, #2b2118);
+  --appearance-content-strong: var(--content-strong, #1f1812);
+  --appearance-content-muted: var(--content-muted, #65584a);
+  --appearance-content-subtle: var(--content-subtle, #766858);
+  --appearance-content-border: var(--content-border, #bda98a);
+  --appearance-content-accent-text: var(--content-accent-text, #7a4d13);
+  --appearance-content-focus: var(--content-focus, #8c5d18);
+  --appearance-content-chart-track: var(--content-chart-track, #ded4c6);
+}
 
 html[data-theme-tone='dark'] {
   color-scheme: dark;
