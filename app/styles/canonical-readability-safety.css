@@ -173,3 +173,133 @@ html[data-visual-theme] body .application-main .table-scroll-primary {
   overscroll-behavior: contain;
   scrollbar-gutter: stable both-edges;
 }
+
+/* Neutral content-containment invariants migrated from the retired
+   user-first-layout programme. These rules deliberately avoid colours,
+   shell composition and responsive breakpoints. */
+html[data-visual-theme] body :is(button, input, select, textarea) {
+  font-synthesis: none;
+}
+
+html[data-visual-theme] body :is(label, .customer-combobox-label, .enterprise-table-search) {
+  max-width: 100%;
+}
+
+html[data-visual-theme] body :is(input, select, textarea) {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+html[data-visual-theme] body select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html[data-visual-theme] body textarea {
+  white-space: pre-wrap;
+}
+
+html[data-visual-theme] body input[type='file'] {
+  height: auto;
+  max-width: 100%;
+  white-space: normal;
+  overflow: hidden;
+}
+
+html[data-visual-theme] body input[type='checkbox'],
+html[data-visual-theme] body input[type='radio'] {
+  width: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  padding: 0;
+}
+
+html[data-visual-theme] body :is(button, .button, a.button, [role='button']) {
+  max-width: 100%;
+  min-width: 0;
+  height: auto;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+html[data-visual-theme] body :is(button, .button, a.button, [role='button']) > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+html[data-visual-theme] body :is(
+  .action-row,
+  .feature-list,
+  .page-toolbar-actions,
+  .toolbar-actions,
+  .button-row,
+  .filter-row,
+  .enterprise-table-actions,
+  .minimal-row-actions,
+  .scanner-actions,
+  .asset-ticket-actions,
+  .global-search-quick-actions
+) {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+html[data-visual-theme] body :is(
+  .action-row,
+  .feature-list,
+  .page-toolbar-actions,
+  .toolbar-actions,
+  .button-row,
+  .filter-row,
+  .enterprise-table-actions,
+  .minimal-row-actions,
+  .scanner-actions,
+  .asset-ticket-actions,
+  .global-search-quick-actions
+) > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+html[data-visual-theme] body :is(.badge, .status-badge, .feature-pill) {
+  max-width: 100%;
+  height: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+html[data-visual-theme] body :is(
+  .role-action-card,
+  .professional-work-card,
+  .minimal-list-item,
+  .minimal-row,
+  .scanner-match-card,
+  .page-toolbar-heading
+) > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .table-wrap,
+  .enterprise-table-wrap,
+  .data-table-wrapper
+) {
+  overflow-x: auto;
+}
+
+html[data-visual-theme] body :is(.resizable-th-content, .table-sort-button, .table-header-label) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+html[data-visual-theme] body .table-sort-button {
+  justify-content: flex-start;
+  text-align: left;
+}
