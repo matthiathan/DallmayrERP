@@ -2,8 +2,8 @@
  * Canonical DallmayrERP application stylesheet.
  *
  * Desktop composition is owned by the stabilization contract plus the approved
- * reference layout. Responsive work for phones and touch tablets is owned by
- * one final contract so mobile rules do not compete with one another.
+ * reference layout and professional UI system. Responsive work for phones and
+ * touch tablets is owned by one final contract so mobile rules do not compete.
  */
 @import '../reference-ui-redesign.css';
 @import '../full-application-rebuild.css';
@@ -16,6 +16,7 @@
 @import '../ui-stabilization-contract.css';
 @import '../desktop-reference-layout.css';
 @import '../desktop-layout-regression-fixes.css';
+@import '../professional-ui-system.css';
 @import '../responsive-runtime-authority.css';
 @import '../responsive-mobile-menu-v2.css';
 @import '../responsive-mobile-tablet.css';
