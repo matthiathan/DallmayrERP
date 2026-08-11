@@ -62,33 +62,46 @@ The migration uses the Concentrix information architecture and spacing model whi
 
 ## Phase 6 — Execution & Detail Interaction Surfaces
 
-**Status: implementation complete and CI validated; awaiting approval**
-
-This phase applies the Concentrix contained operational hierarchy to the interaction-heavy surfaces inside existing page frames, without changing the execution logic behind them:
+**Status: complete, CI validated and approved**
 
 - assigned field-service queue and guided job-closure presentation
 - work execution cards for SOP/time, parts usage, completion details, evidence and sign-off
 - stock and machine barcode/QR capture and matched-record feedback
 - status timelines and guided stepper hierarchy
 - asset ticket and machine-match detail presentation
-- shared dense enterprise table search, filter, resize, scroll and pagination presentation used by execution/detail workspaces
+- shared dense enterprise table search, filter, resize, scroll and pagination presentation
 - customer lookup result presentation used by machine/detail capture forms
+- no feature component or business-logic file changed in Phase 6
+- existing mobile/offline/scanner behaviour remains unchanged
+
+Validation: GitHub Actions run #558 passed on final Phase 6 head `45ddcdcf26d59458193e351dc1e9693c600d2488`.
+
+## Phase 7 — Final Visual Audit & Compatibility Polish
+
+**Status: implementation checkpoint; validate before final approval**
+
+This is the final migration phase. It audits the remaining quarantined legacy layout programmes and explicitly normalises the bespoke surfaces that sit outside the earlier page-family layers:
+
+- Role Today workspaces and attention/priority cards
+- Monday-style board headers, command bars, data surfaces and pagination
+- focused Monday item-card/detail drawers
+- My Work personal queue, board and calendar surfaces
+- service kanban/calendar/map presentation
+- legacy Dynamics/workbench/Monday visual token compatibility
+- remaining generic workbench cards that still use quarantined selectors
 
 Implementation rules:
 
 - presentation/layout only
-- preserve all Supabase queries, mutations, RPCs and storage uploads
-- preserve scanner camera, file and manual-entry logic and duplicate-scan protection
-- preserve exact assigned-machine verification and atomic service-job closure behaviour
-- preserve work-time logging, stock deductions, completion details, GPS capture, evidence uploads and customer sign-off
-- preserve offline field-work drafts, queueing, synchronization and the existing mobile-only offline queue UI
-- preserve customer lookup, table search/filter/sort/pagination and resizable-column behaviour
-- do not create a competing touch-responsive authority
-- the existing phone/touch-tablet responsive layers remain later in the cascade and authoritative
-- load the Phase 6 desktop layer after Phase 5 and before responsive authority
+- retain the legacy manifests because their selectors are still used by mounted components
+- do not remove routes, controls, actions or data
+- do not change Supabase queries, mutations, RPCs, authentication, permissions, scanner logic, messaging, workflows or business rules
+- remap legacy blue/teal programme accents to Dallmayr gold only where they are visual-brand accents; semantic success/warning/danger colours remain semantic
+- do not create a coarse-pointer responsive authority
+- do not hide functionality in the final audit layer
+- existing responsive phone/touch-tablet layers remain later in the cascade and authoritative
+- load the final audit layer after Phase 6 and before responsive authority
 
-Validation: GitHub Actions run #557 passed on Phase 6 head `b44b59dadcd5dbef7c6847945d239fd24404bc96` before this documentation-only checkpoint update. The validated gate included stylesheet architecture, mobile interaction contracts, TypeScript, production build, security pentest and Chromium real-browser mobile tests.
+## Final approval boundary
 
-## Approval boundary
-
-Each phase must be fully implemented and validated before the next phase starts. Phase 6 must stop at its approval checkpoint; no later migration phase should begin without explicit user approval.
+Phase 7 is the final planned migration phase. After the final Phase 7 branch head passes stylesheet architecture, mobile interaction contracts, TypeScript, production build, security pentest and Chromium browser tests, stop for final user approval. Do not merge PR #92 until that explicit final approval is given.
