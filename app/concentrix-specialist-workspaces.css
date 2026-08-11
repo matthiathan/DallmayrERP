@@ -1,0 +1,564 @@
+/* Phase 4: Concentrix-derived specialist workspaces for DallmayrERP.
+ * Visual/layout only. Administration, account settings, messaging, search,
+ * telemetry/reporting data flow and all responsive runtime behaviour are unchanged.
+ * The phone/tablet authority loads after this file and remains authoritative.
+ */
+@media (min-width: 901px) {
+  :root {
+    --cx-specialist-surface: var(--cx-op-surface, var(--ui-surface, #ffffff));
+    --cx-specialist-soft: var(--cx-op-surface-soft, var(--ui-surface-soft, #fbf8f1));
+    --cx-specialist-canvas: var(--cx-canvas, var(--ui-canvas, #f5f0e6));
+    --cx-specialist-ink: var(--cx-op-ink, var(--ui-ink, #231f1a));
+    --cx-specialist-muted: var(--cx-op-muted, var(--ui-muted, #625b50));
+    --cx-specialist-gold: var(--cx-op-gold, var(--ui-gold, #b8862f));
+    --cx-specialist-border: var(--cx-op-border, #ddd1be);
+    --cx-specialist-border-soft: var(--cx-op-border-soft, #eee6da);
+    --cx-specialist-radius: 16px;
+    --cx-specialist-control-height: 42px;
+    --cx-specialist-shadow: 0 8px 24px rgba(53, 42, 28, .07);
+    --cx-specialist-shadow-raised: 0 18px 46px rgba(53, 42, 28, .13);
+  }
+
+  /* Administration and access-control workspaces. */
+  .admin-access-stage,
+  .admin-user-access-stage,
+  .admin-access-layout {
+    min-width: 0;
+    gap: 18px;
+    color: var(--cx-specialist-ink);
+  }
+
+  .admin-access-kpis {
+    gap: 14px !important;
+  }
+
+  .admin-access-section,
+  .admin-access-editor-panel,
+  .role-rights-preview,
+  .admin-user-directory,
+  .admin-user-detail {
+    min-width: 0;
+    border-color: var(--cx-specialist-border) !important;
+    border-radius: var(--cx-specialist-radius) !important;
+    background: var(--cx-specialist-surface) !important;
+    box-shadow: var(--cx-specialist-shadow) !important;
+  }
+
+  .admin-access-section {
+    padding: 20px !important;
+  }
+
+  .admin-access-section .minimal-panel-header {
+    align-items: flex-start;
+    gap: 18px;
+    margin: -20px -20px 18px !important;
+    padding: 18px 20px !important;
+    border-bottom: 1px solid var(--cx-specialist-border-soft) !important;
+    border-radius: var(--cx-specialist-radius) var(--cx-specialist-radius) 0 0;
+    background: linear-gradient(180deg, #fffefa 0%, var(--cx-specialist-soft) 100%) !important;
+  }
+
+  .admin-access-section .minimal-kicker {
+    color: var(--cx-specialist-gold) !important;
+    font-size: .72rem !important;
+    font-weight: 800 !important;
+    letter-spacing: .08em !important;
+    text-transform: uppercase;
+  }
+
+  .admin-access-section .minimal-panel-header h2 {
+    margin: 4px 0 0 !important;
+    color: var(--cx-specialist-ink) !important;
+    font-size: 1.12rem !important;
+    font-weight: 780 !important;
+    letter-spacing: -.02em !important;
+  }
+
+  .admin-access-section .minimal-panel-header p {
+    max-width: 76ch;
+    margin: 6px 0 0 !important;
+    color: var(--cx-specialist-muted) !important;
+  }
+
+  .admin-access-create-grid,
+  .admin-access-editor-grid {
+    gap: 16px !important;
+  }
+
+  .admin-access-create-grid input:not([type='checkbox']),
+  .admin-access-create-grid select,
+  .admin-access-create-grid textarea,
+  .admin-access-editor input:not([type='checkbox']),
+  .admin-access-editor select,
+  .admin-access-editor textarea {
+    min-height: var(--cx-specialist-control-height) !important;
+  }
+
+  .admin-access-toggle {
+    min-height: var(--cx-specialist-control-height);
+    padding: 9px 12px !important;
+    border: 1px solid var(--cx-specialist-border-soft) !important;
+    border-radius: 10px !important;
+    background: var(--cx-specialist-soft) !important;
+  }
+
+  .admin-access-toggle input[type='checkbox'] {
+    min-height: auto !important;
+  }
+
+  .role-rights-preview {
+    padding: 16px !important;
+    background: linear-gradient(180deg, #fffdf8 0%, #faf4e8 100%) !important;
+    box-shadow: none !important;
+  }
+
+  .role-rights-preview > div {
+    gap: 6px !important;
+  }
+
+  .role-rights-preview > div > span {
+    border-color: color-mix(in srgb, var(--cx-specialist-gold) 28%, var(--cx-specialist-border)) !important;
+    background: #fffaf0 !important;
+    color: #624c27 !important;
+  }
+
+  /* Internal messaging. Preserve the existing two-pane behaviour. */
+  .internal-messaging-page .messages-v2-shell,
+  .messaging-layout,
+  .messaging-workspace,
+  .internal-messaging-workspace,
+  .messages-layout {
+    min-width: 0;
+    border: 1px solid var(--cx-specialist-border) !important;
+    border-radius: var(--cx-specialist-radius) !important;
+    background: var(--cx-specialist-surface) !important;
+    box-shadow: var(--cx-specialist-shadow) !important;
+  }
+
+  .internal-messaging-page .messages-v2-shell {
+    overflow: hidden;
+  }
+
+  .messages-v2-sidebar,
+  .messaging-sidebar,
+  .messages-sidebar,
+  .messaging-directory-panel {
+    min-width: 0;
+    border-color: var(--cx-specialist-border) !important;
+    background: linear-gradient(180deg, #fbf7ef 0%, #f8f2e8 100%) !important;
+  }
+
+  .messages-v2-create {
+    gap: 10px !important;
+    padding: 18px !important;
+    border-bottom: 1px solid var(--cx-specialist-border) !important;
+    background: transparent !important;
+  }
+
+  .messages-v2-create > strong {
+    color: var(--cx-specialist-ink) !important;
+    font-size: .95rem !important;
+  }
+
+  .messages-v2-create input,
+  .messages-v2-create select,
+  .messages-v2-chat header input,
+  .messages-v2-composer textarea {
+    min-height: var(--cx-specialist-control-height) !important;
+    border-color: var(--cx-specialist-border) !important;
+    border-radius: 10px !important;
+    background: var(--cx-specialist-surface) !important;
+  }
+
+  .messages-v2-selected-people {
+    gap: 6px !important;
+  }
+
+  .messages-v2-selected-people .button {
+    min-height: 32px !important;
+    padding: 5px 9px !important;
+    font-size: .78rem !important;
+  }
+
+  .messages-v2-people-picker {
+    border-color: var(--cx-specialist-border-soft) !important;
+    border-radius: 12px !important;
+    background: rgba(255, 255, 255, .7) !important;
+  }
+
+  .messages-v2-people-picker button,
+  .messages-v2-thread-list button {
+    border-color: transparent !important;
+    border-radius: 10px !important;
+    background: transparent !important;
+    color: var(--cx-specialist-ink) !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  .messages-v2-people-picker button:hover,
+  .messages-v2-thread-list button:hover {
+    background: #fff8e9 !important;
+  }
+
+  .messages-v2-people-picker button.is-selected,
+  .messages-v2-thread-list button.is-active {
+    background: #fff4d8 !important;
+    box-shadow: inset 3px 0 0 var(--cx-specialist-gold) !important;
+  }
+
+  .messages-v2-thread-list {
+    padding: 10px !important;
+    background: transparent !important;
+  }
+
+  .messages-v2-thread-list button {
+    margin: 2px 0 !important;
+    padding: 11px 12px !important;
+  }
+
+  .messages-v2-thread-list button.is-unread strong {
+    color: #6c4c14 !important;
+  }
+
+  .messages-v2-chat {
+    min-width: 0;
+    background: var(--cx-specialist-surface) !important;
+  }
+
+  .messages-v2-chat > header {
+    gap: 5px !important;
+    padding: 17px 20px !important;
+    border-bottom: 1px solid var(--cx-specialist-border-soft) !important;
+    background: linear-gradient(180deg, #fff 0%, #fffdf8 100%) !important;
+  }
+
+  .messages-v2-chat > header h2 {
+    color: var(--cx-specialist-ink) !important;
+    font-size: 1.08rem !important;
+    letter-spacing: -.02em !important;
+  }
+
+  .messages-v2-chat > header p,
+  .messages-v2-thread-list small,
+  .messages-v2-create small {
+    color: var(--cx-specialist-muted) !important;
+  }
+
+  .messages-v2-log {
+    padding: 20px !important;
+    background: #fffdf9 !important;
+  }
+
+  .messages-v2-log article {
+    max-width: min(72%, 720px);
+    border-color: var(--cx-specialist-border-soft) !important;
+    border-radius: 14px !important;
+    background: #fff !important;
+    box-shadow: 0 2px 8px rgba(53, 42, 28, .045) !important;
+  }
+
+  .messages-v2-log article.is-mine {
+    border-color: color-mix(in srgb, var(--cx-specialist-gold) 34%, var(--cx-specialist-border)) !important;
+    background: #fff5dc !important;
+  }
+
+  .messages-v2-typing {
+    color: var(--cx-specialist-muted) !important;
+    background: #fffdf9 !important;
+  }
+
+  .messages-v2-composer {
+    gap: 10px !important;
+    padding: 14px 18px !important;
+    border-top: 1px solid var(--cx-specialist-border) !important;
+    background: #fff !important;
+  }
+
+  /* Desktop global search overlay. Mobile remains controlled by responsive authority. */
+  .global-search-overlay {
+    padding: 96px 28px 28px !important;
+    background: rgba(35, 31, 26, .28) !important;
+    backdrop-filter: blur(5px);
+  }
+
+  .global-search-dialog {
+    width: min(820px, calc(100vw - 56px)) !important;
+    max-height: min(720px, calc(100vh - 132px)) !important;
+    border: 1px solid var(--cx-specialist-border) !important;
+    border-radius: 18px !important;
+    background: var(--cx-specialist-surface) !important;
+    box-shadow: var(--cx-specialist-shadow-raised) !important;
+  }
+
+  .global-search-input-row {
+    gap: 10px !important;
+    padding: 16px !important;
+    border-bottom: 1px solid var(--cx-specialist-border-soft) !important;
+    background: linear-gradient(180deg, #fff 0%, #fffdf8 100%) !important;
+  }
+
+  .global-search-input-row input {
+    min-height: 44px !important;
+    border-color: var(--cx-specialist-border) !important;
+    border-radius: 11px !important;
+  }
+
+  .global-search-quick-actions {
+    gap: 7px !important;
+    padding: 11px 16px !important;
+    border-bottom: 1px solid var(--cx-specialist-border-soft) !important;
+    background: var(--cx-specialist-soft) !important;
+  }
+
+  .global-search-quick-actions a {
+    min-height: 32px;
+    padding: 6px 9px !important;
+    border: 1px solid var(--cx-specialist-border-soft) !important;
+    border-radius: 9px !important;
+    background: #fff !important;
+    color: #5e4b2c !important;
+    font-size: .8rem !important;
+    font-weight: 700 !important;
+  }
+
+  .global-search-results {
+    padding: 10px !important;
+    background: #fff !important;
+  }
+
+  .global-search-result {
+    display: grid;
+    grid-template-columns: minmax(76px, auto) minmax(0, 1fr);
+    gap: 3px 12px !important;
+    padding: 11px 12px !important;
+    border: 1px solid transparent !important;
+    border-radius: 11px !important;
+  }
+
+  .global-search-result:hover,
+  .global-search-result:focus-visible {
+    border-color: color-mix(in srgb, var(--cx-specialist-gold) 24%, var(--cx-specialist-border)) !important;
+    background: #fff9eb !important;
+  }
+
+  .global-search-result-type {
+    grid-row: 1 / span 2;
+    align-self: center;
+    color: var(--cx-specialist-gold) !important;
+    font-size: .7rem !important;
+    font-weight: 850 !important;
+    letter-spacing: .06em !important;
+    text-transform: uppercase;
+  }
+
+  .global-search-result > strong {
+    color: var(--cx-specialist-ink) !important;
+  }
+
+  .global-search-result > span:last-child,
+  .global-search-state {
+    color: var(--cx-specialist-muted) !important;
+  }
+
+  /* Account/settings presentation. Preserve existing anchor and upward pop-out rules. */
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-panel {
+    gap: 14px !important;
+    width: min(340px, calc(100vw - 32px)) !important;
+    padding: 16px !important;
+    border: 1px solid var(--cx-specialist-border) !important;
+    border-radius: var(--cx-specialist-radius) !important;
+    background: #fff !important;
+    box-shadow: var(--cx-specialist-shadow-raised) !important;
+  }
+
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-meta {
+    gap: 3px !important;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--cx-specialist-border-soft);
+  }
+
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-meta strong {
+    color: var(--cx-specialist-ink) !important;
+  }
+
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-meta span,
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-meta small {
+    color: var(--cx-specialist-muted) !important;
+  }
+
+  .appearance-editor {
+    gap: 12px !important;
+  }
+
+  .appearance-editor-heading {
+    color: var(--cx-specialist-ink) !important;
+    font-size: .9rem !important;
+    font-weight: 800 !important;
+  }
+
+  .appearance-theme-choice-grid {
+    gap: 8px !important;
+  }
+
+  .appearance-theme-choice {
+    min-height: 54px !important;
+    padding: 9px 10px !important;
+    border-color: var(--cx-specialist-border-soft) !important;
+    border-radius: 11px !important;
+    background: var(--cx-specialist-soft) !important;
+    box-shadow: none !important;
+  }
+
+  .appearance-theme-choice:hover,
+  .appearance-theme-choice[aria-pressed='true'] {
+    border-color: color-mix(in srgb, var(--cx-specialist-gold) 42%, var(--cx-specialist-border)) !important;
+    background: #fff9ea !important;
+  }
+
+  .appearance-theme-title-row,
+  .appearance-theme-copy {
+    color: var(--cx-specialist-ink) !important;
+  }
+
+  .appearance-save-state,
+  .appearance-sync-error {
+    border-radius: 10px !important;
+  }
+
+  .appearance-editor-actions {
+    gap: 8px !important;
+    padding-top: 10px;
+    border-top: 1px solid var(--cx-specialist-border-soft);
+  }
+
+  .appearance-reset,
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-signout {
+    min-height: var(--cx-specialist-control-height) !important;
+    border-radius: 10px !important;
+  }
+
+  /* Reporting and telemetry: shared analytical surface hierarchy. */
+  .spatial-stage,
+  .spatial-dashboard {
+    min-width: 0;
+    gap: 18px !important;
+  }
+
+  .spatial-stage .spatial-kpi-grid {
+    gap: 14px !important;
+  }
+
+  .spatial-stage .spatial-card,
+  .spatial-dashboard .spatial-card,
+  .spatial-stage .chart-card,
+  .spatial-dashboard .chart-card {
+    min-width: 0;
+    border-color: var(--cx-specialist-border) !important;
+    border-radius: var(--cx-specialist-radius) !important;
+    background: linear-gradient(180deg, #fff 0%, #fffdf9 100%) !important;
+    box-shadow: var(--cx-specialist-shadow) !important;
+  }
+
+  .spatial-stage .spatial-card,
+  .spatial-dashboard .spatial-card {
+    padding: 18px !important;
+  }
+
+  .spatial-stage .spatial-card > h2,
+  .spatial-dashboard .spatial-card > h2,
+  .chart-card > h2 {
+    margin-top: 0 !important;
+    color: var(--cx-specialist-ink) !important;
+    font-size: 1rem !important;
+    font-weight: 780 !important;
+    letter-spacing: -.015em !important;
+  }
+
+  .spatial-stage .spatial-card > p,
+  .spatial-dashboard .spatial-card > p,
+  .chart-card > p,
+  .chart-legend {
+    color: var(--cx-specialist-muted) !important;
+  }
+
+  .bar-track {
+    overflow: hidden;
+    border-radius: 999px !important;
+    background: #eee7db !important;
+  }
+
+  .bar-fill {
+    border-radius: inherit !important;
+    background: linear-gradient(90deg, #9c7022 0%, var(--cx-specialist-gold) 100%) !important;
+  }
+
+  .donut {
+    filter: saturate(.82);
+  }
+
+  .chart-legend {
+    gap: 8px !important;
+  }
+
+  .legend-dot {
+    border-radius: 999px !important;
+  }
+
+  .spatial-stage .page-header,
+  .spatial-dashboard .page-header {
+    border-color: var(--cx-specialist-border-soft) !important;
+    border-radius: 12px !important;
+    background: var(--cx-specialist-soft) !important;
+  }
+
+  /* Utility and generic specialist workbenches use the same contained geometry. */
+  .data-matching-workbench,
+  .matching-workbench,
+  .activity-log-stage {
+    min-width: 0;
+  }
+
+  .data-matching-workbench .neo-card,
+  .matching-workbench .neo-card,
+  .activity-log-stage .neo-card {
+    border-color: var(--cx-specialist-border) !important;
+    border-radius: var(--cx-specialist-radius) !important;
+    background: var(--cx-specialist-surface) !important;
+    box-shadow: var(--cx-specialist-shadow) !important;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1180px) {
+  .admin-access-create-grid,
+  .admin-access-editor-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .admin-access-create-grid > .role-rights-preview,
+  .admin-access-editor-grid > .selected-role-rights,
+  .admin-access-create-grid > .admin-access-note {
+    grid-column: 1 / -1;
+  }
+
+  .internal-messaging-page .messages-v2-shell,
+  .messaging-layout,
+  .messaging-workspace,
+  .internal-messaging-workspace,
+  .messages-layout {
+    grid-template-columns: minmax(280px, 32%) minmax(0, 1fr) !important;
+  }
+
+  .messages-v2-log article {
+    max-width: 82%;
+  }
+
+  .global-search-dialog {
+    width: min(760px, calc(100vw - 48px)) !important;
+  }
+
+  .spatial-stage .grid-3.spatial-kpi-grid,
+  .spatial-dashboard .grid-3.spatial-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
