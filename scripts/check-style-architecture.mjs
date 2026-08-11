@@ -78,6 +78,7 @@ for (const retiredLayout of [
   "@import '../monday-shell-phase-1.css'",
   "@import '../operations-cockpit.css'",
   "@import '../erp-executive-ui.css'",
+  "@import '../dynamics-365-ui.css'",
 ]) {
   if (legacyLayoutSource.includes(retiredLayout)) {
     fail(`Retired layout programme ${retiredLayout} must not be registered in legacy-layout-manifest.css.`);
@@ -204,6 +205,8 @@ for (const requiredRule of [
   '@media (min-width: 901px) and (hover: hover) and (pointer: fine), (min-width: 1367px)',
   '--cx-access-control-height: 46px',
   '.dynamics-login-page',
+  '.dynamics-login-intro',
+  '.dynamics-login-card',
   '.login-remember-me',
   '.auth-state-page',
   '.concentrix-onboarding-stage',
@@ -278,7 +281,20 @@ const responsiveWithoutComments = responsiveSource.replace(/\/\*[\s\S]*?\*\//g, 
 if (!responsiveWithoutComments.startsWith('@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {')) {
   fail('responsive-mobile-tablet.css must begin with the locked phone/touch-tablet responsive query.');
 }
-for (const requiredRule of ['var(--ui-canvas', '.app-shell > .mobile-nav-backdrop', '.mobile-nav-portal-root', '.global-search-dialog', '.mobile-quick-bar', '.messaging-layout', 'overflow-x: auto !important', 'font-size: 16px !important', 'env(safe-area-inset-bottom)']) {
+for (const requiredRule of [
+  'var(--ui-canvas',
+  '.app-shell > .mobile-nav-backdrop',
+  '.mobile-nav-portal-root',
+  '.global-search-dialog',
+  '.mobile-quick-bar',
+  '.messaging-layout',
+  "html[data-mobile-route-surface='auth'] .dynamics-login-page",
+  "html[data-mobile-route-surface='auth'] .dynamics-login-card",
+  "html[data-mobile-route-surface='auth'] .dynamics-login-intro",
+  'overflow-x: auto !important',
+  'font-size: 16px !important',
+  'env(safe-area-inset-bottom)',
+]) {
   if (!responsiveSource.includes(requiredRule)) fail(`Unified responsive contract is missing ${requiredRule}.`);
 }
 
