@@ -3,14 +3,15 @@
  *
  * These layers remain temporarily because older routes still use their class
  * names. The canonical application stylesheet imported after this manifest is
- * the visual authority. Do not add new layout programmes here.
+ * the visual authority. Do not add new layout programmes here. The obsolete
+ * Monday shell programme has been retired; its still-needed board token aliases
+ * and Inbox utility styling now live in canonical layers.
  */
 @import '../application-shell-phase-1.css';
 @import '../page-templates-phase-2.css';
 @import '../role-today-workspaces.css';
 @import './navigation-contract.css';
 @import './compatibility-overrides.css';
-@import '../monday-shell-phase-1.css';
 @import '../monday-board-phase-2.css';
 @import '../monday-customer-board-phase-2.css';
 @import '../monday-item-card-phase-3.css';
