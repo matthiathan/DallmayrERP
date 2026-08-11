@@ -62,7 +62,7 @@ The migration uses the Concentrix information architecture and spacing model whi
 
 ## Phase 6 — Execution & Detail Interaction Surfaces
 
-**Status: implementation checkpoint; validate before approval**
+**Status: implementation complete and CI validated; awaiting approval**
 
 This phase applies the Concentrix contained operational hierarchy to the interaction-heavy surfaces inside existing page frames, without changing the execution logic behind them:
 
@@ -87,6 +87,8 @@ Implementation rules:
 - the existing phone/touch-tablet responsive layers remain later in the cascade and authoritative
 - load the Phase 6 desktop layer after Phase 5 and before responsive authority
 
+Validation: GitHub Actions run #557 passed on Phase 6 head `b44b59dadcd5dbef7c6847945d239fd24404bc96` before this documentation-only checkpoint update. The validated gate included stylesheet architecture, mobile interaction contracts, TypeScript, production build, security pentest and Chromium real-browser mobile tests.
+
 ## Approval boundary
 
-Each phase must be fully implemented and validated before the next phase starts. Phase 6 must stop at its approval checkpoint after CI passes; no later migration phase should begin without explicit user approval.
+Each phase must be fully implemented and validated before the next phase starts. Phase 6 must stop at its approval checkpoint; no later migration phase should begin without explicit user approval.
