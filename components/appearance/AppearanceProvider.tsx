@@ -53,6 +53,7 @@ type AppearanceRow = {
 
 const STORAGE_KEY = 'dallmayrerp-appearance-v1';
 const THEME_TONES: ThemeTone[] = ['dark', 'light'];
+const HEX_COLOUR = /^#[0-9a-f]{6}$/i;
 
 export const CURATED_APPEARANCE_THEMES: readonly CuratedAppearanceTheme[] = [
   {
@@ -81,6 +82,15 @@ export const CURATED_APPEARANCE_THEMES: readonly CuratedAppearanceTheme[] = [
   },
 ] as const;
 
+export const ACCENT_PRESETS = [
+  { name: 'Dallmayr Gold', value: '#a67828' },
+  { name: 'Cyan', value: '#22c3dc' },
+  { name: 'Royal Blue', value: '#2563eb' },
+  { name: 'Emerald', value: '#16805d' },
+  { name: 'Burgundy', value: '#9b2c3b' },
+  { name: 'Violet', value: '#7c3aed' },
+] as const;
+
 export const DEFAULT_APPEARANCE: AppearancePreferences = {
   accentColor: CURATED_APPEARANCE_THEMES[0].accentColor,
   themeColor: CURATED_APPEARANCE_THEMES[0].themeColor,
@@ -88,13 +98,6 @@ export const DEFAULT_APPEARANCE: AppearancePreferences = {
   themeTone: CURATED_APPEARANCE_THEMES[0].themeTone,
   backgroundStyle: CURATED_APPEARANCE_THEMES[0].backgroundStyle,
 };
-
-// Retained as compatibility exports for any older components. The application UI
-// now exposes the two curated themes instead of independent colour combinations.
-export const ACCENT_PRESETS = CURATED_APPEARANCE_THEMES.map((theme) => ({
-  name: theme.name,
-  value: theme.accentColor,
-})) as readonly { name: string; value: string }[];
 
 export const THEME_PRESETS = CURATED_APPEARANCE_THEMES.map((theme) => ({
   name: theme.name,
@@ -122,18 +125,28 @@ function normalizePreferences(value: unknown): AppearancePreferences {
   const tone = THEME_TONES.includes(source.themeTone as ThemeTone)
     ? source.themeTone as ThemeTone
     : DEFAULT_APPEARANCE.themeTone;
+  const base = appearanceForTone(tone);
+  const accentColor = typeof source.accentColor === 'string' && HEX_COLOUR.test(source.accentColor)
+    ? source.accentColor.toLowerCase()
+    : base.accentColor;
 
-  return appearanceForTone(tone);
+  return {
+    ...base,
+    accentColor,
+  };
 }
 
 function preferencesFromRow(row: AppearanceRow): AppearancePreferences {
-  return normalizePreferences({ themeTone: row.theme_tone });
+  return normalizePreferences({
+    themeTone: row.theme_tone,
+    accentColor: row.accent_color,
+  });
 }
 
 function rowMatchesPreferences(row: AppearanceRow, preferences: AppearancePreferences) {
-  return row.accent_color.toLowerCase() === preferences.accentColor
-    && row.theme_color.toLowerCase() === preferences.themeColor
-    && row.background_color.toLowerCase() === preferences.backgroundColor
+  return row.accent_color.toLowerCase() === preferences.accentColor.toLowerCase()
+    && row.theme_color.toLowerCase() === preferences.themeColor.toLowerCase()
+    && row.background_color.toLowerCase() === preferences.backgroundColor.toLowerCase()
     && row.theme_tone === preferences.themeTone
     && row.background_style === preferences.backgroundStyle;
 }
