@@ -34,30 +34,25 @@
   display: none;
 }
 
-.application-mobile-menu-button span,
-.hamburger-button.notch-mobile-button span {
-  transition: transform 140ms ease, opacity 140ms ease;
+.application-mobile-menu-button svg,
+.hamburger-button.notch-mobile-button svg {
+  width: 24px;
+  height: 24px;
+  color: currentColor;
 }
 
-.mobile-menu-open .application-mobile-menu-button span:nth-child(1),
-.mobile-menu-open .hamburger-button.notch-mobile-button span:nth-child(1) {
-  transform: translateY(6px) rotate(45deg);
-}
-
-.mobile-menu-open .application-mobile-menu-button span:nth-child(2),
-.mobile-menu-open .hamburger-button.notch-mobile-button span:nth-child(2) {
-  opacity: 0;
-}
-
-.mobile-menu-open .application-mobile-menu-button span:nth-child(3),
-.mobile-menu-open .hamburger-button.notch-mobile-button span:nth-child(3) {
-  transform: translateY(-6px) rotate(-45deg);
+.mobile-menu-v2-icon svg,
+.mobile-menu-v2-chevron svg,
+.mobile-menu-v2-pin svg,
+.mobile-menu-v2-close svg,
+.mobile-quick-bar svg,
+.dallmayr-sidebar-brand button svg {
+  display: block;
+  color: currentColor;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .skip-link,
-  .application-mobile-menu-button span,
-  .hamburger-button.notch-mobile-button span {
+  .skip-link {
     transition: none !important;
   }
 }
