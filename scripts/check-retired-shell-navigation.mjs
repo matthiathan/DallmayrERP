@@ -27,6 +27,10 @@ const retiredImports = [
   "@import '../user-first-layout.css'",
   "@import '../adaptive-contrast.css'",
   "@import '../rendered-surface-contrast.css'",
+  "@import '../ux-polish.css'",
+  "@import '../ultrawide.css'",
+  "@import '../contrast-pairing.css'",
+  "@import '../professional-nowrap-layout.css'",
 ];
 
 for (const retiredImport of retiredImports) {
@@ -39,7 +43,8 @@ for (const retiredImport of retiredImports) {
 for (const requiredActiveImport of [
   "@import '../account-menu.css'",
   "@import '../minimalist-operations.css'",
-  "@import '../ux-polish.css'",
+  "@import '../density.css'",
+  "@import '../text-visibility-polish.css'",
   "@import '../reliability-machine-search.css'",
   "@import '../appearance-panel.css'",
   "@import '../appearance-customization.css'",
@@ -84,9 +89,27 @@ for (const requiredRule of [
   ":is(button, .button, a.button, [role='button'])",
   '.scanner-actions',
   '.table-sort-button',
+  '.field-note.danger',
+  '.record-timeline-item',
 ]) {
   if (!readabilitySafety.includes(requiredRule)) {
     console.error(`Canonical readability safety is missing migrated invariant: ${requiredRule}`);
+    process.exitCode = 1;
+  }
+}
+
+const componentUtilities = await readFile(path.join(root, 'app', 'canonical-component-utilities.css'), 'utf8');
+for (const requiredRule of ['.breadcrumbs', '.empty-state', '.status-timeline', '.scanner-match-card']) {
+  if (!componentUtilities.includes(requiredRule)) {
+    console.error(`Canonical component utilities are missing migrated UX structure: ${requiredRule}`);
+    process.exitCode = 1;
+  }
+}
+
+const roleWorkspaceDetails = await readFile(path.join(root, 'app', 'role-workspace-details.css'), 'utf8');
+for (const requiredRule of ['.role-workspace-stage', '.role-action-grid', '.role-action-card']) {
+  if (!roleWorkspaceDetails.includes(requiredRule)) {
+    console.error(`Role workspace owner is missing migrated UX structure: ${requiredRule}`);
     process.exitCode = 1;
   }
 }
@@ -110,15 +133,55 @@ for (const obsoleteHook of [
   'notch-menu-row',
   'erp-menu-overflow',
   'ribbon-app-background',
+  'monday-shell-phase-1',
 ]) {
   if (appShell.includes(obsoleteHook)) {
     console.error(`Current AppShell must not regress to retired shell hook: ${obsoleteHook}`);
     process.exitCode = 1;
   }
 }
+if (!appShell.includes('<NavigationIcon kind={menuOpen')) {
+  console.error('AppShell mobile navigation control must use the shared SVG NavigationIcon.');
+  process.exitCode = 1;
+}
+
+const mobileNavigation = await readFile(path.join(root, 'components', 'layout', 'MobileNavigation.tsx'), 'utf8');
+for (const forbiddenGlyph of ['⌂', '✓', '◌', '♢', '◎', '◇', '▥', '↗', '⚙', '▣', '⌕', '★', '☆', '☰', '×']) {
+  if (mobileNavigation.includes(forbiddenGlyph)) {
+    console.error(`Mobile navigation must use SVG icons instead of text glyph: ${forbiddenGlyph}`);
+    process.exitCode = 1;
+  }
+}
+for (const requiredHook of ['NavigationIcon', 'navigationIconKind', 'kind="menu"', 'kind="pin-filled"']) {
+  if (!mobileNavigation.includes(requiredHook)) {
+    console.error(`Mobile navigation is missing SVG navigation contract: ${requiredHook}`);
+    process.exitCode = 1;
+  }
+}
+
+const desktopNavigation = await readFile(path.join(root, 'components', 'layout', 'DesktopNavigationRail.tsx'), 'utf8');
+for (const forbiddenGlyph of ['‹', '›']) {
+  if (desktopNavigation.includes(forbiddenGlyph)) {
+    console.error(`Desktop navigation must use SVG icons instead of text glyph: ${forbiddenGlyph}`);
+    process.exitCode = 1;
+  }
+}
+if (!desktopNavigation.includes('NavigationIcon') || !desktopNavigation.includes('navigationIconKind')) {
+  console.error('Desktop navigation must use the shared SVG navigation icon contract.');
+  process.exitCode = 1;
+}
+
+const navigationIcons = await readFile(path.join(root, 'components', 'layout', 'NavigationIcon.tsx'), 'utf8');
+for (const requiredRule of ['export function NavigationIcon', 'export function navigationIconKind', "case 'menu'", "case 'close'", "case 'pin-filled'"]) {
+  if (!navigationIcons.includes(requiredRule)) {
+    console.error(`Shared SVG navigation icon set is missing ${requiredRule}.`);
+    process.exitCode = 1;
+  }
+}
 
 const applicationManifest = await readFile(path.join(root, 'app', 'styles', 'application.css'), 'utf8');
 for (const requiredCanonicalImport of [
+  "@import '../canonical-component-utilities.css'",
   "@import '../canonical-navigation-baseline.css'",
   "@import '../canonical-appearance-runtime.css'",
   "@import '../professional-ui-system.css'",
@@ -185,7 +248,7 @@ for (const requiredRule of [
   '.skip-link:focus',
   '.application-mobile-menu-button',
   '.hamburger-button.notch-mobile-button',
-  '.mobile-menu-open',
+  '.application-mobile-menu-button svg',
   '@media (prefers-reduced-motion: reduce)',
 ]) {
   if (!navigationBaseline.includes(requiredRule)) {
@@ -222,4 +285,4 @@ for (const requiredRule of [
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('Retired shell/navigation/mobile/generic-visual/contrast guard passed: obsolete programmes remain unregistered, active structural/curated appearance/mobile feature styles remain owned, runtime appearance values bridge into the curated theme without shadowing, and current professional/navigation/responsive layers are present.');
+console.log('Final Work Package A guard passed: retired shell/navigation/mobile/generic visual programmes remain unregistered, active feature/appearance owners remain explicit, UX structure is canonicalized, and desktop/mobile navigation uses the shared SVG icon contract.');
