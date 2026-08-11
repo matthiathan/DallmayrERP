@@ -4,8 +4,14 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { getDefaultPathForRole } from '@/lib/auth/permissions';
-import { getSupabaseClient } from '@/lib/supabase/client';
+import {
+  getAuthRememberMePreference,
+  getSupabaseClient,
+  setAuthRememberMePreference,
+} from '@/lib/supabase/client';
 import { isProfileComplete } from '@/types/dallmayrerp';
+
+const REMEMBERED_EMAIL_KEY = 'dallmayrerp-remembered-email';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,9 +19,20 @@ export default function LoginPage() {
   const [mode, setMode] = useState<'login' | 'activate'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    try {
+      const remembered = getAuthRememberMePreference();
+      setRememberMe(remembered);
+      if (remembered) setEmail(window.localStorage.getItem(REMEMBERED_EMAIL_KEY) ?? '');
+    } catch {
+      // Browser storage can be restricted; login still works without remembered details.
+    }
+  }, []);
 
   useEffect(() => {
     if (!loading && authUser && businessUser && userDetails) {
@@ -30,8 +47,13 @@ export default function LoginPage() {
     setSubmitting(true);
 
     try {
-      const client = getSupabaseClient();
       const cleanEmail = email.trim().toLowerCase();
+      setAuthRememberMePreference(rememberMe);
+
+      if (rememberMe) window.localStorage.setItem(REMEMBERED_EMAIL_KEY, cleanEmail);
+      else window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+
+      const client = getSupabaseClient();
       const { error: loginError } = await client.auth.signInWithPassword({
         email: cleanEmail,
         password,
@@ -130,6 +152,19 @@ export default function LoginPage() {
             Password
             <input autoComplete={isActivate ? 'new-password' : 'current-password'} value={password} onChange={(event) => setPassword(event.target.value)} type="password" minLength={6} required />
           </label>
+          {!isActivate ? (
+            <label className="login-remember-me">
+              <input
+                checked={rememberMe}
+                onChange={(event) => setRememberMe(event.target.checked)}
+                type="checkbox"
+              />
+              <span>
+                <strong>Remember me on this device</strong>
+                <small>Stay signed in on this device until you choose Sign out. Your password is never stored by DallmayrERP.</small>
+              </span>
+            </label>
+          ) : null}
           <button className="button pulse-button" disabled={submitting} type="submit">
             {submitting ? 'Please wait...' : isActivate ? 'Activate account' : 'Sign in'}
           </button>
