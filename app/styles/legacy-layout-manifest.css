@@ -1,22 +1,23 @@
 /*
  * Legacy layout-programme manifest.
  *
- * This manifest now contains only compatibility/transition registrations plus
- * explicit active feature boundaries whose selectors are still used by live UI.
- * The canonical application stylesheet imported after this manifest remains the
- * visual authority. Do not add new legacy layout programmes here.
+ * This manifest now contains only explicit active feature boundaries whose
+ * selectors are still used by live UI. The canonical application stylesheet
+ * imported after this manifest remains the visual authority. Do not add new
+ * legacy layout programmes here.
  *
- * Retired presentation programmes include the Monday shell, original application
- * shell, Phase 2 page-template presentation, Operations Cockpit, ERP Executive,
- * Dynamics 365, ERP Workbench and the old ui-readability full-app reskin.
+ * Retired presentation/transition programmes include the Monday shell, original
+ * application shell, Phase 2 page-template presentation, Operations Cockpit,
+ * ERP Executive, Dynamics 365, ERP Workbench, the old ui-readability reskin,
+ * navigation-contract.css and compatibility-overrides.css.
  *
  * Active feature wrappers preserve existing selector behavior and load order:
  * Role Today, board/customer/item/operational/My Work, and internal messaging.
- * Neutral focus/overflow/readability invariants live in canonical-readability-safety.css.
+ * Neutral focus/overflow/readability and semantic compatibility invariants live
+ * in canonical-readability-safety.css. Mobile record and field-work behavior is
+ * owned by the corresponding feature styles and final responsive authority.
  */
 @import './active-role-today-workspace.css';
-@import './navigation-contract.css';
-@import './compatibility-overrides.css';
 @import './active-board-workspaces.css';
 @import './canonical-readability-safety.css';
 @import './active-messaging-workspace.css';
