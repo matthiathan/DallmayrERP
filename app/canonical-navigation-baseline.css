@@ -1,0 +1,71 @@
+/*
+ * Canonical navigation baseline.
+ *
+ * Owns only application-wide navigation accessibility and the desktop/mobile
+ * menu-button handoff. Desktop shell geometry belongs to the Concentrix shell;
+ * phone/touch-tablet geometry belongs to the final responsive authority.
+ */
+
+.skip-link {
+  position: fixed;
+  top: 10px;
+  left: 14px;
+  z-index: 9000;
+  transform: translateY(-160%);
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--ui-gold, #b8862f) 58%, var(--ui-border, #d8cdbc));
+  border-radius: 10px;
+  background: var(--ui-surface, #ffffff);
+  color: var(--ui-ink, #231f1a);
+  box-shadow: 0 8px 22px rgba(55, 43, 25, .16);
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 140ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* Mobile menu control is dormant on fine-pointer desktop. The responsive
+ * authority deliberately re-enables and sizes it on phone/touch-tablet routes. */
+.application-mobile-menu-button,
+.hamburger-button.notch-mobile-button {
+  display: none;
+}
+
+.application-mobile-menu-button span,
+.hamburger-button.notch-mobile-button span {
+  transition: transform 140ms ease, opacity 140ms ease;
+}
+
+.mobile-menu-open .application-mobile-menu-button span:nth-child(1),
+.mobile-menu-open .hamburger-button.notch-mobile-button span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.mobile-menu-open .application-mobile-menu-button span:nth-child(2),
+.mobile-menu-open .hamburger-button.notch-mobile-button span:nth-child(2) {
+  opacity: 0;
+}
+
+.mobile-menu-open .application-mobile-menu-button span:nth-child(3),
+.mobile-menu-open .hamburger-button.notch-mobile-button span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skip-link,
+  .application-mobile-menu-button span,
+  .hamburger-button.notch-mobile-button span {
+    transition: none !important;
+  }
+}
+
+@media print {
+  .skip-link,
+  .application-mobile-menu-button,
+  .hamburger-button.notch-mobile-button {
+    display: none !important;
+  }
+}
