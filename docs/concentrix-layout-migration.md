@@ -50,29 +50,43 @@ The migration uses the Concentrix information architecture and spacing model whi
 
 ## Phase 5 — Access Entry & First-Login
 
-**Status: implementation checkpoint; validate before approval**
-
-This phase applies the Concentrix secure-entry composition to the remaining access-boundary surfaces while retaining the richer DallmayrERP authentication and onboarding behaviour:
+**Status: complete and approved**
 
 - desktop login and activation presentation
 - Remember Me presentation without changing persistence semantics
 - secure loading/access-pending/role-assignment status surfaces
 - first-login profile completion and assigned-access presentation
 - Dallmayr charcoal/cream/gold treatment derived from the Concentrix contained authentication hierarchy
+- Supabase sign-in, activation, access guards, redirects and onboarding persistence remain unchanged
+- the existing phone/touch-tablet responsive contract remains authoritative
+
+## Phase 6 — Execution & Detail Interaction Surfaces
+
+**Status: implementation checkpoint; validate before approval**
+
+This phase applies the Concentrix contained operational hierarchy to the interaction-heavy surfaces inside existing page frames, without changing the execution logic behind them:
+
+- assigned field-service queue and guided job-closure presentation
+- work execution cards for SOP/time, parts usage, completion details, evidence and sign-off
+- stock and machine barcode/QR capture and matched-record feedback
+- status timelines and guided stepper hierarchy
+- asset ticket and machine-match detail presentation
+- shared dense enterprise table search, filter, resize, scroll and pagination presentation used by execution/detail workspaces
+- customer lookup result presentation used by machine/detail capture forms
 
 Implementation rules:
 
 - presentation/layout only
-- preserve Supabase sign-in and activation calls
-- preserve Remember Me preference and remembered-email behaviour
-- preserve login/activation modes, validation and error states
-- preserve role/default-path redirects and onboarding redirects
-- preserve access-invite and user-details guard logic
-- preserve onboarding validation, `user_details` updates and `refreshProfile` flow
-- do not introduce a coarse-pointer responsive authority
-- the 901–1366 coarse-pointer phone/touch-tablet contract remains unchanged and authoritative
-- load the Phase 5 desktop layer after Phase 4 and before responsive authority
+- preserve all Supabase queries, mutations, RPCs and storage uploads
+- preserve scanner camera, file and manual-entry logic and duplicate-scan protection
+- preserve exact assigned-machine verification and atomic service-job closure behaviour
+- preserve work-time logging, stock deductions, completion details, GPS capture, evidence uploads and customer sign-off
+- preserve offline field-work drafts, queueing, synchronization and the existing mobile-only offline queue UI
+- preserve customer lookup, table search/filter/sort/pagination and resizable-column behaviour
+- do not create a competing touch-responsive authority
+- the existing phone/touch-tablet responsive layers remain later in the cascade and authoritative
+- load the Phase 6 desktop layer after Phase 5 and before responsive authority
 
 ## Approval boundary
 
-Each phase must be fully implemented and validated before the next phase starts. Phase 5 must stop at its approval checkpoint after CI passes; no later migration phase should begin without explicit user approval.
+Each phase must be fully implemented and validated before the next phase starts. Phase 6 must stop at its approval checkpoint after CI passes; no later migration phase should begin without explicit user approval.
