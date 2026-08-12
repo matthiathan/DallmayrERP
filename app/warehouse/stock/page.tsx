@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import './warehouse-mobile-polish.css';
 import { DocumentHub } from '@/components/features/DocumentHub';
 import { StockControlPanel } from '@/components/features/StockControlPanel';
 import { AppShell } from '@/components/layout/AppShell';
