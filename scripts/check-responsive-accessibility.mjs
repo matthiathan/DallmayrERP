@@ -43,11 +43,12 @@ const mobileNavigation = await source('components/layout/MobileNavigation.tsx');
 for (const contract of [
   'aria-modal="true"',
   'role="dialog"',
+  'id="mobile-navigation"',
   'closeButtonRef.current?.focus()',
   "if (event.key === 'Escape')",
   "if (event.key !== 'Tab' || !panelRef.current) return",
   'restoreTarget?.focus()',
-  'aria-expanded={menuOpen}',
+  'aria-controls="mobile-navigation" aria-expanded={menuOpen}',
 ]) {
   if (!mobileNavigation.includes(contract)) fail(`Mobile navigation is missing dialog/focus contract: ${contract}`);
 }
