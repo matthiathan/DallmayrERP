@@ -3,6 +3,7 @@
 -- Adds:
 --   * column-scoped mute/archive updates for a member's own active membership row
 --   * topic-scoped Realtime Broadcast + Presence authorization
+--   * reliable thread activity timestamps on committed messages
 --   * a minimal post-commit message signal on private thread:<uuid> topics
 --
 -- Message bodies remain authoritative in public.messages and are never included in
@@ -68,17 +69,26 @@ with check (
   )
 );
 
--- Emit a minimal private signal from the database after a durable message insert.
--- realtime.send writes to realtime.messages inside the same transaction; Realtime
--- observes it from WAL only after commit. Clients use the signal only to refetch the
--- authoritative message row under public.messages RLS.
-create or replace function private.broadcast_committed_internal_message()
+-- Advance the thread activity timestamp and emit a minimal private signal after a
+-- durable message insert. realtime.send writes to realtime.messages inside the same
+-- transaction; Realtime observes it from WAL only after commit. Clients use the
+-- signal only to refetch the authoritative message row under public.messages RLS.
+create or replace function private.handle_committed_internal_message()
 returns trigger
 language plpgsql
 security definer
 set search_path = ''
 as $$
 begin
+  update public.message_threads
+  set
+    last_message_at = case
+      when last_message_at is null or new.created_at > last_message_at then new.created_at
+      else last_message_at
+    end,
+    updated_at = pg_catalog.now()
+  where id = new.thread_id;
+
   perform realtime.send(
     pg_catalog.jsonb_build_object(
       'thread_id', new.thread_id,
@@ -94,10 +104,10 @@ begin
 end;
 $$;
 
-revoke all on function private.broadcast_committed_internal_message() from public, anon, authenticated;
+revoke all on function private.handle_committed_internal_message() from public, anon, authenticated;
 
-drop trigger if exists broadcast_committed_internal_message on public.messages;
-create trigger broadcast_committed_internal_message
+drop trigger if exists handle_committed_internal_message on public.messages;
+create trigger handle_committed_internal_message
 after insert on public.messages
 for each row
-execute function private.broadcast_committed_internal_message();
+execute function private.handle_committed_internal_message();
