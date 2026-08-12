@@ -26,9 +26,10 @@
     "prestylecheck": "node scripts/check-retired-shell-navigation.mjs",
     "stylecheck": "node scripts/check-style-architecture.mjs",
     "mobile:interaction-check": "node scripts/check-mobile-interactions.mjs && node scripts/check-universal-phone.mjs",
+    "accessibility:check": "node scripts/check-responsive-accessibility.mjs",
     "security:pentest": "node scripts/security-pentest.mjs",
     "typecheck": "tsc --noEmit",
-    "check": "npm run stylecheck && npm run mobile:interaction-check && npm run typecheck && npm run build"
+    "check": "npm run stylecheck && npm run mobile:interaction-check && npm run accessibility:check && npm run typecheck && npm run build"
   },
   "dependencies": {
     "@capacitor/android": "8.5.0",
