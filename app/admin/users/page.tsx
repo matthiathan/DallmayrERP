@@ -1,4 +1,4 @@
-import { AdminUserAccessControl } from '@/components/features/AdminUserAccessControl';
+import { AdminUsersWorkspace } from '@/components/features/AdminUsersWorkspace';
 import { AppShell } from '@/components/layout/AppShell';
 
 export default function UsersPage() {
@@ -8,10 +8,10 @@ export default function UsersPage() {
         <div>
           <div className="badge">Administrator only</div>
           <h1>Users, Roles &amp; Access Rights</h1>
-          <p>Add or remove users, change their role and branch, and suspend or restore ERP access.</p>
+          <p>Approve pending users, assign their role and branch, add or remove users, and suspend or restore ERP access.</p>
         </div>
       </div>
-      <AdminUserAccessControl />
+      <AdminUsersWorkspace />
     </AppShell>
   );
 }
