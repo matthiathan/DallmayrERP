@@ -1,7 +1,7 @@
 'use client';
 
 import { createPortal } from 'react-dom';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import {
   ACCENT_PRESETS,
@@ -12,6 +12,8 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { roleLabels } from '@/lib/auth/permissions';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { displayProfileName } from '@/types/dallmayrerp';
+
+const PERSONAL_SETTINGS_ID = 'account-personal-settings';
 
 function initialsFor(name: string) {
   const initials = name.split(/\s+/).filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
@@ -31,6 +33,9 @@ export function GlobalAccountMenu() {
   const [passwordBusy, setPasswordBusy] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const detailsRef = useRef<HTMLDetailsElement | null>(null);
+  const summaryRef = useRef<HTMLElement | null>(null);
+  const settingsToggleRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (loading || !authUser) {
@@ -64,13 +69,22 @@ export function GlobalAccountMenu() {
     function closeOpenMenus(event: MouseEvent) {
       const target = event.target instanceof Element ? event.target : null;
       if (target?.closest('.dallmayr-account-menu')) return;
-      document.querySelectorAll<HTMLDetailsElement>('.dallmayr-account-menu[open]').forEach((menu) => { menu.open = false; });
+      if (detailsRef.current) detailsRef.current.open = false;
       setSettingsOpen(false);
     }
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key !== 'Escape') return;
-      document.querySelectorAll<HTMLDetailsElement>('.dallmayr-account-menu[open]').forEach((menu) => { menu.open = false; });
-      setSettingsOpen(false);
+      if (settingsOpen) {
+        event.preventDefault();
+        setSettingsOpen(false);
+        window.requestAnimationFrame(() => settingsToggleRef.current?.focus());
+        return;
+      }
+      if (detailsRef.current?.open) {
+        event.preventDefault();
+        detailsRef.current.open = false;
+        window.requestAnimationFrame(() => summaryRef.current?.focus());
+      }
     }
     document.addEventListener('click', closeOpenMenus);
     document.addEventListener('keydown', closeOnEscape);
@@ -78,7 +92,7 @@ export function GlobalAccountMenu() {
       document.removeEventListener('click', closeOpenMenus);
       document.removeEventListener('keydown', closeOnEscape);
     };
-  }, []);
+  }, [settingsOpen]);
 
   const userName = displayProfileName(businessProfile);
   const userInitials = useMemo(() => initialsFor(userName), [userName]);
@@ -140,8 +154,12 @@ export function GlobalAccountMenu() {
   }
 
   return createPortal(
-    <details className={`dallmayr-account-menu ${mobilePlacement ? 'is-mobile' : 'is-sidebar'}`}>
-      <summary aria-label={`Open account menu for ${userName}`} className="dallmayr-account-trigger">
+    <details
+      className={`dallmayr-account-menu ${mobilePlacement ? 'is-mobile' : 'is-sidebar'}`}
+      onToggle={(event) => { if (!event.currentTarget.open) setSettingsOpen(false); }}
+      ref={detailsRef}
+    >
+      <summary aria-label={`Open account menu for ${userName}`} className="dallmayr-account-trigger" ref={summaryRef}>
         <span aria-hidden="true" className="dallmayr-account-avatar">{mobilePlacement ? userInitials : roleLabel.slice(0, 1).toUpperCase()}</span>
         <span className="dallmayr-account-identity">
           {mobilePlacement ? (
@@ -155,9 +173,11 @@ export function GlobalAccountMenu() {
 
       <div className={`dallmayr-account-panel ${settingsOpen ? 'is-customizing' : 'is-compact'}`}>
         <button
+          aria-controls={PERSONAL_SETTINGS_ID}
           aria-expanded={settingsOpen}
           className="dallmayr-account-appearance-toggle"
           onClick={() => setSettingsOpen((current) => !current)}
+          ref={settingsToggleRef}
           type="button"
         >
           <span aria-hidden="true">⚙</span>
@@ -166,10 +186,10 @@ export function GlobalAccountMenu() {
         </button>
 
         {settingsOpen ? (
-          <section aria-label="Personal settings" className="appearance-editor">
+          <section aria-label="Personal settings" className="appearance-editor" id={PERSONAL_SETTINGS_ID}>
             <div className="appearance-editor-heading">
               <div><strong>Personal settings</strong><small>These changes apply only to your account.</small></div>
-              <span className={`appearance-save-state is-${appearanceStatus}`}>{appearanceStatusText}</span>
+              <span aria-live="polite" className={`appearance-save-state is-${appearanceStatus}`} role="status">{appearanceStatusText}</span>
             </div>
 
             <div aria-label="Available visual themes" className="appearance-theme-choice-grid" role="group">
