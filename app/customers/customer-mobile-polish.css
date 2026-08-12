@@ -1,0 +1,195 @@
+/* Screenshot-driven customer workspace polish.
+   Presentation only: no customer queries, paging, filtering, selection, or item-card behavior changes. */
+
+/* Keep the desktop pagination control label readable instead of allowing "Rows" to collapse. */
+.monday-customer-board .monday-board-pagination > label {
+  min-width: max-content;
+  white-space: nowrap;
+}
+
+/* Touch tablets should use the readable card surface instead of clipping the desktop table. */
+@media (min-width: 761px) and (max-width: 900px),
+       (min-width: 761px) and (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  .monday-customer-board .monday-board-command-bar {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .monday-customer-board .monday-board-search,
+  .monday-customer-board .monday-board-save-view-control {
+    grid-column: 1 / -1;
+  }
+
+  .monday-customer-board .monday-board-saved-view-select {
+    grid-column: auto;
+  }
+
+  .monday-customer-board .monday-board-command-button,
+  .monday-customer-board .monday-board-menu > summary,
+  .monday-customer-board .monday-board-inline-select {
+    width: 100%;
+    min-width: 0;
+    justify-content: space-between;
+  }
+
+  .monday-customer-board .monday-board-inline-select select {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .monday-customer-board .monday-board-desktop-table {
+    display: none !important;
+  }
+
+  .monday-customer-board .monday-board-mobile-list {
+    display: grid !important;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .monday-customer-board .monday-board-mobile-group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .monday-customer-board .monday-board-mobile-group > header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 4px 3px;
+  }
+
+  .monday-customer-board .monday-board-mobile-group > header strong {
+    color: var(--monday-strong, var(--content-strong));
+    font-size: 0.8rem;
+  }
+
+  .monday-customer-board .monday-board-mobile-group > header span {
+    color: var(--monday-subtle, var(--content-subtle));
+    font-size: 0.68rem;
+  }
+
+  .monday-customer-board .monday-board-mobile-card {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid var(--monday-divider, var(--content-border));
+    border-radius: 12px;
+    background: var(--monday-shell-raised, var(--content-surface-raised));
+  }
+
+  .monday-customer-board .monday-board-mobile-card.is-selected {
+    border-color: color-mix(in srgb, var(--monday-accent, var(--content-accent-text)) 60%, var(--monday-divider, var(--content-border)));
+    background: var(--monday-selected, color-mix(in srgb, var(--content-accent-text) 12%, var(--content-surface)));
+  }
+
+  .monday-customer-board .monday-board-mobile-card-heading {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .monday-customer-board .monday-board-mobile-card-heading > a,
+  .monday-customer-board .monday-board-mobile-card-heading > button.monday-board-record-link {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    text-decoration: none;
+  }
+
+  .monday-customer-board .monday-board-mobile-card-heading .monday-board-record-link strong {
+    overflow: hidden;
+    color: var(--monday-strong, var(--content-strong));
+    font-size: 0.9rem;
+    text-overflow: ellipsis;
+  }
+
+  .monday-customer-board .monday-board-mobile-card-heading .monday-board-record-link small {
+    color: var(--monday-subtle, var(--content-subtle));
+    font-size: 0.68rem;
+  }
+
+  .monday-customer-board .monday-board-mobile-card dl {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 14px;
+    margin: 0;
+  }
+
+  .monday-customer-board .monday-board-mobile-card dl > div {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .monday-customer-board .monday-board-mobile-card dl > div:nth-child(n + 3) {
+    grid-column: 1 / -1;
+  }
+
+  .monday-customer-board .monday-board-mobile-card dt {
+    color: var(--monday-subtle, var(--content-subtle));
+    font-size: 0.64rem;
+    font-weight: 760;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .monday-customer-board .monday-board-mobile-card dd {
+    min-width: 0;
+    margin: 0;
+    color: var(--monday-muted, var(--content-muted));
+    font-size: 0.78rem;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Phones keep the high-use controls compact while preserving full-width search/select fields. */
+@media (max-width: 430px) {
+  .monday-customer-board .monday-board-command-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .monday-customer-board .monday-board-search,
+  .monday-customer-board .monday-board-inline-select,
+  .monday-customer-board .monday-board-saved-view-select,
+  .monday-customer-board .monday-board-save-view-control {
+    grid-column: 1 / -1 !important;
+  }
+
+  .monday-customer-board .monday-board-command-bar > .monday-board-command-button,
+  .monday-customer-board .monday-board-command-bar > .monday-board-menu {
+    grid-column: auto !important;
+    min-width: 0 !important;
+  }
+
+  .monday-customer-board .monday-board-command-bar > .monday-board-command-button,
+  .monday-customer-board .monday-board-command-bar > .monday-board-menu > summary {
+    min-width: 0 !important;
+    min-height: 44px !important;
+    padding-inline: 10px !important;
+  }
+
+  /* Keep the useful Branch/Phone pairing instead of making every field a full row. */
+  .monday-customer-board .monday-board-mobile-card dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .monday-customer-board .monday-board-mobile-card dl > div:nth-child(n + 3) {
+    grid-column: 1 / -1;
+  }
+}

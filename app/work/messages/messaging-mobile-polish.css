@@ -1,0 +1,54 @@
+/* Screenshot-driven responsive messaging polish.
+   Presentation only: message loading, Realtime, persistence and permissions are unchanged. */
+
+/* When there is no active conversation, do not reserve a second viewport-height pane. */
+@media (max-width: 900px),
+       (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  .messages-v2-shell:has(.messages-v2-chat > .ui-empty-state) {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  .messages-v2-shell:has(.messages-v2-chat > .ui-empty-state) .messages-v2-sidebar {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--content-border);
+  }
+
+  .messages-v2-shell:has(.messages-v2-chat > .ui-empty-state) .messages-v2-create {
+    max-height: none;
+  }
+
+  .messages-v2-shell:has(.messages-v2-chat > .ui-empty-state) .messages-v2-thread-list {
+    min-height: 96px;
+    max-height: 210px;
+  }
+
+  .messages-v2-shell:has(.messages-v2-chat > .ui-empty-state) .messages-v2-chat {
+    height: auto !important;
+    min-height: 180px !important;
+    overflow: visible !important;
+  }
+
+  .messages-v2-shell:has(.messages-v2-chat > .ui-empty-state) .messages-v2-chat > .ui-empty-state {
+    min-height: 180px;
+    padding: 28px 18px;
+  }
+}
+
+@media (max-width: 430px) {
+  .messages-v2-shell:has(.messages-v2-chat > .ui-empty-state) .messages-v2-thread-list {
+    min-height: 76px;
+    max-height: 170px;
+  }
+
+  .messages-v2-shell:has(.messages-v2-chat > .ui-empty-state) .messages-v2-chat,
+  .messages-v2-shell:has(.messages-v2-chat > .ui-empty-state) .messages-v2-chat > .ui-empty-state {
+    min-height: 150px !important;
+  }
+}
