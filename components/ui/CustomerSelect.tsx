@@ -31,6 +31,12 @@ export function CustomerSelect({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const requestRef = useRef(0);
   const listboxId = useId();
+  const selectionNoteId = useId();
+  const showSelectionNote = required && !value && Boolean(search);
+
+  function optionId(customerId: string) {
+    return `${listboxId}-option-${customerId}`;
+  }
 
   useEffect(() => {
     if (!open || value) setSearch(value);
@@ -98,13 +104,25 @@ export function CustomerSelect({
     }
     if (event.key === 'ArrowUp') {
       event.preventDefault();
+      setOpen(true);
       setActiveIndex((current) => Math.max(0, current - 1));
+    }
+    if (event.key === 'Home' && open && customers.length > 0) {
+      event.preventDefault();
+      setActiveIndex(0);
+    }
+    if (event.key === 'End' && open && customers.length > 0) {
+      event.preventDefault();
+      setActiveIndex(customers.length - 1);
     }
     if (event.key === 'Enter' && open && customers[activeIndex]) {
       event.preventDefault();
       selectCustomer(customers[activeIndex]);
     }
-    if (event.key === 'Escape') setOpen(false);
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setOpen(false);
+    }
   }
 
   return (
@@ -113,10 +131,18 @@ export function CustomerSelect({
       <div className="customer-combobox" ref={rootRef}>
         <div className="customer-combobox-input-row">
           <input
+            aria-activedescendant={open && customers[activeIndex] ? optionId(customers[activeIndex].id) : undefined}
             aria-autocomplete="list"
             aria-controls={listboxId}
+            aria-describedby={showSelectionNote ? selectionNoteId : undefined}
             aria-expanded={open}
+            aria-haspopup="listbox"
             autoComplete="off"
+            onBlur={() => {
+              window.requestAnimationFrame(() => {
+                if (!rootRef.current?.contains(document.activeElement)) setOpen(false);
+              });
+            }}
             onChange={(event) => {
               const nextValue = event.target.value;
               setSearch(nextValue);
@@ -135,7 +161,7 @@ export function CustomerSelect({
         </div>
 
         {open ? (
-          <div className="customer-combobox-menu" id={listboxId} role="listbox">
+          <div aria-busy={loading} aria-live="polite" className="customer-combobox-menu" id={listboxId} role="listbox">
             {loading ? <div className="customer-combobox-state">Searching customers...</div> : null}
             {!loading && error ? <div className="customer-combobox-state danger">{error}</div> : null}
             {!loading && !error && customers.length === 0 ? <div className="customer-combobox-state">No matching customers found.</div> : null}
@@ -143,10 +169,12 @@ export function CustomerSelect({
               <button
                 aria-selected={index === activeIndex}
                 className={`customer-combobox-option ${index === activeIndex ? 'is-active' : ''}`}
+                id={optionId(customer.id)}
                 key={customer.id}
                 onClick={() => selectCustomer(customer)}
                 onMouseEnter={() => setActiveIndex(index)}
                 role="option"
+                tabIndex={-1}
                 type="button"
               >
                 <strong>{customer.customer_name}</strong>
@@ -157,7 +185,7 @@ export function CustomerSelect({
           </div>
         ) : null}
       </div>
-      {required && !value && search ? <span className="field-note">Choose a customer from the search results.</span> : null}
+      {showSelectionNote ? <span className="field-note" id={selectionNoteId}>Choose a customer from the search results.</span> : null}
     </label>
   );
 }

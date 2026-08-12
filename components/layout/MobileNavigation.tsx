@@ -259,7 +259,7 @@ export function MobileQuickBar({ homePath, menuOpen, pathname, role, scanPath, s
       <Link aria-current={isActivePath(pathname, taskPath) ? 'page' : undefined} href={taskPath}><span aria-hidden="true"><NavigationIcon kind={primary.kind} /></span><strong>{primary.label}</strong></Link>
       {fieldRole || warehouseRole ? <Link aria-current={isActivePath(pathname, scanPath) ? 'page' : undefined} href={scanPath}><span aria-hidden="true"><NavigationIcon kind="scan" /></span><strong>Scan</strong></Link> : <button aria-label="Open global search" onClick={openSearch} type="button"><span aria-hidden="true"><NavigationIcon kind="search" /></span><strong>Search</strong></button>}
       {fieldRole ? <button aria-label="Open offline work queue" onClick={openQueue} type="button"><span aria-hidden="true"><NavigationIcon kind="queue" /></span><strong>Queue</strong></button> : <button aria-label="Open notifications" onClick={openAlerts} type="button"><span aria-hidden="true"><NavigationIcon kind="bell" /></span><strong>Alerts</strong></button>}
-      <button aria-expanded={menuOpen} onClick={() => setMenuOpen((current) => !current)} type="button"><span aria-hidden="true"><NavigationIcon kind="menu" /></span><strong>Menu</strong></button>
+      <button aria-controls="mobile-navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen((current) => !current)} type="button"><span aria-hidden="true"><NavigationIcon kind="menu" /></span><strong>Menu</strong></button>
     </nav>
   );
 }
