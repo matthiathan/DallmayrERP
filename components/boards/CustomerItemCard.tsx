@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { CustomerRecord } from '@/types/enterprise-records';
@@ -88,6 +88,14 @@ const tabs: Array<{ id: ItemCardTab; label: string }> = [
   { id: 'related', label: 'Related' },
   { id: 'files', label: 'Files' },
 ];
+
+function tabIdForTab(tab: ItemCardTab) {
+  return `customer-item-card-tab-${tab}`;
+}
+
+function panelIdForTab(tab: ItemCardTab) {
+  return `customer-item-card-panel-${tab}`;
+}
 
 function formatDateTime(value: string | null | undefined) {
   if (!value) return 'Not recorded';
@@ -304,6 +312,25 @@ export function CustomerItemCard({
 
   const evidenceFiles = useMemo(() => closures.filter((closure) => Boolean(closure.photo_path)), [closures]);
 
+  function focusTab(tab: ItemCardTab) {
+    window.requestAnimationFrame(() => document.getElementById(tabIdForTab(tab))?.focus());
+  }
+
+  function handleTabKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>, tab: ItemCardTab) {
+    const currentIndex = tabs.findIndex((item) => item.id === tab);
+    if (currentIndex < 0) return;
+    let nextIndex = currentIndex;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = (currentIndex + 1) % tabs.length;
+    else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+    else if (event.key === 'Home') nextIndex = 0;
+    else if (event.key === 'End') nextIndex = tabs.length - 1;
+    else return;
+    event.preventDefault();
+    const nextTab = tabs[nextIndex].id;
+    setActiveTab(nextTab);
+    focusTab(nextTab);
+  }
+
   async function openEvidence(closure: ClosureRow) {
     if (!closure.photo_path) return;
     const bucket = closure.photo_bucket || 'dallmayrerp-task-photos';
@@ -347,11 +374,15 @@ export function CustomerItemCard({
         <nav aria-label="Customer item card sections" className="monday-item-card-tabs" role="tablist">
           {tabs.map((tab) => (
             <button
+              aria-controls={panelIdForTab(tab.id)}
               aria-selected={activeTab === tab.id}
               className={activeTab === tab.id ? 'is-active' : undefined}
+              id={tabIdForTab(tab.id)}
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
+              onKeyDown={(event) => handleTabKeyDown(event, tab.id)}
               role="tab"
+              tabIndex={activeTab === tab.id ? 0 : -1}
               type="button"
             >
               {tab.label}{tab.id === 'files' && evidenceFiles.length > 0 ? <span>{evidenceFiles.length}</span> : null}
@@ -365,7 +396,7 @@ export function CustomerItemCard({
           {!loading && !customer ? <div className="empty-state">This customer is unavailable or outside your access scope.</div> : null}
 
           {customer && activeTab === 'overview' ? (
-            <div className="monday-item-card-stack" role="tabpanel">
+            <div aria-labelledby={tabIdForTab('overview')} className="monday-item-card-stack" id={panelIdForTab('overview')} role="tabpanel">
               <section className="monday-item-card-metrics" aria-label="Customer summary">
                 <button onClick={() => setActiveTab('related')} type="button"><span>Sites</span><strong>{sites.length}</strong></button>
                 <button onClick={() => setActiveTab('related')} type="button"><span>Machines</span><strong>{machines.length}</strong><small>{metrics.activeMachines} active</small></button>
@@ -401,14 +432,14 @@ export function CustomerItemCard({
           ) : null}
 
           {customer && activeTab === 'updates' ? (
-            <section className="monday-item-card-section monday-item-card-section-fill" role="tabpanel">
+            <section aria-labelledby={tabIdForTab('updates')} className="monday-item-card-section monday-item-card-section-fill" id={panelIdForTab('updates')} role="tabpanel">
               <header><div><span>Activity</span><h3>Customer updates</h3><p>Service, delivery, machine and field-work events in time order.</p></div></header>
               <ActivityList entries={activity} />
             </section>
           ) : null}
 
           {customer && activeTab === 'related' ? (
-            <div className="monday-item-card-stack" role="tabpanel">
+            <div aria-labelledby={tabIdForTab('related')} className="monday-item-card-stack" id={panelIdForTab('related')} role="tabpanel">
               <RelatedSection count={sites.length} title="Sites">
                 {sites.length === 0 ? <div className="empty-state">No linked sites.</div> : sites.slice(0, 8).map((site) => <article className="monday-item-card-related-row" key={site.id}><div><strong>{site.site_name}</strong><span>{site.address || 'No address'}</span></div><StatusBadge value={site.status ?? 'active'} /></article>)}
               </RelatedSection>
@@ -428,7 +459,7 @@ export function CustomerItemCard({
           ) : null}
 
           {customer && activeTab === 'files' ? (
-            <section className="monday-item-card-section monday-item-card-section-fill" role="tabpanel">
+            <section aria-labelledby={tabIdForTab('files')} className="monday-item-card-section monday-item-card-section-fill" id={panelIdForTab('files')} role="tabpanel">
               <header><div><span>Evidence</span><h3>Customer files</h3><p>Photo evidence attached to completed field work. Access remains controlled by storage policy.</p></div></header>
               {evidenceFiles.length === 0 ? (
                 <div className="monday-item-card-file-empty"><strong>No customer-linked files</strong><span>Field-service photo evidence will appear here when it is attached to completed work.</span></div>
