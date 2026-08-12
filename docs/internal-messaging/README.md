@@ -1,6 +1,10 @@
 # Internal messaging Phase 1
 
-This branch contains design work only. Nothing in this folder is deployed to Supabase and no `/messages` route is exposed.
+## Current implementation status
+
+The durable Phase 1 messaging foundation already exists in the repository and is present in the current Supabase project. The secure replacement client and the hardening migration in `feature/secure-messaging-phase-1` are **not** approved for production yet and remain behind an explicit opt-in feature flag.
+
+This phase is deliberately text-only and privacy-first. Postgres remains the source of truth; Realtime is advisory and never replaces durable message reads.
 
 ## Phase 1 scope
 
@@ -9,20 +13,52 @@ This branch contains design work only. Nothing in this folder is deployed to Sup
 - text messages only
 - unread/read positions
 - cursor pagination using `(created_at, id)`
-- realtime delivery signals
-- presence and typing state
+- private per-thread Realtime Broadcast delivery signals
+- private per-thread Presence and typing state
 - mute and personal archive state
-- existing in-app/browser notification integration
+- browser notifications without message-body content
 
-Attachments, editing, deletion, reactions, pins, global search, moderation and native push notifications are deferred.
+Attachments, editing, deletion, reactions, pins, global message search, moderation and native push notifications are deferred.
 
 ## Source-of-truth rule
 
-Postgres is authoritative. A message must be committed before any realtime broadcast is emitted. Broadcast and Presence are advisory only; reconnecting clients must always reconcile from Postgres.
+Postgres is authoritative. A message must be committed before any Realtime signal is visible. The database emits only a minimal `{thread_id, message_id, created_at}` reconciliation signal. Clients refetch the committed `public.messages` row under RLS. Broadcast and Presence are advisory only; reconnecting clients always reconcile from Postgres.
 
 ## Feature flag
 
-The future application route must remain disabled unless `NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED=true`. The default and production value must remain false until all acceptance gates pass.
+Messaging is enabled only when `NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED=true` exactly. Undefined, empty and all other values resolve to disabled. The default example value is false and must stay false until all acceptance gates pass.
+
+## Existing durable security model
+
+The base migration provides:
+
+- `message_threads`
+- `message_thread_members`
+- `messages`
+- `message_read_positions`
+- `message_audit_events`
+- RLS on every messaging table
+- sender identity derived from `public.current_app_user_id()`
+- concurrency-safe direct-thread creation
+- deterministic direct-thread uniqueness
+- group creation with active-user validation and a 50-user maximum
+- `(thread_id, created_at desc, id desc)` cursor support
+- rollback scripts and disposable Postgres contract tests
+
+Administrators do not receive implicit access to private conversations.
+
+## Phase 1 hardening in this branch
+
+`20260812083000_harden_internal_messaging_phase_1.sql` adds the missing runtime contracts found during the repository/live-schema audit:
+
+1. Members may update only their own `is_muted` and `archived_at` columns. No grant permits client changes to `member_role`, `removed_at`, membership identity or join time.
+2. `realtime.messages` authorizes Broadcast and Presence only when the authenticated ERP user is an active member of the requested `thread:<uuid>` topic.
+3. A committed message advances `message_threads.last_message_at` and `updated_at`.
+4. The same post-insert trigger emits a private `message_committed` signal without the message body.
+5. The secure client subscribes to private per-thread channels, uses Presence only for user identity/online state, uses Broadcast for typing and committed-message signals, and refetches messages from Postgres.
+6. Older history is loaded with `(created_at, id)` cursor pagination instead of a fixed oldest-page query.
+
+The previous global Presence/typing channel is not used by the secure client.
 
 ## Database acceptance tests
 
@@ -37,56 +73,40 @@ The future application route must remain disabled unless `NEXT_PUBLIC_INTERNAL_M
 - concurrent direct-thread requests return one thread
 - group creation validates title, active users, deduplication and the 50-user maximum
 - newest-page pagination has no gaps or duplicates
-- removed members lose future access immediately
+- removed members lose future Postgres access immediately
 - administrators do not automatically gain private-conversation access
+- own mute/archive update succeeds, another member's preference cannot be changed
+- membership role cannot be changed through the preference grant
+- a non-member cannot authorize a private Realtime thread topic
+- a committed message advances thread activity
+- the database Realtime signal contains no message body
 
 ## Realtime acceptance tests
 
-- member can join a private thread topic
-- non-member cannot join the topic
-- committed messages are recovered after reconnect
+Before production rollout, staged authenticated testing must prove:
+
+- member can join a private `thread:<uuid>` topic
+- non-member subscription is rejected
+- committed messages are recovered from Postgres after reconnect
 - typing state expires and is never persisted
-- Presence contains no message bodies or sensitive record data
+- Presence contains only user ID, display label and online timestamp
+- muted threads suppress browser notifications
+- message bodies are never placed in Presence or external browser-notification text
 
-## Static review status
-
-The design now includes:
-
-- minimum private-schema usage and function execution privileges
-- non-recursive active-membership authorization
-- a thread-scoped read-position foreign key that nulls only the message reference
-- active-caller and active-recipient checks
-- concurrency-safe direct-thread creation using an advisory transaction lock
-- deterministic direct-thread uniqueness
-- group-thread creation with title, active-member and participant-limit validation
-- explicit revocation of default function execution privileges
-- an authenticated-role RLS, pagination, idempotency and concurrency test specification
-
-The live Supabase project reports PostgreSQL 17.6, which supports the column-specific foreign-key delete action used by the design.
-
-## Remaining execution gate
-
-The design is still not approved for production deployment. Before conversion into a migration it must be executed and tested in disposable/local Postgres. The current chat session does not have an accepted local Work environment, so those tests have been fully specified but not executed.
-
-After disposable execution:
-
-1. Correct any SQL or test failures.
-2. Generate a timestamped migration through the Supabase CLI.
-3. Prepare and verify the down migration.
-4. Run Supabase security and performance advisors after installation in a safe test environment.
-5. Keep the application feature flag disabled until staged authenticated browser testing passes.
+Supabase Realtime Authorization caches channel permissions for the life of a connection until auth refresh. The application therefore treats Broadcast as a non-sensitive signal only; message content always requires a fresh RLS-protected Postgres read.
 
 ## Rollout gate
 
-Do not apply a production migration or expose `/messages` until:
+Do not apply the new hardening migration or enable the route in production until:
 
-1. Authenticated-role tests pass in disposable Postgres.
-2. Concurrent direct-thread creation produces exactly one thread.
-3. Group creation validation passes.
-4. Security and performance advisor findings are resolved or explicitly accepted.
-5. A disabled application feature flag and rollback migration are present.
-6. CI and staged browser tests pass.
+1. The existing foundation tests and the hardening workflow pass in disposable Postgres.
+2. TypeScript, production build, security and browser CI pass.
+3. Private Realtime topic authorization is tested with representative authenticated users.
+4. Reconnect catches up from Postgres without gaps or duplicates.
+5. Security/performance advisor findings are resolved or explicitly accepted.
+6. The hardening rollback is verified.
+7. Staged authenticated desktop/tablet/mobile messaging testing is signed off.
 
 ## Context-aware messaging
 
-ERP-record conversations are a later phase. The first release should prove private user and group messaging before linking threads to service jobs, customers, quotations, stock records or other business entities.
+ERP-record conversations are a later phase. The first release must prove private user and group messaging before linking threads to service jobs, customers, quotations, stock records or other business entities.
