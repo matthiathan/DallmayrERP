@@ -361,6 +361,8 @@ export function SecureInternalMessagingWorkspace() {
 
   useEffect(() => {
     if (!businessUser?.id || !currentUser || !threadIdsKey) return;
+    const currentUserId = businessUser.id;
+    const currentUserLabel = currentUser.label;
     const client = getSupabaseClient();
     let cancelled = false;
 
@@ -374,7 +376,7 @@ export function SecureInternalMessagingWorkspace() {
         const channel = client.channel(`thread:${thread.id}`, {
           config: {
             private: true,
-            presence: { key: businessUser.id },
+            presence: { key: currentUserId },
             broadcast: { self: false },
           },
         })
@@ -386,7 +388,7 @@ export function SecureInternalMessagingWorkspace() {
           })
           .on('broadcast', { event: 'typing' }, ({ payload }) => {
             const typing = payload as TypingPayload;
-            if (!typing.user_id || typing.user_id === businessUser.id) return;
+            if (!typing.user_id || typing.user_id === currentUserId) return;
             setTypingByThread((current) => {
               const threadState = { ...(current[thread.id] ?? {}) };
               if (typing.typing) threadState[typing.user_id] = typing.label;
@@ -411,8 +413,8 @@ export function SecureInternalMessagingWorkspace() {
           .subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
               await channel.track({
-                user_id: businessUser.id,
-                label: currentUser.label,
+                user_id: currentUserId,
+                label: currentUserLabel,
                 online_at: new Date().toISOString(),
               });
             }
