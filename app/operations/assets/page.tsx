@@ -1,5 +1,6 @@
 import { MachineAssetBoard } from '@/components/features/MachineAssetBoard';
 import { AppShell } from '@/components/layout/AppShell';
+import './assets-mobile-polish.css';
 
 export default function OperationsAssetsPage() {
   return (
