@@ -63,6 +63,8 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 <<'SQL'
           create schema realtime;
+          grant usage on schema realtime to authenticated;
+
           create table realtime.messages (
             id bigint generated always as identity primary key,
             extension text not null,
