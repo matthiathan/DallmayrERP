@@ -24,6 +24,7 @@ type GlobalSearchProps = {
 
 const OPEN_SEARCH_EVENT = 'dallmayr-open-global-search';
 const MESSAGING_ENABLED = process.env.NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED !== 'false';
+const GLOBAL_SEARCH_DIALOG_ID = 'global-search-dialog';
 
 function safeFilterTerm(value: string) {
   return value.trim().replace(/[(),]/g, ' ').replace(/\s+/g, ' ');
@@ -46,6 +47,9 @@ export function GlobalSearch({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const dialogRef = useRef<HTMLElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
   const requestRef = useRef(0);
 
   const availablePages = useMemo<SearchResult[]>(() => {
@@ -103,7 +107,6 @@ export function GlobalSearch({
         event.preventDefault();
         setOpen(true);
       }
-      if (event.key === 'Escape') setOpen(false);
     }
 
     window.addEventListener('keydown', handleShortcut);
@@ -116,11 +119,42 @@ export function GlobalSearch({
 
   useEffect(() => {
     if (!open) return;
+    restoreFocusRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : triggerRef.current;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    window.setTimeout(() => inputRef.current?.focus(), 0);
+    const focusFrame = window.requestAnimationFrame(() => inputRef.current?.focus());
+
+    function handleDialogKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )).filter((element) => element.offsetParent !== null && element.getAttribute('aria-hidden') !== 'true');
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleDialogKeyDown);
     return () => {
+      window.cancelAnimationFrame(focusFrame);
       document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleDialogKeyDown);
+      const restoreTarget = restoreFocusRef.current ?? triggerRef.current;
+      window.requestAnimationFrame(() => restoreTarget?.focus());
     };
   }, [open]);
 
@@ -218,7 +252,7 @@ export function GlobalSearch({
 
   const dialog = open ? createPortal(
     <div className="global-search-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeSearch(); }}>
-      <section aria-label="Find a page, record or task" aria-modal="true" className="global-search-dialog" role="dialog">
+      <section aria-label="Find a page, record or task" aria-modal="true" className="global-search-dialog" id={GLOBAL_SEARCH_DIALOG_ID} ref={dialogRef} role="dialog">
         <div className="global-search-input-row">
           <input aria-label="Search pages, customers, work numbers, machines, barcodes, orders or service jobs" onChange={(event) => setQuery(event.target.value)} placeholder="Search pages, customers, jobs, serials, barcodes or orders..." ref={inputRef} type="search" value={query} />
           <button aria-label="Close search" className="button secondary" onClick={closeSearch} type="button">Close</button>
@@ -226,7 +260,7 @@ export function GlobalSearch({
         <div className="global-search-quick-actions"><Link href="/work" onClick={closeSearch}>Review actions</Link><Link href="/customers" onClick={closeSearch}>Find a customer</Link><Link href="/operations/service-jobs" onClick={closeSearch}>Find a service job</Link><Link href="/warehouse/stock" onClick={closeSearch}>Check stock</Link><Link href="/operations/assets" onClick={closeSearch}>Find a machine</Link></div>
         <div aria-live="polite" className="global-search-results">
           {loading ? <div className="global-search-state">Searching records…</div> : null}
-          {error ? <div className="error">{error}</div> : null}
+          {error ? <div className="error" role="alert">{error}</div> : null}
           {!loading && !error && query.trim().length < 2 ? <div className="global-search-state">Type at least two characters. You can search for a page such as Assets or a record identifier.</div> : null}
           {!loading && query.trim().length >= 2 && results.length === 0 ? <div className="global-search-state">No matching pages or records found. Check the spelling or try a different identifier.</div> : null}
           {results.map((result) => <Link className="global-search-result" href={result.href} key={`${result.type}-${result.id}`} onClick={closeSearch}><span className="global-search-result-type">{result.type}</span><strong>{result.title}</strong><span>{result.subtitle}</span></Link>)}
@@ -239,9 +273,12 @@ export function GlobalSearch({
   return (
     <>
       <button
+        aria-controls={GLOBAL_SEARCH_DIALOG_ID}
+        aria-expanded={open}
         aria-haspopup="dialog"
         className={`global-search-trigger ${triggerClassName}`.trim()}
         onClick={() => setOpen(true)}
+        ref={triggerRef}
         type="button"
       >
         <span>{triggerLabel}</span>
