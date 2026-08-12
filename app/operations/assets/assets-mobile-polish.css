@@ -1,0 +1,31 @@
+/* Screenshot-driven Machine Assets polish.
+   Presentation only: asset queries, duplicate detection, creation and navigation are unchanged. */
+
+@media (max-width: 520px) {
+  .erp-machine-register-workspace .spatial-machine-panel > .erp-panel-header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: start !important;
+    gap: 12px !important;
+  }
+
+  .erp-machine-register-workspace .spatial-machine-panel > .erp-panel-header > div:first-child,
+  .erp-machine-register-workspace .spatial-machine-panel > .erp-panel-header > .erp-panel-actions {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .erp-machine-register-workspace .spatial-machine-panel .erp-panel-actions > .button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    text-align: center !important;
+  }
+}
