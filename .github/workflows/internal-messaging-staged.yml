@@ -1,0 +1,101 @@
+name: Internal Messaging Staged Auth Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  staged-auth-validation:
+    name: Authenticated Supabase Realtime and browser validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      STAGED_SUPABASE_URL: ${{ secrets.STAGED_SUPABASE_URL }}
+      STAGED_SUPABASE_KEY: ${{ secrets.STAGED_SUPABASE_KEY }}
+      STAGED_USER_A_EMAIL: ${{ secrets.STAGED_USER_A_EMAIL }}
+      STAGED_USER_A_PASSWORD: ${{ secrets.STAGED_USER_A_PASSWORD }}
+      STAGED_USER_B_EMAIL: ${{ secrets.STAGED_USER_B_EMAIL }}
+      STAGED_USER_B_PASSWORD: ${{ secrets.STAGED_USER_B_PASSWORD }}
+      STAGED_USER_C_EMAIL: ${{ secrets.STAGED_USER_C_EMAIL }}
+      STAGED_USER_C_PASSWORD: ${{ secrets.STAGED_USER_C_PASSWORD }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Refuse to run without dedicated staging credentials
+        shell: bash
+        run: |
+          required=(
+            STAGED_SUPABASE_URL STAGED_SUPABASE_KEY
+            STAGED_USER_A_EMAIL STAGED_USER_A_PASSWORD
+            STAGED_USER_B_EMAIL STAGED_USER_B_PASSWORD
+            STAGED_USER_C_EMAIL STAGED_USER_C_PASSWORD
+          )
+          for name in "${required[@]}"; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required staging secret: $name" >&2
+              exit 1
+            fi
+          done
+
+          if [ "$STAGED_SUPABASE_URL" = "https://egbiiizxsqlarqpnzxxs.supabase.co" ]; then
+            echo "Refusing staged validation against the production DallmayrERP Supabase project." >&2
+            exit 1
+          fi
+
+      - name: Install application dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run authenticated messaging backend contracts
+        run: node scripts/validate-staged-messaging.mjs
+
+      - name: Build messaging-enabled app against staging Supabase
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGED_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGED_SUPABASE_KEY }}
+          NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED: "true"
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save --no-package-lock --no-audit --no-fund @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Run authenticated messaging browser tests
+        shell: bash
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGED_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGED_SUPABASE_KEY }}
+          NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED: "true"
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+        run: |
+          npm run start > staged-messaging-server.log 2>&1 &
+          server_pid="$!"
+
+          cleanup() {
+            kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+            if [ -f staged-messaging-server.log ]; then
+              tail -n 100 staged-messaging-server.log
+            fi
+          }
+          trap cleanup EXIT
+
+          for attempt in {1..45}; do
+            if curl -fsS "$PLAYWRIGHT_BASE_URL/login" > /dev/null; then
+              npx playwright test tests/messaging-staged.spec.mjs --reporter=line
+              exit 0
+            fi
+            sleep 2
+          done
+
+          cat staged-messaging-server.log
+          exit 1
