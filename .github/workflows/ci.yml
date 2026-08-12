@@ -43,6 +43,11 @@ jobs:
       - name: Check responsive and accessibility contracts
         run: npm run accessibility:check
 
+      - name: Check production visual harness syntax
+        run: |
+          node --check tests/production-visual.spec.mjs
+          python -m py_compile scripts/compare-production-screenshots.py
+
       - name: Typecheck application
         run: npm run typecheck
 
