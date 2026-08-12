@@ -141,8 +141,8 @@ export default function LoginPage() {
             ? 'Create your Supabase login account. ERP access only unlocks when admin has invited the same email in Users & Roles.'
             : 'Use your Supabase Auth account. New users complete their personal profile once before their role workspace unlocks.'}
         </p>
-        {error ? <div className="error">{error}</div> : null}
-        {success ? <div className="success">{success}</div> : null}
+        {error ? <div className="error" role="alert">{error}</div> : null}
+        {success ? <div aria-live="polite" className="success" role="status">{success}</div> : null}
         <form onSubmit={isActivate ? activate : login} className="grid" style={{ marginTop: 20 }}>
           <label>
             Email
