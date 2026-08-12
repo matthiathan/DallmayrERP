@@ -151,8 +151,34 @@
   }
 }
 
-/* Keep the useful Branch/Phone pairing on narrow phones instead of making every field a full row. */
+/* Phones keep the high-use controls compact while preserving full-width search/select fields. */
 @media (max-width: 430px) {
+  .monday-customer-board .monday-board-command-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .monday-customer-board .monday-board-search,
+  .monday-customer-board .monday-board-inline-select,
+  .monday-customer-board .monday-board-saved-view-select,
+  .monday-customer-board .monday-board-save-view-control {
+    grid-column: 1 / -1 !important;
+  }
+
+  .monday-customer-board .monday-board-command-bar > .monday-board-command-button,
+  .monday-customer-board .monday-board-command-bar > .monday-board-menu {
+    grid-column: auto !important;
+    min-width: 0 !important;
+  }
+
+  .monday-customer-board .monday-board-command-bar > .monday-board-command-button,
+  .monday-customer-board .monday-board-command-bar > .monday-board-menu > summary {
+    min-width: 0 !important;
+    min-height: 44px !important;
+    padding-inline: 10px !important;
+  }
+
+  /* Keep the useful Branch/Phone pairing instead of making every field a full row. */
   .monday-customer-board .monday-board-mobile-card dl {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
