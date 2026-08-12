@@ -20,6 +20,7 @@ import {
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 const MOBILE_QUERY = '(max-width: 760px)';
+const FIELD_OFFLINE_DIALOG_ID = 'field-offline-queue-dialog';
 const validOutcomes = new Set<FieldOutcome>(['completed', 'follow_up_required', 'parts_required', 'customer_unavailable']);
 
 function taskTypeForPath(pathname: string): FieldTaskType {
@@ -83,6 +84,8 @@ export function FieldServiceOfflineManager() {
   const [toast, setToast] = useState('');
   const panelRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
   const syncingRef = useRef(false);
   const draftTimerRef = useRef<number | null>(null);
   const queuedJobNumbersRef = useRef(new Set<string>());
@@ -212,6 +215,13 @@ export function FieldServiceOfflineManager() {
       window.removeEventListener('offline', handleOffline);
     };
   }, [fieldRole, refreshQueue, synchronize]);
+
+  useEffect(() => {
+    if (!fieldRole) return;
+    const openQueue = () => setOpen(true);
+    window.addEventListener('dallmayr-open-field-queue', openQueue);
+    return () => window.removeEventListener('dallmayr-open-field-queue', openQueue);
+  }, [fieldRole]);
 
   useEffect(() => {
     if (!fieldRole || !userId || !online || items.length === 0 || items.every((item) => item.status === 'failed')) return;
@@ -348,6 +358,7 @@ export function FieldServiceOfflineManager() {
 
   useEffect(() => {
     if (!open) return;
+    restoreFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : triggerRef.current;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const frame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
@@ -377,6 +388,8 @@ export function FieldServiceOfflineManager() {
       window.cancelAnimationFrame(frame);
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = previousOverflow;
+      const restoreTarget = restoreFocusRef.current ?? triggerRef.current;
+      window.requestAnimationFrame(() => restoreTarget?.focus());
     };
   }, [open]);
 
@@ -407,9 +420,12 @@ export function FieldServiceOfflineManager() {
   return (
     <>
       <button
+        aria-controls={FIELD_OFFLINE_DIALOG_ID}
         aria-expanded={open}
+        aria-haspopup="dialog"
         className={`field-offline-indicator ${online ? 'is-online' : 'is-offline'} ${counts.failed ? 'has-failure' : ''}`}
         onClick={() => setOpen(true)}
+        ref={triggerRef}
         type="button"
       >
         <span aria-hidden="true" />
@@ -421,7 +437,7 @@ export function FieldServiceOfflineManager() {
       {open ? (
         <>
           <button aria-label="Close offline work queue" className="field-offline-backdrop" onClick={() => setOpen(false)} type="button" />
-          <div aria-labelledby="field-offline-title" aria-modal="true" className="field-offline-sheet" ref={panelRef} role="dialog">
+          <div aria-labelledby="field-offline-title" aria-modal="true" className="field-offline-sheet" id={FIELD_OFFLINE_DIALOG_ID} ref={panelRef} role="dialog">
             <header>
               <div><span>Field work</span><h2 id="field-offline-title">Offline queue</h2><p>Validated completions remain on this device until the signed-in session can submit them.</p></div>
               <button aria-label="Close offline queue" onClick={() => setOpen(false)} ref={closeButtonRef} type="button">×</button>
