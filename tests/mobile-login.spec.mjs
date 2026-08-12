@@ -33,10 +33,10 @@ for (const device of [
     await page.goto(`${baseURL}/login`, { waitUntil: 'domcontentloaded' });
     await expect(page.locator('html')).toHaveAttribute('data-responsive-surface', 'mobile-tablet');
 
-    const email = page.getByLabel('Email');
-    const password = page.getByLabel('Password');
+    const email = page.getByLabel('Email', { exact: true });
+    const password = page.getByLabel('Password', { exact: true });
     const remember = page.getByRole('checkbox', { name: /Remember me on this device/i });
-    const submit = page.getByRole('button', { name: 'Sign in' });
+    const submit = page.getByRole('button', { name: 'Sign in', exact: true });
 
     await expect(page.getByRole('main')).toHaveCount(1);
     await expect(email).toBeVisible();
@@ -111,10 +111,10 @@ test('login form has a complete keyboard path and visible focus indication', asy
   await rejectSupabaseRequests(page);
   await page.goto(`${baseURL}/login`, { waitUntil: 'domcontentloaded' });
 
-  const email = page.getByLabel('Email');
-  const password = page.getByLabel('Password');
+  const email = page.getByLabel('Email', { exact: true });
+  const password = page.getByLabel('Password', { exact: true });
   const remember = page.getByRole('checkbox', { name: /Remember me on this device/i });
-  const submit = page.getByRole('button', { name: 'Sign in' });
+  const submit = page.getByRole('button', { name: 'Sign in', exact: true });
   const activate = page.getByRole('button', { name: /First login\? Activate account/i });
 
   await page.evaluate(() => {
