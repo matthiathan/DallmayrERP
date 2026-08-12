@@ -1,6 +1,12 @@
 /* Screenshot-driven customer workspace polish.
    Presentation only: no customer queries, paging, filtering, selection, or item-card behavior changes. */
 
+/* Keep the desktop pagination control label readable instead of allowing "Rows" to collapse. */
+.monday-customer-board .monday-board-pagination > label {
+  min-width: max-content;
+  white-space: nowrap;
+}
+
 /* Touch tablets should use the readable card surface instead of clipping the desktop table. */
 @media (min-width: 761px) and (max-width: 900px),
        (min-width: 761px) and (max-width: 1366px) and (hover: none) and (pointer: coarse) {
