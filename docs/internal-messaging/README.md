@@ -95,6 +95,26 @@ Before production rollout, staged authenticated testing must prove:
 
 Supabase Realtime Authorization caches channel permissions for the life of a connection until auth refresh. The application therefore treats Broadcast as a non-sensitive signal only; message content always requires a fresh RLS-protected Postgres read.
 
+## Staged authenticated validation harness
+
+The branch contains a manual-only staged validation gate. It is intentionally not triggered by pull requests and refuses to run against the production DallmayrERP Supabase URL.
+
+- `scripts/validate-staged-messaging.mjs` signs in three representative ERP users and validates direct-thread idempotency, non-member Postgres isolation, private Realtime rejection, Presence, typing Broadcast, committed-message reconciliation, reconnect recovery, read-position ownership, mute/archive preferences and group creation.
+- `tests/messaging-staged.spec.mjs` signs in through the real application, verifies two authenticated users can exchange a committed message through `/work/messages`, and checks the messaging workspace for horizontal-overflow regressions on desktop, phone and tablet viewports.
+- `.github/workflows/internal-messaging-staged.yml` runs both layers only when explicitly dispatched with dedicated staging secrets.
+
+Required GitHub staging secrets are:
+
+- `STAGED_SUPABASE_URL`
+- `STAGED_SUPABASE_KEY`
+- `STAGED_USER_A_EMAIL` / `STAGED_USER_A_PASSWORD`
+- `STAGED_USER_B_EMAIL` / `STAGED_USER_B_PASSWORD`
+- `STAGED_USER_C_EMAIL` / `STAGED_USER_C_PASSWORD`
+
+The three staged users must exist in Supabase Auth and have matching active `public.users` records. Their ERP profiles must be complete enough to pass the normal application authentication/onboarding gate. The isolated Supabase environment must contain the existing Phase 1 foundation plus the hardening migration from this branch before the staged workflow is dispatched.
+
+Do not point this workflow at the live DallmayrERP project and do not repurpose the Concentrix project as a messaging stage.
+
 ## Rollout gate
 
 Do not apply the new hardening migration or enable the route in production until:
