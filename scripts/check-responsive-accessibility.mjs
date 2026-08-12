@@ -121,6 +121,19 @@ requireContracts('Customer item card', customerItemCard, [
   'previousFocusRef.current',
   'previousFocusRef.current?.focus()',
   "if (event.key !== 'Tab' || !panelRef.current) return",
+  'role="tablist"',
+  'aria-controls={panelIdForTab(tab.id)}',
+  'aria-selected={activeTab === tab.id}',
+  'id={tabIdForTab(tab.id)}',
+  'role="tab"',
+  'tabIndex={activeTab === tab.id ? 0 : -1}',
+  "event.key === 'ArrowRight' || event.key === 'ArrowDown'",
+  "event.key === 'ArrowLeft' || event.key === 'ArrowUp'",
+  "event.key === 'Home'",
+  "event.key === 'End'",
+  "aria-labelledby={tabIdForTab('overview')}",
+  "id={panelIdForTab('overview')}",
+  'role="tabpanel"',
 ]);
 
 const enterpriseTable = await source('components/ui/EnterpriseDataTable.tsx');
@@ -166,4 +179,4 @@ requireContracts('Canonical readability safety', readability, [
 ]);
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('Responsive/accessibility check passed: keyboard focus, dialog semantics, live status, combobox/table semantics, touch targets and responsive overflow contracts are present.');
+console.log('Responsive/accessibility check passed: keyboard focus, dialog semantics, live status, combobox/table/tab semantics, touch targets and responsive overflow contracts are present.');
