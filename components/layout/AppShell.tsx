@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { DesktopNavigationRail } from '@/components/layout/DesktopNavigationRail';
 import { MobileNavigationDrawer, MobileQuickBar } from '@/components/layout/MobileNavigation';
+import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { DensityToggle } from '@/components/ui/DensityToggle';
 import { ErpStateBanner } from '@/components/ui/ErpLayout';
@@ -292,7 +293,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className={`app-shell top-shell application-shell-v2 monday-shell-phase-1 ${railCollapsed ? 'desktop-rail-collapsed' : ''} ${menuOpen ? 'mobile-menu-open' : ''}`}>
+    <div className={`app-shell top-shell application-shell-v2 ${railCollapsed ? 'desktop-rail-collapsed' : ''} ${menuOpen ? 'mobile-menu-open' : ''}`}>
       <a className="skip-link" href="#main-content">Skip to main content</a>
 
       {menuOpen ? <button aria-label="Close navigation menu" className="mobile-nav-backdrop" onClick={() => setMenuOpen(false)} type="button" /> : null}
@@ -328,9 +329,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             onClick={() => setMenuOpen((current) => !current)}
             type="button"
           >
-            <span />
-            <span />
-            <span />
+            <NavigationIcon kind={menuOpen ? 'close' : 'menu'} />
           </button>
         </div>
 

@@ -1,0 +1,12 @@
+/*
+ * Active mobile workspace bundle.
+ *
+ * These styles still own live phone/touch interaction and workflow structure.
+ * Keep this import order stable while their selectors are progressively moved
+ * into the canonical responsive/component layers.
+ */
+@import '../mobile-navigation-drawer.css';
+@import '../mobile-data-views.css';
+@import '../mobile-application-layout.css';
+@import '../mobile-master-detail-actions.css';
+@import '../mobile-offline-field-work.css';

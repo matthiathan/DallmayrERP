@@ -73,6 +73,35 @@ for (const manifestPath of [
   if (!source.includes('Do not add new')) fail(`${path.relative(root, manifestPath)} must retain its quarantine guidance.`);
 }
 
+const legacyLayoutSource = await readFile(path.join(stylesDirectory, 'legacy-layout-manifest.css'), 'utf8');
+for (const retiredLayout of [
+  "@import '../monday-shell-phase-1.css'",
+  "@import '../application-shell-phase-1.css'",
+  "@import '../page-templates-phase-2.css'",
+  "@import '../operations-cockpit.css'",
+  "@import '../erp-executive-ui.css'",
+  "@import '../dynamics-365-ui.css'",
+  "@import '../erp-workbench-system.css'",
+  "@import '../ui-readability-layout.css'",
+  "@import './navigation-contract.css'",
+  "@import './compatibility-overrides.css'",
+]) {
+  if (legacyLayoutSource.includes(retiredLayout)) {
+    fail(`Retired layout programme ${retiredLayout} must not be registered in legacy-layout-manifest.css.`);
+  }
+}
+
+const expectedActiveLayoutImports = [
+  './active-role-today-workspace.css',
+  './active-board-workspaces.css',
+  './canonical-readability-safety.css',
+  './active-messaging-workspace.css',
+];
+const legacyLayoutImports = cssImports(legacyLayoutSource);
+if (JSON.stringify(legacyLayoutImports) !== JSON.stringify(expectedActiveLayoutImports)) {
+  fail(`legacy-layout-manifest.css must contain only the active feature/safety boundaries ${JSON.stringify(expectedActiveLayoutImports)}; found ${JSON.stringify(legacyLayoutImports)}.`);
+}
+
 const applicationSource = await readFile(applicationPath, 'utf8');
 const applicationImports = cssImports(applicationSource);
 const requiredDesktopImports = [
@@ -94,6 +123,7 @@ const requiredDesktopImports = [
   '../concentrix-access-entry.css',
   '../concentrix-execution-details.css',
   '../concentrix-final-audit.css',
+  '../canonical-shell-utilities.css',
 ];
 for (const requiredImport of requiredDesktopImports) {
   if (!applicationImports.includes(requiredImport)) fail(`app/styles/application.css is missing ${requiredImport}.`);
@@ -109,6 +139,7 @@ const concentrixSpecialistIndex = applicationImports.indexOf('../concentrix-spec
 const concentrixAccessIndex = applicationImports.indexOf('../concentrix-access-entry.css');
 const concentrixExecutionIndex = applicationImports.indexOf('../concentrix-execution-details.css');
 const concentrixFinalAuditIndex = applicationImports.indexOf('../concentrix-final-audit.css');
+const shellUtilitiesIndex = applicationImports.indexOf('../canonical-shell-utilities.css');
 const responsiveAuthorityIndex = applicationImports.indexOf('../responsive-runtime-authority.css');
 if (!(
   desktopReferenceIndex >= 0
@@ -121,9 +152,10 @@ if (!(
   && concentrixAccessIndex === concentrixSpecialistIndex + 1
   && concentrixExecutionIndex === concentrixAccessIndex + 1
   && concentrixFinalAuditIndex === concentrixExecutionIndex + 1
-  && responsiveAuthorityIndex > concentrixFinalAuditIndex
+  && shellUtilitiesIndex === concentrixFinalAuditIndex + 1
+  && responsiveAuthorityIndex === shellUtilitiesIndex + 1
 )) {
-  fail('Desktop reference/fixes/professional UI and Concentrix shell/dashboard/operational/specialist/access-entry/execution-detail/final-audit phases must load consecutively before responsive authority.');
+  fail('Desktop reference/fixes/professional UI, Concentrix migration layers and canonical shell utilities must load consecutively before responsive authority.');
 }
 
 const responsiveImport = '../responsive-mobile-tablet.css';
@@ -141,6 +173,55 @@ for (const retiredImport of [
   if (applicationImports.includes(retiredImport)) fail(`Retired responsive layer ${retiredImport} must not be registered.`);
 }
 
+const tokenSource = await readFile(path.join(stylesDirectory, 'tokens.css'), 'utf8');
+for (const requiredAlias of ['--monday-shell-bg:', '--monday-divider:', '--monday-accent:']) {
+  if (!tokenSource.includes(requiredAlias)) fail(`Design-system tokens are missing legacy board compatibility alias ${requiredAlias}.`);
+}
+
+const foundationsSource = await readFile(path.join(stylesDirectory, 'foundations.css'), 'utf8');
+for (const requiredRule of [
+  '.workspace-template-frame',
+  'align-content: start',
+  '.workspace-command-controls > summary',
+  '@media (max-width: 760px)',
+  ':focus-visible',
+  '@media (prefers-reduced-motion: reduce)',
+]) {
+  if (!foundationsSource.includes(requiredRule)) fail(`Shared foundations are missing ${requiredRule}.`);
+}
+
+const readabilitySafetySource = await readFile(path.join(stylesDirectory, 'canonical-readability-safety.css'), 'utf8');
+for (const requiredRule of [
+  '--mobile-quick-bar-height:',
+  '[role=\'alert\'].danger *',
+  '.appearance-save-state.is-saved',
+  '.appearance-save-state.is-error',
+  '.global-search-result',
+  'scrollbar-gutter: stable both-edges',
+]) {
+  if (!readabilitySafetySource.includes(requiredRule)) fail(`Canonical readability/semantic safety is missing ${requiredRule}.`);
+}
+if (readabilitySafetySource.includes('--ui-safe-blue')) fail('Canonical readability safety must not restore the retired blue visual programme.');
+
+const mobileDataViewsSource = await readFile(path.join(root, 'app', 'mobile-data-views.css'), 'utf8');
+for (const requiredRule of [
+  '.mobile-record-card-details > div:has(.button)',
+  '.low-stock-alerts > .grid',
+  '.document-grid',
+  'var(--mobile-quick-bar-height, 0px)',
+]) {
+  if (!mobileDataViewsSource.includes(requiredRule)) fail(`Mobile data views are missing migrated compatibility rule ${requiredRule}.`);
+}
+
+const mobileOfflineSource = await readFile(path.join(root, 'app', 'mobile-offline-field-work.css'), 'utf8');
+for (const requiredRule of [
+  'var(--mobile-quick-bar-height, 66px)',
+  '@media (max-width: 390px)',
+  '.field-offline-indicator strong',
+]) {
+  if (!mobileOfflineSource.includes(requiredRule)) fail(`Offline field-work presentation is missing migrated navigation compatibility rule ${requiredRule}.`);
+}
+
 const stabilizationSource = await readFile(path.join(root, 'app', 'ui-stabilization-contract.css'), 'utf8');
 for (const requiredRule of ['--ui-canvas: #f5f0e6', '--ui-ink: #231f1a', '--ui-gold: #b8862f', '.dallmayr-sidebar']) {
   if (!stabilizationSource.includes(requiredRule)) fail(`Desktop stabilization is missing ${requiredRule}.`);
@@ -152,7 +233,16 @@ for (const requiredRule of ['--pro-radius-md: 12px', '.erp-panel', '.erp-table-s
 }
 
 const concentrixShellSource = await readFile(path.join(root, 'app', 'concentrix-dallmayr-shell.css'), 'utf8');
-for (const requiredRule of ['--cx-sidebar: 264px', '--cx-header: 88px', 'width: min(100%, 1600px)', 'box-shadow: inset 3px 0 0 var(--cx-gold)']) {
+for (const requiredRule of [
+  '--cx-sidebar: 264px',
+  '--cx-header: 88px',
+  '--application-header-height: var(--cx-header)',
+  '.application-shell-v2',
+  'padding-left: var(--cx-sidebar) !important',
+  '.dallmayr-sidebar',
+  'width: min(100%, 1600px)',
+  'box-shadow: inset 3px 0 0 var(--cx-gold)',
+]) {
   if (!concentrixShellSource.includes(requiredRule)) fail(`Concentrix-derived shell is missing ${requiredRule}.`);
 }
 
@@ -176,6 +266,8 @@ for (const requiredRule of [
   '@media (min-width: 901px) and (hover: hover) and (pointer: fine), (min-width: 1367px)',
   '--cx-access-control-height: 46px',
   '.dynamics-login-page',
+  '.dynamics-login-intro',
+  '.dynamics-login-card',
   '.login-remember-me',
   '.auth-state-page',
   '.concentrix-onboarding-stage',
@@ -222,23 +314,53 @@ for (const requiredRule of [
 if (concentrixFinalAuditSource.includes('pointer: coarse')) fail('Concentrix final-audit phase must not define a coarse-pointer responsive authority.');
 if (concentrixFinalAuditSource.includes('display: none')) fail('Concentrix final-audit phase must not hide existing functionality.');
 
+const shellUtilitiesSource = await readFile(path.join(root, 'app', 'canonical-shell-utilities.css'), 'utf8');
+for (const requiredRule of [
+  '--shell-util-surface:',
+  '.notification-inbox-trigger',
+  '.notification-inbox-panel',
+  '.notification-card',
+  '.mobile-primary-actions',
+  '@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse)',
+  'env(safe-area-inset-bottom, 0px)',
+]) {
+  if (!shellUtilitiesSource.includes(requiredRule)) fail(`Canonical shell utilities are missing ${requiredRule}.`);
+}
+if (shellUtilitiesSource.includes('var(--monday-')) fail('Canonical shell utilities must not depend on retired Monday theme variables.');
+
 const onboardingSource = await readFile(path.join(root, 'app', 'onboarding', 'page.tsx'), 'utf8');
 if (!onboardingSource.includes('className="concentrix-onboarding-stage"')) fail('Onboarding must retain the Phase 5 presentation hook.');
 
 const desktopRailSource = await readFile(path.join(root, 'components', 'layout', 'DesktopNavigationRail.tsx'), 'utf8');
 if (desktopRailSource.includes('id="desktop-account-menu-target"')) fail('DesktopNavigationRail must not duplicate the header desktop-account-menu-target id.');
 if (!desktopRailSource.includes('dallmayr-sidebar-account-menu-target')) fail('DesktopNavigationRail must retain the sidebar account-menu mount class.');
-if (!desktopRailSource.includes('function NavIcon') || !desktopRailSource.includes('<svg')) fail('DesktopNavigationRail must use consistent SVG navigation icons.');
-if (desktopRailSource.includes('navigationGlyph(')) fail('DesktopNavigationRail must not regress to generated text-abbreviation icons.');
+if (!desktopRailSource.includes('NavigationIcon') || !desktopRailSource.includes('navigationIconKind')) fail('DesktopNavigationRail must use the shared SVG navigation icon contract.');
+if (desktopRailSource.includes('navigationGlyph(') || desktopRailSource.includes('function NavIcon')) fail('DesktopNavigationRail must not regress to generated or local legacy navigation icons.');
+
+const navigationIconSource = await readFile(path.join(root, 'components', 'layout', 'NavigationIcon.tsx'), 'utf8');
+if (!navigationIconSource.includes('export function NavigationIcon') || !navigationIconSource.includes('<svg')) fail('Shared NavigationIcon must provide SVG navigation icons.');
 
 const responsiveSource = await readFile(path.join(root, 'app', 'responsive-mobile-tablet.css'), 'utf8');
 const responsiveWithoutComments = responsiveSource.replace(/\/\*[\s\S]*?\*\//g, '').trim();
 if (!responsiveWithoutComments.startsWith('@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {')) {
   fail('responsive-mobile-tablet.css must begin with the locked phone/touch-tablet responsive query.');
 }
-for (const requiredRule of ['var(--ui-canvas', '.app-shell > .mobile-nav-backdrop', '.mobile-nav-portal-root', '.global-search-dialog', '.mobile-quick-bar', '.messaging-layout', 'overflow-x: auto !important', 'font-size: 16px !important', 'env(safe-area-inset-bottom)']) {
+for (const requiredRule of [
+  'var(--ui-canvas',
+  '.app-shell > .mobile-nav-backdrop',
+  '.mobile-nav-portal-root',
+  '.global-search-dialog',
+  '.mobile-quick-bar',
+  '.messaging-layout',
+  "html[data-mobile-route-surface='auth'] .dynamics-login-page",
+  "html[data-mobile-route-surface='auth'] .dynamics-login-card",
+  "html[data-mobile-route-surface='auth'] .dynamics-login-intro",
+  'overflow-x: auto !important',
+  'font-size: 16px !important',
+  'env(safe-area-inset-bottom)',
+]) {
   if (!responsiveSource.includes(requiredRule)) fail(`Unified responsive contract is missing ${requiredRule}.`);
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered with Concentrix shell/dashboard/operational/specialist/access-entry/execution-detail/final-audit phases before the final mobile/tablet authority.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered with obsolete shell/full-app/page-template/navigation/compatibility programmes retired, active feature layouts explicitly bundled, semantic/readability safety isolated, and canonical Concentrix plus final mobile/tablet ownership enforced.`);

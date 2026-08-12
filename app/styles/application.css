@@ -4,8 +4,9 @@
  * Desktop composition is owned by the stabilization contract plus the approved
  * reference layout and professional UI system. Concentrix-derived shell, dashboard,
  * operational, specialist, access-entry, execution-detail and final-audit layers
- * then adapt the desktop presentation. Responsive work for phones and touch tablets
- * remains the final authority.
+ * then adapt the desktop presentation. Canonical shell utilities own cross-route
+ * overlays such as the notification inbox. Responsive work for phones and touch
+ * tablets remains the final authority.
  */
 @import '../reference-ui-redesign.css';
 @import '../full-application-rebuild.css';
@@ -15,7 +16,10 @@
 @import '../navigation-contrast-phase-1.css';
 @import '../page-cleanup-phase-4.css';
 @import '../component-library-phase-3.css';
+@import '../canonical-component-utilities.css';
 @import '../ui-stabilization-contract.css';
+@import '../canonical-navigation-baseline.css';
+@import '../canonical-appearance-runtime.css';
 @import '../desktop-reference-layout.css';
 @import '../desktop-layout-regression-fixes.css';
 @import '../professional-ui-system.css';
@@ -26,6 +30,7 @@
 @import '../concentrix-access-entry.css';
 @import '../concentrix-execution-details.css';
 @import '../concentrix-final-audit.css';
+@import '../canonical-shell-utilities.css';
 @import '../responsive-runtime-authority.css';
 @import '../responsive-mobile-menu-v2.css';
 @import '../responsive-mobile-tablet.css';

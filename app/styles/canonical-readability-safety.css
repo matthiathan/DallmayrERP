@@ -1,0 +1,329 @@
+/* Canonical readability and spatial safety.
+ *
+ * This layer contains neutral invariants and semantic compatibility only. It
+ * must not own shell colour, generic tab/navigation presentation, desktop
+ * composition or phone/touch-tablet responsive layout. Those concerns remain
+ * with the canonical Dallmayr/Concentrix and responsive layers.
+ */
+
+:root {
+  /* Compatibility alias for active mobile feature styles that need to clear the
+     canonical five-action quick bar. The responsive authority owns its height. */
+  --mobile-quick-bar-height: calc(var(--responsive-bottom, 72px) + env(safe-area-inset-bottom, 0px));
+}
+
+html[data-visual-theme] {
+  color-scheme: light;
+}
+
+html[data-visual-theme] body *,
+html[data-visual-theme] body *::before,
+html[data-visual-theme] body *::after {
+  box-sizing: border-box;
+}
+
+html[data-visual-theme] body :is(a, button, summary, input, select, textarea, [tabindex]) {
+  scroll-margin-top: calc(var(--application-header-height, 88px) + 16px);
+}
+
+html[data-visual-theme] body :is(a, button, summary, input, select, textarea, [role='button']) {
+  touch-action: manipulation;
+}
+
+html[data-visual-theme] body :is(a, button, summary, input, select, textarea, [role='button']):focus-visible {
+  outline: 3px solid var(--ds-focus, var(--content-focus, #2563eb));
+  outline-offset: 2px;
+}
+
+html[data-visual-theme] body :is(img, svg, canvas, video) {
+  max-width: 100%;
+}
+
+html[data-visual-theme] body :is(
+  .application-main,
+  .application-main *,
+  .global-search-dialog,
+  .dallmayr-account-panel,
+  .notification-inbox-panel,
+  .mobile-nav-panel,
+  .mobile-filter-sheet,
+  .enterprise-table-shell,
+  .remote-table-shell,
+  .data-table-wrapper,
+  .resizable-table-shell,
+  .monday-board-table-wrap,
+  form,
+  .form-grid,
+  .input-grid,
+  .field-grid,
+  .workspace-filter-bar,
+  .remote-table-filters,
+  .monday-board-filter-grid,
+  .filter-grid,
+  .modal-form,
+  .drawer-form
+) {
+  min-width: 0;
+}
+
+/* Semantic descendants must retain their container tone instead of inheriting
+   stale feature-level text colours. */
+.error *,
+.badge.danger *,
+.status-badge.danger *,
+.status-badge.is-danger *,
+[role='alert'].danger *,
+.success *,
+.badge.success *,
+.status-badge.success *,
+.status-badge.is-success *,
+.warning *,
+.badge.warning *,
+.status-badge.warning *,
+.status-badge.is-warning *,
+.info *,
+.badge.info *,
+.status-badge.info *,
+.status-badge.is-info * {
+  color: inherit !important;
+}
+
+.field-note.danger {
+  color: var(--adaptive-danger-text, var(--ui-danger, #a32222));
+  font-weight: 650;
+}
+
+.appearance-save-state.is-saved {
+  color: var(--adaptive-success-text) !important;
+  background: var(--adaptive-success-bg) !important;
+  border: 1px solid var(--adaptive-success-border) !important;
+}
+
+.appearance-save-state.is-error,
+.appearance-sync-error {
+  color: var(--adaptive-danger-text) !important;
+  background: var(--adaptive-danger-bg) !important;
+  border-color: var(--adaptive-danger-border) !important;
+}
+
+.appearance-save-state.is-saving,
+.appearance-save-state.is-loading {
+  color: var(--adaptive-warning-text) !important;
+  background: var(--adaptive-warning-bg) !important;
+  border: 1px solid var(--adaptive-warning-border) !important;
+}
+
+.global-search-result {
+  color: var(--adaptive-text) !important;
+}
+
+.global-search-result strong {
+  color: var(--adaptive-strong) !important;
+}
+
+.global-search-result > span:not(.global-search-result-type) {
+  color: var(--adaptive-muted) !important;
+}
+
+html[data-visual-theme] body .application-main {
+  overflow-x: clip;
+}
+
+html[data-visual-theme] body .application-main :is(
+  h1,
+  h2,
+  h3,
+  p,
+  small,
+  label,
+  strong,
+  a,
+  button,
+  td,
+  th,
+  .nav-card-copy,
+  .monday-board-cell,
+  .minimal-list-item,
+  .today-work-row,
+  .today-attention-card
+) {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+html[data-visual-theme] body :is(.sr-only, .visually-hidden) {
+  overflow-wrap: normal;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .enterprise-table-shell,
+  .remote-table-shell,
+  .data-table-wrapper,
+  .resizable-table-shell,
+  .monday-board-table-wrap,
+  .enterprise-table-wrap,
+  .table-wrap
+) {
+  max-width: 100%;
+}
+
+html[data-visual-theme] body .application-main :is(.enterprise-table-desktop-view, .table-scroll-frame) {
+  max-width: 100%;
+  min-width: 0;
+}
+
+html[data-visual-theme] body .application-main .table-scroll-primary {
+  max-width: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+}
+
+/* Neutral content-containment invariants migrated from retired generic safety
+   programmes. These rules deliberately avoid colours, shell composition and
+   responsive breakpoints. */
+html[data-visual-theme] body :is(button, input, select, textarea) {
+  font-synthesis: none;
+}
+
+html[data-visual-theme] body :is(label, .customer-combobox-label, .enterprise-table-search) {
+  max-width: 100%;
+}
+
+html[data-visual-theme] body :is(input, select, textarea) {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+html[data-visual-theme] body select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html[data-visual-theme] body textarea {
+  white-space: pre-wrap;
+}
+
+html[data-visual-theme] body input[type='file'] {
+  height: auto;
+  max-width: 100%;
+  white-space: normal;
+  overflow: hidden;
+}
+
+html[data-visual-theme] body input[type='checkbox'],
+html[data-visual-theme] body input[type='radio'] {
+  width: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  padding: 0;
+}
+
+html[data-visual-theme] body :is(button, .button, a.button, [role='button']) {
+  max-width: 100%;
+  min-width: 0;
+  height: auto;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+html[data-visual-theme] body :is(button, .button, a.button, [role='button']) > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+html[data-visual-theme] body :is(
+  .action-row,
+  .feature-list,
+  .page-toolbar-actions,
+  .toolbar-actions,
+  .button-row,
+  .filter-row,
+  .enterprise-table-actions,
+  .minimal-row-actions,
+  .scanner-actions,
+  .asset-ticket-actions,
+  .global-search-quick-actions
+) {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+html[data-visual-theme] body :is(
+  .action-row,
+  .feature-list,
+  .page-toolbar-actions,
+  .toolbar-actions,
+  .button-row,
+  .filter-row,
+  .enterprise-table-actions,
+  .minimal-row-actions,
+  .scanner-actions,
+  .asset-ticket-actions,
+  .global-search-quick-actions
+) > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+html[data-visual-theme] body :is(.badge, .status-badge, .feature-pill) {
+  max-width: 100%;
+  height: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+html[data-visual-theme] body :is(
+  .role-action-card,
+  .professional-work-card,
+  .minimal-list-item,
+  .minimal-row,
+  .scanner-match-card,
+  .page-toolbar-heading
+) > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+html[data-visual-theme] body :is(
+  .record-timeline-item,
+  .record-comment,
+  .record-comment p,
+  .page-toolbar,
+  .page-toolbar p,
+  .page-toolbar-heading,
+  .feature-list
+) {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+html[data-visual-theme] body .page-toolbar-heading {
+  align-items: flex-start;
+  gap: 12px;
+}
+
+html[data-visual-theme] body .application-main :is(
+  .table-wrap,
+  .enterprise-table-wrap,
+  .data-table-wrapper
+) {
+  overflow-x: auto;
+}
+
+html[data-visual-theme] body :is(.resizable-th-content, .table-sort-button, .table-header-label) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+html[data-visual-theme] body .table-sort-button {
+  justify-content: flex-start;
+  text-align: left;
+  white-space: normal;
+}

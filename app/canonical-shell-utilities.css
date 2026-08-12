@@ -1,0 +1,504 @@
+/*
+ * Canonical shell utility surfaces.
+ *
+ * This file owns application-level overlays/utilities that outlived the old
+ * Monday shell programme. It deliberately contains no route, data, permission
+ * or workflow behaviour. Responsive phone/touch-tablet layout remains aligned
+ * to the canonical responsive contract.
+ */
+
+:root {
+  --shell-util-surface: var(--ui-surface, #ffffff);
+  --shell-util-soft: var(--ui-surface-soft, #fbf8f1);
+  --shell-util-canvas: var(--ui-canvas, #f5f0e6);
+  --shell-util-ink: var(--ui-ink, #231f1a);
+  --shell-util-muted: var(--ui-muted, #625b50);
+  --shell-util-subtle: #8a7b68;
+  --shell-util-border: var(--ui-border, #d8cdbc);
+  --shell-util-border-strong: var(--ui-border-strong, #bdaa8d);
+  --shell-util-gold: var(--ui-gold, #b8862f);
+  --shell-util-gold-dark: var(--ui-gold-dark, #6d4b16);
+  --shell-util-hover: color-mix(in srgb, var(--shell-util-gold) 9%, #ffffff);
+  --shell-util-selected: color-mix(in srgb, var(--shell-util-gold) 15%, #ffffff);
+  --shell-util-danger: #b42318;
+  --shell-util-warning: #a56300;
+  --shell-util-success: #1f7a46;
+}
+
+/* Notification trigger mounted into the authenticated desktop header. */
+.notification-inbox-trigger {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--shell-util-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.notification-inbox-trigger:hover,
+.notification-inbox-trigger:focus-visible,
+.notification-inbox-trigger[aria-expanded='true'] {
+  border-color: var(--shell-util-border);
+  background: var(--shell-util-hover);
+  color: var(--shell-util-ink);
+}
+
+.notification-inbox-trigger > span:first-child {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.notification-inbox-trigger em {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  display: grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 4px;
+  border: 2px solid var(--shell-util-surface);
+  border-radius: 999px;
+  background: var(--shell-util-danger);
+  color: #ffffff;
+  font-size: .62rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.notification-inbox-backdrop {
+  position: fixed;
+  inset: var(--application-header-height, 88px) 0 0;
+  z-index: 8290;
+  display: block;
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: rgba(22, 18, 13, .46);
+  backdrop-filter: blur(2px);
+}
+
+.notification-inbox-panel {
+  position: fixed;
+  inset: var(--application-header-height, 88px) 0 0 auto;
+  z-index: 8300;
+  display: flex;
+  flex-direction: column;
+  width: min(430px, calc(100vw - 24px));
+  min-width: 0;
+  max-width: 100%;
+  padding: 18px 18px 20px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-left: 1px solid var(--shell-util-border);
+  background: var(--shell-util-surface);
+  color: var(--shell-util-ink);
+  box-shadow: -18px 0 46px rgba(43, 33, 21, .20);
+}
+
+.notification-inbox-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--shell-util-border);
+}
+
+.notification-inbox-header > div {
+  min-width: 0;
+}
+
+.notification-inbox-header > div > span,
+.notification-install-card > div > span,
+.notification-card-heading > span {
+  color: var(--shell-util-gold-dark);
+  font-size: .67rem;
+  font-weight: 840;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+
+.notification-inbox-header h2 {
+  margin: 4px 0;
+  color: var(--shell-util-ink);
+  font-size: 1.32rem;
+  letter-spacing: -.025em;
+}
+
+.notification-inbox-header p {
+  margin: 0;
+  color: var(--shell-util-muted);
+  font-size: .8rem;
+  line-height: 1.45;
+}
+
+.notification-inbox-close {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--shell-util-muted);
+  font-size: 1.35rem;
+}
+
+.notification-inbox-close:hover,
+.notification-inbox-close:focus-visible {
+  border-color: var(--shell-util-border);
+  background: var(--shell-util-hover);
+  color: var(--shell-util-ink);
+}
+
+.notification-inbox-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 0;
+}
+
+.notification-inbox-status > :is(div, button) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 1px solid var(--shell-util-border);
+  border-radius: 999px;
+  background: var(--shell-util-soft);
+  color: var(--shell-util-muted);
+  font: inherit;
+  font-size: .67rem;
+}
+
+.notification-inbox-status > div > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--shell-util-success);
+}
+
+.notification-inbox-status > .is-offline > span {
+  background: var(--shell-util-warning);
+}
+
+.notification-inbox-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0 14px;
+}
+
+.notification-inbox-toolbar > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.notification-inbox-toolbar > div:first-child strong {
+  color: var(--shell-util-ink);
+  font-size: .86rem;
+}
+
+.notification-inbox-toolbar > div:first-child span {
+  color: var(--shell-util-subtle);
+  font-size: .7rem;
+}
+
+.notification-inbox-toolbar > div:last-child {
+  display: flex;
+  gap: 5px;
+}
+
+.notification-inbox-toolbar button {
+  min-height: 34px;
+  padding: 6px 9px;
+  border: 1px solid var(--shell-util-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--shell-util-muted);
+  font: inherit;
+  font-size: .69rem;
+  font-weight: 760;
+}
+
+.notification-inbox-toolbar button:hover:not(:disabled),
+.notification-inbox-toolbar button:focus-visible:not(:disabled) {
+  background: var(--shell-util-hover);
+  color: var(--shell-util-ink);
+}
+
+.notification-inbox-toolbar button:disabled {
+  opacity: .45;
+}
+
+.notification-inbox-content {
+  display: grid;
+  gap: 18px;
+}
+
+.notification-inbox-group {
+  display: grid;
+  gap: 7px;
+}
+
+.notification-inbox-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--shell-util-subtle);
+  font-size: .7rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.notification-inbox-group-heading span {
+  display: grid;
+  place-items: center;
+  min-width: 21px;
+  height: 21px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--shell-util-soft);
+  color: var(--shell-util-muted);
+}
+
+.notification-inbox-list {
+  display: grid;
+  gap: 4px;
+}
+
+.notification-card {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  gap: 9px;
+  min-width: 0;
+  padding: 11px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--shell-util-ink);
+  text-decoration: none;
+}
+
+.notification-card:hover,
+.notification-card:focus-visible {
+  border-color: var(--shell-util-border);
+  background: var(--shell-util-hover);
+}
+
+.notification-card.is-unread {
+  background: var(--shell-util-selected);
+}
+
+.notification-card-dot {
+  width: 7px;
+  height: 7px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--shell-util-gold);
+}
+
+.notification-card.tone-critical .notification-card-dot {
+  background: var(--shell-util-danger);
+}
+
+.notification-card.tone-warning .notification-card-dot {
+  background: var(--shell-util-warning);
+}
+
+.notification-card-content {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.notification-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.notification-card-heading time {
+  flex: 0 0 auto;
+  color: var(--shell-util-subtle);
+  font-size: .66rem;
+}
+
+.notification-card-content > strong {
+  color: var(--shell-util-ink);
+  font-size: .84rem;
+  line-height: 1.35;
+}
+
+.notification-card-content > p {
+  margin: 0;
+  color: var(--shell-util-muted);
+  font-size: .76rem;
+  line-height: 1.45;
+}
+
+.notification-card-content > small {
+  color: var(--shell-util-gold-dark);
+  font-size: .68rem;
+  font-weight: 760;
+}
+
+.notification-inbox-error,
+.notification-inbox-empty,
+.notification-install-card {
+  padding: 14px;
+  border: 1px solid var(--shell-util-border);
+  border-radius: 10px;
+  background: var(--shell-util-soft);
+}
+
+.notification-inbox-error {
+  margin-bottom: 12px;
+  border-color: color-mix(in srgb, var(--shell-util-danger) 62%, var(--shell-util-border));
+  background: #fff1ef;
+  color: #812018;
+}
+
+.notification-inbox-empty {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  margin-top: 18px;
+  padding-block: 28px;
+  text-align: center;
+}
+
+.notification-inbox-empty > span {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--shell-util-success) 16%, var(--shell-util-soft));
+  color: var(--shell-util-success);
+}
+
+.notification-inbox-empty p,
+.notification-install-card p {
+  margin: 0;
+  color: var(--shell-util-muted);
+  font-size: .76rem;
+  line-height: 1.45;
+}
+
+.notification-install-card {
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.notification-install-card strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--shell-util-ink);
+  font-size: .8rem;
+}
+
+/* Compatibility for the older mobile primary-action selector, if encountered. */
+.mobile-primary-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.mobile-primary-actions > :is(a, button) {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  min-height: 58px;
+  padding: 8px 6px;
+  border: 1px solid var(--shell-util-border);
+  border-radius: 9px;
+  background: var(--shell-util-soft);
+  color: var(--shell-util-muted);
+  font: inherit;
+  font-size: .72rem;
+  text-decoration: none;
+}
+
+.mobile-primary-actions > :is(a, button)[aria-current='page'],
+.mobile-primary-actions > :is(a, button):hover,
+.mobile-primary-actions > :is(a, button):focus-visible {
+  border-color: color-mix(in srgb, var(--shell-util-gold) 55%, var(--shell-util-border));
+  background: var(--shell-util-selected);
+  color: var(--shell-util-ink);
+}
+
+@media (min-width: 901px) and (hover: hover) and (pointer: fine), (min-width: 1367px) {
+  :root {
+    --application-header-height: var(--cx-header, 88px);
+  }
+}
+
+@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  :root {
+    --application-header-height: calc(var(--responsive-header, 64px) + env(safe-area-inset-top, 0px));
+  }
+
+  .notification-inbox-trigger {
+    display: none !important;
+  }
+
+  .notification-inbox-backdrop {
+    inset: var(--application-header-height) 0 0;
+  }
+
+  .notification-inbox-panel {
+    inset: var(--application-header-height) 0 0 0;
+    width: 100%;
+    padding: 16px 14px calc(20px + env(safe-area-inset-bottom, 0px));
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .notification-inbox-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .notification-inbox-toolbar > div:last-child,
+  .notification-inbox-toolbar button {
+    width: 100%;
+  }
+
+  .notification-inbox-toolbar > div:last-child {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media print {
+  .notification-inbox-trigger,
+  .notification-inbox-backdrop,
+  .notification-inbox-panel {
+    display: none !important;
+  }
+}

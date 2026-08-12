@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
+import { NavigationIcon, navigationIconKind, type NavigationIconKind } from '@/components/layout/NavigationIcon';
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import type { NavSection } from '@/lib/auth/permissions';
 import type { BusinessRole } from '@/types/dallmayrerp';
@@ -43,26 +44,6 @@ function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return 'DU';
   return parts.slice(0, 2).map((part) => part[0]?.toUpperCase()).join('');
-}
-
-function navGlyph(label: string, href: string) {
-  const value = `${label} ${href}`.toLowerCase();
-  if (value.includes('dashboard') || value.includes('today') || value.includes('home')) return '⌂';
-  if (value.includes('work') || value.includes('job') || value.includes('task')) return '✓';
-  if (value.includes('message') || value.includes('inbox')) return '◌';
-  if (value.includes('alert') || value.includes('notification')) return '♢';
-  if (value.includes('customer')) return '◎';
-  if (value.includes('machine') || value.includes('asset') || value.includes('equipment')) return '◇';
-  if (value.includes('stock') || value.includes('inventory') || value.includes('warehouse') || value.includes('part')) return '□';
-  if (value.includes('report') || value.includes('executive')) return '▥';
-  if (value.includes('sales')) return '↗';
-  if (value.includes('finance')) return '$';
-  if (value.includes('marketing')) return '◉';
-  if (value.includes('telemetry')) return '⌁';
-  if (value.includes('user') || value.includes('admin')) return '♙';
-  if (value.includes('setting')) return '⚙';
-  if (value.includes('scan')) return '▣';
-  return '›';
 }
 
 export function MobileNavigationDrawer({
@@ -159,6 +140,7 @@ export function MobileNavigationDrawer({
     <div className="mobile-nav-portal-root mobile-menu-v2" data-mobile-overlay="navigation">
       <button aria-label="Close navigation menu" className="mobile-nav-backdrop" onClick={() => setOpen(false)} type="button" />
       <div
+        aria-label={`${activeTitle} navigation`}
         aria-labelledby="mobile-navigation-title"
         aria-modal="true"
         className="mobile-nav-panel mobile-menu-v2-panel"
@@ -175,31 +157,31 @@ export function MobileNavigationDrawer({
             <strong>{roleLabel}</strong>
             {!profileComplete ? <small>Profile setup required</small> : null}
           </div>
-          <button aria-label="Close navigation menu" className="mobile-menu-v2-close" onClick={() => setOpen(false)} ref={closeButtonRef} type="button">×</button>
+          <button aria-label="Close navigation menu" className="mobile-menu-v2-close" onClick={() => setOpen(false)} ref={closeButtonRef} type="button"><NavigationIcon kind="close" /></button>
         </header>
 
         <nav aria-label="Mobile navigation" className="mobile-menu-v2-nav">
           <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} className="mobile-menu-v2-link mobile-menu-v2-home" href={homePath} onClick={() => setOpen(false)}>
-            <span className="mobile-menu-v2-icon" aria-hidden="true">⌂</span>
+            <span className="mobile-menu-v2-icon" aria-hidden="true"><NavigationIcon kind="dashboard" /></span>
             <span className="mobile-menu-v2-copy"><strong>Dashboard</strong></span>
           </Link>
 
           <Link aria-current={isActivePath(pathname, '/work') ? 'page' : undefined} className="mobile-menu-v2-link" href="/work" onClick={() => setOpen(false)}>
-            <span className="mobile-menu-v2-icon" aria-hidden="true">✓</span>
+            <span className="mobile-menu-v2-icon" aria-hidden="true"><NavigationIcon kind="clipboard" /></span>
             <span className="mobile-menu-v2-copy"><strong>My Work</strong></span>
-            <span className="mobile-menu-v2-chevron" aria-hidden="true">›</span>
+            <span className="mobile-menu-v2-chevron" aria-hidden="true"><NavigationIcon kind="chevron-right" /></span>
           </Link>
 
           <button className="mobile-menu-v2-link mobile-menu-v2-button" onClick={() => { setOpen(false); window.dispatchEvent(new Event('dallmayr-open-alerts')); }} type="button">
-            <span className="mobile-menu-v2-icon" aria-hidden="true">♢</span>
+            <span className="mobile-menu-v2-icon" aria-hidden="true"><NavigationIcon kind="bell" /></span>
             <span className="mobile-menu-v2-copy"><strong>Inbox & Alerts</strong></span>
-            <span className="mobile-menu-v2-chevron" aria-hidden="true">›</span>
+            <span className="mobile-menu-v2-chevron" aria-hidden="true"><NavigationIcon kind="chevron-right" /></span>
           </button>
 
           <div className="mobile-menu-v2-search-row">
-            <span className="mobile-menu-v2-icon" aria-hidden="true">⌕</span>
+            <span className="mobile-menu-v2-icon" aria-hidden="true"><NavigationIcon kind="search" /></span>
             <GlobalSearch enableShortcut={false} showShortcut={false} triggerClassName="mobile-global-search-trigger mobile-menu-v2-search-trigger" triggerLabel="Search" />
-            <span className="mobile-menu-v2-chevron" aria-hidden="true">›</span>
+            <span className="mobile-menu-v2-chevron" aria-hidden="true"><NavigationIcon kind="chevron-right" /></span>
           </div>
 
           {favoriteItems.length > 0 ? (
@@ -208,11 +190,11 @@ export function MobileNavigationDrawer({
               {favoriteItems.map((item) => (
                 <div className="mobile-menu-v2-item-with-action" key={`fav-${item.href}`}>
                   <Link className="mobile-menu-v2-link" href={item.href} onClick={() => setOpen(false)}>
-                    <span className="mobile-menu-v2-icon" aria-hidden="true">{navGlyph(item.label, item.href)}</span>
+                    <span className="mobile-menu-v2-icon" aria-hidden="true"><NavigationIcon kind={navigationIconKind(item.label, item.href)} /></span>
                     <span className="mobile-menu-v2-copy"><strong>{item.label}</strong>{item.description ? <small>{item.description}</small> : null}</span>
-                    <span className="mobile-menu-v2-chevron" aria-hidden="true">›</span>
+                    <span className="mobile-menu-v2-chevron" aria-hidden="true"><NavigationIcon kind="chevron-right" /></span>
                   </Link>
-                  <button aria-label={`Unpin ${item.label}`} className="mobile-menu-v2-pin" onClick={() => onToggleFavorite(item.href)} type="button">★</button>
+                  <button aria-label={`Unpin ${item.label}`} className="mobile-menu-v2-pin" onClick={() => onToggleFavorite(item.href)} type="button"><NavigationIcon kind="pin-filled" /></button>
                 </div>
               ))}
             </section>
@@ -228,11 +210,11 @@ export function MobileNavigationDrawer({
                 return (
                   <div className="mobile-menu-v2-item-with-action" key={item.href}>
                     <Link aria-current={active ? 'page' : undefined} className={`mobile-menu-v2-link ${active ? 'is-active' : ''}`} href={item.href} onClick={() => setOpen(false)}>
-                      <span className="mobile-menu-v2-icon" aria-hidden="true">{navGlyph(item.label, item.href)}</span>
+                      <span className="mobile-menu-v2-icon" aria-hidden="true"><NavigationIcon kind={navigationIconKind(item.label, item.href)} /></span>
                       <span className="mobile-menu-v2-copy"><strong>{item.label}</strong>{item.description ? <small>{item.description}</small> : null}</span>
-                      <span className="mobile-menu-v2-chevron" aria-hidden="true">›</span>
+                      <span className="mobile-menu-v2-chevron" aria-hidden="true"><NavigationIcon kind="chevron-right" /></span>
                     </Link>
-                    <button aria-label={pinned ? `Unpin ${item.label}` : `Pin ${item.label}`} aria-pressed={pinned} className="mobile-menu-v2-pin" disabled={pinDisabled} onClick={() => onToggleFavorite(item.href)} title={pinDisabled ? `You can pin up to ${MAX_FAVORITES} pages` : undefined} type="button">{pinned ? '★' : '☆'}</button>
+                    <button aria-label={pinned ? `Unpin ${item.label}` : `Pin ${item.label}`} aria-pressed={pinned} className="mobile-menu-v2-pin" disabled={pinDisabled} onClick={() => onToggleFavorite(item.href)} title={pinDisabled ? `You can pin up to ${MAX_FAVORITES} pages` : undefined} type="button"><NavigationIcon kind={pinned ? 'pin-filled' : 'pin'} /></button>
                   </div>
                 );
               })}
@@ -250,8 +232,16 @@ export function MobileNavigationDrawer({
   );
 }
 
-const quickLabels: Record<BusinessRole, { label: string; icon: string }> = {
-  admin: { label: 'Work', icon: '✓' }, operations: { label: 'Dispatch', icon: '⇄' }, sales: { label: 'Sales', icon: '↗' }, finance: { label: 'Finance', icon: '$' }, marketing: { label: 'Marketing', icon: '◎' }, executive: { label: 'Overview', icon: '◇' }, warehouse_staff: { label: 'Stock', icon: '▦' }, technician: { label: 'Jobs', icon: '✓' }, road_technician: { label: 'Routes', icon: '⌖' },
+const quickLabels: Record<BusinessRole, { label: string; kind: NavigationIconKind }> = {
+  admin: { label: 'Work', kind: 'clipboard' },
+  operations: { label: 'Dispatch', kind: 'truck' },
+  sales: { label: 'Sales', kind: 'sales' },
+  finance: { label: 'Finance', kind: 'finance' },
+  marketing: { label: 'Marketing', kind: 'marketing' },
+  executive: { label: 'Overview', kind: 'chart' },
+  warehouse_staff: { label: 'Stock', kind: 'box' },
+  technician: { label: 'Jobs', kind: 'clipboard' },
+  road_technician: { label: 'Routes', kind: 'truck' },
 };
 
 export function MobileQuickBar({ homePath, menuOpen, pathname, role, scanPath, setMenuOpen, taskPath }: MobileQuickBarProps) {
@@ -265,11 +255,11 @@ export function MobileQuickBar({ homePath, menuOpen, pathname, role, scanPath, s
 
   return (
     <nav aria-label="Mobile quick actions" className="mobile-quick-bar">
-      <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} href={homePath}><span aria-hidden="true">⌂</span><strong>Today</strong></Link>
-      <Link aria-current={isActivePath(pathname, taskPath) ? 'page' : undefined} href={taskPath}><span aria-hidden="true">{primary.icon}</span><strong>{primary.label}</strong></Link>
-      {fieldRole || warehouseRole ? <Link aria-current={isActivePath(pathname, scanPath) ? 'page' : undefined} href={scanPath}><span aria-hidden="true">▣</span><strong>Scan</strong></Link> : <button aria-label="Open global search" onClick={openSearch} type="button"><span aria-hidden="true">⌕</span><strong>Search</strong></button>}
-      {fieldRole ? <button aria-label="Open offline work queue" onClick={openQueue} type="button"><span aria-hidden="true">⇅</span><strong>Queue</strong></button> : <button aria-label="Open notifications" onClick={openAlerts} type="button"><span aria-hidden="true">♢</span><strong>Alerts</strong></button>}
-      <button aria-expanded={menuOpen} onClick={() => setMenuOpen((current) => !current)} type="button"><span aria-hidden="true">☰</span><strong>Menu</strong></button>
+      <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} href={homePath}><span aria-hidden="true"><NavigationIcon kind="dashboard" /></span><strong>Today</strong></Link>
+      <Link aria-current={isActivePath(pathname, taskPath) ? 'page' : undefined} href={taskPath}><span aria-hidden="true"><NavigationIcon kind={primary.kind} /></span><strong>{primary.label}</strong></Link>
+      {fieldRole || warehouseRole ? <Link aria-current={isActivePath(pathname, scanPath) ? 'page' : undefined} href={scanPath}><span aria-hidden="true"><NavigationIcon kind="scan" /></span><strong>Scan</strong></Link> : <button aria-label="Open global search" onClick={openSearch} type="button"><span aria-hidden="true"><NavigationIcon kind="search" /></span><strong>Search</strong></button>}
+      {fieldRole ? <button aria-label="Open offline work queue" onClick={openQueue} type="button"><span aria-hidden="true"><NavigationIcon kind="queue" /></span><strong>Queue</strong></button> : <button aria-label="Open notifications" onClick={openAlerts} type="button"><span aria-hidden="true"><NavigationIcon kind="bell" /></span><strong>Alerts</strong></button>}
+      <button aria-expanded={menuOpen} onClick={() => setMenuOpen((current) => !current)} type="button"><span aria-hidden="true"><NavigationIcon kind="menu" /></span><strong>Menu</strong></button>
     </nav>
   );
 }

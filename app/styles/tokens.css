@@ -68,6 +68,25 @@
 
   --ds-shadow-sm: 0 1px 2px color-mix(in srgb, #000 18%, transparent);
   --ds-shadow-md: 0 10px 30px color-mix(in srgb, #000 22%, transparent);
+
+  /*
+   * Compatibility aliases for the still-active board/My Work selector families.
+   * New UI must use --ds-*, --ui-* or component-local tokens instead. Keeping
+   * these aliases here lets the obsolete Monday shell stylesheet be retired
+   * without changing board behaviour on desktop, phone or touch tablet.
+   */
+  --monday-shell-bg: var(--ui-surface, #ffffff);
+  --monday-shell-raised: var(--ui-surface-soft, #fbf8f1);
+  --monday-page-bg: var(--ui-canvas, #f5f0e6);
+  --monday-text: var(--ui-ink, #231f1a);
+  --monday-strong: #1d1812;
+  --monday-muted: var(--ui-muted, #625b50);
+  --monday-subtle: #8a7b68;
+  --monday-border: var(--ui-border, #d8cdbc);
+  --monday-divider: color-mix(in srgb, var(--ui-border, #d8cdbc) 72%, #ffffff);
+  --monday-hover: color-mix(in srgb, var(--ui-gold, #b8862f) 10%, #ffffff);
+  --monday-selected: color-mix(in srgb, var(--ui-gold, #b8862f) 17%, #ffffff);
+  --monday-accent: var(--ui-gold, #b8862f);
 }
 
 html[data-density='compact'] {

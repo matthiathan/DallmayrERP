@@ -1,24 +1,23 @@
 /*
  * Legacy layout-programme manifest.
  *
- * These layers remain temporarily because older routes still use their class
- * names. The canonical application stylesheet imported after this manifest is
- * the visual authority. Do not add new layout programmes here.
+ * This manifest now contains only explicit active feature boundaries whose
+ * selectors are still used by live UI. The canonical application stylesheet
+ * imported after this manifest remains the visual authority. Do not add new
+ * legacy layout programmes here.
+ *
+ * Retired presentation/transition programmes include the Monday shell, original
+ * application shell, Phase 2 page-template presentation, Operations Cockpit,
+ * ERP Executive, Dynamics 365, ERP Workbench, the old ui-readability reskin,
+ * navigation-contract.css and compatibility-overrides.css.
+ *
+ * Active feature wrappers preserve existing selector behavior and load order:
+ * Role Today, board/customer/item/operational/My Work, and internal messaging.
+ * Neutral focus/overflow/readability and semantic compatibility invariants live
+ * in canonical-readability-safety.css. Mobile record and field-work behavior is
+ * owned by the corresponding feature styles and final responsive authority.
  */
-@import '../application-shell-phase-1.css';
-@import '../page-templates-phase-2.css';
-@import '../role-today-workspaces.css';
-@import './navigation-contract.css';
-@import './compatibility-overrides.css';
-@import '../monday-shell-phase-1.css';
-@import '../monday-board-phase-2.css';
-@import '../monday-customer-board-phase-2.css';
-@import '../monday-item-card-phase-3.css';
-@import '../monday-operational-views-phase-4.css';
-@import '../monday-my-work-phase-5.css';
-@import '../operations-cockpit.css';
-@import '../erp-executive-ui.css';
-@import '../dynamics-365-ui.css';
-@import '../ui-readability-layout.css';
-@import '../internal-messaging-v2.css';
-@import '../erp-workbench-system.css';
+@import './active-role-today-workspace.css';
+@import './active-board-workspaces.css';
+@import './canonical-readability-safety.css';
+@import './active-messaging-workspace.css';
