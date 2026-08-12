@@ -1,0 +1,104 @@
+name: Production visual verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Render production base URL
+        required: true
+        default: https://dallmayrerp.onrender.com
+        type: string
+      routes:
+        description: Comma-separated authenticated routes to verify
+        required: true
+        default: /,/customers,/operations/dashboard,/operations/assets,/warehouse/stock,/work,/messages,/workspace
+        type: string
+      baseline_run_id:
+        description: Optional prior Production visual verification run ID to compare against
+        required: false
+        default: ''
+        type: string
+      max_change_ratio:
+        description: Maximum allowed changed-pixel ratio when comparing to a baseline
+        required: true
+        default: '0.12'
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-production:
+    name: Authenticated Render screenshots and layout checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PRODUCTION_BASE_URL: ${{ inputs.base_url }}
+      PRODUCTION_VISUAL_ROUTES: ${{ inputs.routes }}
+      PRODUCTION_VISUAL_EMAIL: ${{ secrets.PRODUCTION_VISUAL_EMAIL }}
+      PRODUCTION_VISUAL_PASSWORD: ${{ secrets.PRODUCTION_VISUAL_PASSWORD }}
+      PRODUCTION_VISUAL_ARTIFACT_DIR: artifacts/production-visual/current
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify production visual credentials are configured
+        shell: bash
+        run: |
+          if [ -z "$PRODUCTION_VISUAL_EMAIL" ] || [ -z "$PRODUCTION_VISUAL_PASSWORD" ]; then
+            echo "Configure repository secrets PRODUCTION_VISUAL_EMAIL and PRODUCTION_VISUAL_PASSWORD before running production visual verification." >&2
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install browser test runner
+        run: |
+          npm ci --no-audit --no-fund
+          npm install --no-save --no-package-lock --no-audit --no-fund @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Capture authenticated production evidence
+        run: npx playwright test tests/production-visual.spec.mjs --reporter=line --workers=1
+
+      - name: Upload production screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-visual-screenshots
+          path: artifacts/production-visual/current
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Download selected baseline screenshots
+        if: ${{ inputs.baseline_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: production-visual-screenshots
+          path: artifacts/production-visual/baseline
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ inputs.baseline_run_id }}
+
+      - name: Compare production screenshots with baseline
+        if: ${{ inputs.baseline_run_id != '' }}
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check pillow
+          python scripts/compare-production-screenshots.py \
+            artifacts/production-visual/baseline \
+            artifacts/production-visual/current \
+            --max-change-ratio "${{ inputs.max_change_ratio }}"
+
+      - name: Upload visual comparison report
+        if: ${{ always() && inputs.baseline_run_id != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-visual-diff
+          path: artifacts/production-visual/diff
+          if-no-files-found: warn
+          retention-days: 30
