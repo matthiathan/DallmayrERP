@@ -99,7 +99,7 @@ for (const device of [
     await email.fill('mobile-test@example.com');
     await password.fill('not-a-real-password');
     await submit.click();
-    await expect(page.getByRole('alert')).toContainText(/Login failed|Expected test rejection|Login could not start/i);
+    await expect(page.locator('.login-card .error[role="alert"]')).toContainText(/Login failed|Expected test rejection|Login could not start/i);
 
     await context.close();
   });
