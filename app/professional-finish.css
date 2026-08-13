@@ -1,0 +1,876 @@
+/*
+ * Final professional finish for DallmayrERP.
+ *
+ * Presentation only: standardises visual rhythm, typography, controls, states and
+ * the remaining legacy-looking high-value workspaces. This layer intentionally
+ * loads after the desktop/Concentrix programmes and immediately before the locked
+ * responsive-mobile-tablet authority. No route, data, permission or workflow
+ * behaviour is changed here.
+ */
+
+:root {
+  --finish-ink: var(--ui-ink, #231f1a);
+  --finish-muted: var(--ui-muted, #625b50);
+  --finish-subtle: #8a7b68;
+  --finish-surface: var(--ui-surface, #ffffff);
+  --finish-soft: var(--ui-surface-soft, #fbf8f1);
+  --finish-canvas: var(--ui-canvas, #f5f0e6);
+  --finish-border: color-mix(in srgb, var(--ui-border, #d8cdbc) 86%, #ffffff);
+  --finish-border-strong: var(--ui-border-strong, #bdaa8d);
+  --finish-gold: var(--ui-gold, #b8862f);
+  --finish-gold-dark: var(--ui-gold-dark, #6d4b16);
+  --finish-gold-soft: color-mix(in srgb, var(--finish-gold) 10%, #ffffff);
+  --finish-gold-selected: color-mix(in srgb, var(--finish-gold) 17%, #ffffff);
+  --finish-danger: #b42318;
+  --finish-warning: #9a6700;
+  --finish-success: #1f7a46;
+  --finish-info: #1f5f99;
+  --finish-radius-sm: 9px;
+  --finish-radius-md: 13px;
+  --finish-radius-lg: 18px;
+  --finish-shadow-xs: 0 1px 2px rgba(53, 42, 28, .045);
+  --finish-shadow-sm: 0 7px 22px rgba(53, 42, 28, .065);
+  --finish-shadow-lg: 0 18px 46px rgba(53, 42, 28, .12);
+  --finish-space-1: 8px;
+  --finish-space-2: 12px;
+  --finish-space-3: 16px;
+  --finish-space-4: 24px;
+  --finish-space-5: 32px;
+  --finish-control: 42px;
+  --finish-transition: 150ms cubic-bezier(.2, 0, 0, 1);
+}
+
+@media (min-width: 901px) {
+  /* Consistent page rhythm and information hierarchy. */
+  :is(.erp-page, .page-template, .page-stage, .workspace-stage, .role-workspace-stage, .today-workspace-stage) {
+    align-content: start;
+    min-width: 0;
+  }
+
+  .erp-page-header-copy,
+  .page-header > div:first-child,
+  .page-template-header > div:first-child,
+  .board-header > div:first-child,
+  .workbench-header > div:first-child {
+    min-width: 0;
+    max-width: min(82ch, 100%);
+  }
+
+  :is(.erp-page-header, .page-header, .page-template-header, .board-header, .workbench-header) h1 {
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+  }
+
+  :is(.erp-page-header, .page-header, .page-template-header, .board-header, .workbench-header) p {
+    text-wrap: pretty;
+  }
+
+  .erp-page-header-side {
+    min-width: 0;
+    max-width: min(620px, 48%);
+  }
+
+  .erp-page-header-meta {
+    color: var(--finish-muted);
+    font-size: .8rem;
+    line-height: 1.45;
+  }
+
+  .erp-content-grid,
+  .erp-metric-grid,
+  .grid,
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    gap: var(--finish-space-3);
+  }
+
+  /* Shared surfaces use one radius, border and elevation language. */
+  :is(
+    .erp-panel,
+    .erp-form-section,
+    .erp-record-summary-card,
+    .erp-metric-card,
+    .erp-table-shell,
+    .neo-card,
+    .card,
+    .panel,
+    .summary-card,
+    .metric-card,
+    .kpi-card,
+    .form-card,
+    .table-card,
+    .detail-card,
+    .hero-panel
+  ) {
+    border-color: var(--finish-border) !important;
+    border-radius: var(--finish-radius-md) !important;
+    box-shadow: var(--finish-shadow-xs) !important;
+  }
+
+  :is(.erp-panel, .erp-form-section, .erp-record-summary-card, .erp-table-shell, .neo-card, .card, .panel) {
+    background: var(--finish-surface) !important;
+    color: var(--finish-ink) !important;
+  }
+
+  :is(.erp-panel-header, .erp-form-section-header, .erp-table-toolbar, .erp-table-footer, .card-header, .panel-header) {
+    border-color: var(--finish-border) !important;
+    background: linear-gradient(180deg, #fff 0%, var(--finish-soft) 100%) !important;
+  }
+
+  :is(.erp-panel-header, .erp-form-section-header, .card-header, .panel-header) h2,
+  :is(.erp-panel-header, .erp-form-section-header, .card-header, .panel-header) h3 {
+    margin: 0 !important;
+    color: var(--finish-ink) !important;
+    font-size: 1rem !important;
+    font-weight: 780 !important;
+    letter-spacing: -.018em !important;
+  }
+
+  :is(.erp-panel-header, .erp-form-section-header, .card-header, .panel-header) p {
+    margin: 4px 0 0 !important;
+    color: var(--finish-muted) !important;
+    font-size: .84rem !important;
+    line-height: 1.5;
+  }
+
+  .erp-metric-card,
+  .kpi-card,
+  .metric-card {
+    min-width: 0;
+    min-height: 126px;
+    padding: 18px !important;
+    background: linear-gradient(180deg, #fff 0%, #fffdf9 100%) !important;
+  }
+
+  :is(.erp-metric-card, .kpi-card, .metric-card) > :is(div, section) {
+    min-width: 0;
+  }
+
+  :is(.erp-metric-card, .kpi-card, .metric-card) span:first-child {
+    color: #755b32 !important;
+    font-size: .73rem !important;
+    font-weight: 800 !important;
+    letter-spacing: .035em !important;
+  }
+
+  :is(.erp-metric-card, .kpi-card, .metric-card) strong {
+    color: var(--finish-ink) !important;
+    letter-spacing: -.035em;
+  }
+
+  :is(.erp-metric-card, .kpi-card, .metric-card) p,
+  :is(.erp-metric-card, .kpi-card, .metric-card) small {
+    color: var(--finish-muted) !important;
+    line-height: 1.45;
+  }
+
+  /* Toolbars and filters should feel like one command surface. */
+  :is(.erp-toolbar, .erp-filter-bar, .page-toolbar, .table-toolbar, .search-toolbar) {
+    align-items: center;
+    gap: 10px 12px !important;
+    border-color: var(--finish-border) !important;
+    border-radius: var(--finish-radius-md) !important;
+    background: var(--finish-surface) !important;
+    box-shadow: var(--finish-shadow-xs) !important;
+  }
+
+  :is(.erp-toolbar-primary, .erp-toolbar-secondary, .erp-filter-controls, .erp-filter-summary, .page-toolbar-actions) {
+    min-width: 0;
+    gap: 8px !important;
+  }
+
+  /* Buttons: restrained visual hierarchy with complete interaction states. */
+  :is(button, .button, .erp-button, [role='button']) {
+    min-height: var(--finish-control);
+    border-radius: var(--finish-radius-sm) !important;
+    transition:
+      background-color var(--finish-transition),
+      border-color var(--finish-transition),
+      color var(--finish-transition),
+      box-shadow var(--finish-transition),
+      transform var(--finish-transition);
+  }
+
+  :is(button, .button, .erp-button, [role='button']):not(:disabled):not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+
+  :is(button, .button, .erp-button):disabled,
+  :is(.button, [role='button'])[aria-disabled='true'] {
+    cursor: not-allowed !important;
+    opacity: .56 !important;
+    filter: saturate(.72);
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  :is(button, .button, .erp-button)[aria-busy='true'],
+  :is(button, .button, .erp-button).is-loading {
+    cursor: progress !important;
+  }
+
+  :is(.button.secondary, button.secondary, .erp-button[data-variant='secondary']):hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--finish-gold) 42%, var(--finish-border-strong)) !important;
+    background: var(--finish-gold-soft) !important;
+    color: var(--finish-ink) !important;
+  }
+
+  :is(.button.danger, button.danger, .erp-button[data-variant='danger']) {
+    border-color: color-mix(in srgb, var(--finish-danger) 42%, #ffffff) !important;
+    background: #fff2f0 !important;
+    color: #8f2119 !important;
+  }
+
+  :is(.button.danger, button.danger, .erp-button[data-variant='danger']):hover:not(:disabled) {
+    border-color: var(--finish-danger) !important;
+    background: #fee9e6 !important;
+  }
+
+  /* Forms: labels, controls and helper text use predictable rhythm. */
+  :is(.form-grid, .field-grid, .erp-form-section-body) {
+    gap: 14px 16px !important;
+  }
+
+  :is(.form-grid, .field-grid, .erp-form-section-body) label,
+  .field-label {
+    display: grid;
+    align-content: start;
+    gap: 6px;
+    min-width: 0;
+    color: var(--finish-ink);
+    font-size: .84rem;
+    font-weight: 700;
+  }
+
+  :is(input, select, textarea, .erp-input, .erp-select, .erp-textarea) {
+    min-height: 44px !important;
+    border-color: var(--finish-border-strong) !important;
+    border-radius: var(--finish-radius-sm) !important;
+    background: #fff !important;
+    color: var(--finish-ink) !important;
+  }
+
+  textarea,
+  .erp-textarea {
+    line-height: 1.5;
+    resize: vertical;
+  }
+
+  ::placeholder {
+    color: #8e8274;
+    opacity: 1;
+  }
+
+  .form-help,
+  .field-help,
+  .helper-text,
+  label > small {
+    color: var(--finish-muted) !important;
+    font-size: .76rem !important;
+    font-weight: 500;
+    line-height: 1.45;
+  }
+
+  /* Tables: professional information density without cramped controls. */
+  :is(.erp-table-shell, .enterprise-table-shell, .remote-table-shell, .table-container, .data-table-wrapper) {
+    min-width: 0;
+    border-color: var(--finish-border) !important;
+    border-radius: var(--finish-radius-md) !important;
+    background: #fff !important;
+    box-shadow: var(--finish-shadow-xs) !important;
+  }
+
+  :is(.erp-table-shell, .enterprise-table-shell, .remote-table-shell, .table-container, .data-table-wrapper) thead th {
+    color: #514638 !important;
+    background: linear-gradient(180deg, #f8f1e5 0%, #f3e8d7 100%) !important;
+    border-bottom-color: var(--finish-border-strong) !important;
+  }
+
+  :is(.erp-table-shell, .enterprise-table-shell, .remote-table-shell, .table-container, .data-table-wrapper) tbody td {
+    color: var(--finish-ink);
+    border-bottom-color: var(--finish-border) !important;
+  }
+
+  :is(.erp-table-shell, .enterprise-table-shell, .remote-table-shell, .table-container, .data-table-wrapper) tbody tr:hover td {
+    background: #fff9ed !important;
+  }
+
+  .erp-pagination,
+  .table-pagination,
+  .pagination {
+    min-height: 50px;
+    align-items: center;
+    gap: 8px;
+    color: var(--finish-muted);
+  }
+
+  .erp-pagination button,
+  .table-pagination button,
+  .pagination button {
+    min-width: 38px;
+    min-height: 38px;
+    padding: 6px 10px;
+  }
+
+  /* Tabs and segmented views should read as navigation, not separate card systems. */
+  :is(.erp-tab-bar, .tab-bar, .view-tabs, .workspace-tabs) {
+    gap: 4px;
+    padding: 5px;
+    border: 1px solid var(--finish-border);
+    border-radius: 11px;
+    background: var(--finish-soft);
+  }
+
+  :is(.erp-tab-bar, .tab-bar, .view-tabs, .workspace-tabs) :is(button, a) {
+    min-height: 38px;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+  }
+
+  :is(.erp-tab-bar, .tab-bar, .view-tabs, .workspace-tabs) :is([aria-selected='true'], [aria-current='page'], .is-active) {
+    background: #fff !important;
+    color: var(--finish-ink) !important;
+    box-shadow: var(--finish-shadow-xs) !important;
+  }
+
+  /* Empty, loading, success and error states use the same component language. */
+  .erp-state-banner {
+    display: grid !important;
+    grid-template-columns: 4px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px 14px;
+    min-width: 0;
+    padding: 14px 16px !important;
+    border: 1px solid var(--finish-border) !important;
+    border-radius: var(--finish-radius-md) !important;
+    background: var(--finish-soft) !important;
+    box-shadow: var(--finish-shadow-xs);
+  }
+
+  .erp-state-marker {
+    align-self: stretch;
+    width: 4px;
+    min-height: 34px;
+    border-radius: 999px;
+    background: var(--finish-info);
+  }
+
+  .erp-state-copy {
+    min-width: 0;
+  }
+
+  .erp-state-copy h2 {
+    margin: 0 !important;
+    color: var(--finish-ink) !important;
+    font-size: .9rem !important;
+    font-weight: 800 !important;
+  }
+
+  .erp-state-copy p {
+    margin: 3px 0 0 !important;
+    color: var(--finish-muted) !important;
+    font-size: .82rem !important;
+    line-height: 1.45;
+  }
+
+  .erp-state-banner[data-tone='success'] { background: #f0f8f3 !important; border-color: #c7dfcf !important; }
+  .erp-state-banner[data-tone='success'] .erp-state-marker { background: var(--finish-success); }
+  .erp-state-banner[data-tone='warning'] { background: #fff8e7 !important; border-color: #ead59c !important; }
+  .erp-state-banner[data-tone='warning'] .erp-state-marker { background: var(--finish-warning); }
+  .erp-state-banner[data-tone='danger'] { background: #fff1ef !important; border-color: #efc1bc !important; }
+  .erp-state-banner[data-tone='danger'] .erp-state-marker { background: var(--finish-danger); }
+  .erp-state-banner[data-tone='neutral'] .erp-state-marker { background: #8a7b68; }
+
+  .empty-state,
+  .erp-empty-state,
+  .empty-message,
+  .table-empty-state {
+    min-height: 154px;
+    padding: 26px 20px !important;
+    border: 1px dashed var(--finish-border-strong) !important;
+    border-radius: var(--finish-radius-md) !important;
+    background: linear-gradient(180deg, #fff 0%, var(--finish-soft) 100%) !important;
+    color: var(--finish-muted) !important;
+    text-align: center;
+  }
+
+  :is(.empty-state, .erp-empty-state, .empty-message, .table-empty-state) :is(h2, h3, strong) {
+    color: var(--finish-ink) !important;
+  }
+
+  :is(.loading, .is-loading, [aria-busy='true']) {
+    cursor: progress;
+  }
+
+  .error,
+  [role='alert'].error,
+  .danger-banner {
+    padding: 12px 14px;
+    border: 1px solid #efc1bc !important;
+    border-radius: var(--finish-radius-md) !important;
+    background: #fff1ef !important;
+    color: #812018 !important;
+  }
+
+  .success,
+  .success-message {
+    border-color: #c7dfcf !important;
+    background: #f0f8f3 !important;
+    color: #175f39 !important;
+  }
+
+  /* High-value workspace P1: retire remaining dark Customer 360 presentation. */
+  .customer360-stage {
+    gap: 18px !important;
+    color: var(--finish-ink) !important;
+  }
+
+  .customer360-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 340px) !important;
+    gap: 28px !important;
+    padding: 24px 26px !important;
+    border: 1px solid var(--finish-border-strong) !important;
+    border-radius: var(--finish-radius-lg) !important;
+    background: linear-gradient(128deg, var(--finish-gold-soft) 0%, #fff 56%, #fffdf9 100%) !important;
+    box-shadow: var(--finish-shadow-sm) !important;
+  }
+
+  .customer360-hero::after {
+    right: -115px !important;
+    bottom: -145px !important;
+    border-color: color-mix(in srgb, var(--finish-gold) 22%, transparent) !important;
+    box-shadow:
+      0 0 0 42px color-mix(in srgb, var(--finish-gold) 4%, transparent),
+      0 0 0 86px color-mix(in srgb, var(--finish-gold) 2%, transparent) !important;
+  }
+
+  .customer360-hero h1 {
+    margin: 7px 0 8px !important;
+    color: var(--finish-ink) !important;
+    font-size: clamp(2rem, 3.2vw, 3.5rem) !important;
+    line-height: 1.02 !important;
+    letter-spacing: -.045em !important;
+  }
+
+  .customer360-identity,
+  .customer360-hero-summary span {
+    color: var(--finish-gold-dark) !important;
+  }
+
+  .customer360-address,
+  .customer360-hero-summary small,
+  .customer360-metrics span,
+  .customer360-metrics small {
+    color: var(--finish-muted) !important;
+  }
+
+  .customer360-hero-summary {
+    min-height: 150px !important;
+    padding: 18px !important;
+    border: 1px solid var(--finish-border) !important;
+    border-radius: var(--finish-radius-md) !important;
+    background: rgba(255, 255, 255, .92) !important;
+    box-shadow: var(--finish-shadow-xs) !important;
+    backdrop-filter: blur(10px);
+  }
+
+  .customer360-hero-summary strong {
+    color: var(--finish-ink) !important;
+    font-size: clamp(1.45rem, 2vw, 2rem) !important;
+  }
+
+  .customer360-metrics {
+    gap: 12px !important;
+  }
+
+  .customer360-metrics button {
+    min-height: 118px !important;
+    padding: 16px !important;
+    border: 1px solid var(--finish-border) !important;
+    border-radius: var(--finish-radius-md) !important;
+    background: #fff !important;
+    color: var(--finish-ink) !important;
+    box-shadow: var(--finish-shadow-xs) !important;
+    transform: none !important;
+  }
+
+  .customer360-metrics button:hover,
+  .customer360-metrics button:focus-visible {
+    border-color: color-mix(in srgb, var(--finish-gold) 42%, var(--finish-border)) !important;
+    background: var(--finish-gold-soft) !important;
+    transform: none !important;
+  }
+
+  .customer360-metrics strong {
+    color: var(--finish-ink) !important;
+    font-size: clamp(1.65rem, 2.25vw, 2.4rem) !important;
+  }
+
+  .customer360-tabs {
+    top: calc(var(--application-header-height, 88px) + 8px) !important;
+    gap: 4px !important;
+    padding: 5px !important;
+    border: 1px solid var(--finish-border) !important;
+    border-radius: 12px !important;
+    background: rgba(255, 255, 255, .96) !important;
+    box-shadow: var(--finish-shadow-sm) !important;
+  }
+
+  .customer360-tabs button {
+    color: var(--finish-muted) !important;
+    border-radius: 8px !important;
+  }
+
+  .customer360-tabs button:hover,
+  .customer360-tabs button:focus-visible {
+    color: var(--finish-ink) !important;
+    background: var(--finish-gold-soft) !important;
+  }
+
+  .customer360-tabs button.is-active {
+    border-color: color-mix(in srgb, var(--finish-gold) 38%, var(--finish-border)) !important;
+    background: var(--finish-gold-selected) !important;
+    color: var(--finish-ink) !important;
+    box-shadow: inset 0 -2px 0 var(--finish-gold) !important;
+  }
+
+  /* High-value workspace P1: Warehouse Stock uses the canonical light programme. */
+  .stock-control-centre {
+    gap: 18px !important;
+    color: var(--finish-ink) !important;
+  }
+
+  .stock-mode-grid {
+    gap: 12px !important;
+  }
+
+  .stock-mode-button {
+    min-height: 92px !important;
+    padding: 14px 15px !important;
+    color: var(--finish-ink) !important;
+    border: 1px solid var(--finish-border) !important;
+    border-radius: var(--finish-radius-md) !important;
+    background: #fff !important;
+    box-shadow: var(--finish-shadow-xs) !important;
+    transform: none !important;
+  }
+
+  .stock-mode-button strong {
+    color: var(--finish-gold-dark) !important;
+    font-size: .94rem !important;
+  }
+
+  .stock-mode-button span,
+  .stock-photo-card figcaption,
+  .stock-match-card span {
+    color: var(--finish-muted) !important;
+  }
+
+  .stock-mode-button:hover,
+  .stock-mode-button:focus-visible,
+  .stock-mode-button.is-active {
+    border-color: color-mix(in srgb, var(--finish-gold) 46%, var(--finish-border)) !important;
+    background: var(--finish-gold-soft) !important;
+    box-shadow: var(--finish-shadow-xs) !important;
+    transform: none !important;
+  }
+
+  .stock-mode-button.is-active {
+    box-shadow: inset 3px 0 0 var(--finish-gold), var(--finish-shadow-xs) !important;
+  }
+
+  .stock-match-card {
+    padding: 14px 16px !important;
+    border-color: #b9dbc6 !important;
+    border-radius: var(--finish-radius-md) !important;
+    background: #f0f8f3 !important;
+    color: var(--finish-ink) !important;
+  }
+
+  .stock-photo-card {
+    border-color: var(--finish-border) !important;
+    border-radius: var(--finish-radius-md) !important;
+    background: #fff !important;
+    box-shadow: var(--finish-shadow-xs) !important;
+  }
+
+  .purchase-order-card.is-selected,
+  .low-stock-card:hover {
+    border-color: color-mix(in srgb, var(--finish-gold) 48%, var(--finish-border)) !important;
+    box-shadow: inset 3px 0 0 var(--finish-gold), var(--finish-shadow-xs) !important;
+  }
+
+  /* High-value workspace P1: Operations Exceptions leaves the old dark cockpit. */
+  .exception-centre-stage {
+    color: var(--finish-ink) !important;
+  }
+
+  .exception-queue-tabs {
+    gap: 4px !important;
+    padding: 5px !important;
+    border: 1px solid var(--finish-border) !important;
+    border-radius: 12px !important;
+    background: var(--finish-surface) !important;
+    box-shadow: var(--finish-shadow-xs) !important;
+  }
+
+  .exception-queue-tabs button {
+    min-height: 38px !important;
+    color: var(--finish-muted) !important;
+    border-radius: 8px !important;
+  }
+
+  .exception-queue-tabs button:hover,
+  .exception-queue-tabs button:focus-visible {
+    color: var(--finish-ink) !important;
+    background: var(--finish-gold-soft) !important;
+  }
+
+  .exception-queue-tabs button.is-active {
+    color: var(--finish-ink) !important;
+    border-color: color-mix(in srgb, var(--finish-gold) 36%, var(--finish-border)) !important;
+    background: var(--finish-gold-selected) !important;
+    box-shadow: inset 0 -2px 0 var(--finish-gold) !important;
+  }
+
+  .exception-case-list {
+    padding: 12px !important;
+    border: 1px solid var(--finish-border) !important;
+    border-radius: var(--finish-radius-md) !important;
+    background: #fff !important;
+    box-shadow: var(--finish-shadow-xs) !important;
+  }
+
+  .exception-list-heading {
+    top: -12px !important;
+    margin: -12px -12px 2px !important;
+    padding: 14px 12px 11px !important;
+    border-bottom-color: var(--finish-border) !important;
+    background: rgba(255, 255, 255, .96) !important;
+  }
+
+  .exception-list-heading > span,
+  .exception-case-card-top > span,
+  .exception-case-card-meta,
+  .exception-case-card p {
+    color: var(--finish-muted) !important;
+  }
+
+  .exception-case-card {
+    padding: 14px !important;
+    color: var(--finish-ink) !important;
+    border: 1px solid var(--finish-border) !important;
+    border-radius: 11px !important;
+    background: #fffdf9 !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  .exception-case-card:hover,
+  .exception-case-card:focus-visible {
+    border-color: color-mix(in srgb, var(--finish-gold) 38%, var(--finish-border)) !important;
+    background: var(--finish-gold-soft) !important;
+    transform: none !important;
+  }
+
+  .exception-case-card.is-selected {
+    border-color: color-mix(in srgb, var(--finish-gold) 52%, var(--finish-border)) !important;
+    background: var(--finish-gold-selected) !important;
+    box-shadow: inset 3px 0 0 var(--finish-gold) !important;
+  }
+
+  .exception-detail-heading {
+    border-bottom-color: var(--finish-border) !important;
+  }
+
+  /* Operations Dispatch: clearer density and hierarchy. */
+  .dispatch-pressure-card,
+  .dispatch-capacity-card {
+    border-color: var(--finish-border) !important;
+    border-radius: 11px !important;
+    background: #fffdf9 !important;
+    color: var(--finish-ink) !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  .dispatch-card-link:hover,
+  .dispatch-card-link:focus-visible {
+    border-color: color-mix(in srgb, var(--finish-gold) 38%, var(--finish-border)) !important;
+    background: var(--finish-gold-soft) !important;
+    transform: none !important;
+  }
+
+  .dispatch-pressure-card p,
+  .dispatch-card-heading strong {
+    color: var(--finish-ink) !important;
+  }
+
+  .dispatch-card-heading small,
+  .dispatch-card-meta span,
+  .dispatch-capacity-metrics span {
+    color: var(--finish-muted) !important;
+  }
+
+  .dispatch-card-meta span,
+  .dispatch-capacity-metrics div {
+    background: var(--finish-soft) !important;
+  }
+
+  /* My Work, role workspaces, admin and technician screens: final rhythm only. */
+  :is(.monday-my-work, .today-workspace-stage, .role-workspace-stage, .admin-access-stage, .admin-user-access-stage, .field-service-workspace, .spatial-dashboard) {
+    gap: 18px !important;
+    min-width: 0;
+  }
+
+  .monday-my-work-card,
+  .today-work-row,
+  .today-attention-card,
+  .role-action-card {
+    box-shadow: none !important;
+  }
+
+  .monday-my-work-card:focus-visible,
+  .today-work-row:focus-visible,
+  .today-attention-card:focus-visible,
+  .role-action-card:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--finish-gold) 48%, #ffffff) !important;
+    outline-offset: 2px !important;
+  }
+
+  /* Finance, Sales, Marketing and Telemetry share the same light card language. */
+  :is(.spatial-dashboard, .finance-workspace, .sales-workspace, .marketing-workspace)
+  :is(.neo-card, .card, .panel, .chart-card, .kpi-card) {
+    border-color: var(--finish-border) !important;
+    background: #fff !important;
+    color: var(--finish-ink) !important;
+    box-shadow: var(--finish-shadow-xs) !important;
+  }
+
+  .spatial-dashboard :is(.bar-track, .chart-track) {
+    background: #eee7dc !important;
+  }
+
+  .neo-card > .feature-list {
+    margin-top: 16px !important;
+  }
+
+  /* Long labels and values should wrap inside their own component, not widen pages. */
+  :is(
+    .erp-panel,
+    .erp-record-summary-card,
+    .erp-state-banner,
+    .customer360-stage,
+    .stock-control-centre,
+    .exception-centre-stage,
+    .dispatch-overview-stage,
+    .monday-my-work,
+    .field-service-workspace
+  ) :is(h1, h2, h3, p, strong, small, dd, dt) {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /* Reduced motion remains respected even in old route-specific hover programmes. */
+  @media (prefers-reduced-motion: reduce) {
+    :is(button, .button, .erp-button, .card, .panel, .neo-card, .customer360-metrics button, .stock-mode-button, .exception-case-card, .dispatch-pressure-card) {
+      transition: none !important;
+      transform: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Tablet/phone pre-polish. The locked responsive contract loads after this block and
+ * remains authoritative; these selectors intentionally target legacy route surfaces
+ * that otherwise retain old dark colours. Higher specificity is used only for those
+ * legacy visual programmes, not shell or navigation behaviour.
+ */
+@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  html body .customer360-hero,
+  html body .customer360-hero-summary,
+  html body .customer360-metrics button,
+  html body .stock-mode-button,
+  html body .stock-photo-card,
+  html body .exception-queue-tabs,
+  html body .exception-case-list,
+  html body .exception-case-card,
+  html body .dispatch-pressure-card,
+  html body .dispatch-capacity-card {
+    color: var(--finish-ink) !important;
+    background: var(--finish-surface) !important;
+    border-color: var(--finish-border) !important;
+    box-shadow: var(--finish-shadow-xs) !important;
+    text-shadow: none !important;
+  }
+
+  html body .customer360-hero {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 14px !important;
+    padding: 18px !important;
+    border-radius: 14px !important;
+    background: linear-gradient(135deg, var(--finish-gold-soft) 0%, #fff 72%) !important;
+  }
+
+  html body .customer360-hero h1 {
+    color: var(--finish-ink) !important;
+    font-size: clamp(1.65rem, 8vw, 2.35rem) !important;
+    line-height: 1.08 !important;
+  }
+
+  html body .customer360-address,
+  html body .customer360-hero-summary small,
+  html body .customer360-metrics span,
+  html body .customer360-metrics small,
+  html body .stock-mode-button span,
+  html body .stock-photo-card figcaption,
+  html body .exception-case-card p,
+  html body .exception-case-card-meta,
+  html body .dispatch-card-heading small,
+  html body .dispatch-card-meta span {
+    color: var(--finish-muted) !important;
+  }
+
+  html body .customer360-identity,
+  html body .customer360-hero-summary span,
+  html body .stock-mode-button strong {
+    color: var(--finish-gold-dark) !important;
+  }
+
+  html body .customer360-tabs,
+  html body .exception-queue-tabs {
+    background: rgba(255, 255, 255, .97) !important;
+    border-color: var(--finish-border) !important;
+  }
+
+  html body .customer360-tabs button,
+  html body .exception-queue-tabs button {
+    color: var(--finish-muted) !important;
+  }
+
+  html body .customer360-tabs button.is-active,
+  html body .exception-queue-tabs button.is-active,
+  html body .stock-mode-button.is-active,
+  html body .exception-case-card.is-selected {
+    color: var(--finish-ink) !important;
+    background: var(--finish-gold-selected) !important;
+    border-color: color-mix(in srgb, var(--finish-gold) 44%, var(--finish-border)) !important;
+    box-shadow: inset 3px 0 0 var(--finish-gold) !important;
+  }
+
+  .erp-state-banner {
+    min-width: 0;
+  }
+
+  .erp-state-copy,
+  .erp-state-action {
+    min-width: 0;
+  }
+
+  :is(.customer360-stage, .stock-control-centre, .exception-centre-stage, .dispatch-overview-stage, .monday-my-work, .field-service-workspace)
+  :is(h1, h2, h3, p, strong, small) {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+}
