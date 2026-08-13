@@ -2,6 +2,7 @@ import type { NextConfig } from 'next';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://egbiiizxsqlarqpnzxxs.supabase.co';
+const internalMessagingEnabled = process.env.NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED === 'true';
 const supabaseOrigin = (() => {
   try {
     return new URL(supabaseUrl).origin;
@@ -70,6 +71,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  env: {
+    // Fail closed: messaging is unavailable unless the deployment opts in with exact "true".
+    NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED: internalMessagingEnabled ? 'true' : 'false',
+  },
   async headers() {
     return [
       {
