@@ -49,6 +49,7 @@ jobs:
       - name: Check production visual harness syntax
         run: |
           node --check tests/production-visual.spec.mjs
+          node --check tests/production-role-ui.spec.mjs
           python -m py_compile scripts/compare-production-screenshots.py
 
       - name: Typecheck application
