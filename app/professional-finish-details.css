@@ -1,0 +1,267 @@
+/* Final nested-detail polish for high-value workspaces.
+ * Presentation only. Loaded after professional-finish.css and before the locked
+ * responsive-mobile-tablet authority.
+ */
+
+@media (min-width: 901px) {
+  /* Customer 360 nested record/risk/service/timeline surfaces. */
+  .customer360-section-heading p,
+  .customer360-details-list dt,
+  .customer360-record-card dt,
+  .customer360-risk-item span,
+  .customer360-risk-item small,
+  .customer360-record-card > p,
+  .customer360-service-main small,
+  .customer360-service-meta small,
+  .customer360-contract-row small,
+  .customer360-delivery-row small,
+  .customer360-contract-row span,
+  .customer360-delivery-row span,
+  .customer360-timeline-copy p,
+  .customer360-timeline-copy small,
+  .customer360-loading > span {
+    color: var(--finish-muted) !important;
+  }
+
+  .customer360-section-heading > strong,
+  .customer360-service-main > span,
+  .customer360-timeline-entry[href]:hover .customer360-timeline-copy strong,
+  .customer360-timeline-entry[href]:focus-visible .customer360-timeline-copy strong {
+    color: var(--finish-gold-dark) !important;
+  }
+
+  .customer360-details-list > div,
+  .customer360-timeline-entry {
+    border-bottom-color: var(--finish-border) !important;
+  }
+
+  .customer360-risk-item,
+  .customer360-record-card,
+  .customer360-service-row,
+  .customer360-contract-row,
+  .customer360-delivery-row {
+    border: 1px solid var(--finish-border) !important;
+    background: #fffdf9 !important;
+    color: var(--finish-ink) !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  .customer360-risk-item,
+  .customer360-record-card {
+    border-radius: 12px !important;
+  }
+
+  .customer360-service-row,
+  .customer360-contract-row,
+  .customer360-delivery-row {
+    border-radius: 11px !important;
+  }
+
+  .customer360-risk-item:hover,
+  .customer360-risk-item:focus-visible,
+  .customer360-linked-card:hover,
+  .customer360-linked-card:focus-visible,
+  .customer360-service-row:hover,
+  .customer360-service-row:focus-visible,
+  .customer360-delivery-row:hover,
+  .customer360-delivery-row:focus-visible {
+    border-color: color-mix(in srgb, var(--finish-gold) 40%, var(--finish-border)) !important;
+    background: var(--finish-gold-soft) !important;
+    transform: none !important;
+  }
+
+  .customer360-risk-item.tone-critical,
+  .customer360-service-row.is-overdue {
+    border-color: #efc1bc !important;
+    background: #fff1ef !important;
+  }
+
+  .customer360-risk-item.tone-warning {
+    border-color: #ead59c !important;
+    background: #fff8e7 !important;
+  }
+
+  .customer360-inline-warning {
+    border-color: #ead59c !important;
+    background: #fff8e7 !important;
+    color: #7a4d00 !important;
+  }
+
+  .customer360-contract-row em {
+    color: #7a4d00 !important;
+  }
+
+  .customer360-contract-row em.is-critical {
+    color: #922018 !important;
+  }
+
+  .customer360-timeline::before {
+    background: linear-gradient(var(--finish-gold), color-mix(in srgb, var(--finish-gold) 14%, transparent)) !important;
+  }
+
+  .customer360-timeline-marker {
+    border-color: #fff !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--finish-gold) 14%, transparent) !important;
+  }
+
+  .customer360-loading-hero,
+  .customer360-loading-card {
+    border-color: var(--finish-border) !important;
+    background: linear-gradient(100deg, #f8f4ec 20%, #fff4d8 45%, #f8f4ec 70%) !important;
+    background-size: 220% 100% !important;
+  }
+
+  .customer360-loading-hero {
+    border-radius: var(--finish-radius-lg) !important;
+  }
+
+  .customer360-loading-card {
+    border-radius: var(--finish-radius-md) !important;
+  }
+
+  /* Exceptions detail view and comments retain the same light operational language. */
+  .exception-detail-card {
+    color: var(--finish-ink) !important;
+  }
+
+  .exception-detail-heading p,
+  .exception-detail-grid dt,
+  .exception-source-action p,
+  .exception-action-section label,
+  .exception-comments > p,
+  .exception-comments time {
+    color: var(--finish-muted) !important;
+  }
+
+  .exception-detail-grid div,
+  .exception-comments article {
+    border: 1px solid var(--finish-border) !important;
+    border-radius: 11px !important;
+    background: #fffdf9 !important;
+    color: var(--finish-ink) !important;
+  }
+
+  .exception-source-action {
+    border-color: color-mix(in srgb, var(--finish-gold) 38%, var(--finish-border)) !important;
+    background: var(--finish-gold-soft) !important;
+  }
+
+  .exception-action-section {
+    border-top-color: var(--finish-border) !important;
+  }
+
+  .exception-resolve-section {
+    border-color: #b9dbc6 !important;
+    background: #f0f8f3 !important;
+  }
+
+  /* Field/technician work: align checklist and timeline details with final card system. */
+  .field-service-workspace :is(.professional-checklist-item, .record-comment, .record-timeline-item, .checkbox-field),
+  .professional-ops-stage :is(.professional-checklist-item, .record-comment, .record-timeline-item, .checkbox-field) {
+    border-color: var(--finish-border) !important;
+    background: #fffdf9 !important;
+    color: var(--finish-ink) !important;
+    box-shadow: none !important;
+  }
+
+  .field-service-workspace .professional-checklist-item.is-complete,
+  .professional-ops-stage .professional-checklist-item.is-complete {
+    border-color: #c7dfcf !important;
+    background: #f0f8f3 !important;
+  }
+
+  .field-service-workspace :is(.record-comment, .record-timeline-item),
+  .professional-ops-stage :is(.record-comment, .record-timeline-item) {
+    border-left-color: var(--finish-gold) !important;
+  }
+
+  .field-service-workspace .record-timeline-item small,
+  .professional-ops-stage .record-timeline-item small {
+    color: var(--finish-muted) !important;
+  }
+
+  /* Admin details: keep creation/edit panels quiet and consistent. */
+  :is(.admin-access-stage, .admin-user-access-stage)
+  :is(.admin-access-editor-panel, .role-rights-preview, .admin-user-directory, .admin-user-detail) {
+    border-color: var(--finish-border) !important;
+    background: #fff !important;
+    color: var(--finish-ink) !important;
+    box-shadow: var(--finish-shadow-xs) !important;
+  }
+
+  :is(.admin-access-stage, .admin-user-access-stage) .admin-access-toggle {
+    border-color: var(--finish-border) !important;
+    background: var(--finish-soft) !important;
+  }
+
+  /* Finance/Sales/Marketing feature pills should not float as ad-hoc tokens. */
+  .feature-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .feature-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 5px 9px;
+    border: 1px solid var(--finish-border) !important;
+    border-radius: 999px !important;
+    background: var(--finish-soft) !important;
+    color: var(--finish-muted) !important;
+    font-size: .74rem;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+}
+
+@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  html body :is(
+    .customer360-risk-item,
+    .customer360-record-card,
+    .customer360-service-row,
+    .customer360-contract-row,
+    .customer360-delivery-row,
+    .exception-detail-grid div,
+    .exception-comments article
+  ) {
+    border-color: var(--finish-border) !important;
+    background: #fffdf9 !important;
+    color: var(--finish-ink) !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  html body .customer360-risk-item.tone-critical,
+  html body .customer360-service-row.is-overdue {
+    border-color: #efc1bc !important;
+    background: #fff1ef !important;
+  }
+
+  html body .customer360-risk-item.tone-warning,
+  html body .customer360-inline-warning {
+    border-color: #ead59c !important;
+    background: #fff8e7 !important;
+    color: #7a4d00 !important;
+  }
+
+  html body .customer360-loading-hero,
+  html body .customer360-loading-card {
+    border-color: var(--finish-border) !important;
+    background: linear-gradient(100deg, #f8f4ec 20%, #fff4d8 45%, #f8f4ec 70%) !important;
+    background-size: 220% 100% !important;
+  }
+
+  .feature-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .feature-pill {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+}
