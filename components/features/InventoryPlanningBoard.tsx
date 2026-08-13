@@ -7,6 +7,7 @@ import { PageToolbar } from '@/components/ui/PageToolbar';
 import { RemoteDataTable } from '@/components/ui/RemoteDataTable';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import type { EnterpriseColumn } from '@/components/ui/EnterpriseDataTable';
+import { formatLocalDate } from '@/lib/dates/local-date';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type BranchFilter = 'all' | 'jhb' | 'cpt' | 'kzn' | 'national';
@@ -204,7 +205,7 @@ export function InventoryPlanningBoard() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `inventory-planning-${branch}-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `inventory-planning-${branch}-${formatLocalDate()}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   }
