@@ -6,6 +6,17 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { MondayMyWorkCard } from '@/components/features/MondayMyWorkCard';
 import { isPast, normalizeMyWorkItems, type NormalizedMyWorkItem } from '@/components/features/mondayMyWorkNormalization';
 import {
+  addDays,
+  getMyWorkAttentionItems,
+  getMyWorkCalendar,
+  getMyWorkDashboardCounts,
+  groupMyWorkItems,
+  localDateKey,
+  priorityRank,
+  startOfWeek,
+  urgencyKey,
+} from '@/components/features/mondayMyWorkSelectors';
+import {
   preferenceDefaults,
   useMondayMyWorkPreferences,
   workSources,
@@ -102,52 +113,6 @@ const branches: Branch[] = ['jhb', 'cpt', 'kzn', 'national'];
 const workTypes: WorkType[] = ['request', 'task', 'approval', 'inspection', 'maintenance', 'incident'];
 const priorities: WorkPriority[] = ['low', 'medium', 'high', 'critical'];
 const technicianRoles = new Set(['technician', 'road_technician']);
-
-function localDateKey(value: string | null) {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function startOfLocalDay(date = new Date()) {
-  const value = new Date(date);
-  value.setHours(0, 0, 0, 0);
-  return value;
-}
-
-function startOfWeek(date = new Date()) {
-  const value = startOfLocalDay(date);
-  const day = value.getDay();
-  value.setDate(value.getDate() - (day === 0 ? 6 : day - 1));
-  return value;
-}
-
-function addDays(date: Date, days: number) {
-  const value = new Date(date);
-  value.setDate(value.getDate() + days);
-  return value;
-}
-
-function priorityRank(priority: string) {
-  if (priority === 'critical') return 0;
-  if (priority === 'high') return 1;
-  if (priority === 'medium') return 2;
-  return 3;
-}
-
-function urgencyKey(item: NormalizedMyWorkItem) {
-  if (item.approvalPending || (item.isOpen && isPast(item.dueAt))) return 'Attention';
-  if (!item.dueAt) return 'Unscheduled';
-
-  const today = startOfLocalDay();
-  const due = startOfLocalDay(new Date(item.dueAt));
-  const days = Math.round((due.getTime() - today.getTime()) / 86_400_000);
-  if (days === 0) return 'Today';
-  if (days > 0 && days <= 7) return 'This week';
-  if (days > 7) return 'Later';
-  return 'Attention';
-}
 
 export function MondayMyWorkWorkspace() {
   const { businessUser, userDetails } = useAuth();
@@ -304,45 +269,13 @@ export function MondayMyWorkWorkspace() {
       });
   }, [preferences.hiddenSources, priorityFilter, scope, search, sourceFilter, unifiedItems]);
 
-  const groupedItems = useMemo(() => {
-    const map = new Map<string, NormalizedMyWorkItem[]>();
-    filteredItems.forEach((item) => {
-      const key = preferences.groupBy === 'source'
-        ? item.sourceLabel
-        : preferences.groupBy === 'status'
-          ? item.status.replace(/_/g, ' ')
-          : urgencyKey(item);
-      map.set(key, [...(map.get(key) ?? []), item]);
-    });
+  const groupedItems = useMemo(
+    () => groupMyWorkItems(filteredItems, preferences.groupBy),
+    [filteredItems, preferences.groupBy],
+  );
 
-    const urgencyOrder = ['Attention', 'Today', 'This week', 'Later', 'Unscheduled'];
-    return Array.from(map.entries()).sort(([left], [right]) => {
-      if (preferences.groupBy === 'urgency') return urgencyOrder.indexOf(left) - urgencyOrder.indexOf(right);
-      return left.localeCompare(right);
-    });
-  }, [filteredItems, preferences.groupBy]);
-
-  const dashboardCounts = useMemo(() => ({
-    mine: unifiedItems.filter((item) => item.isMine && item.isOpen).length,
-    overdue: unifiedItems.filter((item) => item.isOpen && isPast(item.dueAt)).length,
-    approvals: unifiedItems.filter((item) => item.approvalPending).length,
-    unassigned: unifiedItems.filter((item) => item.isUnassigned).length,
-    nextSeven: unifiedItems.filter((item) => {
-      if (!item.dueAt || !item.isOpen) return false;
-      const due = startOfLocalDay(new Date(item.dueAt));
-      const today = startOfLocalDay();
-      const diff = (due.getTime() - today.getTime()) / 86_400_000;
-      return diff >= 0 && diff <= 7;
-    }).length,
-  }), [unifiedItems]);
-
-  const calendarEnd = addDays(calendarStart, 7);
-  const calendarDays = Array.from({ length: 7 }, (_, index) => addDays(calendarStart, index));
-  const calendarItems = filteredItems.filter((item) => {
-    if (!item.dueAt) return false;
-    const due = new Date(item.dueAt);
-    return due >= calendarStart && due < calendarEnd;
-  });
+  const dashboardCounts = useMemo(() => getMyWorkDashboardCounts(unifiedItems), [unifiedItems]);
+  const { calendarDays, calendarItems } = getMyWorkCalendar(filteredItems, calendarStart);
 
   const roleName = userDetails?.role ? roleLabels[userDetails.role] : 'ERP user';
   const activeFilterCount = Number(Boolean(search.trim())) + Number(priorityFilter !== 'all') + Number(sourceFilter !== 'all');
@@ -517,7 +450,7 @@ export function MondayMyWorkWorkspace() {
             <section>
               <header><strong>Needs attention</strong><span>Top priority items</span></header>
               <div className="monday-my-work-attention">
-                {unifiedItems.filter((item) => item.approvalPending || item.isUnassigned || (item.isOpen && isPast(item.dueAt))).sort((left, right) => priorityRank(left.priority) - priorityRank(right.priority)).slice(0, 10).map((item) => <MondayMyWorkCard density="compact" item={item} key={item.id} />)}
+                {getMyWorkAttentionItems(unifiedItems).map((item) => <MondayMyWorkCard density="compact" item={item} key={item.id} />)}
               </div>
             </section>
           </div>
