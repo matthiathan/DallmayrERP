@@ -8,7 +8,6 @@
  * overlays such as the notification inbox. Responsive work for phones and touch
  * tablets remains the final authority.
  */
-@import '../reference-ui-redesign.css';
 @import '../full-application-rebuild.css';
 @import '../route-composition-system.css';
 @import '../dashboard-role-workspace-rebuild.css';
