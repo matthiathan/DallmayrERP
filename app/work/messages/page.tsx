@@ -5,7 +5,7 @@ import './messaging-layout.css';
 import './messaging-mobile-polish.css';
 
 export default function WorkMessagesPage() {
-  if (process.env.NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED === 'false') notFound();
+  if (process.env.NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED !== 'true') notFound();
 
   return (
     <AppShell>
