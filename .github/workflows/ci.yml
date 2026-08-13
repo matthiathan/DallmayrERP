@@ -37,6 +37,12 @@ jobs:
       - name: Check feature flag contracts
         run: npm run feature:check
 
+      - name: Check source safety contracts
+        run: npm run sourcecheck
+
+      - name: Check client RPC repository contracts
+        run: npm run contractcheck
+
       - name: Check stylesheet architecture
         run: npm run stylecheck
 
