@@ -9,19 +9,15 @@ import { DesktopNavigationRail } from '@/components/layout/DesktopNavigationRail
 import { MobileNavigationDrawer, MobileQuickBar } from '@/components/layout/MobileNavigation';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { deriveAppShellNavigation } from '@/components/layout/appShellNavigation';
+import { useAppShellPreferences } from '@/components/layout/useAppShellPreferences';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { DensityToggle } from '@/components/ui/DensityToggle';
 import { ErpStateBanner } from '@/components/ui/ErpLayout';
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { getDefaultPathForRole, roleLabels } from '@/lib/auth/permissions';
-import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/browserStorage';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { displayProfileName, isProfileComplete } from '@/types/dallmayrerp';
-
-const FAVORITES_KEY = 'dallmayr-mobile-favorites-v1';
-const RAIL_COLLAPSED_KEY = 'dallmayr-desktop-rail-collapsed-v1';
-const MAX_FAVORITES = 4;
 
 function StatusScreen({
   title,
@@ -47,24 +43,12 @@ function StatusScreen({
   );
 }
 
-function safeFavoriteList(value: string | null) {
-  if (!value) return [];
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item): item is string => typeof item === 'string').slice(0, MAX_FAVORITES);
-  } catch {
-    return [];
-  }
-}
-
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { authUser, businessProfile, businessUser, userDetails, loading, error } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [favoriteHrefs, setFavoriteHrefs] = useState<string[]>([]);
-  const [railCollapsed, setRailCollapsed] = useState(false);
+  const { favoriteHrefs, railCollapsed, toggleFavorite, toggleRail } = useAppShellPreferences();
   const profileComplete = isProfileComplete(userDetails);
   const role = userDetails?.role;
 
@@ -91,11 +75,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
-
-  useEffect(() => {
-    setFavoriteHrefs(safeFavoriteList(safeLocalStorageGet(FAVORITES_KEY)));
-    setRailCollapsed(safeLocalStorageGet(RAIL_COLLAPSED_KEY) === 'true');
-  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -163,26 +142,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   } = deriveAppShellNavigation(userDetails.role, pathname, favoriteHrefs);
   const activeBranch = userDetails.branch.toUpperCase();
   const userName = displayProfileName(businessProfile);
-
-  function toggleFavorite(href: string) {
-    setFavoriteHrefs((current) => {
-      const next = current.includes(href)
-        ? current.filter((item) => item !== href)
-        : current.length >= MAX_FAVORITES
-          ? current
-          : [...current, href];
-      safeLocalStorageSet(FAVORITES_KEY, JSON.stringify(next));
-      return next;
-    });
-  }
-
-  function toggleRail() {
-    setRailCollapsed((current) => {
-      const next = !current;
-      safeLocalStorageSet(RAIL_COLLAPSED_KEY, String(next));
-      return next;
-    });
-  }
 
   return (
     <div className={`app-shell top-shell application-shell-v2 ${railCollapsed ? 'desktop-rail-collapsed' : ''} ${menuOpen ? 'mobile-menu-open' : ''}`}>
