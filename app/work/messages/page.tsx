@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { AppShell } from '@/components/layout/AppShell';
-import { InternalMessagingWorkspace } from '@/components/features/InternalMessagingWorkspace';
+import { SecureInternalMessagingWorkspace } from '@/components/features/SecureInternalMessagingWorkspace';
 import './messaging-layout.css';
 import './messaging-mobile-polish.css';
 
@@ -9,7 +9,7 @@ export default function WorkMessagesPage() {
 
   return (
     <AppShell>
-      <InternalMessagingWorkspace />
+      <SecureInternalMessagingWorkspace />
     </AppShell>
   );
 }
