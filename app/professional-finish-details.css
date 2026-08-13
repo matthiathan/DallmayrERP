@@ -195,6 +195,37 @@
     background: var(--finish-soft) !important;
   }
 
+  /* Operations Manager and monthly service planning: replace cool blue-grey utility styling. */
+  .monthly-service-editor-panel,
+  .operations-route-summary > div,
+  .operations-exception-grid > div {
+    border-color: var(--finish-border) !important;
+    background: linear-gradient(180deg, #fff 0%, #fffdf9 100%) !important;
+    color: var(--finish-ink) !important;
+    box-shadow: var(--finish-shadow-xs) !important;
+  }
+
+  .monthly-service-editor-panel h3,
+  .operations-route-summary strong,
+  .operations-exception-grid strong {
+    color: var(--finish-ink) !important;
+  }
+
+  .monthly-service-editor-panel p,
+  .monthly-service-stage .resizable-enterprise-table td strong small,
+  .monthly-service-stage .resizable-enterprise-table td div small,
+  .operations-route-summary span,
+  .operations-exception-grid span {
+    color: var(--finish-muted) !important;
+  }
+
+  .compact-action.is-selected {
+    border-color: color-mix(in srgb, var(--finish-gold) 46%, var(--finish-border)) !important;
+    background: var(--finish-gold-selected) !important;
+    color: var(--finish-gold-dark) !important;
+    box-shadow: inset 0 -2px 0 var(--finish-gold) !important;
+  }
+
   /* Finance/Sales/Marketing feature pills should not float as ad-hoc tokens. */
   .feature-list {
     display: flex;
@@ -225,7 +256,10 @@
     .customer360-contract-row,
     .customer360-delivery-row,
     .exception-detail-grid div,
-    .exception-comments article
+    .exception-comments article,
+    .monthly-service-editor-panel,
+    .operations-route-summary > div,
+    .operations-exception-grid > div
   ) {
     border-color: var(--finish-border) !important;
     background: #fffdf9 !important;
