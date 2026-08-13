@@ -18,8 +18,7 @@
 @import '../component-library-phase-3.css';
 @import '../canonical-component-utilities.css';
 @import '../ui-stabilization-contract.css';
-@import '../canonical-navigation-baseline.css';
-@import '../canonical-appearance-runtime.css';
+@import '../canonical-runtime-foundations.css';
 @import '../desktop-reference-layout.css';
 @import '../desktop-layout-regression-fixes.css';
 @import '../professional-ui-system.css';
