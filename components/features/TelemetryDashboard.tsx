@@ -6,6 +6,7 @@ import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { BarChart, DonutChart } from '@/components/ui/MiniCharts';
 import { PageToolbar } from '@/components/ui/PageToolbar';
+import { formatLocalDate } from '@/lib/dates/local-date';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type TelemetryPeriod = 'today' | 'week' | 'month' | 'six_months';
@@ -137,8 +138,8 @@ function normaliseDashboard(value: unknown): DashboardData {
   const summary = (source.summary ?? {}) as Partial<Summary>;
   return {
     period: source.period ?? 'today',
-    date_from: source.date_from ?? new Date().toISOString().slice(0, 10),
-    date_to: source.date_to ?? new Date().toISOString().slice(0, 10),
+    date_from: source.date_from ?? formatLocalDate(),
+    date_to: source.date_to ?? formatLocalDate(),
     summary: {
       units_sold: numberValue(summary.units_sold),
       revenue_cents: numberValue(summary.revenue_cents),

@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { getDefaultPathForRole } from '@/lib/auth/permissions';
+import { safeLocalStorageGet, safeLocalStorageRemove, safeLocalStorageSet } from '@/lib/browserStorage';
 import {
   getAuthRememberMePreference,
   getSupabaseClient,
@@ -25,13 +26,9 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    try {
-      const remembered = getAuthRememberMePreference();
-      setRememberMe(remembered);
-      if (remembered) setEmail(window.localStorage.getItem(REMEMBERED_EMAIL_KEY) ?? '');
-    } catch {
-      // Browser storage can be restricted; login still works without remembered details.
-    }
+    const remembered = getAuthRememberMePreference();
+    setRememberMe(remembered);
+    if (remembered) setEmail(safeLocalStorageGet(REMEMBERED_EMAIL_KEY) ?? '');
   }, []);
 
   useEffect(() => {
@@ -50,8 +47,8 @@ export default function LoginPage() {
       const cleanEmail = email.trim().toLowerCase();
       setAuthRememberMePreference(rememberMe);
 
-      if (rememberMe) window.localStorage.setItem(REMEMBERED_EMAIL_KEY, cleanEmail);
-      else window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+      if (rememberMe) safeLocalStorageSet(REMEMBERED_EMAIL_KEY, cleanEmail);
+      else safeLocalStorageRemove(REMEMBERED_EMAIL_KEY);
 
       const client = getSupabaseClient();
       const { error: loginError } = await client.auth.signInWithPassword({
