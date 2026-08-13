@@ -5,6 +5,13 @@ const STATIC_ASSETS = [
   '/icons/dallmayr-maskable.svg',
 ];
 
+function offlineDocumentResponse() {
+  return new Response(
+    '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DallmayrERP offline</title><body><main><h1>DallmayrERP is offline</h1><p>Reconnect and reload to continue.</p></main></body></html>',
+    { headers: { 'Content-Type': 'text/html; charset=utf-8' }, status: 503 },
+  );
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(STATIC_CACHE).then((cache) => cache.addAll(STATIC_ASSETS)));
 });
@@ -67,7 +74,9 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).catch(() => caches.match('/offline.html')));
+    event.respondWith(
+      fetch(request).catch(async () => (await caches.match('/offline.html')) || offlineDocumentResponse()),
+    );
     return;
   }
 
