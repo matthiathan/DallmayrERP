@@ -55,7 +55,7 @@ type AssetAuditQueueInput = {
 
 type WorkSource = 'work' | 'service' | 'delivery' | 'purchase' | 'stock' | 'asset';
 
-type NormalizedMyWorkItem = {
+export type NormalizedMyWorkItem = {
   id: string;
   source: WorkSource;
   sourceLabel: string;
