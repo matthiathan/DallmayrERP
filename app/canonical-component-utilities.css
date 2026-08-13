@@ -159,3 +159,155 @@
     justify-content: flex-start;
   }
 }
+
+/* BarcodeCapture containment and semantic feedback. */
+.live-scanner-box {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.live-scanner-box,
+.live-scanner-box > *,
+.live-scanner-box label,
+.live-scanner-box .scanner-header > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.live-scanner-box .scanner-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+}
+
+.live-scanner-box .scanner-header .nav-heading,
+.live-scanner-box .scanner-header p {
+  max-width: 100%;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+}
+
+.live-scanner-box .scanner-actions {
+  width: 100%;
+  max-width: 100%;
+}
+
+.live-scanner-box .scanner-file-input {
+  display: block;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto;
+  min-height: 52px;
+  padding: 8px;
+  overflow: hidden;
+  color: #1a1d21 !important;
+  background: #ffffff !important;
+  font-size: 14px;
+  line-height: 1.35;
+  white-space: normal !important;
+}
+
+.live-scanner-box .scanner-file-input::file-selector-button {
+  min-height: 34px;
+  max-width: min(100%, 180px);
+  margin: 0 10px 0 0;
+  padding: 7px 11px;
+  border: 1px solid #c8d0d8;
+  border-radius: 7px;
+  background: #f8fafc;
+  color: #1a1d21;
+  font: inherit;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+.scanner-message {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 12px 0 0;
+  padding: 11px 12px;
+  overflow: visible;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #344054 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.45 !important;
+  text-align: left;
+  text-shadow: none !important;
+  text-transform: none !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+}
+
+.scanner-message-info {
+  border-color: #b2ddff;
+  background: #eff8ff;
+  color: #1849a9 !important;
+}
+
+.scanner-message-success {
+  border-color: #abefc6;
+  background: #ecfdf3;
+  color: #067647 !important;
+}
+
+.scanner-message-warning {
+  border-color: #fedf89;
+  background: #fffaeb;
+  color: #93370d !important;
+}
+
+.scanner-message-error {
+  border-color: #fecdca;
+  background: #fef3f2;
+  color: #b42318 !important;
+}
+
+@media (max-width: 760px) {
+  .live-scanner-box .scanner-header {
+    grid-template-columns: 1fr;
+  }
+
+  .live-scanner-box .scanner-header .badge {
+    justify-self: start;
+  }
+
+  .live-scanner-box .scanner-actions {
+    display: grid !important;
+    grid-template-columns: 1fr;
+  }
+
+  .live-scanner-box .scanner-actions .button {
+    width: 100%;
+  }
+
+  .scanner-message {
+    font-size: 14px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .live-scanner-box .scanner-file-input,
+  .scanner-message {
+    font-size: 16px !important;
+  }
+
+  .live-scanner-box .scanner-file-input::file-selector-button {
+    max-width: 100%;
+    margin-right: 8px;
+  }
+}
