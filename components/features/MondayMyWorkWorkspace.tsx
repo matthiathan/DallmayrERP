@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { BoardCommandBar, BoardFilterChips, BoardFilterDrawer, BoardHeader, BoardViewTabs } from '@/components/boards/BoardWorkspace';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { isPast, normalizeMyWorkItems } from '@/components/features/mondayMyWorkNormalization';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { roleLabels } from '@/lib/auth/permissions';
@@ -123,7 +124,6 @@ const branches: Branch[] = ['jhb', 'cpt', 'kzn', 'national'];
 const workTypes: WorkType[] = ['request', 'task', 'approval', 'inspection', 'maintenance', 'incident'];
 const priorities: WorkPriority[] = ['low', 'medium', 'high', 'critical'];
 const technicianRoles = new Set(['technician', 'road_technician']);
-const terminalStatuses = new Set(['completed', 'closed', 'cancelled', 'received', 'resolved', 'verified', 'rejected']);
 const preferenceDefaults: WorkspacePreferences = {
   mode: 'list',
   groupBy: 'urgency',
@@ -131,24 +131,12 @@ const preferenceDefaults: WorkspacePreferences = {
   hiddenSources: [],
 };
 
-function firstRelation<T>(value: T | T[] | null | undefined) {
-  return Array.isArray(value) ? value[0] ?? null : value ?? null;
-}
-
 function isWorkspaceMode(value: string | null): value is WorkspaceMode {
   return value === 'list' || value === 'board' || value === 'calendar' || value === 'dashboard';
 }
 
 function isQueueScope(value: string | null): value is QueueScope {
   return value === 'my' || value === 'overdue' || value === 'approvals' || value === 'unassigned' || value === 'all';
-}
-
-function isOpenStatus(status: string) {
-  return !terminalStatuses.has(status);
-}
-
-function isPast(value: string | null) {
-  return Boolean(value && new Date(value).getTime() < Date.now());
 }
 
 function localDateKey(value: string | null) {
@@ -402,116 +390,17 @@ export function MondayMyWorkWorkspace() {
     await loadCentre();
   }
 
-  const unifiedItems = useMemo<MyWorkItem[]>(() => {
-    const currentUserId = businessUser?.id ?? '';
-    return [
-      ...workItems.map((item): MyWorkItem => ({
-        id: `work:${item.id}`,
-        source: 'work',
-        sourceLabel: sourceLabels.work,
-        title: item.title,
-        subtitle: item.work_number,
-        description: item.description || `${item.work_type.replace(/_/g, ' ')} · ${item.department}`,
-        status: item.status,
-        priority: item.priority,
-        branch: item.branch,
-        dueAt: item.due_at ?? item.sla_due_at,
-        href: `/work/${item.id}`,
-        isOpen: isOpenStatus(item.status),
-        isMine: item.assigned_to === currentUserId || item.requested_by === currentUserId,
-        isUnassigned: isOpenStatus(item.status) && !item.assigned_to,
-        approvalPending: item.approval_status === 'pending',
-      })),
-      ...serviceJobs.map((job): MyWorkItem => ({
-        id: `service:${job.id}`,
-        source: 'service',
-        sourceLabel: sourceLabels.service,
-        title: job.summary || job.job_number,
-        subtitle: `${job.job_number}${job.customer_name_snapshot ? ` · ${job.customer_name_snapshot}` : ''}`,
-        description: job.customer_name_snapshot || 'Customer service work',
-        status: job.status,
-        priority: job.priority,
-        branch: job.branch,
-        dueAt: job.due_at,
-        href: `/operations/service-jobs?job=${encodeURIComponent(job.id)}`,
-        isOpen: isOpenStatus(job.status),
-        isMine: job.assigned_to === currentUserId,
-        isUnassigned: isOpenStatus(job.status) && !job.assigned_to,
-        approvalPending: false,
-      })),
-      ...deliveries.map((delivery): MyWorkItem => ({
-        id: `delivery:${delivery.id}`,
-        source: 'delivery',
-        sourceLabel: sourceLabels.delivery,
-        title: delivery.customer_name,
-        subtitle: delivery.order_number,
-        description: `Delivery order ${delivery.order_number}`,
-        status: delivery.status,
-        priority: delivery.status === 'dispatched' ? 'high' : 'medium',
-        branch: delivery.branch,
-        dueAt: null,
-        href: `/operations/deliveries?order=${encodeURIComponent(delivery.id)}`,
-        isOpen: isOpenStatus(delivery.status),
-        isMine: delivery.assigned_to === currentUserId,
-        isUnassigned: isOpenStatus(delivery.status) && !delivery.assigned_to,
-        approvalPending: false,
-      })),
-      ...purchaseOrders.map((order): MyWorkItem => ({
-        id: `purchase:${order.id}`,
-        source: 'purchase',
-        sourceLabel: sourceLabels.purchase,
-        title: order.supplier_name,
-        subtitle: order.po_number,
-        description: `Purchase order ${order.po_number}`,
-        status: order.approval_status === 'pending' ? 'pending approval' : order.status,
-        priority: order.approval_status === 'pending' ? 'high' : 'medium',
-        branch: order.branch,
-        dueAt: order.expected_date,
-        href: order.approval_status === 'pending' ? '/warehouse/purchasing/approvals' : '/warehouse/purchasing',
-        isOpen: isOpenStatus(order.status),
-        isMine: false,
-        isUnassigned: false,
-        approvalPending: order.approval_status === 'pending',
-      })),
-      ...stockAlerts.map((alert): MyWorkItem => {
-        const stock = firstRelation(alert.stock_items);
-        return {
-          id: `stock:${alert.id}`,
-          source: 'stock',
-          sourceLabel: sourceLabels.stock,
-          title: stock?.stock_name || 'Stock item',
-          subtitle: alert.alert_type.replace(/_/g, ' '),
-          description: `${alert.current_quantity.toLocaleString()} available · threshold ${alert.threshold.toLocaleString()}`,
-          status: alert.status,
-          priority: alert.current_quantity <= 0 ? 'critical' : 'high',
-          branch: userDetails?.branch ?? 'national',
-          dueAt: null,
-          href: '/warehouse/planning',
-          isOpen: isOpenStatus(alert.status),
-          isMine: false,
-          isUnassigned: false,
-          approvalPending: false,
-        };
-      }),
-      ...assetAudits.map((asset): MyWorkItem => ({
-        id: `asset:${asset.id}`,
-        source: 'asset',
-        sourceLabel: sourceLabels.asset,
-        title: asset.machine_name || asset.serial_number || 'Machine',
-        subtitle: asset.serial_number || 'Asset audit',
-        description: `${asset.condition} condition · ${asset.criticality} criticality`,
-        status: isPast(asset.next_audit_at) ? 'overdue' : 'scheduled',
-        priority: asset.criticality,
-        branch: asset.branch,
-        dueAt: asset.next_audit_at,
-        href: '/operations/assets/lifecycle',
-        isOpen: true,
-        isMine: false,
-        isUnassigned: false,
-        approvalPending: false,
-      })),
-    ];
-  }, [assetAudits, businessUser?.id, deliveries, purchaseOrders, serviceJobs, stockAlerts, userDetails?.branch, workItems]);
+  const unifiedItems = useMemo<MyWorkItem[]>(() => normalizeMyWorkItems({
+    assetAudits,
+    currentUserId: businessUser?.id ?? '',
+    deliveries,
+    purchaseOrders,
+    serviceJobs,
+    sourceLabels,
+    stockAlerts,
+    stockBranch: userDetails?.branch ?? 'national',
+    workItems,
+  }), [assetAudits, businessUser?.id, deliveries, purchaseOrders, serviceJobs, stockAlerts, userDetails?.branch, workItems]);
 
   const filteredItems = useMemo(() => {
     const term = search.trim().toLowerCase();
