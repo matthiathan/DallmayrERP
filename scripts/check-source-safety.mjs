@@ -21,7 +21,11 @@ const localStorageAllowlist = new Set([
   'app/layout.tsx',
   // These owners already guard direct storage access with try/catch; keep the exceptions narrow and explicit.
   'components/appearance/AppearanceProvider.tsx',
+  'components/boards/useCustomerBoard.ts',
+  'components/features/EnterpriseServiceJobBoard.tsx',
   'components/ui/useResizableColumns.ts',
+  // Supabase client owns the local-vs-session auth storage adapter and must coordinate both stores atomically.
+  'lib/supabase/client.ts',
   // The guarded storage implementation necessarily owns the direct browser API calls.
   'lib/browserStorage.ts',
 ]);
