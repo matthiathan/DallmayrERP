@@ -179,7 +179,7 @@ export default function MarketingCampaignsPage() {
           <label>End date<input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} /></label>
           <label>Status<select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as Exclude<CampaignStatus, 'all'> })}>{campaignStatuses.filter((item) => item !== 'all').map((item) => <option key={item} value={item}>{labelize(item)}</option>)}</select></label>
           <label>Notes<input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></label>
-          <div style={{ alignSelf: 'end' }}><button className="button" disabled={saving}>{saving ? 'Saving...' : 'Create campaign'}</button></div>
+          <div style={{ alignSelf: 'end' }}><button className="button" disabled={saving} type="submit">{saving ? 'Saving...' : 'Create campaign'}</button></div>
         </form>
       </div>
 
