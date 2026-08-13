@@ -18,7 +18,7 @@ type ResizeState = {
   startWidth: number;
 };
 
-type PointerLikeEvent = MouseEvent | PointerEvent;
+type PointerWindowHandler = (event: PointerEvent) => void;
 
 const MIN_COLUMN_WIDTH = 96;
 const DEFAULT_COLUMN_WIDTH = 190;
@@ -43,8 +43,26 @@ export function useResizableColumns(columns: ResizableColumnDefinition[], tableI
   const pathname = usePathname() || 'app';
   const key = useMemo(() => storageKey(pathname, tableId, columns), [columns, pathname, tableId]);
   const resizeState = useRef<ResizeState | null>(null);
+  const resizeMoveHandler = useRef<PointerWindowHandler | null>(null);
+  const resizeEndHandler = useRef<PointerWindowHandler | null>(null);
   const [widths, setWidths] = useState<Record<string, number>>({});
   const [activeColumnId, setActiveColumnId] = useState<string | null>(null);
+
+  const clearResizeListeners = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      if (resizeMoveHandler.current) window.removeEventListener('pointermove', resizeMoveHandler.current);
+      if (resizeEndHandler.current) {
+        window.removeEventListener('pointerup', resizeEndHandler.current);
+        window.removeEventListener('pointercancel', resizeEndHandler.current);
+      }
+    }
+    if (typeof document !== 'undefined') document.body.classList.remove('is-resizing-table-column');
+    resizeMoveHandler.current = null;
+    resizeEndHandler.current = null;
+    resizeState.current = null;
+  }, []);
+
+  useEffect(() => () => clearResizeListeners(), [clearResizeListeners]);
 
   const defaults = useMemo(() => {
     return columns.reduce<Record<string, number>>((acc, column) => {
@@ -125,6 +143,7 @@ export function useResizableColumns(columns: ResizableColumnDefinition[], tableI
   const startResize = useCallback((columnId: string, event: ReactPointerEvent<HTMLElement>) => {
     event.preventDefault();
     event.stopPropagation();
+    clearResizeListeners();
     resizeState.current = {
       columnId,
       startX: event.clientX,
@@ -132,26 +151,24 @@ export function useResizableColumns(columns: ResizableColumnDefinition[], tableI
     };
     setActiveColumnId(columnId);
 
-    const handleMove = (moveEvent: PointerLikeEvent) => {
+    const handleMove: PointerWindowHandler = (moveEvent) => {
       const current = resizeState.current;
       if (!current) return;
       setColumnWidth(current.columnId, current.startWidth + moveEvent.clientX - current.startX);
     };
 
-    const handleEnd = () => {
-      resizeState.current = null;
+    const handleEnd: PointerWindowHandler = () => {
+      clearResizeListeners();
       setActiveColumnId(null);
-      window.removeEventListener('pointermove', handleMove);
-      window.removeEventListener('pointerup', handleEnd);
-      window.removeEventListener('pointercancel', handleEnd);
-      document.body.classList.remove('is-resizing-table-column');
     };
 
+    resizeMoveHandler.current = handleMove;
+    resizeEndHandler.current = handleEnd;
     document.body.classList.add('is-resizing-table-column');
     window.addEventListener('pointermove', handleMove);
     window.addEventListener('pointerup', handleEnd);
     window.addEventListener('pointercancel', handleEnd);
-  }, [getColumnWidth, setColumnWidth]);
+  }, [clearResizeListeners, getColumnWidth, setColumnWidth]);
 
   const resetWidths = useCallback(() => {
     setWidths(defaults);
