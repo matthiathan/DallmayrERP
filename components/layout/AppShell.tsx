@@ -8,77 +8,20 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { DesktopNavigationRail } from '@/components/layout/DesktopNavigationRail';
 import { MobileNavigationDrawer, MobileQuickBar } from '@/components/layout/MobileNavigation';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
+import { deriveAppShellNavigation } from '@/components/layout/appShellNavigation';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { DensityToggle } from '@/components/ui/DensityToggle';
 import { ErpStateBanner } from '@/components/ui/ErpLayout';
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
-import {
-  canAccessPath,
-  getDefaultPathForRole,
-  isNavItemAllowed,
-  navSections,
-  roleLabels,
-  type NavItem,
-  type NavSection,
-} from '@/lib/auth/permissions';
+import { getDefaultPathForRole, roleLabels } from '@/lib/auth/permissions';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/browserStorage';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import type { BusinessRole } from '@/types/dallmayrerp';
 import { displayProfileName, isProfileComplete } from '@/types/dallmayrerp';
 
 const FAVORITES_KEY = 'dallmayr-mobile-favorites-v1';
 const RAIL_COLLAPSED_KEY = 'dallmayr-desktop-rail-collapsed-v1';
 const MAX_FAVORITES = 4;
-const MESSAGING_ENABLED = process.env.NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED !== 'false';
-
-const sectionOrderByRole: Record<BusinessRole, string[]> = {
-  admin: ['System', 'Telemetry', 'Communications', 'Transactions', 'Masters', 'Fixed Assets', 'Sales', 'Reports', 'Batch Reports', 'Utilities'],
-  operations: ['Communications', 'Operations', 'Assets & Maintenance', 'Inventory', 'Reports'],
-  sales: ['Communications', 'Sales', 'Masters', 'Transactions', 'Reports', 'Utilities'],
-  finance: ['Communications', 'Sales', 'Transactions', 'Masters', 'Reports', 'Batch Reports', 'Utilities'],
-  marketing: ['Communications', 'Sales', 'Masters', 'Reports', 'Batch Reports', 'Transactions', 'Utilities'],
-  executive: ['Communications', 'Reports', 'Telemetry', 'Transactions', 'Fixed Assets', 'Masters', 'Sales', 'Batch Reports', 'Utilities'],
-  warehouse_staff: ['Communications', 'Transactions', 'Masters', 'Reports', 'Batch Reports', 'Utilities'],
-  technician: ['Communications', 'Transactions', 'Fixed Assets', 'Masters', 'Utilities'],
-  road_technician: ['Communications', 'Transactions', 'Fixed Assets', 'Masters', 'Utilities'],
-};
-
-const primaryPathCandidates: Record<BusinessRole, string[]> = {
-  admin: ['/work', '/admin/users', '/'],
-  operations: ['/operations/dispatch', '/operations/exceptions', '/work'],
-  sales: ['/sales', '/customers', '/work'],
-  finance: ['/finance', '/finance/service-coverage', '/work'],
-  marketing: ['/marketing', '/marketing/campaigns', '/work'],
-  executive: ['/executive/command-centre', '/executive', '/work'],
-  warehouse_staff: ['/warehouse/stock', '/warehouse/planning', '/work'],
-  technician: ['/technician', '/work'],
-  road_technician: ['/road-tech', '/work'],
-};
-
-function telemetryNavigationForRole(role: BusinessRole): NavSection[] {
-  if (role !== 'admin' && role !== 'executive') return [];
-
-  return [{
-    heading: 'Telemetry',
-    items: [
-      {
-        href: '/telemetry',
-        label: 'Machine Telemetry',
-        code: 'TEL01',
-        roles: ['admin', 'executive'],
-        description: 'Daily, weekly, monthly and six-month machine sales and connectivity reporting.',
-      },
-      ...(role === 'admin' ? [{
-        href: '/telemetry/devices',
-        label: 'Telemetry Devices',
-        code: 'TEL02',
-        roles: ['admin'] as BusinessRole[],
-        description: 'Assign devices to ERP machines and control telemetry ingestion.',
-      }] : []),
-    ],
-  }];
-}
 
 function StatusScreen({
   title,
@@ -104,10 +47,6 @@ function StatusScreen({
   );
 }
 
-function isActivePath(pathname: string, href: string) {
-  return pathname === href || (href !== '/' && pathname.startsWith(`${href}/`));
-}
-
 function safeFavoriteList(value: string | null) {
   if (!value) return [];
   try {
@@ -117,25 +56,6 @@ function safeFavoriteList(value: string | null) {
   } catch {
     return [];
   }
-}
-
-function orderNavigationSections(role: BusinessRole, sections: NavSection[]) {
-  const order = sectionOrderByRole[role];
-  const rank = new Map(order.map((heading, index) => [heading, index]));
-  const seen = new Set<string>();
-
-  return sections
-    .filter((section) => section.heading !== 'Windows')
-    .sort((left, right) => (rank.get(left.heading) ?? 99) - (rank.get(right.heading) ?? 99))
-    .map((section) => ({
-      ...section,
-      items: section.items.filter((item) => {
-        if (seen.has(item.href)) return false;
-        seen.add(item.href);
-        return true;
-      }),
-    }))
-    .filter((section) => section.items.length > 0);
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -230,48 +150,19 @@ export function AppShell({ children }: { children: ReactNode }) {
     );
   }
 
-  const homePath = getDefaultPathForRole(userDetails.role);
-  const telemetryPathAllowed = pathname === '/telemetry'
-    ? userDetails.role === 'admin' || userDetails.role === 'executive'
-    : pathname.startsWith('/telemetry/devices') && userDetails.role === 'admin';
-  const allowedPath = canAccessPath(userDetails.role, pathname) || telemetryPathAllowed;
-  const roleSections = navSections
-    .map((section) => ({
-      ...section,
-      items: section.items.filter((item) => isNavItemAllowed(userDetails.role, item)),
-    }))
-    .filter((section) => section.items.length > 0);
-  const messagingSection: NavSection[] = MESSAGING_ENABLED ? [{
-    heading: 'Communications',
-    items: [{
-      href: '/work/messages',
-      label: 'Messages',
-      code: 'MSG01',
-      roles: 'all',
-      description: 'Direct and group conversations with colleagues.',
-    }],
-  }] : [];
-  const telemetrySections = telemetryNavigationForRole(userDetails.role);
-  const navigationSections = orderNavigationSections(userDetails.role, [...messagingSection, ...telemetrySections, ...roleSections]);
-  const allNavigationItems = navigationSections.flatMap((section) => section.items);
-  const activeSection = navigationSections.find((section) => section.items.some((item) => isActivePath(pathname, item.href)));
-  const activeItem = activeSection?.items.find((item) => isActivePath(pathname, item.href));
-  const activeTitle = activeItem?.label ?? 'Today';
+  const {
+    activeSection,
+    activeTitle,
+    allowedPath,
+    favoriteItems,
+    homePath,
+    mobileScanPath,
+    mobileTaskPath,
+    navigationSections,
+    statusQuickLinks,
+  } = deriveAppShellNavigation(userDetails.role, pathname, favoriteHrefs);
   const activeBranch = userDetails.branch.toUpperCase();
   const userName = displayProfileName(businessProfile);
-  const favoriteItems = favoriteHrefs
-    .map((href) => allNavigationItems.find((item) => item.href === href))
-    .filter((item): item is NavItem => Boolean(item));
-  const visibleHrefs = new Set(allNavigationItems.map((item) => item.href));
-  const statusQuickLinks = [
-    ...(MESSAGING_ENABLED ? [{ href: '/work/messages', label: 'Messages' }] : []),
-    { href: '/work', label: 'My Work' },
-    { href: '/operations/exceptions', label: 'Exceptions' },
-    { href: '/operations/dispatch', label: 'Dispatch' },
-    { href: '/warehouse/stock', label: 'Stock' },
-  ].filter((item) => item.href === '/work' || visibleHrefs.has(item.href)).slice(0, 3);
-  const mobileTaskPath = primaryPathCandidates[userDetails.role].find((href) => visibleHrefs.has(href)) ?? homePath;
-  const mobileScanPath = userDetails.role === 'warehouse_staff' ? '/warehouse/stock/scan' : '/operations/assets/scan';
 
   function toggleFavorite(href: string) {
     setFavoriteHrefs((current) => {
