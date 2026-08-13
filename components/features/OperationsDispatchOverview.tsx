@@ -8,6 +8,7 @@ import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { PageToolbar } from '@/components/ui/PageToolbar';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { formatLocalDate } from '@/lib/dates/local-date';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Branch } from '@/types/dallmayrerp';
 
@@ -82,11 +83,6 @@ const branchOptions = ['all', 'jhb', 'cpt', 'kzn', 'national'] as const;
 const openServiceStatuses = ['new', 'assigned', 'in_progress'];
 const activeDeliveryStatuses = ['draft', 'picked', 'dispatched', 'delivered'];
 
-function localDateValue(date = new Date()) {
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 10);
-}
-
 function firstRelation<T>(relation: T | T[] | null | undefined): T | null {
   return Array.isArray(relation) ? relation[0] ?? null : relation ?? null;
 }
@@ -120,7 +116,7 @@ function deliveryRank(status: string) {
 
 export function OperationsDispatchOverview() {
   const { userDetails } = useAuth();
-  const [scheduleDate, setScheduleDate] = useState(localDateValue());
+  const [scheduleDate, setScheduleDate] = useState(formatLocalDate());
   const [selectedBranch, setSelectedBranch] = useState('all');
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
