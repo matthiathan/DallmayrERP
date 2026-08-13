@@ -1,10 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { BoardCommandBar, BoardFilterChips, BoardFilterDrawer, BoardHeader, BoardViewTabs } from '@/components/boards/BoardWorkspace';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { isPast, normalizeMyWorkItems } from '@/components/features/mondayMyWorkNormalization';
+import { MondayMyWorkCard } from '@/components/features/MondayMyWorkCard';
+import { isPast, normalizeMyWorkItems, type NormalizedMyWorkItem } from '@/components/features/mondayMyWorkNormalization';
 import {
   preferenceDefaults,
   useMondayMyWorkPreferences,
@@ -16,7 +16,6 @@ import {
   type WorkspaceMode,
 } from '@/components/features/useMondayMyWorkPreferences';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
-import { StatusBadge } from '@/components/ui/StatusBadge';
 import { roleLabels } from '@/lib/auth/permissions';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Branch } from '@/types/dallmayrerp';
@@ -72,24 +71,6 @@ type AssetAuditQueue = {
   condition: string;
   criticality: string;
   next_audit_at: string | null;
-};
-
-type MyWorkItem = {
-  id: string;
-  source: WorkSource;
-  sourceLabel: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  status: string;
-  priority: string;
-  branch: string;
-  dueAt: string | null;
-  href: string;
-  isOpen: boolean;
-  isMine: boolean;
-  isUnassigned: boolean;
-  approvalPending: boolean;
 };
 
 const modes = [
@@ -155,15 +136,7 @@ function priorityRank(priority: string) {
   return 3;
 }
 
-function formatDateTime(value: string | null) {
-  if (!value) return 'No target date';
-  return new Intl.DateTimeFormat('en-ZA', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value));
-}
-
-function urgencyKey(item: MyWorkItem) {
+function urgencyKey(item: NormalizedMyWorkItem) {
   if (item.approvalPending || (item.isOpen && isPast(item.dueAt))) return 'Attention';
   if (!item.dueAt) return 'Unscheduled';
 
@@ -174,31 +147,6 @@ function urgencyKey(item: MyWorkItem) {
   if (days > 0 && days <= 7) return 'This week';
   if (days > 7) return 'Later';
   return 'Attention';
-}
-
-function WorkCard({ item, density }: { item: MyWorkItem; density: Density }) {
-  return (
-    <Link className={`monday-my-work-card is-${density}`} href={item.href}>
-      <div className="monday-my-work-card-heading">
-        <div>
-          <span>{item.sourceLabel}</span>
-          <strong>{item.title}</strong>
-        </div>
-        <StatusBadge value={item.status} />
-      </div>
-      <p>{item.description}</p>
-      <div className="monday-my-work-card-meta">
-        <span>{item.subtitle}</span>
-        <span>{item.branch.toUpperCase()}</span>
-        <span>{formatDateTime(item.dueAt)}</span>
-      </div>
-      <div className="monday-my-work-card-badges">
-        <StatusBadge value={item.priority} />
-        {item.approvalPending ? <StatusBadge value="pending approval" /> : null}
-        {item.isOpen && isPast(item.dueAt) ? <StatusBadge value="overdue" /> : null}
-      </div>
-    </Link>
-  );
 }
 
 export function MondayMyWorkWorkspace() {
@@ -320,7 +268,7 @@ export function MondayMyWorkWorkspace() {
     await loadCentre();
   }
 
-  const unifiedItems = useMemo<MyWorkItem[]>(() => normalizeMyWorkItems({
+  const unifiedItems = useMemo<NormalizedMyWorkItem[]>(() => normalizeMyWorkItems({
     assetAudits,
     currentUserId: businessUser?.id ?? '',
     deliveries,
@@ -357,7 +305,7 @@ export function MondayMyWorkWorkspace() {
   }, [preferences.hiddenSources, priorityFilter, scope, search, sourceFilter, unifiedItems]);
 
   const groupedItems = useMemo(() => {
-    const map = new Map<string, MyWorkItem[]>();
+    const map = new Map<string, NormalizedMyWorkItem[]>();
     filteredItems.forEach((item) => {
       const key = preferences.groupBy === 'source'
         ? item.sourceLabel
@@ -500,7 +448,7 @@ export function MondayMyWorkWorkspace() {
           {groupedItems.map(([group, items]) => (
             <section key={group}>
               <header><div><strong>{group}</strong><small>{preferences.groupBy}</small></div><span>{items.length}</span></header>
-              <div>{items.map((item) => <WorkCard density={preferences.density} item={item} key={item.id} />)}</div>
+              <div>{items.map((item) => <MondayMyWorkCard density={preferences.density} item={item} key={item.id} />)}</div>
             </section>
           ))}
         </div>
@@ -513,7 +461,7 @@ export function MondayMyWorkWorkspace() {
             return (
               <section key={column}>
                 <header><strong>{column}</strong><span>{items.length}</span></header>
-                <div>{items.length === 0 ? <p>No work in this column.</p> : items.map((item) => <WorkCard density={preferences.density} item={item} key={item.id} />)}</div>
+                <div>{items.length === 0 ? <p>No work in this column.</p> : items.map((item) => <MondayMyWorkCard density={preferences.density} item={item} key={item.id} />)}</div>
               </section>
             );
           })}
@@ -540,7 +488,7 @@ export function MondayMyWorkWorkspace() {
               return (
                 <section key={key}>
                   <header><span>{day.toLocaleDateString('en-ZA', { weekday: 'short' })}</span><strong>{day.getDate()}</strong></header>
-                  <div>{items.length === 0 ? <p>No dated work.</p> : items.map((item) => <WorkCard density="compact" item={item} key={item.id} />)}</div>
+                  <div>{items.length === 0 ? <p>No dated work.</p> : items.map((item) => <MondayMyWorkCard density="compact" item={item} key={item.id} />)}</div>
                 </section>
               );
             })}
@@ -569,7 +517,7 @@ export function MondayMyWorkWorkspace() {
             <section>
               <header><strong>Needs attention</strong><span>Top priority items</span></header>
               <div className="monday-my-work-attention">
-                {unifiedItems.filter((item) => item.approvalPending || item.isUnassigned || (item.isOpen && isPast(item.dueAt))).sort((left, right) => priorityRank(left.priority) - priorityRank(right.priority)).slice(0, 10).map((item) => <WorkCard density="compact" item={item} key={item.id} />)}
+                {unifiedItems.filter((item) => item.approvalPending || item.isUnassigned || (item.isOpen && isPast(item.dueAt))).sort((left, right) => priorityRank(left.priority) - priorityRank(right.priority)).slice(0, 10).map((item) => <MondayMyWorkCard density="compact" item={item} key={item.id} />)}
               </div>
             </section>
           </div>
