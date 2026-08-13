@@ -22,6 +22,7 @@ import {
   type NavItem,
   type NavSection,
 } from '@/lib/auth/permissions';
+import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/browserStorage';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { BusinessRole } from '@/types/dallmayrerp';
 import { displayProfileName, isProfileComplete } from '@/types/dallmayrerp';
@@ -172,8 +173,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
-    setFavoriteHrefs(safeFavoriteList(window.localStorage.getItem(FAVORITES_KEY)));
-    setRailCollapsed(window.localStorage.getItem(RAIL_COLLAPSED_KEY) === 'true');
+    setFavoriteHrefs(safeFavoriteList(safeLocalStorageGet(FAVORITES_KEY)));
+    setRailCollapsed(safeLocalStorageGet(RAIL_COLLAPSED_KEY) === 'true');
   }, []);
 
   useEffect(() => {
@@ -279,7 +280,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         : current.length >= MAX_FAVORITES
           ? current
           : [...current, href];
-      window.localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
+      safeLocalStorageSet(FAVORITES_KEY, JSON.stringify(next));
       return next;
     });
   }
@@ -287,7 +288,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   function toggleRail() {
     setRailCollapsed((current) => {
       const next = !current;
-      window.localStorage.setItem(RAIL_COLLAPSED_KEY, String(next));
+      safeLocalStorageSet(RAIL_COLLAPSED_KEY, String(next));
       return next;
     });
   }
