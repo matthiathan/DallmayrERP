@@ -10,6 +10,7 @@ import { PageToolbar } from '@/components/ui/PageToolbar';
 import { RemoteDataTable } from '@/components/ui/RemoteDataTable';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import type { EnterpriseColumn } from '@/components/ui/EnterpriseDataTable';
+import { formatLocalDate } from '@/lib/dates/local-date';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { displayDetailsName } from '@/types/dallmayrerp';
 
@@ -103,10 +104,6 @@ function riskLabel(row: ContractRenewalRow) {
   return 'future';
 }
 
-function todayIsoDate() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export default function SalesPage() {
   const { businessUser, userDetails } = useAuth();
   const currentUserName = displayDetailsName(userDetails, businessUser?.email ?? 'Sales user');
@@ -131,7 +128,7 @@ export default function SalesPage() {
   const [newType, setNewType] = useState<Exclude<OpportunityType, 'all'>>('upgrade');
   const [newPriority, setNewPriority] = useState<Priority>('medium');
   const [newValue, setNewValue] = useState('');
-  const [nextActionDate, setNextActionDate] = useState(todayIsoDate());
+  const [nextActionDate, setNextActionDate] = useState(formatLocalDate());
   const [ownerName, setOwnerName] = useState(currentUserName);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
@@ -273,7 +270,7 @@ export default function SalesPage() {
     setNewPriority('medium');
     setNewValue('');
     setNotes('');
-    setNextActionDate(todayIsoDate());
+    setNextActionDate(formatLocalDate());
     await loadSalesWorkspace();
   }
 
@@ -309,7 +306,7 @@ export default function SalesPage() {
       opportunity_type: 'renewal',
       status: 'follow_up',
       priority: row.renewal_window === 'overdue' || row.renewal_window === '30' ? 'high' : 'medium',
-      next_action_date: todayIsoDate(),
+      next_action_date: formatLocalDate(),
       owner_name: row.salesman ?? currentUserName,
       notes: `Renewal follow-up from contract ${row.contract_number ?? 'not numbered'} (${labelize(row.renewal_window)}).`,
       source: 'contract_renewal',

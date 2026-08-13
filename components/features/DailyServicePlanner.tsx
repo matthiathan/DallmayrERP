@@ -5,6 +5,7 @@ import { EnterpriseDataTable, type EnterpriseColumn } from '@/components/ui/Ente
 import { KpiCard } from '@/components/ui/KpiCard';
 import { PageToolbar } from '@/components/ui/PageToolbar';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { formatLocalDate } from '@/lib/dates/local-date';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type ScheduleItem = {
@@ -35,19 +36,14 @@ type Technician = {
 
 const branches = ['all', 'jhb', 'cpt', 'kzn', 'national'];
 
-function localDateValue(date = new Date()) {
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 10);
-}
-
 function shiftDate(value: string, days: number) {
   const date = new Date(`${value}T12:00:00`);
   date.setDate(date.getDate() + days);
-  return localDateValue(date);
+  return formatLocalDate(date);
 }
 
 export function DailyServicePlanner() {
-  const [scheduleDate, setScheduleDate] = useState(localDateValue());
+  const [scheduleDate, setScheduleDate] = useState(formatLocalDate());
   const [branch, setBranch] = useState('all');
   const [items, setItems] = useState<ScheduleItem[]>([]);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
