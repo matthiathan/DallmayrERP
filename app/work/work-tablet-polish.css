@@ -1,0 +1,56 @@
+/* Screenshot-driven tablet polish for the Operations Action Centre.
+   Presentation only: queue loading, filtering, Supabase access and work-item behavior are unchanged. */
+
+@media (min-width: 761px) and (max-width: 900px),
+       (min-width: 901px) and (max-width: 1100px) and (hover: none) and (pointer: coarse) {
+  .monday-my-work .monday-board-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .monday-my-work .monday-board-header-copy {
+    max-width: none;
+  }
+
+  .monday-my-work .monday-board-header-actions {
+    width: 100%;
+    flex-wrap: nowrap;
+    justify-content: stretch;
+  }
+
+  .monday-my-work .monday-board-header-actions .button {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .monday-my-work > .monday-board-command-bar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .monday-my-work > .monday-board-command-bar > .monday-my-work-search {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+    flex: none;
+  }
+
+  .monday-my-work > .monday-board-command-bar > label:not(.monday-my-work-search),
+  .monday-my-work > .monday-board-command-bar > .button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .monday-my-work > .monday-board-command-bar > label:not(.monday-my-work-search) select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .monday-my-work > .monday-board-command-bar > .button {
+    justify-content: center;
+  }
+}
