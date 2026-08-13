@@ -366,7 +366,7 @@ export function InternalMessagingWorkspace() {
       <ErpPageHeader eyebrow="Communications" title="Messages" description="Secure internal direct and group conversations with live presence." />
       {unreadCount > 0 ? <ErpStateBanner title={`${unreadCount} unread conversation${unreadCount === 1 ? '' : 's'}`} message="Unread conversations are highlighted in the conversation list." tone="info" /> : null}
       {error ? <ErpStateBanner title="Messaging needs attention" message={error} tone="danger" /> : null}
-      <section className="messages-v2-shell" aria-label="Internal messaging workspace">
+      <section className="messages-v2-shell" data-empty-conversation={selectedThread ? undefined : 'true'} aria-label="Internal messaging workspace">
         <aside className="messages-v2-sidebar">
           <form className="messages-v2-create" onSubmit={createConversation}>
             <strong>New conversation</strong>
@@ -378,7 +378,7 @@ export function InternalMessagingWorkspace() {
                 ))}
               </div>
             ) : null}
-            <div aria-label="All active employees" className="messages-v2-people-picker" role="listbox">
+            <div aria-label="All active employees" className="messages-v2-people-picker" data-directory-empty={filteredDirectory.length ? undefined : 'true'} role="listbox">
               {filteredDirectory.map((user) => {
                 const selected = selectedUserIds.includes(user.id);
                 return (
