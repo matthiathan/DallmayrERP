@@ -1,0 +1,82 @@
+name: Production role UI verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Render production base URL
+        required: true
+        default: https://dallmayrerp.onrender.com
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify-role-ui:
+    name: Authenticated role-matrix layout verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PRODUCTION_BASE_URL: ${{ inputs.base_url }}
+      PRODUCTION_ROLE_MATRIX_JSON: ${{ secrets.PRODUCTION_ROLE_MATRIX_JSON }}
+      PRODUCTION_ROLE_UI_ARTIFACT_DIR: artifacts/production-role-ui
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate role-matrix secret
+        shell: bash
+        run: |
+          node <<'NODE'
+          const raw = process.env.PRODUCTION_ROLE_MATRIX_JSON || '';
+          if (!raw) {
+            console.error('Configure repository secret PRODUCTION_ROLE_MATRIX_JSON before running this workflow.');
+            process.exit(1);
+          }
+          let matrix;
+          try {
+            matrix = JSON.parse(raw);
+          } catch {
+            console.error('PRODUCTION_ROLE_MATRIX_JSON is not valid JSON.');
+            process.exit(1);
+          }
+          if (!Array.isArray(matrix) || matrix.length === 0) {
+            console.error('PRODUCTION_ROLE_MATRIX_JSON must contain at least one role profile.');
+            process.exit(1);
+          }
+          for (const [index, profile] of matrix.entries()) {
+            if (!profile || typeof profile !== 'object' || !profile.name || !profile.email || !profile.password || !Array.isArray(profile.routes) || profile.routes.length === 0) {
+              console.error(`Role profile ${index + 1} requires name, email, password and routes.`);
+              process.exit(1);
+            }
+          }
+          console.log(`Validated ${matrix.length} role profile configuration(s) without printing credentials.`);
+          NODE
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install browser test runner
+        run: |
+          npm ci --no-audit --no-fund
+          npm install --no-save --no-package-lock --no-audit --no-fund @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Validate role UI test syntax
+        run: node --check tests/production-role-ui.spec.mjs
+
+      - name: Capture authenticated role-specific UI evidence
+        run: npx playwright test tests/production-role-ui.spec.mjs --reporter=line --workers=1
+
+      - name: Upload role UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-role-ui-screenshots
+          path: artifacts/production-role-ui
+          if-no-files-found: warn
+          retention-days: 30
