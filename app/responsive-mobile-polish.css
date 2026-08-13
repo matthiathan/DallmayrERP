@@ -1,7 +1,35 @@
-/* Screenshot-driven Warehouse Inventory phone density polish.
-   Presentation only: stock transaction modes, forms, validation and data operations remain unchanged. */
+/*
+ * Consolidated screenshot-driven phone polish.
+ *
+ * Presentation only. Shared section-index navigation and Warehouse transaction
+ * modes retain their validated phone behavior while avoiding separate cascade
+ * layers for each one-off correction. The final responsive-mobile-tablet.css
+ * contract still loads after this file and remains authoritative.
+ */
 
 @media (max-width: 520px) {
+  .mobile-section-index {
+    width: 100%;
+    margin: 0 0 12px;
+    padding: 0 0 2px;
+    flex-wrap: wrap;
+    overflow-x: visible;
+    overscroll-behavior-x: auto;
+  }
+
+  .mobile-section-index > a {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+    max-width: 100%;
+    justify-content: center;
+    overflow: visible;
+    text-align: center;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: break-word;
+    line-height: 1.25;
+  }
+
   .erp-stock-register-workspace .stock-control-centre .stock-mode-grid {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -30,6 +58,10 @@
 }
 
 @media (max-width: 340px) {
+  .mobile-section-index > a {
+    flex-basis: 100%;
+  }
+
   .erp-stock-register-workspace .stock-control-centre .stock-mode-grid {
     grid-template-columns: 1fr !important;
   }
