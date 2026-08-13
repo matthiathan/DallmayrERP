@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { localDateAfterDays } from '@/lib/dates/local-date';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type MachineRelation = { machine_name: string | null; serial_number: string | null; meter_value: number; meter_unit: string };
@@ -28,7 +29,7 @@ export function ProfessionalSignalsPanel() {
   async function loadSignals() {
     setError(null);
     const client = getSupabaseClient();
-    const horizon = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10);
+    const horizon = localDateAfterDays(60);
     const [maintenanceResult, lotResult, assetResult] = await Promise.all([
       client.from('maintenance_plans').select('id, title, next_due_at, next_due_meter, machine_id, is_active, machines(machine_name, serial_number, meter_value, meter_unit)').eq('is_active', true).order('next_due_at', { ascending: true, nullsFirst: false }).limit(200),
       client.from('stock_lots').select('id, stock_item_id, lot_number, expiry_date, quantity_items, quantity_boxes, status, stock_items(stock_name)').eq('status', 'active').not('expiry_date', 'is', null).lte('expiry_date', horizon).order('expiry_date').limit(100),
