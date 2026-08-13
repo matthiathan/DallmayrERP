@@ -187,6 +187,8 @@ export function FieldServiceOfflineManager() {
           await updateFieldQueueItem(item.id, { status: 'failed', lastError: errorMessage(error) });
         }
       }
+    } catch (error) {
+      setToast(errorMessage(error));
     } finally {
       syncingRef.current = false;
       await refreshQueue();
@@ -239,10 +241,10 @@ export function FieldServiceOfflineManager() {
         if (!jobNumber || queuedJobNumbersRef.current.has(jobNumber.toUpperCase())) return;
         const values = readDraftValues(form);
         if (!values.machineCode && !values.notes && values.outcome === 'completed') {
-          void removeFieldDraft(userId, jobNumber);
+          void removeFieldDraft(userId, jobNumber).catch((error) => setToast(errorMessage(error)));
           return;
         }
-        void saveFieldDraft({ userId, jobNumber, taskType, ...values });
+        void saveFieldDraft({ userId, jobNumber, taskType, ...values }).catch((error) => setToast(errorMessage(error)));
       }, 350);
     }
 
@@ -267,17 +269,18 @@ export function FieldServiceOfflineManager() {
         return;
       }
 
-      window.setTimeout(async () => {
-        const draft = await getFieldDraft(userId, jobNumber);
-        if (!draft) return;
-        const form = document.querySelector<HTMLFormElement>('.field-completion-form');
-        if (!form || jobNumberFromForm(form).toUpperCase() !== jobNumber.toUpperCase()) return;
-        const machineInput = form.querySelector<HTMLInputElement>('.live-scanner-box input:not([type="file"])');
-        const notesInput = form.querySelector<HTMLTextAreaElement>('.field-textarea-label textarea');
-        if (machineInput) setNativeValue(machineInput, draft.machineCode);
-        if (notesInput) setNativeValue(notesInput, draft.notes);
-        form.querySelector<HTMLInputElement>(`input[name="outcome"][value="${draft.outcome}"]`)?.click();
-        setToast(`Draft restored for ${jobNumber}.`);
+      window.setTimeout(() => {
+        void getFieldDraft(userId, jobNumber).then((draft) => {
+          if (!draft) return;
+          const form = document.querySelector<HTMLFormElement>('.field-completion-form');
+          if (!form || jobNumberFromForm(form).toUpperCase() !== jobNumber.toUpperCase()) return;
+          const machineInput = form.querySelector<HTMLInputElement>('.live-scanner-box input:not([type="file"])');
+          const notesInput = form.querySelector<HTMLTextAreaElement>('.field-textarea-label textarea');
+          if (machineInput) setNativeValue(machineInput, draft.machineCode);
+          if (notesInput) setNativeValue(notesInput, draft.notes);
+          form.querySelector<HTMLInputElement>(`input[name="outcome"][value="${draft.outcome}"]`)?.click();
+          setToast(`Draft restored for ${jobNumber}.`);
+        }).catch((error) => setToast(errorMessage(error)));
       }, 180);
     }
 
@@ -325,7 +328,7 @@ export function FieldServiceOfflineManager() {
       const submittedJob = lastOnlineSubmissionRef.current;
       if (success && submittedJob) {
         lastOnlineSubmissionRef.current = '';
-        void removeFieldDraft(userId, submittedJob);
+        void removeFieldDraft(userId, submittedJob).catch((error) => setToast(errorMessage(error)));
       }
     });
 
@@ -412,9 +415,13 @@ export function FieldServiceOfflineManager() {
 
   async function retryAll() {
     if (!userId) return;
-    await resetFailedFieldQueue(userId);
-    await refreshQueue();
-    await synchronize(true);
+    try {
+      await resetFailedFieldQueue(userId);
+      await refreshQueue();
+      await synchronize(true);
+    } catch (error) {
+      setToast(errorMessage(error));
+    }
   }
 
   return (

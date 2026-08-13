@@ -46,13 +46,27 @@ function requireBrowser() {
   }
 }
 
+function clearDatabaseReference(database?: IDBDatabase) {
+  if (database) database.close();
+  databasePromise = null;
+}
+
 function openDatabase() {
   requireBrowser();
   if (databasePromise) return databasePromise;
 
   databasePromise = new Promise<IDBDatabase>((resolve, reject) => {
     const request = window.indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
-    request.onerror = () => reject(request.error ?? new Error('The offline field-work database could not be opened.'));
+    let settled = false;
+    const fail = (error: Error) => {
+      if (settled) return;
+      settled = true;
+      databasePromise = null;
+      reject(error);
+    };
+
+    request.onerror = () => fail(request.error ?? new Error('The offline field-work database could not be opened.'));
+    request.onblocked = () => fail(new Error('The offline field-work database is blocked by another open DallmayrERP tab. Close the other tab and try again.'));
     request.onupgradeneeded = () => {
       const database = request.result;
       if (!database.objectStoreNames.contains(DRAFT_STORE)) {
@@ -65,7 +79,16 @@ function openDatabase() {
         queue.createIndex('status', 'status', { unique: false });
       }
     };
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      const database = request.result;
+      if (settled) {
+        database.close();
+        return;
+      }
+      settled = true;
+      database.onversionchange = () => clearDatabaseReference(database);
+      resolve(database);
+    };
   });
 
   return databasePromise;
@@ -78,16 +101,33 @@ function requestResult<T>(request: IDBRequest<T>) {
   });
 }
 
-async function storeRequest<T>(storeName: string, mode: IDBTransactionMode, action: (store: IDBObjectStore) => IDBRequest<T>) {
-  const database = await openDatabase();
-  const transaction = database.transaction(storeName, mode);
-  const result = await requestResult(action(transaction.objectStore(storeName)));
-  await new Promise<void>((resolve, reject) => {
+function transactionResult(transaction: IDBTransaction) {
+  return new Promise<void>((resolve, reject) => {
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(transaction.error ?? new Error('The offline field-work transaction failed.'));
     transaction.onabort = () => reject(transaction.error ?? new Error('The offline field-work transaction was cancelled.'));
   });
+}
+
+async function executeStoreRequest<T>(storeName: string, mode: IDBTransactionMode, action: (store: IDBObjectStore) => IDBRequest<T>) {
+  const database = await openDatabase();
+  const transaction = database.transaction(storeName, mode);
+  const completion = transactionResult(transaction);
+  const result = await requestResult(action(transaction.objectStore(storeName)));
+  await completion;
   return result;
+}
+
+async function storeRequest<T>(storeName: string, mode: IDBTransactionMode, action: (store: IDBObjectStore) => IDBRequest<T>) {
+  try {
+    return await executeStoreRequest(storeName, mode, action);
+  } catch (error) {
+    if (error instanceof DOMException && ['InvalidStateError', 'TransactionInactiveError', 'AbortError'].includes(error.name)) {
+      clearDatabaseReference();
+      return executeStoreRequest(storeName, mode, action);
+    }
+    throw error;
+  }
 }
 
 function recordId(userId: string, jobNumber: string) {
