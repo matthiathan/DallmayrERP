@@ -7,6 +7,7 @@ import { favoritePathname, type FavoriteEntry } from '@/lib/navigation/favorites
 import { MY_WORK_LABEL, TODAY_LABEL, TODAY_OPEN_LABEL } from '@/lib/navigation/terminology';
 
 type DesktopNavigationRailProps = {
+  activeHref: string | null;
   collapsed: boolean;
   homePath: string;
   onToggleCollapse: () => void;
@@ -20,9 +21,11 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || (href !== '/' && pathname.startsWith(`${href}/`));
 }
 
-function isPinnedPathActive(pathname: string, href: string) {
+function isPinnedPathActive(pathname: string, href: string, activeHref: string | null) {
   if (href.includes('?')) return false;
-  return isActivePath(pathname, favoritePathname(href));
+  const pinnedPath = favoritePathname(href);
+  if (pinnedPath === activeHref) return false;
+  return isActivePath(pathname, pinnedPath);
 }
 
 function groupedSections(sections: NavSection[], homePath: string) {
@@ -40,6 +43,7 @@ function groupedSections(sections: NavSection[], homePath: string) {
 }
 
 export function DesktopNavigationRail({
+  activeHref,
   collapsed,
   homePath,
   onToggleCollapse,
@@ -62,12 +66,12 @@ export function DesktopNavigationRail({
         </button>
       </div>
 
-      <nav className="dallmayr-sidebar-nav" aria-label="ERP modules">
+      <nav className="dallmayr-sidebar-nav" aria-label="ERP navigation">
         <div className="dallmayr-sidebar-primary">
-          <Link aria-label={TODAY_LABEL} className="dallmayr-sidebar-link" aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} href={homePath} title={TODAY_LABEL}>
+          <Link aria-label={TODAY_LABEL} className="dallmayr-sidebar-link" aria-current={activeHref === homePath ? 'page' : undefined} href={homePath} title={TODAY_LABEL}>
             <span aria-hidden="true"><NavigationIcon kind="dashboard" /></span>{!collapsed ? <strong>{TODAY_LABEL}</strong> : null}
           </Link>
-          <Link aria-label={MY_WORK_LABEL} className="dallmayr-sidebar-link" aria-current={isActivePath(pathname, '/work') ? 'page' : undefined} href="/work" title={MY_WORK_LABEL}>
+          <Link aria-label={MY_WORK_LABEL} className="dallmayr-sidebar-link" aria-current={activeHref === '/work' ? 'page' : undefined} href="/work" title={MY_WORK_LABEL}>
             <span aria-hidden="true"><NavigationIcon kind="clipboard" /></span>{!collapsed ? <strong>{MY_WORK_LABEL}</strong> : null}
           </Link>
         </div>
@@ -80,7 +84,7 @@ export function DesktopNavigationRail({
                 const pinnedPath = favoritePathname(item.href);
                 return (
                   <Link
-                    aria-current={isPinnedPathActive(pathname, item.href) ? 'page' : undefined}
+                    aria-current={isPinnedPathActive(pathname, item.href, activeHref) ? 'page' : undefined}
                     className="dallmayr-sidebar-link"
                     href={item.href}
                     key={item.href}
@@ -101,7 +105,7 @@ export function DesktopNavigationRail({
             <div>
               {section.items.map((item) => (
                 <Link
-                  aria-current={isActivePath(pathname, item.href) ? 'page' : undefined}
+                  aria-current={activeHref === item.href ? 'page' : undefined}
                   className="dallmayr-sidebar-link"
                   href={item.href}
                   key={item.href}
