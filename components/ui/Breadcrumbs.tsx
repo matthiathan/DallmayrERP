@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { navSections } from '@/lib/auth/permissions';
+import { TODAY_LABEL } from '@/lib/navigation/terminology';
 
 type MobileSection = {
   id: string;
@@ -46,7 +47,7 @@ function findBackTarget(pathname: string) {
 
   return parent
     ? { href: parent.href, label: parent.label }
-    : { href: '/workspace', label: 'Start Page' };
+    : { href: '/workspace', label: TODAY_LABEL };
 }
 
 function sectionId(label: string, index: number) {
@@ -125,7 +126,7 @@ export function Breadcrumbs() {
   const isRoot = pathname === '/';
   const isWorkspace = pathname === '/workspace';
   const backTarget = findBackTarget(pathname);
-  const currentLabel = crumbs.at(-1)?.label ?? 'Start Page';
+  const currentLabel = crumbs.at(-1)?.label ?? TODAY_LABEL;
   const showSectionIndex = mobileSections.length >= 3;
 
   return (
@@ -150,7 +151,7 @@ export function Breadcrumbs() {
 
       {!isRoot && !isWorkspace ? (
         <nav aria-label="Breadcrumb" className="breadcrumbs">
-          <Link href="/workspace">Workspace</Link>
+          <Link href="/workspace">{TODAY_LABEL}</Link>
           {crumbs.map((crumb) => (
             <span className="breadcrumb-item" key={crumb.href}>
               <span aria-hidden="true">/</span>
