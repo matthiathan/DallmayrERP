@@ -106,3 +106,41 @@ jobs:
 
           cat next-server.log
           exit 1
+
+  android-field:
+    name: Build Android field debug package
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://egbiiizxsqlarqpnzxxs.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: native-ci-public-placeholder
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Check native/mobile readiness contracts
+        run: npm run native:check
+
+      - name: Prepare and sync local Android field bundle
+        run: |
+          npm run mobile:prepare
+          npx cap sync android
+
+      - name: Compile Android debug package
+        working-directory: android
+        run: ./gradlew assembleDebug
