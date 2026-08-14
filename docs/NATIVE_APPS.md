@@ -15,7 +15,7 @@ This architecture gives field staff a real local/offline core without forcing ev
 ## Android field architecture
 
 - App ID: `za.co.dallmayr.erp`
-- App name: `DallmayrERP Field`
+- Installed app name: `DallmayrERP` (the local UI identifies the scoped workspace as `DallmayrERP Field`)
 - Local Capacitor web root: `native/mobile/www`
 - Backend: existing Supabase project and existing RLS/RPC contracts
 - Supported roles: `technician`, `road_technician`
