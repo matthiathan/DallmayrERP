@@ -12,6 +12,7 @@ import { MY_WORK_LABEL, TODAY_LABEL } from '@/lib/navigation/terminology';
 import type { BusinessRole } from '@/types/dallmayrerp';
 
 type MobileNavigationDrawerProps = {
+  activeHref: string | null;
   activeTitle: string;
   favorites: FavoriteEntry[];
   homePath: string;
@@ -67,6 +68,7 @@ function initials(name: string) {
 }
 
 export function MobileNavigationDrawer({
+  activeHref,
   activeTitle,
   favorites,
   homePath,
@@ -168,12 +170,12 @@ export function MobileNavigationDrawer({
         </header>
 
         <nav aria-label="Mobile navigation" className="mobile-menu-v2-nav">
-          <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} className="mobile-menu-v2-link mobile-menu-v2-home" href={homePath} onClick={() => setOpen(false)}>
+          <Link aria-current={activeHref === homePath ? 'page' : undefined} className="mobile-menu-v2-link mobile-menu-v2-home" href={homePath} onClick={() => setOpen(false)}>
             <span className="mobile-menu-v2-icon" aria-hidden="true"><NavigationIcon kind="dashboard" /></span>
             <span className="mobile-menu-v2-copy"><strong>{TODAY_LABEL}</strong></span>
           </Link>
 
-          <Link aria-current={isActivePath(pathname, '/work') ? 'page' : undefined} className="mobile-menu-v2-link" href="/work" onClick={() => setOpen(false)}>
+          <Link aria-current={activeHref === '/work' ? 'page' : undefined} className="mobile-menu-v2-link" href="/work" onClick={() => setOpen(false)}>
             <span className="mobile-menu-v2-icon" aria-hidden="true"><NavigationIcon kind="clipboard" /></span>
             <span className="mobile-menu-v2-copy"><strong>{MY_WORK_LABEL}</strong></span>
             <span className="mobile-menu-v2-chevron" aria-hidden="true"><NavigationIcon kind="chevron-right" /></span>
@@ -214,7 +216,7 @@ export function MobileNavigationDrawer({
             <section className="mobile-menu-v2-group" key={section.heading}>
               <p className="mobile-menu-v2-section-label">{section.heading}</p>
               {section.items.map((item) => {
-                const active = isActivePath(pathname, item.href);
+                const active = activeHref === item.href;
                 const pinned = favoriteHrefs.includes(item.href);
                 const pinDisabled = !pinned && favorites.length >= MAX_FAVORITES;
                 return (
