@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { canAccessShellPath } from '../../components/layout/appShellNavigation.ts';
 import {
   favoriteHrefForLocation,
   favoritePathname,
@@ -56,4 +57,12 @@ test('module and record-level favorites can coexist and the ninth pin is rejecte
 
   const removed = toggleFavoriteEntry(full, full[1]);
   assert.equal(removed.some((entry) => entry.href === '/operations/service-jobs?job=service-1'), false);
+});
+
+test('shell access keeps telemetry favorites visible only to their authorized roles', () => {
+  assert.equal(canAccessShellPath('admin', '/telemetry'), true);
+  assert.equal(canAccessShellPath('executive', '/telemetry'), true);
+  assert.equal(canAccessShellPath('operations', '/telemetry'), false);
+  assert.equal(canAccessShellPath('admin', '/telemetry/devices'), true);
+  assert.equal(canAccessShellPath('executive', '/telemetry/devices'), false);
 });
