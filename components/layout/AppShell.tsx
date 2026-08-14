@@ -10,7 +10,7 @@ import { DesktopNavigationRail } from '@/components/layout/DesktopNavigationRail
 import { EnterpriseProductivityHub } from '@/components/layout/EnterpriseProductivityHub';
 import { MobileNavigationDrawer, MobileQuickBar } from '@/components/layout/MobileNavigation';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
-import { deriveAppShellNavigation } from '@/components/layout/appShellNavigation';
+import { canAccessShellPath, deriveAppShellNavigation } from '@/components/layout/appShellNavigation';
 import { useAppShellPreferences } from '@/components/layout/useAppShellPreferences';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { DensityToggle } from '@/components/ui/DensityToggle';
@@ -18,6 +18,7 @@ import { ErpStateBanner } from '@/components/ui/ErpLayout';
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { getDefaultPathForRole, roleLabels } from '@/lib/auth/permissions';
+import { favoritePathname } from '@/lib/navigation/favorites';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { displayProfileName, isProfileComplete } from '@/types/dallmayrerp';
 
@@ -50,9 +51,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { authUser, businessProfile, businessUser, userDetails, loading, error } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { favoriteHrefs, railCollapsed, toggleFavorite, toggleRail } = useAppShellPreferences();
   const profileComplete = isProfileComplete(userDetails);
   const role = userDetails?.role;
+  const { favoriteEntries, railCollapsed, toggleFavorite, toggleRail } = useAppShellPreferences(role);
 
   useEffect(() => {
     if (!loading && !authUser) router.replace('/login');
@@ -135,15 +136,15 @@ export function AppShell({ children }: { children: ReactNode }) {
     activeSection,
     activeTitle,
     allowedPath,
-    favoriteItems,
     homePath,
     mobileScanPath,
     mobileTaskPath,
     navigationSections,
     statusQuickLinks,
-  } = deriveAppShellNavigation(userDetails.role, pathname, favoriteHrefs);
+  } = deriveAppShellNavigation(userDetails.role, pathname);
   const activeBranch = userDetails.branch.toUpperCase();
   const userName = displayProfileName(businessProfile);
+  const visibleFavorites = favoriteEntries.filter((entry) => canAccessShellPath(userDetails.role, favoritePathname(entry.href)));
 
   return (
     <div className={`app-shell top-shell application-shell-v2 ${railCollapsed ? 'desktop-rail-collapsed' : ''} ${menuOpen ? 'mobile-menu-open' : ''}`}>
@@ -163,13 +164,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="application-header-actions">
-            <EnterpriseProductivityHub
-              activeTitle={activeTitle}
-              favoriteHrefs={favoriteHrefs}
-              onToggleFavorite={toggleFavorite}
-              pathname={pathname}
-              role={userDetails.role}
-            />
+            <Suspense fallback={null}>
+              <EnterpriseProductivityHub
+                activeTitle={activeTitle}
+                favorites={visibleFavorites}
+                onToggleFavorite={toggleFavorite}
+                pathname={pathname}
+                role={userDetails.role}
+              />
+            </Suspense>
             <DensityToggle />
             <div className="desktop-alerts-target" id="desktop-alerts-target" />
             <div className="desktop-account-menu-target" id="desktop-account-menu-target" />
@@ -204,7 +207,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <MobileNavigationDrawer
           activeTitle={activeTitle}
-          favoriteHrefs={favoriteHrefs}
+          favorites={visibleFavorites}
           homePath={homePath}
           onToggleFavorite={toggleFavorite}
           open={menuOpen}
@@ -221,9 +224,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         collapsed={railCollapsed}
         homePath={homePath}
         onToggleCollapse={toggleRail}
-        onToggleFavorite={toggleFavorite}
         pathname={pathname}
-        pinnedItems={favoriteItems}
+        pinnedItems={visibleFavorites}
         roleLabel={roleLabels[userDetails.role]}
         sections={navigationSections}
       />

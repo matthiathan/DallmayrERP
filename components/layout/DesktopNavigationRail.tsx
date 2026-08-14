@@ -2,21 +2,26 @@
 
 import Link from 'next/link';
 import { NavigationIcon, navigationIconKind } from '@/components/layout/NavigationIcon';
-import type { NavItem, NavSection } from '@/lib/auth/permissions';
+import type { NavSection } from '@/lib/auth/permissions';
+import { favoritePathname, type FavoriteEntry } from '@/lib/navigation/favorites';
 
 type DesktopNavigationRailProps = {
   collapsed: boolean;
   homePath: string;
   onToggleCollapse: () => void;
-  onToggleFavorite: (href: string) => void;
   pathname: string;
-  pinnedItems: NavItem[];
+  pinnedItems: FavoriteEntry[];
   roleLabel: string;
   sections: NavSection[];
 };
 
 function isActivePath(pathname: string, href: string) {
   return pathname === href || (href !== '/' && pathname.startsWith(`${href}/`));
+}
+
+function isPinnedPathActive(pathname: string, href: string) {
+  if (href.includes('?')) return false;
+  return isActivePath(pathname, favoritePathname(href));
 }
 
 function groupedSections(sections: NavSection[], homePath: string) {
@@ -38,6 +43,7 @@ export function DesktopNavigationRail({
   homePath,
   onToggleCollapse,
   pathname,
+  pinnedItems,
   roleLabel,
   sections,
 }: DesktopNavigationRailProps) {
@@ -64,6 +70,29 @@ export function DesktopNavigationRail({
             <span aria-hidden="true"><NavigationIcon kind="clipboard" /></span>{!collapsed ? <strong>My Work</strong> : null}
           </Link>
         </div>
+
+        {pinnedItems.length > 0 ? (
+          <section aria-label="Pinned pages" className="dallmayr-sidebar-group dallmayr-sidebar-pinned-group">
+            {!collapsed ? <h2>Pinned</h2> : <div className="dallmayr-sidebar-group-divider" aria-hidden="true" />}
+            <div>
+              {pinnedItems.map((item) => {
+                const pinnedPath = favoritePathname(item.href);
+                return (
+                  <Link
+                    aria-current={isPinnedPathActive(pathname, item.href) ? 'page' : undefined}
+                    className="dallmayr-sidebar-link"
+                    href={item.href}
+                    key={item.href}
+                    title={item.label}
+                  >
+                    <span aria-hidden="true"><NavigationIcon kind={navigationIconKind(item.label, pinnedPath)} /></span>
+                    {!collapsed ? <strong>{item.label}</strong> : null}
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
 
         {visibleSections.map((section) => (
           <section className="dallmayr-sidebar-group" key={section.heading} aria-label={section.heading}>

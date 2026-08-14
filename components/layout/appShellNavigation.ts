@@ -3,7 +3,6 @@ import {
   getDefaultPathForRole,
   isNavItemAllowed,
   navSections,
-  type NavItem,
   type NavSection,
 } from '@/lib/auth/permissions';
 import type { BusinessRole } from '@/types/dallmayrerp';
@@ -81,12 +80,16 @@ function orderNavigationSections(role: BusinessRole, sections: NavSection[]) {
     .filter((section) => section.items.length > 0);
 }
 
-export function deriveAppShellNavigation(role: BusinessRole, pathname: string, favoriteHrefs: string[]) {
-  const homePath = getDefaultPathForRole(role);
+export function canAccessShellPath(role: BusinessRole, pathname: string) {
   const telemetryPathAllowed = pathname === '/telemetry'
     ? role === 'admin' || role === 'executive'
     : pathname.startsWith('/telemetry/devices') && role === 'admin';
-  const allowedPath = canAccessPath(role, pathname) || telemetryPathAllowed;
+  return canAccessPath(role, pathname) || telemetryPathAllowed;
+}
+
+export function deriveAppShellNavigation(role: BusinessRole, pathname: string) {
+  const homePath = getDefaultPathForRole(role);
+  const allowedPath = canAccessShellPath(role, pathname);
   const roleSections = navSections
     .map((section) => ({
       ...section,
@@ -112,9 +115,6 @@ export function deriveAppShellNavigation(role: BusinessRole, pathname: string, f
   const activeSection = navigationSections.find((section) => section.items.some((item) => isActivePath(pathname, item.href)));
   const activeItem = activeSection?.items.find((item) => isActivePath(pathname, item.href));
   const activeTitle = activeItem?.label ?? 'Today';
-  const favoriteItems = favoriteHrefs
-    .map((href) => allNavigationItems.find((item) => item.href === href))
-    .filter((item): item is NavItem => Boolean(item));
   const visibleHrefs = new Set(allNavigationItems.map((item) => item.href));
   const statusQuickLinks = [
     ...(MESSAGING_ENABLED ? [{ href: '/work/messages', label: 'Messages' }] : []),
@@ -130,7 +130,6 @@ export function deriveAppShellNavigation(role: BusinessRole, pathname: string, f
     activeSection,
     activeTitle,
     allowedPath,
-    favoriteItems,
     homePath,
     mobileScanPath,
     mobileTaskPath,
