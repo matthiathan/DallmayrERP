@@ -80,7 +80,7 @@ export function groupEnterpriseNavigationSections(role: BusinessRole, sections: 
   if (!isEnterpriseNavigationRole(role)) return sections;
 
   const grouped = new Map<EnterpriseNavigationHeading, NavSection['items']>(
-    ENTERPRISE_NAVIGATION_HEADINGS.map((heading) => [heading, []]),
+    ENTERPRISE_NAVIGATION_HEADINGS.map((heading) => [heading, []] as [EnterpriseNavigationHeading, NavSection['items']]),
   );
   const seen = new Set<string>();
 
