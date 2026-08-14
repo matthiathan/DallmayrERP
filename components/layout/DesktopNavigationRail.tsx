@@ -9,7 +9,6 @@ type DesktopNavigationRailProps = {
   collapsed: boolean;
   homePath: string;
   onToggleCollapse: () => void;
-  onToggleFavorite: (href: string, label?: string) => void;
   pathname: string;
   pinnedItems: FavoriteEntry[];
   roleLabel: string;
@@ -38,7 +37,6 @@ export function DesktopNavigationRail({
   collapsed,
   homePath,
   onToggleCollapse,
-  onToggleFavorite,
   pathname,
   pinnedItems,
   roleLabel,
@@ -75,28 +73,16 @@ export function DesktopNavigationRail({
               {pinnedItems.map((item) => {
                 const pinnedPath = favoritePathname(item.href);
                 return (
-                  <div className="dallmayr-sidebar-pinned-row" key={item.href}>
-                    <Link
-                      aria-current={isActivePath(pathname, pinnedPath) ? 'page' : undefined}
-                      className="dallmayr-sidebar-link"
-                      href={item.href}
-                      title={item.label}
-                    >
-                      <span aria-hidden="true"><NavigationIcon kind={navigationIconKind(item.label, pinnedPath)} /></span>
-                      {!collapsed ? <strong>{item.label}</strong> : null}
-                    </Link>
-                    {!collapsed ? (
-                      <button
-                        aria-label={`Unpin ${item.label}`}
-                        className="dallmayr-sidebar-pin-button"
-                        onClick={() => onToggleFavorite(item.href, item.label)}
-                        title={`Unpin ${item.label}`}
-                        type="button"
-                      >
-                        <NavigationIcon kind="pin-filled" />
-                      </button>
-                    ) : null}
-                  </div>
+                  <Link
+                    aria-current={isActivePath(pathname, pinnedPath) ? 'page' : undefined}
+                    className="dallmayr-sidebar-link"
+                    href={item.href}
+                    key={item.href}
+                    title={item.label}
+                  >
+                    <span aria-hidden="true"><NavigationIcon kind={navigationIconKind(item.label, pinnedPath)} /></span>
+                    {!collapsed ? <strong>{item.label}</strong> : null}
+                  </Link>
                 );
               })}
             </div>
