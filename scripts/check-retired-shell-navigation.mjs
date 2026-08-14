@@ -41,14 +41,14 @@ for (const retiredImport of retiredImports) {
 }
 
 for (const requiredActiveImport of [
-  "@import '../account-menu.css'",
-  "@import '../minimalist-operations.css'",
-  "@import '../density.css'",
-  "@import '../text-visibility-polish.css'",
-  "@import '../reliability-machine-search.css'",
-  "@import '../appearance-panel.css'",
-  "@import '../appearance-customization.css'",
-  "@import '../slate-sand-themes.css'",
+  "@import './features/account-menu.css'",
+  "@import './page-families/minimalist-operations.css'",
+  "@import './features/density.css'",
+  "@import './features/text-visibility-polish.css'",
+  "@import './page-families/reliability-machine-search.css'",
+  "@import './features/appearance-panel.css'",
+  "@import './features/appearance-customization.css'",
+  "@import './themes/slate-sand-themes.css'",
   "@import './active-mobile-workspaces.css'",
 ]) {
   if (!manifest.includes(requiredActiveImport)) {
@@ -106,7 +106,7 @@ for (const requiredRule of ['.breadcrumbs', '.empty-state', '.status-timeline', 
   }
 }
 
-const roleWorkspaceDetails = await readFile(path.join(root, 'app', 'role-workspace-details.css'), 'utf8');
+const roleWorkspaceDetails = await readFile(path.join(root, 'app', 'styles', 'page-families', 'role-workspace-details.css'), 'utf8');
 for (const requiredRule of ['.role-workspace-stage', '.role-action-grid', '.role-action-card']) {
   if (!roleWorkspaceDetails.includes(requiredRule)) {
     console.error(`Role workspace owner is missing migrated UX structure: ${requiredRule}`);
@@ -114,7 +114,7 @@ for (const requiredRule of ['.role-workspace-stage', '.role-action-grid', '.role
   }
 }
 
-const reliabilitySearch = await readFile(path.join(root, 'app', 'reliability-machine-search.css'), 'utf8');
+const reliabilitySearch = await readFile(path.join(root, 'app', 'styles', 'page-families', 'reliability-machine-search.css'), 'utf8');
 for (const requiredRule of [
   '.machine-match-options',
   '.machine-match-list',
