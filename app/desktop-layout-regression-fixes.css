@@ -92,97 +92,23 @@
   }
 }
 
-/* Fine-pointer laptops below a comfortable full-desktop width use a true
- * compact-desktop mode. Touch tablets in the same range are still taken over
- * by the responsive authority loaded after this file.
+/* Smaller desktop/laptop widths need a compact rail and denser top bar.
+ * Touch tablets in this range are still taken over by the responsive layer
+ * that loads after this file.
  */
-@media (min-width: 901px) and (max-width: 1279px) {
-  .application-shell-v2,
+@media (min-width: 901px) and (max-width: 1180px) {
+  .application-shell-v2 {
+    --reference-sidebar-width: 280px;
+  }
+
   .application-shell-v2.desktop-rail-collapsed {
     --reference-sidebar-width: 88px;
   }
 
-  .dallmayr-sidebar {
-    width: 88px !important;
-  }
-
-  .dallmayr-sidebar-brand {
-    min-height: var(--reference-header-height) !important;
-    padding: 18px 12px !important;
-  }
-
-  .dallmayr-sidebar-brand > a {
-    justify-content: center !important;
-  }
-
-  .dallmayr-sidebar-brand > a > span:not(.dallmayr-crest),
-  .dallmayr-sidebar-brand > button,
-  .dallmayr-sidebar-group h2,
-  .dallmayr-sidebar-link strong {
-    display: none !important;
-  }
-
-  .dallmayr-sidebar-nav {
-    padding: 18px 10px 22px !important;
-  }
-
-  .dallmayr-sidebar-group {
-    margin-top: 10px !important;
-    padding-top: 10px !important;
-    border-top: 1px solid var(--reference-line) !important;
-  }
-
-  .dallmayr-sidebar-link {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    place-items: center !important;
-    min-height: 50px !important;
-    padding: 6px !important;
-  }
-
-  .dallmayr-sidebar-link > span {
-    margin: 0 !important;
-  }
-
-  .dallmayr-sidebar-account-menu-target {
-    min-height: 88px !important;
-    padding: 12px 8px !important;
-  }
-
-  .dallmayr-account-menu.is-sidebar > summary.dallmayr-account-trigger {
-    grid-template-columns: 1fr !important;
-    width: 60px !important;
-    min-height: 60px !important;
-    margin-inline: auto !important;
-    padding: 7px !important;
-    place-items: center !important;
-  }
-
-  .dallmayr-account-menu.is-sidebar .dallmayr-account-avatar {
-    width: 44px !important;
-    height: 44px !important;
-  }
-
-  .dallmayr-account-menu.is-sidebar .dallmayr-account-identity,
-  .dallmayr-account-menu.is-sidebar .dallmayr-account-chevron {
-    display: none !important;
-  }
-
-  .dallmayr-account-menu.is-sidebar .dallmayr-account-panel {
-    right: auto !important;
-    bottom: 0 !important;
-    left: calc(100% + 14px) !important;
-    width: min(320px, calc(100vw - 130px)) !important;
-  }
-
-  .dallmayr-account-menu.is-sidebar .dallmayr-account-panel::after {
-    display: none !important;
-  }
-
   .application-header-inner {
-    grid-template-columns: minmax(120px, .9fr) minmax(160px, 1fr) auto !important;
-    gap: 8px !important;
-    padding-inline: 16px !important;
+    grid-template-columns: minmax(140px, 1fr) minmax(150px, 220px) auto !important;
+    gap: 10px !important;
+    padding-inline: 18px !important;
   }
 
   .application-page-context {
@@ -191,7 +117,7 @@
 
   .application-page-context > strong {
     overflow: hidden;
-    font-size: 21px !important;
+    font-size: 22px !important;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -225,7 +151,7 @@
   }
 
   .application-main {
-    padding: 28px 22px 42px !important;
+    padding: 28px 24px 42px !important;
   }
 
   .admin-command-header {
