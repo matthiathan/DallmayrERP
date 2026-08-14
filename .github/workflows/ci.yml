@@ -43,6 +43,9 @@ jobs:
       - name: Check client RPC repository contracts
         run: npm run contractcheck
 
+      - name: Check navigation terminology contracts
+        run: npm run navigation:terminology-check
+
       - name: Check stylesheet architecture
         run: npm run stylecheck
 

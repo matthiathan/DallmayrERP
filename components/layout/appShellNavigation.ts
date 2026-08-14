@@ -5,6 +5,7 @@ import {
   navSections,
   type NavSection,
 } from '@/lib/auth/permissions';
+import { TODAY_LABEL } from '@/lib/navigation/terminology';
 import type { BusinessRole } from '@/types/dallmayrerp';
 
 const MESSAGING_ENABLED = process.env.NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED === 'true';
@@ -114,7 +115,7 @@ export function deriveAppShellNavigation(role: BusinessRole, pathname: string) {
   const allNavigationItems = navigationSections.flatMap((section) => section.items);
   const activeSection = navigationSections.find((section) => section.items.some((item) => isActivePath(pathname, item.href)));
   const activeItem = activeSection?.items.find((item) => isActivePath(pathname, item.href));
-  const activeTitle = activeItem?.label ?? 'Today';
+  const activeTitle = activeItem?.label ?? TODAY_LABEL;
   const visibleHrefs = new Set(allNavigationItems.map((item) => item.href));
   const statusQuickLinks = [
     ...(MESSAGING_ENABLED ? [{ href: '/work/messages', label: 'Messages' }] : []),
