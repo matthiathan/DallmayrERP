@@ -33,7 +33,8 @@ function catalogKeys(role) {
     ? catalogSource.indexOf(`  ${nextRole}: [`, start + startToken.length)
     : catalogSource.indexOf('\n};', start + startToken.length);
   if (end < 0) throw new Error(`Catalog role block is not terminated: ${role}`);
-  return extractQuotedKeys(catalogSource.slice(start, end)).filter((value) => value.includes('_') || value === 'business_users');
+  return extractQuotedKeys(catalogSource.slice(start + startToken.length, end))
+    .filter((value) => value.includes('_') || value === 'business_users');
 }
 
 function databaseKeys(role) {
@@ -42,7 +43,7 @@ function databaseKeys(role) {
   if (start < 0) throw new Error(`Database role allowlist missing: ${role}`);
   const end = migrationSource.indexOf(']::text[])', start + startToken.length);
   if (end < 0) throw new Error(`Database role allowlist is not terminated: ${role}`);
-  return extractQuotedKeys(migrationSource.slice(start, end));
+  return extractQuotedKeys(migrationSource.slice(start + startToken.length, end));
 }
 
 for (const role of roles) {
