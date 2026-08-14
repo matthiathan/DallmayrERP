@@ -249,3 +249,27 @@ test('1280px fine-pointer desktop restores the canonical standard navigation rai
 
   await context.close();
 });
+
+test('authenticated shell leaves the route content as the single dominant page heading', async ({ browser }) => {
+  const context = await browser.newContext({
+    viewport: { width: 1280, height: 900 },
+    hasTouch: false,
+    isMobile: false,
+  });
+  const page = await context.newPage();
+  await installAuthenticatedShellMock(page);
+  await page.goto(`${baseURL}/operations/service-jobs`, { waitUntil: 'domcontentloaded' });
+  await waitForStableShell(page, '/operations/service-jobs title hierarchy');
+
+  const shellContext = page.locator('.application-page-context');
+  const mainHeadings = page.locator('#main-content h1');
+
+  await expect(mainHeadings).toHaveCount(1);
+  await expect(mainHeadings.first()).toHaveText('Scheduled Call Log');
+  await expect(page.locator('.application-header h1, .application-header h2, .application-header h3')).toHaveCount(0);
+  await expect(shellContext.locator('strong')).toHaveCount(0);
+  await expect(shellContext).not.toContainText('Scheduled Call Log');
+  await expect(shellContext).toHaveAttribute('aria-label', /^Current area: .+/);
+
+  await context.close();
+});

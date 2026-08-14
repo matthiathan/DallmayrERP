@@ -300,21 +300,30 @@ export function ConnectedWorkflowBar({ pathname, role }: { pathname: string; rol
   if (!request) return null;
   if (!context && !loading) return null;
 
+  const title = context?.title ?? 'Loading connected records…';
+  const description = context?.description ?? 'Resolving related ERP records.';
+
   return (
-    <section aria-busy={loading} aria-label="Connected workflow" className="neo-card">
-      <div className="page-toolbar-heading">
-        <div>
-          <div className="nav-heading">Connected workflow</div>
-          <strong>{context?.title ?? 'Loading connected records…'}</strong>
-          <small>{context?.description ?? 'Resolving related ERP records.'}</small>
-        </div>
-        {context?.signals.length ? <div className="feature-list">{context.signals.map((signal) => <span className="feature-pill" key={signal}>{signal}</span>)}</div> : null}
+    <section aria-busy={loading} aria-label="Connected workflow" className="connected-workflow-strip">
+      <div className="connected-workflow-identity">
+        <span>Connected</span>
+        <strong>{title}</strong>
+        <span className="sr-only">{description}</span>
       </div>
-      {context?.links.length ? (
-        <div className="feature-list">
-          {context.links.map((link) => <Link className="feature-pill" href={link.href} key={link.href}>{link.label}</Link>)}
+
+      {context?.signals.length ? (
+        <div aria-label="Connected record signals" className="connected-workflow-signals">
+          {context.signals.map((signal) => <span key={signal}>{signal}</span>)}
         </div>
-      ) : context && !loading ? <small>No additional connected records are available within your current access scope.</small> : null}
+      ) : null}
+
+      {context?.links.length ? (
+        <nav aria-label="Connected records" className="connected-workflow-links">
+          {context.links.map((link) => <Link href={link.href} key={link.href}>{link.label}</Link>)}
+        </nav>
+      ) : context && !loading ? (
+        <small className="connected-workflow-empty">No related records in your current access scope.</small>
+      ) : null}
     </section>
   );
 }

@@ -144,6 +144,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     statusQuickLinks,
   } = deriveAppShellNavigation(userDetails.role, pathname);
   const activeBranch = userDetails.branch.toUpperCase();
+  const activeArea = activeSection?.heading ?? roleLabels[userDetails.role];
   const userName = displayProfileName(businessProfile);
   const visibleFavorites = favoriteEntries.filter((entry) => canAccessShellPath(userDetails.role, favoritePathname(entry.href)));
 
@@ -179,9 +180,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="desktop-account-menu-target" id="desktop-account-menu-target" />
           </div>
 
-          <div className="application-page-context">
-            <span>{activeSection?.heading ?? roleLabels[userDetails.role]}</span>
-            <strong>{activeTitle}</strong>
+          <div aria-label={`Current area: ${activeArea}`} className="application-page-context">
+            <span>{activeArea}</span>
             <small>{activeBranch} &middot; {roleLabels[userDetails.role]}</small>
           </div>
 

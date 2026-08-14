@@ -49,6 +49,9 @@ jobs:
       - name: Check enterprise navigation information architecture
         run: npm run navigation:ia-check
 
+      - name: Check page title hierarchy
+        run: npm run page:title-check
+
       - name: Check stylesheet architecture
         run: npm run stylecheck
 
