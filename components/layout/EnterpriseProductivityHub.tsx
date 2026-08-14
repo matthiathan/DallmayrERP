@@ -18,10 +18,14 @@ import {
   type NotificationPreferences,
   type RecentHistoryItem,
 } from '@/lib/productivity/enterpriseFinish';
+import { AccessibleDialog } from '@/components/ui/AccessibleDialog';
 import type { BusinessRole } from '@/types/dallmayrerp';
 
 const RECENT_HISTORY_KEY = 'dallmayrerp-recent-history-v1';
 const NOTIFICATION_PREFERENCES_KEY = 'dallmayrerp-notification-preferences-v1';
+const QUICK_ACCESS_DIALOG_ID = 'quick-access-dialog';
+const QUICK_ACCESS_DIALOG_TITLE_ID = 'quick-access-dialog-title';
+const QUICK_ACCESS_DIALOG_DESCRIPTION_ID = 'quick-access-dialog-description';
 type NotificationBooleanKey = 'assignments' | 'approvals' | 'serviceExceptions' | 'deliveryExceptions' | 'stockRisk' | 'systemNotices';
 const NOTIFICATION_TOGGLES: Array<[NotificationBooleanKey, string]> = [
   ['assignments', 'Assignments'],
@@ -127,6 +131,7 @@ export function EnterpriseProductivityHub({
         setOpen((current) => !current);
         return;
       }
+      if (open) return;
       if (event.altKey && event.shiftKey && event.key.toLowerCase() === 'p' && !event.ctrlKey && !event.metaKey) {
         event.preventDefault();
         onToggleFavorite(currentHref, recentLabel(activeTitle));
@@ -140,7 +145,7 @@ export function EnterpriseProductivityHub({
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTitle, currentHref, onToggleFavorite, role, router]);
+  }, [activeTitle, currentHref, onToggleFavorite, open, role, router]);
 
   function updateNotifications(patch: Partial<NotificationPreferences>) {
     setNotifications((current) => {
@@ -163,86 +168,95 @@ export function EnterpriseProductivityHub({
 
   return (
     <>
-      <button className="button secondary" onClick={() => setOpen(true)} title="Quick access and keyboard shortcuts (?)" type="button">
+      <button
+        aria-controls={QUICK_ACCESS_DIALOG_ID}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        className="button secondary"
+        onClick={() => setOpen(true)}
+        title="Quick access and keyboard shortcuts (?)"
+        type="button"
+      >
         Quick access
       </button>
-      {open ? (
-        <div
-          aria-label="Quick access, history and notification preferences"
-          aria-modal="true"
-          role="dialog"
-          style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,.58)', display: 'grid', placeItems: 'center', padding: 20 }}
-          onMouseDown={(event) => { if (event.currentTarget === event.target) setOpen(false); }}
-        >
-          <section className="neo-card spatial-card" style={{ width: 'min(920px, 96vw)', maxHeight: '88vh', overflow: 'auto', display: 'grid', gap: 18 }}>
-            <div className="page-header" style={{ margin: 0 }}>
-              <div><h2>Quick access</h2><p>Pinned pages, recent records, shortcuts and notification controls.</p></div>
-              <div className="action-row">
-                <button
-                  className="button secondary"
-                  disabled={pinLimitReached}
-                  onClick={() => onToggleFavorite(currentHref, recentLabel(activeTitle))}
-                  title={pinLimitReached ? `You can pin up to ${MAX_FAVORITES} pages` : undefined}
-                  type="button"
-                >
-                  {isPinned ? 'Unpin current page' : 'Pin current page'}
-                </button>
-                <button className="button secondary" onClick={() => setOpen(false)} type="button">Close</button>
-              </div>
-            </div>
 
-            <div className="grid grid-2">
-              <div className="card spatial-card">
-                <h3>Recent history</h3>
-                <p>Cross-record history is stored on this device and de-duplicated by exact record URL.</p>
-                <div style={{ display: 'grid', gap: 8 }}>
-                  {allowedRecent.length ? allowedRecent.slice(0, 10).map((item) => (
-                    <Link href={item.href} key={item.href} onClick={() => setOpen(false)} className="button secondary" style={{ justifyContent: 'space-between' }}>
-                      <span>{item.label}</span><small>{new Date(item.visitedAt).toLocaleString()}</small>
-                    </Link>
-                  )) : <p>No recent records yet.</p>}
-                </div>
-              </div>
-
-              <div className="card spatial-card">
-                <h3>Keyboard shortcuts</h3>
-                <div style={{ display: 'grid', gap: 8 }}>
-                  {shortcuts.map((shortcut) => (
-                    <div key={shortcut.key} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
-                      <span>{shortcut.label}</span><kbd>{shortcut.key}</kbd>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="card spatial-card">
-              <h3>Notification preferences</h3>
-              <p>Choose which ERP signals should surface as personal alerts. Server-side permission checks remain authoritative.</p>
-              <div className="grid grid-3">
-                {NOTIFICATION_TOGGLES.map(([key, label]) => (
-                  <label key={key} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <input checked={notifications[key]} onChange={(event) => updateNotifications({ [key]: event.target.checked })} type="checkbox" />
-                    <span>{label}</span>
-                  </label>
-                ))}
-              </div>
-              <div className="grid grid-3" style={{ marginTop: 14 }}>
-                <label>Digest
-                  <select value={notifications.digest} onChange={(event) => updateNotifications({ digest: event.target.value as NotificationPreferences['digest'] })}>
-                    <option value="off">Off</option><option value="daily">Daily</option><option value="weekly">Weekly</option>
-                  </select>
-                </label>
-                <label>Quiet hours start<input type="time" value={notifications.quietHoursStart} onChange={(event) => updateNotifications({ quietHoursStart: event.target.value })} /></label>
-                <label>Quiet hours end<input type="time" value={notifications.quietHoursEnd} onChange={(event) => updateNotifications({ quietHoursEnd: event.target.value })} /></label>
-              </div>
-              <div className="action-row" style={{ marginTop: 14 }}>
-                <button className="button secondary" onClick={enableBrowserNotifications} type="button">{notifications.browserNotifications ? 'Browser notifications enabled' : 'Enable browser notifications'}</button>
-              </div>
-            </div>
-          </section>
+      <AccessibleDialog
+        describedBy={QUICK_ACCESS_DIALOG_DESCRIPTION_ID}
+        id={QUICK_ACCESS_DIALOG_ID}
+        labelledBy={QUICK_ACCESS_DIALOG_TITLE_ID}
+        onClose={() => setOpen(false)}
+        open={open}
+        className="quick-access-dialog"
+      >
+        <div className="page-header quick-access-dialog-header">
+          <div>
+            <h2 id={QUICK_ACCESS_DIALOG_TITLE_ID}>Quick access</h2>
+            <p id={QUICK_ACCESS_DIALOG_DESCRIPTION_ID}>Pinned pages, recent records, shortcuts and notification controls.</p>
+          </div>
+          <div className="action-row quick-access-dialog-actions">
+            <button
+              className="button secondary"
+              disabled={pinLimitReached}
+              onClick={() => onToggleFavorite(currentHref, recentLabel(activeTitle))}
+              title={pinLimitReached ? `You can pin up to ${MAX_FAVORITES} pages` : undefined}
+              type="button"
+            >
+              {isPinned ? 'Unpin current page' : 'Pin current page'}
+            </button>
+            <button className="button secondary" data-dialog-initial-focus onClick={() => setOpen(false)} type="button">Close</button>
+          </div>
         </div>
-      ) : null}
+
+        <div className="grid grid-2">
+          <div className="card spatial-card">
+            <h3>Recent history</h3>
+            <p>Cross-record history is stored on this device and de-duplicated by exact record URL.</p>
+            <div className="quick-access-list">
+              {allowedRecent.length ? allowedRecent.slice(0, 10).map((item) => (
+                <Link href={item.href} key={item.href} onClick={() => setOpen(false)} className="button secondary quick-access-history-link">
+                  <span>{item.label}</span><small>{new Date(item.visitedAt).toLocaleString()}</small>
+                </Link>
+              )) : <p>No recent records yet.</p>}
+            </div>
+          </div>
+
+          <div className="card spatial-card">
+            <h3>Keyboard shortcuts</h3>
+            <div className="quick-access-list">
+              {shortcuts.map((shortcut) => (
+                <div className="quick-access-shortcut-row" key={shortcut.key}>
+                  <span>{shortcut.label}</span><kbd>{shortcut.key}</kbd>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="card spatial-card">
+          <h3>Notification preferences</h3>
+          <p>Choose which ERP signals should surface as personal alerts. Server-side permission checks remain authoritative.</p>
+          <div className="grid grid-3">
+            {NOTIFICATION_TOGGLES.map(([key, label]) => (
+              <label className="quick-access-toggle" key={key}>
+                <input checked={notifications[key]} onChange={(event) => updateNotifications({ [key]: event.target.checked })} type="checkbox" />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+          <div className="grid grid-3 quick-access-preference-grid">
+            <label>Digest
+              <select value={notifications.digest} onChange={(event) => updateNotifications({ digest: event.target.value as NotificationPreferences['digest'] })}>
+                <option value="off">Off</option><option value="daily">Daily</option><option value="weekly">Weekly</option>
+              </select>
+            </label>
+            <label>Quiet hours start<input type="time" value={notifications.quietHoursStart} onChange={(event) => updateNotifications({ quietHoursStart: event.target.value })} /></label>
+            <label>Quiet hours end<input type="time" value={notifications.quietHoursEnd} onChange={(event) => updateNotifications({ quietHoursEnd: event.target.value })} /></label>
+          </div>
+          <div className="action-row quick-access-preference-actions">
+            <button className="button secondary" onClick={enableBrowserNotifications} type="button">{notifications.browserNotifications ? 'Browser notifications enabled' : 'Enable browser notifications'}</button>
+          </div>
+        </div>
+      </AccessibleDialog>
     </>
   );
 }
