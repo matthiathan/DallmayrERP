@@ -1,0 +1,164 @@
+/*
+ * Canonical compact-desktop authority.
+ *
+ * Fine-pointer desktop windows between the mobile/tablet breakpoint and a
+ * comfortable full navigation width keep the desktop interaction model while
+ * reclaiming workspace width with the 88px icon rail. The mobile/tablet
+ * authority loads after this file and remains authoritative for touch layouts.
+ */
+@media (min-width: 901px) and (max-width: 1279px) {
+  :root {
+    --cx-sidebar: 88px;
+    --application-rail-width: 88px;
+    --reference-sidebar-width: 88px;
+  }
+
+  .application-shell-v2,
+  .application-shell-v2.desktop-rail-collapsed {
+    --cx-sidebar: 88px;
+    --application-rail-width: 88px;
+    --reference-sidebar-width: 88px;
+    padding-left: 88px !important;
+  }
+
+  .dallmayr-sidebar,
+  .dallmayr-sidebar.is-collapsed {
+    width: 88px !important;
+    min-width: 88px !important;
+  }
+
+  .dallmayr-sidebar-brand {
+    min-height: var(--application-header-height, 88px) !important;
+    padding: 16px 12px !important;
+  }
+
+  .dallmayr-sidebar-brand > a {
+    justify-content: center !important;
+  }
+
+  .dallmayr-sidebar-brand > a > span:not(.dallmayr-crest),
+  .dallmayr-sidebar-brand > button,
+  .dallmayr-sidebar-group h2,
+  .dallmayr-sidebar-link strong {
+    display: none !important;
+  }
+
+  .dallmayr-sidebar-nav {
+    padding: 18px 10px 22px !important;
+  }
+
+  .dallmayr-sidebar-group {
+    margin-top: 10px !important;
+    padding-top: 10px !important;
+    border-top: 1px solid var(--cx-border, var(--ui-border)) !important;
+  }
+
+  .dallmayr-sidebar-link {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    place-items: center !important;
+    min-height: 48px !important;
+    padding: 6px !important;
+  }
+
+  .dallmayr-sidebar-link > span {
+    margin: 0 !important;
+  }
+
+  .dallmayr-sidebar-account-menu-target {
+    min-height: 88px !important;
+    padding: 12px 8px !important;
+  }
+
+  .dallmayr-account-menu.is-sidebar > summary.dallmayr-account-trigger {
+    grid-template-columns: 1fr !important;
+    width: 60px !important;
+    min-width: 60px !important;
+    min-height: 60px !important;
+    margin-inline: auto !important;
+    padding: 7px !important;
+    place-items: center !important;
+  }
+
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-avatar {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-identity,
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-chevron {
+    display: none !important;
+  }
+
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-panel {
+    right: auto !important;
+    bottom: 0 !important;
+    left: calc(100% + 14px) !important;
+    width: min(320px, calc(100vw - 130px)) !important;
+  }
+
+  .dallmayr-account-menu.is-sidebar .dallmayr-account-panel::after {
+    display: none !important;
+  }
+
+  .application-header-inner {
+    grid-template-columns: minmax(120px, .9fr) minmax(150px, 1fr) auto !important;
+    gap: 8px !important;
+    padding-inline: 16px !important;
+  }
+
+  .application-page-context {
+    grid-column: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .application-page-context > strong {
+    overflow: hidden !important;
+    font-size: 21px !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .application-header-search {
+    display: block !important;
+    grid-column: 2 !important;
+    min-width: 0 !important;
+  }
+
+  .application-header-search .global-search-trigger {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .application-header-search .global-search-trigger > span {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .application-header-search .global-search-trigger kbd {
+    display: none !important;
+  }
+
+  .application-header-actions {
+    grid-column: 3 !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+  }
+
+  .application-main {
+    padding: 28px 22px 42px !important;
+  }
+
+  .admin-command-header {
+    grid-template-columns: 1fr !important;
+    gap: 18px !important;
+  }
+
+  .admin-command-status {
+    width: min(100%, 360px) !important;
+    justify-self: start !important;
+  }
+}
