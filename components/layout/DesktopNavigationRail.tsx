@@ -21,9 +21,11 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || (href !== '/' && pathname.startsWith(`${href}/`));
 }
 
-function isPinnedPathActive(pathname: string, href: string) {
+function isPinnedPathActive(pathname: string, href: string, activeHref: string | null) {
   if (href.includes('?')) return false;
-  return isActivePath(pathname, favoritePathname(href));
+  const pinnedPath = favoritePathname(href);
+  if (pinnedPath === activeHref) return false;
+  return isActivePath(pathname, pinnedPath);
 }
 
 function groupedSections(sections: NavSection[], homePath: string) {
@@ -64,7 +66,7 @@ export function DesktopNavigationRail({
         </button>
       </div>
 
-      <nav className="dallmayr-sidebar-nav" aria-label="ERP modules">
+      <nav className="dallmayr-sidebar-nav" aria-label="ERP navigation">
         <div className="dallmayr-sidebar-primary">
           <Link aria-label={TODAY_LABEL} className="dallmayr-sidebar-link" aria-current={activeHref === homePath ? 'page' : undefined} href={homePath} title={TODAY_LABEL}>
             <span aria-hidden="true"><NavigationIcon kind="dashboard" /></span>{!collapsed ? <strong>{TODAY_LABEL}</strong> : null}
@@ -82,7 +84,7 @@ export function DesktopNavigationRail({
                 const pinnedPath = favoritePathname(item.href);
                 return (
                   <Link
-                    aria-current={isPinnedPathActive(pathname, item.href) ? 'page' : undefined}
+                    aria-current={isPinnedPathActive(pathname, item.href, activeHref) ? 'page' : undefined}
                     className="dallmayr-sidebar-link"
                     href={item.href}
                     key={item.href}
