@@ -1,0 +1,117 @@
+/* Connected workflow is supporting record context, not a competing page card. */
+.connected-workflow-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+  margin: 0 0 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--content-border, var(--ui-border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--content-surface, var(--ui-surface)) 82%, transparent);
+  color: var(--content-text, var(--ui-ink));
+  box-shadow: none;
+}
+
+.connected-workflow-identity {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.connected-workflow-identity > span:first-child {
+  color: var(--content-subtle, var(--ui-muted));
+  font-size: .66rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.connected-workflow-identity > strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--content-strong, var(--ui-ink));
+  font-size: .78rem;
+  font-weight: 760;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connected-workflow-signals,
+.connected-workflow-links {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.connected-workflow-signals {
+  color: var(--content-muted, var(--ui-muted));
+}
+
+.connected-workflow-signals > span,
+.connected-workflow-links > a {
+  min-height: 26px;
+  padding: 4px 7px;
+  border-radius: 7px;
+  font-size: .68rem;
+  line-height: 1.2;
+}
+
+.connected-workflow-signals > span {
+  border: 1px solid color-mix(in srgb, var(--content-border, var(--ui-border)) 72%, transparent);
+  background: transparent;
+}
+
+.connected-workflow-links {
+  margin-left: auto;
+}
+
+.connected-workflow-links > a {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--content-accent-text, var(--ui-gold)) 28%, var(--content-border, var(--ui-border)));
+  background: transparent;
+  color: var(--content-accent-text, var(--ui-gold-dark));
+  font-weight: 740;
+  text-decoration: none;
+}
+
+.connected-workflow-links > a:hover,
+.connected-workflow-links > a:focus-visible {
+  background: color-mix(in srgb, var(--content-accent-text, var(--ui-gold)) 9%, transparent);
+  text-decoration: underline;
+}
+
+.connected-workflow-empty {
+  margin-left: auto;
+  color: var(--content-muted, var(--ui-muted));
+  font-size: .7rem;
+}
+
+@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  .connected-workflow-strip {
+    align-items: flex-start;
+    gap: 7px;
+    margin-bottom: 10px;
+    padding: 8px;
+  }
+
+  .connected-workflow-identity,
+  .connected-workflow-signals,
+  .connected-workflow-links {
+    width: 100%;
+  }
+
+  .connected-workflow-links {
+    margin-left: 0;
+  }
+
+  .connected-workflow-links > a {
+    min-height: 34px;
+  }
+}
