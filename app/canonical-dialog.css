@@ -1,0 +1,122 @@
+/* Canonical modal/dialog presentation.
+ *
+ * Keyboard behavior, focus trapping and background isolation live in
+ * AccessibleDialog.tsx. This stylesheet owns only reusable dialog geometry and
+ * Quick Access composition; responsive-mobile-tablet.css remains final.
+ */
+
+.accessible-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: 20px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.58);
+  overscroll-behavior: contain;
+}
+
+.accessible-dialog-panel {
+  box-sizing: border-box;
+  width: min(920px, 96vw);
+  max-width: 100%;
+  max-height: 88vh;
+  overflow: auto;
+  border: 1px solid var(--content-border, #71808e);
+  border-radius: var(--ds-radius-lg, 14px);
+  background: var(--content-surface, #20272f);
+  color: var(--content-text, #f8fafc);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+  overscroll-behavior: contain;
+}
+
+.quick-access-dialog {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+}
+
+.quick-access-dialog-header {
+  margin: 0;
+}
+
+.quick-access-dialog-actions {
+  align-self: start;
+}
+
+.quick-access-list {
+  display: grid;
+  gap: 8px;
+}
+
+.quick-access-history-link,
+.quick-access-shortcut-row,
+.quick-access-toggle {
+  min-width: 0;
+}
+
+.quick-access-history-link,
+.quick-access-shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.quick-access-history-link > span,
+.quick-access-history-link > small,
+.quick-access-shortcut-row > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.quick-access-history-link > small {
+  flex: 0 0 auto;
+}
+
+.quick-access-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quick-access-preference-grid,
+.quick-access-preference-actions {
+  margin-top: 14px;
+}
+
+@media (max-width: 760px) {
+  .accessible-dialog-overlay {
+    place-items: end center;
+    padding: 12px;
+  }
+
+  .accessible-dialog-panel {
+    width: 100%;
+    max-height: calc(100dvh - 24px);
+  }
+
+  .quick-access-dialog {
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .quick-access-dialog-header,
+  .quick-access-dialog-actions,
+  .quick-access-history-link,
+  .quick-access-shortcut-row {
+    align-items: stretch;
+  }
+
+  .quick-access-dialog-actions,
+  .quick-access-history-link,
+  .quick-access-shortcut-row {
+    flex-direction: column;
+  }
+
+  .quick-access-history-link > small {
+    flex: initial;
+  }
+}
