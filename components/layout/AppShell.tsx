@@ -17,7 +17,8 @@ import { DensityToggle } from '@/components/ui/DensityToggle';
 import { ErpStateBanner } from '@/components/ui/ErpLayout';
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
-import { getDefaultPathForRole, roleLabels } from '@/lib/auth/permissions';
+import { canAccessPath, getDefaultPathForRole, roleLabels } from '@/lib/auth/permissions';
+import { favoritePathname } from '@/lib/navigation/favorites';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { displayProfileName, isProfileComplete } from '@/types/dallmayrerp';
 
@@ -50,7 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { authUser, businessProfile, businessUser, userDetails, loading, error } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { favoriteHrefs, railCollapsed, toggleFavorite, toggleRail } = useAppShellPreferences();
+  const { favoriteEntries, favoriteHrefs, railCollapsed, toggleFavorite, toggleRail } = useAppShellPreferences();
   const profileComplete = isProfileComplete(userDetails);
   const role = userDetails?.role;
 
@@ -135,15 +136,15 @@ export function AppShell({ children }: { children: ReactNode }) {
     activeSection,
     activeTitle,
     allowedPath,
-    favoriteItems,
     homePath,
     mobileScanPath,
     mobileTaskPath,
     navigationSections,
     statusQuickLinks,
-  } = deriveAppShellNavigation(userDetails.role, pathname, favoriteHrefs);
+  } = deriveAppShellNavigation(userDetails.role, pathname);
   const activeBranch = userDetails.branch.toUpperCase();
   const userName = displayProfileName(businessProfile);
+  const visibleFavorites = favoriteEntries.filter((entry) => canAccessPath(userDetails.role, favoritePathname(entry.href)));
 
   return (
     <div className={`app-shell top-shell application-shell-v2 ${railCollapsed ? 'desktop-rail-collapsed' : ''} ${menuOpen ? 'mobile-menu-open' : ''}`}>
@@ -165,7 +166,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="application-header-actions">
             <EnterpriseProductivityHub
               activeTitle={activeTitle}
-              favoriteHrefs={favoriteHrefs}
+              favorites={visibleFavorites}
               onToggleFavorite={toggleFavorite}
               pathname={pathname}
               role={userDetails.role}
@@ -204,7 +205,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <MobileNavigationDrawer
           activeTitle={activeTitle}
-          favoriteHrefs={favoriteHrefs}
+          favorites={visibleFavorites}
           homePath={homePath}
           onToggleFavorite={toggleFavorite}
           open={menuOpen}
@@ -223,7 +224,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         onToggleCollapse={toggleRail}
         onToggleFavorite={toggleFavorite}
         pathname={pathname}
-        pinnedItems={favoriteItems}
+        pinnedItems={visibleFavorites}
         roleLabel={roleLabels[userDetails.role]}
         sections={navigationSections}
       />
