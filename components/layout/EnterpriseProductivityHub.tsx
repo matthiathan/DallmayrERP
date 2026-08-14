@@ -1,10 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { canAccessPath } from '@/lib/auth/permissions';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/browserStorage';
+import {
+  favoriteHrefForLocation,
+  MAX_FAVORITES,
+  type FavoriteEntry,
+} from '@/lib/navigation/favorites';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   enterpriseShortcutsForRole,
@@ -81,16 +86,19 @@ export function EnterpriseProductivityHub({
   role,
   pathname,
   activeTitle,
-  favoriteHrefs,
+  favorites,
   onToggleFavorite,
 }: {
   role: BusinessRole;
   pathname: string;
   activeTitle: string;
-  favoriteHrefs: string[];
-  onToggleFavorite: (href: string) => void;
+  favorites: FavoriteEntry[];
+  onToggleFavorite: (href: string, label?: string) => void;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const search = searchParams.toString();
+  const currentHref = favoriteHrefForLocation(pathname, search);
   const [open, setOpen] = useState(false);
   const [recent, setRecent] = useState<RecentHistoryItem[]>([]);
   const [notifications, setNotifications] = useState<NotificationPreferences>(DEFAULT_NOTIFICATION_PREFERENCES);
@@ -102,15 +110,14 @@ export function EnterpriseProductivityHub({
   }, []);
 
   useEffect(() => {
-    const href = `${window.location.pathname}${window.location.search}`;
     const next = mergeRecentHistory(readRecentHistory(), {
-      href,
+      href: currentHref,
       label: recentLabel(activeTitle),
       visitedAt: new Date().toISOString(),
     });
     safeLocalStorageSet(RECENT_HISTORY_KEY, JSON.stringify(next));
     setRecent(next);
-  }, [activeTitle, pathname]);
+  }, [activeTitle, currentHref]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -122,7 +129,7 @@ export function EnterpriseProductivityHub({
       }
       if (event.altKey && event.shiftKey && event.key.toLowerCase() === 'p' && !event.ctrlKey && !event.metaKey) {
         event.preventDefault();
-        onToggleFavorite(pathname);
+        onToggleFavorite(currentHref, recentLabel(activeTitle));
         return;
       }
       const href = shortcutHrefForEvent(role, event);
@@ -133,7 +140,7 @@ export function EnterpriseProductivityHub({
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onToggleFavorite, pathname, role, router]);
+  }, [activeTitle, currentHref, onToggleFavorite, role, router]);
 
   function updateNotifications(patch: Partial<NotificationPreferences>) {
     setNotifications((current) => {
@@ -150,7 +157,8 @@ export function EnterpriseProductivityHub({
     updateNotifications({ browserNotifications: permission === 'granted' });
   }
 
-  const isPinned = favoriteHrefs.includes(pathname);
+  const isPinned = favorites.some((entry) => entry.href === currentHref);
+  const pinLimitReached = !isPinned && favorites.length >= MAX_FAVORITES;
   const allowedRecent = recent.filter((item) => canAccessPath(role, item.href.split('?')[0] || '/'));
 
   return (
@@ -170,7 +178,15 @@ export function EnterpriseProductivityHub({
             <div className="page-header" style={{ margin: 0 }}>
               <div><h2>Quick access</h2><p>Pinned pages, recent records, shortcuts and notification controls.</p></div>
               <div className="action-row">
-                <button className="button secondary" onClick={() => onToggleFavorite(pathname)} type="button">{isPinned ? 'Unpin current page' : 'Pin current page'}</button>
+                <button
+                  className="button secondary"
+                  disabled={pinLimitReached}
+                  onClick={() => onToggleFavorite(currentHref, recentLabel(activeTitle))}
+                  title={pinLimitReached ? `You can pin up to ${MAX_FAVORITES} pages` : undefined}
+                  type="button"
+                >
+                  {isPinned ? 'Unpin current page' : 'Pin current page'}
+                </button>
                 <button className="button secondary" onClick={() => setOpen(false)} type="button">Close</button>
               </div>
             </div>
