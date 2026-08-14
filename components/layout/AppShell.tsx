@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { ConnectedWorkflowBar } from '@/components/layout/ConnectedWorkflowBar';
 import { DesktopNavigationRail } from '@/components/layout/DesktopNavigationRail';
 import { MobileNavigationDrawer, MobileQuickBar } from '@/components/layout/MobileNavigation';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
@@ -241,6 +242,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         ) : (
           <>
             <Breadcrumbs />
+            <Suspense fallback={null}>
+              <ConnectedWorkflowBar pathname={pathname} role={userDetails.role} />
+            </Suspense>
             {children}
           </>
         )}

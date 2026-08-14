@@ -4,6 +4,12 @@ import test from 'node:test';
 import { canAccessPath, getDefaultPathForRole } from '../../lib/auth/permissions.ts';
 import { addLocalDays, formatLocalDate, localDateAfterDays } from '../../lib/dates/local-date.ts';
 import {
+  connectedRecordHref,
+  getConnectedRecordRequest,
+  isTerminalConnectedStatus,
+  pathnameFromConnectedHref,
+} from '../../lib/navigation/connectedWorkflows.ts';
+import {
   containsMachineTerm,
   isExactMachineMatch,
   machineSearchLabel,
@@ -62,6 +68,28 @@ test('permissions keep public auth routes open and protect role-specific workspa
   assert.equal(canAccessPath('executive', '/executive/command-centre'), true);
   assert.equal(canAccessPath('executive', '/'), false);
   assert.equal(getDefaultPathForRole('road_technician'), '/workspace');
+});
+
+test('connected workflow routing resolves record pages and query-driven operational records', () => {
+  assert.deepEqual(getConnectedRecordRequest('/customers/customer 1'), { kind: 'customer', id: 'customer 1' });
+  assert.deepEqual(getConnectedRecordRequest('/operations/assets/machine%2F1'), { kind: 'machine', id: 'machine/1' });
+  assert.deepEqual(getConnectedRecordRequest('/work/work-1'), { kind: 'work', id: 'work-1' });
+  assert.deepEqual(getConnectedRecordRequest('/warehouse/stock/stock-1'), { kind: 'stock', id: 'stock-1' });
+  assert.deepEqual(getConnectedRecordRequest('/operations/service-jobs', 'view=kanban&job=service-1'), { kind: 'service', id: 'service-1' });
+  assert.deepEqual(getConnectedRecordRequest('/operations/deliveries', '?order=delivery-1'), { kind: 'delivery', id: 'delivery-1' });
+  assert.equal(getConnectedRecordRequest('/operations/assets/lifecycle'), null);
+  assert.equal(getConnectedRecordRequest('/operations/service-jobs', 'view=kanban'), null);
+});
+
+test('connected workflow hrefs preserve stable entity routes and terminal-state semantics', () => {
+  assert.equal(connectedRecordHref('customer', 'customer 1'), '/customers/customer%201');
+  assert.equal(connectedRecordHref('machine', 'machine/1'), '/operations/assets/machine%2F1');
+  assert.equal(connectedRecordHref('service', 'service 1'), '/operations/service-jobs?job=service%201');
+  assert.equal(connectedRecordHref('delivery', 'delivery 1'), '/operations/deliveries?order=delivery%201');
+  assert.equal(pathnameFromConnectedHref('/operations/service-jobs?job=service-1'), '/operations/service-jobs');
+  assert.equal(isTerminalConnectedStatus('closed'), true);
+  assert.equal(isTerminalConnectedStatus('delivered'), false);
+  assert.equal(isTerminalConnectedStatus('in_progress'), false);
 });
 
 test('local date helpers preserve local calendar dates and handle boundaries', () => {
