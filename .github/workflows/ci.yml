@@ -18,6 +18,19 @@ jobs:
     name: Typecheck, build and browser-test Next.js app
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: workflow_contracts
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d workflow_contracts"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://egbiiizxsqlarqpnzxxs.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-build-key
@@ -42,6 +55,21 @@ jobs:
 
       - name: Check client RPC repository contracts
         run: npm run contractcheck
+
+      - name: Execute service and delivery workflow database contracts
+        env:
+          PGPASSWORD: postgres
+        run: |
+          docker run --rm --network host \
+            -v "$GITHUB_WORKSPACE:/workspace:ro" \
+            -e PGPASSWORD="$PGPASSWORD" \
+            postgres:17 \
+            psql -v ON_ERROR_STOP=1 \
+              -h 127.0.0.1 \
+              -p 55432 \
+              -U postgres \
+              -d workflow_contracts \
+              -f /workspace/tests/sql/service-delivery-workflow-contracts.sql
 
       - name: Check stylesheet architecture
         run: npm run stylecheck
