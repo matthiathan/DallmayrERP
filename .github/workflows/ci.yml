@@ -52,6 +52,9 @@ jobs:
       - name: Check page title hierarchy
         run: npm run page:title-check
 
+      - name: Check design-system authority
+        run: npm run design-system:check
+
       - name: Check stylesheet architecture
         run: npm run stylecheck
 
