@@ -88,7 +88,7 @@ test('connected workflow hrefs preserve stable entity routes and terminal-state 
   assert.equal(connectedRecordHref('delivery', 'delivery 1'), '/operations/deliveries?order=delivery%201');
   assert.equal(pathnameFromConnectedHref('/operations/service-jobs?job=service-1'), '/operations/service-jobs');
   assert.equal(isTerminalConnectedStatus('closed'), true);
-  assert.equal(isTerminalConnectedStatus('delivered'), true);
+  assert.equal(isTerminalConnectedStatus('delivered'), false);
   assert.equal(isTerminalConnectedStatus('in_progress'), false);
 });
 

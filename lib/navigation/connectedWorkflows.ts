@@ -64,5 +64,5 @@ export function pathnameFromConnectedHref(href: string) {
 }
 
 export function isTerminalConnectedStatus(status: string | null | undefined) {
-  return ['completed', 'verified', 'closed', 'cancelled', 'delivered', 'received', 'rejected'].includes(status ?? '');
+  return ['completed', 'verified', 'closed', 'cancelled', 'received', 'rejected'].includes(status ?? '');
 }
