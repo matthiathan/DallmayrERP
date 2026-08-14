@@ -10,14 +10,14 @@ import { DesktopNavigationRail } from '@/components/layout/DesktopNavigationRail
 import { EnterpriseProductivityHub } from '@/components/layout/EnterpriseProductivityHub';
 import { MobileNavigationDrawer, MobileQuickBar } from '@/components/layout/MobileNavigation';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
-import { deriveAppShellNavigation } from '@/components/layout/appShellNavigation';
+import { canAccessShellPath, deriveAppShellNavigation } from '@/components/layout/appShellNavigation';
 import { useAppShellPreferences } from '@/components/layout/useAppShellPreferences';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { DensityToggle } from '@/components/ui/DensityToggle';
 import { ErpStateBanner } from '@/components/ui/ErpLayout';
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
-import { canAccessPath, getDefaultPathForRole, roleLabels } from '@/lib/auth/permissions';
+import { getDefaultPathForRole, roleLabels } from '@/lib/auth/permissions';
 import { favoritePathname } from '@/lib/navigation/favorites';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { displayProfileName, isProfileComplete } from '@/types/dallmayrerp';
@@ -144,7 +144,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   } = deriveAppShellNavigation(userDetails.role, pathname);
   const activeBranch = userDetails.branch.toUpperCase();
   const userName = displayProfileName(businessProfile);
-  const visibleFavorites = favoriteEntries.filter((entry) => canAccessPath(userDetails.role, favoritePathname(entry.href)));
+  const visibleFavorites = favoriteEntries.filter((entry) => canAccessShellPath(userDetails.role, favoritePathname(entry.href)));
 
   return (
     <div className={`app-shell top-shell application-shell-v2 ${railCollapsed ? 'desktop-rail-collapsed' : ''} ${menuOpen ? 'mobile-menu-open' : ''}`}>
