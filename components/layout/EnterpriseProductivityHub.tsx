@@ -17,6 +17,15 @@ import type { BusinessRole } from '@/types/dallmayrerp';
 
 const RECENT_HISTORY_KEY = 'dallmayrerp-recent-history-v1';
 const NOTIFICATION_PREFERENCES_KEY = 'dallmayrerp-notification-preferences-v1';
+type NotificationBooleanKey = 'assignments' | 'approvals' | 'serviceExceptions' | 'deliveryExceptions' | 'stockRisk' | 'systemNotices';
+const NOTIFICATION_TOGGLES: Array<[NotificationBooleanKey, string]> = [
+  ['assignments', 'Assignments'],
+  ['approvals', 'Approvals'],
+  ['serviceExceptions', 'Service exceptions'],
+  ['deliveryExceptions', 'Delivery exceptions'],
+  ['stockRisk', 'Stock risk'],
+  ['systemNotices', 'System notices'],
+];
 
 function isEditableTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false;
@@ -137,7 +146,7 @@ export function EnterpriseProductivityHub({
 
   async function enableBrowserNotifications() {
     if (!('Notification' in window)) return;
-    const permission = await window.Notification.requestPermission();
+    const permission = await Notification.requestPermission();
     updateNotifications({ browserNotifications: permission === 'granted' });
   }
 
@@ -195,16 +204,9 @@ export function EnterpriseProductivityHub({
               <h3>Notification preferences</h3>
               <p>Choose which ERP signals should surface as personal alerts. Server-side permission checks remain authoritative.</p>
               <div className="grid grid-3">
-                {([
-                  ['assignments', 'Assignments'],
-                  ['approvals', 'Approvals'],
-                  ['serviceExceptions', 'Service exceptions'],
-                  ['deliveryExceptions', 'Delivery exceptions'],
-                  ['stockRisk', 'Stock risk'],
-                  ['systemNotices', 'System notices'],
-                ] as Array<[keyof NotificationPreferences, string]>).map(([key, label]) => (
+                {NOTIFICATION_TOGGLES.map(([key, label]) => (
                   <label key={key} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <input checked={Boolean(notifications[key])} onChange={(event) => updateNotifications({ [key]: event.target.checked })} type="checkbox" />
+                    <input checked={notifications[key]} onChange={(event) => updateNotifications({ [key]: event.target.checked })} type="checkbox" />
                     <span>{label}</span>
                   </label>
                 ))}
