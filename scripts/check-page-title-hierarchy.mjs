@@ -17,7 +17,7 @@ const shell = read('components/layout/AppShell.tsx');
 const erpLayout = read('components/ui/ErpLayout.tsx');
 const serviceJobsPage = read('app/operations/service-jobs/page.tsx');
 const connectedWorkflow = read('components/layout/ConnectedWorkflowBar.tsx');
-const applicationStyles = read('app/styles/application.css');
+const connectedWorkflowStyles = read('app/styles/connected-workflow-strip.css');
 
 requireText(
   'application shell',
@@ -87,14 +87,14 @@ forbid(
   'connected record context must not reuse prominent generic feature pills.',
 );
 requireText(
-  'application styles',
-  applicationStyles,
+  'connected workflow styles',
+  connectedWorkflowStyles,
   '.connected-workflow-strip {',
-  'the compact connected workflow strip must have canonical application styling.',
+  'the compact connected workflow strip must have owned application styling.',
 );
 requireText(
-  'application styles',
-  applicationStyles,
+  'connected workflow styles',
+  connectedWorkflowStyles,
   'box-shadow: none;',
   'the supporting connected workflow strip must remain visually flatter than page cards.',
 );
