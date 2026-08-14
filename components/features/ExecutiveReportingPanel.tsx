@@ -274,7 +274,7 @@ export function ExecutiveReportingPanel() {
         <BarChart title="Digital activity by branch" data={[{ label: 'JHB', value: metrics.taskClosures.jhb + metrics.orders.jhb + metrics.stockScans.jhb }, { label: 'CPT', value: metrics.taskClosures.cpt + metrics.orders.cpt + metrics.stockScans.cpt }, { label: 'KZN', value: metrics.taskClosures.kzn + metrics.orders.kzn + metrics.stockScans.kzn }, { label: 'National', value: metrics.taskClosures.national + metrics.orders.national + metrics.stockScans.national }]} />
         <div className="card spatial-card">
           <h3>Management commentary</h3>
-          <p>Use this pack for executive review of customer/contract scale, field execution, delivery throughput and stock activity. PDF output uses the browser's native print-to-PDF path so the report remains dependency-free.</p>
+          <p>Use this pack for executive review of customer/contract scale, field execution, delivery throughput and stock activity. PDF output uses the native browser print-to-PDF path so the report remains dependency-free.</p>
           <ul>
             <li>Customer and contract records: {kpiValues.customers.toLocaleString()} customers / {kpiValues.contracts.toLocaleString()} contracts</li>
             <li>Operational capture: {kpiValues.closures.toLocaleString()} closures / {kpiValues.deliveries.toLocaleString()} deliveries</li>
