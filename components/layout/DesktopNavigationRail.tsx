@@ -64,10 +64,10 @@ export function DesktopNavigationRail({
 
       <nav className="dallmayr-sidebar-nav" aria-label="ERP modules">
         <div className="dallmayr-sidebar-primary">
-          <Link className="dallmayr-sidebar-link" aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} href={homePath} title={TODAY_LABEL}>
+          <Link aria-label={TODAY_LABEL} className="dallmayr-sidebar-link" aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} href={homePath} title={TODAY_LABEL}>
             <span aria-hidden="true"><NavigationIcon kind="dashboard" /></span>{!collapsed ? <strong>{TODAY_LABEL}</strong> : null}
           </Link>
-          <Link className="dallmayr-sidebar-link" aria-current={isActivePath(pathname, '/work') ? 'page' : undefined} href="/work" title={MY_WORK_LABEL}>
+          <Link aria-label={MY_WORK_LABEL} className="dallmayr-sidebar-link" aria-current={isActivePath(pathname, '/work') ? 'page' : undefined} href="/work" title={MY_WORK_LABEL}>
             <span aria-hidden="true"><NavigationIcon kind="clipboard" /></span>{!collapsed ? <strong>{MY_WORK_LABEL}</strong> : null}
           </Link>
         </div>
