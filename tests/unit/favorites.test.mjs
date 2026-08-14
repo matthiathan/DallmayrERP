@@ -7,6 +7,7 @@ import {
   favoritePathname,
   MAX_FAVORITES,
   parseFavoriteEntries,
+  retainFavoriteEntries,
   toggleFavoriteEntry,
 } from '../../lib/navigation/favorites.ts';
 
@@ -65,4 +66,19 @@ test('shell access keeps telemetry favorites visible only to their authorized ro
   assert.equal(canAccessShellPath('operations', '/telemetry'), false);
   assert.equal(canAccessShellPath('admin', '/telemetry/devices'), true);
   assert.equal(canAccessShellPath('executive', '/telemetry/devices'), false);
+});
+
+test('role changes remove inaccessible favorites so hidden pins cannot consume the shared capacity', () => {
+  const stored = [
+    { href: '/admin/users', label: 'Users & Roles' },
+    { href: '/work', label: 'My Work' },
+    { href: '/customers/customer-1', label: 'Customer 1' },
+  ];
+  const salesEntries = retainFavoriteEntries(
+    stored,
+    (entry) => canAccessShellPath('sales', favoritePathname(entry.href)),
+  );
+
+  assert.deepEqual(salesEntries.map((entry) => entry.href), ['/work', '/customers/customer-1']);
+  assert.equal(toggleFavoriteEntry(salesEntries, { href: '/sales', label: 'Sales Workspace' }).length, 3);
 });
