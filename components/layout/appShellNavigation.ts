@@ -5,6 +5,7 @@ import {
   navSections,
   type NavSection,
 } from '@/lib/auth/permissions';
+import { groupEnterpriseNavigationSections } from '@/lib/navigation/enterpriseNavigation';
 import { TODAY_LABEL } from '@/lib/navigation/terminology';
 import type { BusinessRole } from '@/types/dallmayrerp';
 
@@ -107,11 +108,12 @@ export function deriveAppShellNavigation(role: BusinessRole, pathname: string) {
       description: 'Direct and group conversations with colleagues.',
     }],
   }] : [];
-  const navigationSections = orderNavigationSections(role, [
+  const orderedNavigationSections = orderNavigationSections(role, [
     ...messagingSection,
     ...telemetryNavigationForRole(role),
     ...roleSections,
   ]);
+  const navigationSections = groupEnterpriseNavigationSections(role, orderedNavigationSections);
   const allNavigationItems = navigationSections.flatMap((section) => section.items);
   const activeSection = navigationSections.find((section) => section.items.some((item) => isActivePath(pathname, item.href)));
   const activeItem = activeSection?.items.find((item) => isActivePath(pathname, item.href));
