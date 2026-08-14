@@ -347,7 +347,7 @@ test('service workflow creates, assigns and completes a requested service job', 
   await page.getByRole('option', { name: /Acme Coffee/ }).click();
   await page.getByLabel('Complaint details *').fill('Group head leaking under load');
   await page.getByRole('button', { name: 'Create requested service call' }).click();
-  await expect(page.getByRole('status')).toContainText(/INC-NEW.*SVC-NEW/);
+  await expect(page.locator('.requested-service-create-card .success[role="status"]')).toContainText(/INC-NEW.*SVC-NEW/);
   expect(lastRpcCall(state, 'create_service_call_log')?.body).toMatchObject({
     p_customer_id: 'customer-1',
     p_branch: 'jhb',
@@ -387,14 +387,15 @@ test('stock workflow resolves a barcode and posts an audited receipt payload', a
   const state = createState();
   await installAuthenticatedSupabaseMock(page, state);
   await page.goto(`${baseURL}/warehouse/stock`, { waitUntil: 'domcontentloaded' });
-  await expect(page.getByRole('heading', { name: 'Scan and transact stock' })).toBeVisible();
+  const stockPanel = page.locator('.stock-control-centre');
+  await expect(stockPanel.getByRole('heading', { name: 'Scan and transact stock' })).toBeVisible();
 
-  await page.getByLabel('Manual code entry').fill('BEAN-001');
-  await expect(page.getByText(/Coffee Beans 1kg found/)).toBeVisible();
-  await page.getByLabel('Quantity').fill('2');
-  await page.getByLabel('Reference').fill('PO-TEST-001');
-  await page.getByRole('button', { name: 'Receive stock' }).click();
-  await expect(page.getByText(/New balance: 12 item\(s\), 2 box\(es\)/)).toBeVisible();
+  await stockPanel.getByLabel('Manual code entry').fill('BEAN-001');
+  await expect(stockPanel.getByText(/Coffee Beans 1kg found/)).toBeVisible();
+  await stockPanel.getByRole('spinbutton', { name: 'Quantity', exact: true }).fill('2');
+  await stockPanel.getByLabel('Reference', { exact: true }).fill('PO-TEST-001');
+  await stockPanel.getByRole('button', { name: 'Receive stock' }).click();
+  await expect(stockPanel.getByText(/New balance: 12 item\(s\), 2 box\(es\)/)).toBeVisible();
 
   expect(lastRpcCall(state, 'apply_stock_transaction')?.body).toMatchObject({
     p_stock_item_id: 'stock-1',
@@ -412,7 +413,7 @@ test('purchase approval workflow records reviewer notes and approval intent', as
   const state = createState();
   await installAuthenticatedSupabaseMock(page, state);
   await page.goto(`${baseURL}/warehouse/purchasing/approvals`, { waitUntil: 'domcontentloaded' });
-  await expect(page.getByRole('heading', { name: 'Purchase approvals' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Purchase approvals', level: 2, exact: true })).toBeVisible();
 
   const order = page.locator('.minimal-list-item').filter({ hasText: 'PO-001' });
   await order.getByLabel('Review note').fill('Budget and supplier lead time confirmed');
