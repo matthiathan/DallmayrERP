@@ -75,6 +75,10 @@ export function parseFavoriteEntries(value: string | null) {
   }
 }
 
+export function retainFavoriteEntries(current: FavoriteEntry[], isAllowed: (entry: FavoriteEntry) => boolean) {
+  return current.filter(isAllowed).slice(0, MAX_FAVORITES);
+}
+
 export function toggleFavoriteEntry(current: FavoriteEntry[], entry: FavoriteEntry) {
   const normalized = normalizeEntry(entry);
   if (!normalized) return current;
