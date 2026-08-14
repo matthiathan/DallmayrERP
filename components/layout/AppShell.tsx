@@ -51,7 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { authUser, businessProfile, businessUser, userDetails, loading, error } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { favoriteEntries, favoriteHrefs, railCollapsed, toggleFavorite, toggleRail } = useAppShellPreferences();
+  const { favoriteEntries, railCollapsed, toggleFavorite, toggleRail } = useAppShellPreferences();
   const profileComplete = isProfileComplete(userDetails);
   const role = userDetails?.role;
 
@@ -164,13 +164,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="application-header-actions">
-            <EnterpriseProductivityHub
-              activeTitle={activeTitle}
-              favorites={visibleFavorites}
-              onToggleFavorite={toggleFavorite}
-              pathname={pathname}
-              role={userDetails.role}
-            />
+            <Suspense fallback={null}>
+              <EnterpriseProductivityHub
+                activeTitle={activeTitle}
+                favorites={visibleFavorites}
+                onToggleFavorite={toggleFavorite}
+                pathname={pathname}
+                role={userDetails.role}
+              />
+            </Suspense>
             <DensityToggle />
             <div className="desktop-alerts-target" id="desktop-alerts-target" />
             <div className="desktop-account-menu-target" id="desktop-account-menu-target" />
@@ -222,7 +224,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         collapsed={railCollapsed}
         homePath={homePath}
         onToggleCollapse={toggleRail}
-        onToggleFavorite={toggleFavorite}
         pathname={pathname}
         pinnedItems={visibleFavorites}
         roleLabel={roleLabels[userDetails.role]}
