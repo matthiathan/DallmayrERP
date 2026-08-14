@@ -124,9 +124,15 @@ async function readShellMetrics(page) {
     const sidebar = document.querySelector('.dallmayr-sidebar');
     const shell = document.querySelector('.application-shell-v2');
     const header = document.querySelector('.application-header-inner');
+    const pageContext = document.querySelector('.application-page-context');
+    const search = document.querySelector('.application-header-search');
+    const actions = document.querySelector('.application-header-actions');
     const collapseButton = document.querySelector('.dallmayr-sidebar-brand > button');
     const sidebarRect = sidebar?.getBoundingClientRect();
     const headerRect = header?.getBoundingClientRect();
+    const pageContextRect = pageContext?.getBoundingClientRect();
+    const searchRect = search?.getBoundingClientRect();
+    const actionsRect = actions?.getBoundingClientRect();
 
     return {
       viewportWidth: window.innerWidth,
@@ -135,6 +141,13 @@ async function readShellMetrics(page) {
       shellPaddingLeft: shell ? Number.parseFloat(getComputedStyle(shell).paddingLeft) : 0,
       headerLeft: headerRect?.left ?? 0,
       headerRight: headerRect?.right ?? 0,
+      pageContextWidth: pageContextRect?.width ?? 0,
+      pageContextRight: pageContextRect?.right ?? 0,
+      searchWidth: searchRect?.width ?? 0,
+      searchLeft: searchRect?.left ?? 0,
+      searchRight: searchRect?.right ?? 0,
+      actionsWidth: actionsRect?.width ?? 0,
+      actionsLeft: actionsRect?.left ?? 0,
       collapseButtonDisplay: collapseButton ? getComputedStyle(collapseButton).display : '',
       responsiveSurface: document.documentElement.getAttribute('data-responsive-surface'),
     };
@@ -164,6 +177,11 @@ test('fine-pointer laptop widths use compact desktop navigation without horizont
     expect(metrics.headerLeft).toBeGreaterThanOrEqual(87);
     expect(metrics.headerRight).toBeLessThanOrEqual(metrics.viewportWidth + 1);
     expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+    expect(metrics.pageContextWidth).toBeGreaterThanOrEqual(100);
+    expect(metrics.searchWidth).toBeGreaterThanOrEqual(140);
+    expect(metrics.actionsWidth).toBeGreaterThan(0);
+    expect(metrics.pageContextRight).toBeLessThanOrEqual(metrics.searchLeft + 1);
+    expect(metrics.searchRight).toBeLessThanOrEqual(metrics.actionsLeft + 1);
 
     await context.close();
   }
