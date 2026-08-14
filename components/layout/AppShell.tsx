@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { ConnectedWorkflowBar } from '@/components/layout/ConnectedWorkflowBar';
 import { DesktopNavigationRail } from '@/components/layout/DesktopNavigationRail';
+import { EnterpriseProductivityHub } from '@/components/layout/EnterpriseProductivityHub';
 import { MobileNavigationDrawer, MobileQuickBar } from '@/components/layout/MobileNavigation';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { deriveAppShellNavigation } from '@/components/layout/appShellNavigation';
@@ -162,6 +163,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="application-header-actions">
+            <EnterpriseProductivityHub
+              activeTitle={activeTitle}
+              favoriteHrefs={favoriteHrefs}
+              onToggleFavorite={toggleFavorite}
+              pathname={pathname}
+              role={userDetails.role}
+            />
             <DensityToggle />
             <div className="desktop-alerts-target" id="desktop-alerts-target" />
             <div className="desktop-account-menu-target" id="desktop-account-menu-target" />
