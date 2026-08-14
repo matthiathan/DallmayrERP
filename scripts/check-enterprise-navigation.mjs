@@ -13,7 +13,9 @@ const shellNavigation = read('components/layout/appShellNavigation.ts');
 const appShell = read('components/layout/AppShell.tsx');
 const desktopNavigation = read('components/layout/DesktopNavigationRail.tsx');
 const mobileNavigation = read('components/layout/MobileNavigation.tsx');
+const globalSearch = read('components/ui/GlobalSearch.tsx');
 const enterpriseNavigation = read('lib/navigation/enterpriseNavigation.ts');
+const supplementalNavigation = read('lib/navigation/supplementalNavigation.ts');
 
 requireText(
   'app shell navigation',
@@ -30,6 +32,12 @@ requireText(
 requireText(
   'app shell navigation',
   shellNavigation,
+  'getSupplementalNavigationSections(role, MESSAGING_ENABLED)',
+  'the shell must consume the shared Messages and Telemetry navigation catalogue.',
+);
+requireText(
+  'app shell navigation',
+  shellNavigation,
   'selectActiveNavigationHref(pathname, allNavigationItems.map((item) => item.href))',
   'active navigation must resolve the most specific authorized route.',
 );
@@ -38,6 +46,12 @@ requireText(
   enterpriseNavigation,
   "new Set<BusinessRole>(['admin', 'executive'])",
   'task-oriented regrouping must remain limited to administrator and executive roles.',
+);
+requireText(
+  'supplemental navigation',
+  supplementalNavigation,
+  "href: '/telemetry/devices'",
+  'administrator telemetry device navigation must remain in the shared supplemental catalogue.',
 );
 requireText(
   'app shell',
@@ -56,6 +70,24 @@ requireText(
   mobileNavigation,
   'const active = activeHref === item.href;',
   'mobile navigation must mark only the canonical route as current.',
+);
+requireText(
+  'global search',
+  globalSearch,
+  "const MESSAGING_ENABLED = process.env.NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED === 'true';",
+  'global search must use the same opt-in messaging flag semantics as the shell.',
+);
+requireText(
+  'global search',
+  globalSearch,
+  'getSupplementalNavigationSections(userDetails.role, MESSAGING_ENABLED)',
+  'global search must consume the shared Messages and Telemetry navigation catalogue.',
+);
+requireText(
+  'global search',
+  globalSearch,
+  'groupEnterpriseNavigationSections(userDetails.role, [',
+  'global search page subtitles must use the same task-oriented enterprise section taxonomy.',
 );
 
 for (const heading of ['Work', 'Customers & Assets', 'Inventory', 'Commercial', 'Insights', 'Administration']) {
