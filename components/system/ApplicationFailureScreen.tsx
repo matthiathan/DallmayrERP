@@ -69,6 +69,8 @@ export function ApplicationFailureScreen({
             <button className={`${styles.action} ${styles.primaryAction}`} type="button" onClick={handleRetry}>
               Retry
             </button>
+            {/* Catastrophic/global error recovery must not depend on the Next router. */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a className={`${styles.action} ${styles.secondaryAction}`} href="/">
               Return to Dashboard
             </a>
