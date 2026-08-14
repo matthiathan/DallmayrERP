@@ -1,0 +1,59 @@
+name: Shared dashboard database contracts
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'lib/dashboards/shared-dashboard-catalog.ts'
+      - 'scripts/check-shared-dashboard-contracts.mjs'
+      - 'supabase/migrations/20260814065000_add_shared_dashboards.sql'
+      - 'supabase/rollback/20260814065000_remove_shared_dashboards.sql'
+      - 'tests/shared-dashboard-test-bootstrap.sql'
+      - 'tests/shared-dashboard-schema-contract.sql'
+      - 'tests/shared-dashboard-rollback-contract.sql'
+      - '.github/workflows/shared-dashboard-database.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    name: Validate shared dashboard schema and RLS
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGPASSWORD: postgres
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check UI and database metric allowlist parity
+        run: node scripts/check-shared-dashboard-contracts.mjs
+
+      - name: Bootstrap disposable PostgreSQL contracts
+        run: psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/shared-dashboard-test-bootstrap.sql
+
+      - name: Apply shared dashboard migration
+        run: psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f supabase/migrations/20260814065000_add_shared_dashboards.sql
+
+      - name: Execute shared dashboard behavior contracts
+        run: psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/shared-dashboard-schema-contract.sql
+
+      - name: Validate rollback
+        run: |
+          psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f supabase/rollback/20260814065000_remove_shared_dashboards.sql
+          psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/shared-dashboard-rollback-contract.sql
