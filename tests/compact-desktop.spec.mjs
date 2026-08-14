@@ -119,39 +119,79 @@ async function installAuthenticatedShellMock(page) {
   });
 }
 
-async function readShellMetrics(page) {
-  return page.evaluate(() => {
-    const sidebar = document.querySelector('.dallmayr-sidebar');
-    const shell = document.querySelector('.application-shell-v2');
-    const header = document.querySelector('.application-header-inner');
-    const pageContext = document.querySelector('.application-page-context');
-    const search = document.querySelector('.application-header-search');
-    const actions = document.querySelector('.application-header-actions');
-    const collapseButton = document.querySelector('.dallmayr-sidebar-brand > button');
-    const sidebarRect = sidebar?.getBoundingClientRect();
-    const headerRect = header?.getBoundingClientRect();
-    const pageContextRect = pageContext?.getBoundingClientRect();
-    const searchRect = search?.getBoundingClientRect();
-    const actionsRect = actions?.getBoundingClientRect();
+async function waitForStableShell(page, requestedRoute) {
+  const deadline = Date.now() + 20_000;
+  let previousUrl = '';
+  let stableSince = 0;
 
-    return {
-      viewportWidth: window.innerWidth,
-      documentWidth: document.documentElement.scrollWidth,
-      sidebarWidth: sidebarRect?.width ?? 0,
-      shellPaddingLeft: shell ? Number.parseFloat(getComputedStyle(shell).paddingLeft) : 0,
-      headerLeft: headerRect?.left ?? 0,
-      headerRight: headerRect?.right ?? 0,
-      pageContextWidth: pageContextRect?.width ?? 0,
-      pageContextRight: pageContextRect?.right ?? 0,
-      searchWidth: searchRect?.width ?? 0,
-      searchLeft: searchRect?.left ?? 0,
-      searchRight: searchRect?.right ?? 0,
-      actionsWidth: actionsRect?.width ?? 0,
-      actionsLeft: actionsRect?.left ?? 0,
-      collapseButtonDisplay: collapseButton ? getComputedStyle(collapseButton).display : '',
-      responsiveSurface: document.documentElement.getAttribute('data-responsive-surface'),
-    };
-  });
+  while (Date.now() < deadline) {
+    try {
+      const currentUrl = page.url();
+      const shellReady = await page.locator('.application-shell-v2').count() === 1
+        && await page.locator('.dallmayr-sidebar').count() === 1
+        && await page.locator('.application-header-inner').count() === 1
+        && await page.getByRole('main').count() === 1;
+
+      if (shellReady && currentUrl === previousUrl) {
+        if (stableSince === 0) stableSince = Date.now();
+        if (Date.now() - stableSince >= 500) return;
+      } else {
+        previousUrl = currentUrl;
+        stableSince = shellReady ? Date.now() : 0;
+      }
+    } catch {
+      previousUrl = '';
+      stableSince = 0;
+    }
+
+    await page.waitForTimeout(100);
+  }
+
+  throw new Error(`${requestedRoute} did not settle on the authenticated application shell.`);
+}
+
+async function readShellMetrics(page) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await page.evaluate(() => {
+        const sidebar = document.querySelector('.dallmayr-sidebar');
+        const shell = document.querySelector('.application-shell-v2');
+        const header = document.querySelector('.application-header-inner');
+        const pageContext = document.querySelector('.application-page-context');
+        const search = document.querySelector('.application-header-search');
+        const actions = document.querySelector('.application-header-actions');
+        const collapseButton = document.querySelector('.dallmayr-sidebar-brand > button');
+        const sidebarRect = sidebar?.getBoundingClientRect();
+        const headerRect = header?.getBoundingClientRect();
+        const pageContextRect = pageContext?.getBoundingClientRect();
+        const searchRect = search?.getBoundingClientRect();
+        const actionsRect = actions?.getBoundingClientRect();
+
+        return {
+          viewportWidth: window.innerWidth,
+          documentWidth: document.documentElement.scrollWidth,
+          sidebarWidth: sidebarRect?.width ?? 0,
+          shellPaddingLeft: shell ? Number.parseFloat(getComputedStyle(shell).paddingLeft) : 0,
+          headerLeft: headerRect?.left ?? 0,
+          headerRight: headerRect?.right ?? 0,
+          pageContextWidth: pageContextRect?.width ?? 0,
+          pageContextRight: pageContextRect?.right ?? 0,
+          searchWidth: searchRect?.width ?? 0,
+          searchLeft: searchRect?.left ?? 0,
+          searchRight: searchRect?.right ?? 0,
+          actionsWidth: actionsRect?.width ?? 0,
+          actionsLeft: actionsRect?.left ?? 0,
+          collapseButtonDisplay: collapseButton ? getComputedStyle(collapseButton).display : '',
+          responsiveSurface: document.documentElement.getAttribute('data-responsive-surface'),
+        };
+      });
+    } catch (error) {
+      if (!(error instanceof Error) || !/execution context was destroyed|navigation/i.test(error.message) || attempt === 2) throw error;
+      await waitForStableShell(page, 'metric retry');
+    }
+  }
+
+  throw new Error('Could not read compact desktop shell metrics.');
 }
 
 test('fine-pointer laptop widths use compact desktop navigation without horizontal overflow', async ({ browser }) => {
@@ -164,8 +204,7 @@ test('fine-pointer laptop widths use compact desktop navigation without horizont
     const page = await context.newPage();
     await installAuthenticatedShellMock(page);
     await page.goto(`${baseURL}/operations/service-jobs`, { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('.dallmayr-sidebar')).toBeVisible();
-    await expect(page.getByRole('main')).toHaveCount(1);
+    await waitForStableShell(page, `/operations/service-jobs at ${width}px`);
 
     const metrics = await readShellMetrics(page);
     expect(metrics.responsiveSurface).not.toBe('mobile-tablet');
@@ -187,7 +226,7 @@ test('fine-pointer laptop widths use compact desktop navigation without horizont
   }
 });
 
-test('1280px fine-pointer desktop restores the full navigation rail', async ({ browser }) => {
+test('1280px fine-pointer desktop restores the canonical standard navigation rail', async ({ browser }) => {
   const context = await browser.newContext({
     viewport: { width: 1280, height: 900 },
     hasTouch: false,
@@ -196,13 +235,16 @@ test('1280px fine-pointer desktop restores the full navigation rail', async ({ b
   const page = await context.newPage();
   await installAuthenticatedShellMock(page);
   await page.goto(`${baseURL}/operations/service-jobs`, { waitUntil: 'domcontentloaded' });
-  await expect(page.locator('.dallmayr-sidebar')).toBeVisible();
+  await waitForStableShell(page, '/operations/service-jobs at 1280px');
 
   const metrics = await readShellMetrics(page);
   expect(metrics.responsiveSurface).not.toBe('mobile-tablet');
-  expect(metrics.sidebarWidth).toBeGreaterThanOrEqual(340);
-  expect(metrics.shellPaddingLeft).toBeGreaterThanOrEqual(340);
+  expect(metrics.sidebarWidth).toBeGreaterThanOrEqual(263);
+  expect(metrics.sidebarWidth).toBeLessThanOrEqual(265);
+  expect(metrics.shellPaddingLeft).toBeGreaterThanOrEqual(263);
+  expect(metrics.shellPaddingLeft).toBeLessThanOrEqual(265);
   expect(metrics.collapseButtonDisplay).not.toBe('none');
+  expect(metrics.headerRight).toBeLessThanOrEqual(metrics.viewportWidth + 1);
   expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth + 1);
 
   await context.close();
