@@ -52,6 +52,9 @@ jobs:
       - name: Check responsive and accessibility contracts
         run: npm run accessibility:check
 
+      - name: Check native/mobile readiness contracts
+        run: npm run native:check
+
       - name: Run unit and component tests
         run: npm test
 
