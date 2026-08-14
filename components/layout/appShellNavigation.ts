@@ -7,6 +7,7 @@ import {
 } from '@/lib/auth/permissions';
 import { selectActiveNavigationHref } from '@/lib/navigation/activeNavigation';
 import { groupEnterpriseNavigationSections } from '@/lib/navigation/enterpriseNavigation';
+import { getSupplementalNavigationSections } from '@/lib/navigation/supplementalNavigation';
 import { TODAY_LABEL } from '@/lib/navigation/terminology';
 import type { BusinessRole } from '@/types/dallmayrerp';
 
@@ -35,30 +36,6 @@ const primaryPathCandidates: Record<BusinessRole, string[]> = {
   technician: ['/technician', '/work'],
   road_technician: ['/road-tech', '/work'],
 };
-
-function telemetryNavigationForRole(role: BusinessRole): NavSection[] {
-  if (role !== 'admin' && role !== 'executive') return [];
-
-  return [{
-    heading: 'Telemetry',
-    items: [
-      {
-        href: '/telemetry',
-        label: 'Machine Telemetry',
-        code: 'TEL01',
-        roles: ['admin', 'executive'],
-        description: 'Daily, weekly, monthly and six-month machine sales and connectivity reporting.',
-      },
-      ...(role === 'admin' ? [{
-        href: '/telemetry/devices',
-        label: 'Telemetry Devices',
-        code: 'TEL02',
-        roles: ['admin'] as BusinessRole[],
-        description: 'Assign devices to ERP machines and control telemetry ingestion.',
-      }] : []),
-    ],
-  }];
-}
 
 function orderNavigationSections(role: BusinessRole, sections: NavSection[]) {
   const order = sectionOrderByRole[role];
@@ -95,19 +72,9 @@ export function deriveAppShellNavigation(role: BusinessRole, pathname: string) {
       items: section.items.filter((item) => isNavItemAllowed(role, item)),
     }))
     .filter((section) => section.items.length > 0);
-  const messagingSection: NavSection[] = MESSAGING_ENABLED ? [{
-    heading: 'Communications',
-    items: [{
-      href: '/work/messages',
-      label: 'Messages',
-      code: 'MSG01',
-      roles: 'all',
-      description: 'Direct and group conversations with colleagues.',
-    }],
-  }] : [];
+  const supplementalSections = getSupplementalNavigationSections(role, MESSAGING_ENABLED);
   const orderedNavigationSections = orderNavigationSections(role, [
-    ...messagingSection,
-    ...telemetryNavigationForRole(role),
+    ...supplementalSections,
     ...roleSections,
   ]);
   const navigationSections = groupEnterpriseNavigationSections(role, orderedNavigationSections);
