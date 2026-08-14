@@ -103,13 +103,16 @@ async function installAuthenticatedShellMock(page) {
       return;
     }
     if (url.pathname === '/rest/v1/service_jobs') {
-      await route.fulfill(jsonResponse([{
-        id: serviceJobId,
-        job_number: 'SJ-2048',
-        summary: 'Quarterly coffee machine service',
-        branch: 'johannesburg',
-        status: 'assigned',
-      }]));
+      const select = url.searchParams.get('select');
+      const idFilter = url.searchParams.get('id');
+      const limit = url.searchParams.get('limit');
+      if (select === 'job_number' && idFilter === `eq.${serviceJobId}` && limit === '1') {
+        await route.fulfill(jsonResponse([{
+          job_number: 'SJ-2048',
+        }]));
+        return;
+      }
+      await route.fulfill(jsonResponse([]));
       return;
     }
     if (url.pathname === '/rest/v1/rpc/claim_current_app_user') {
