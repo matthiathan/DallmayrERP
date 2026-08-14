@@ -4,6 +4,7 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:3000';
 const supabaseOrigin = 'https://egbiiizxsqlarqpnzxxs.supabase.co';
 const authUserId = '10000000-0000-4000-8000-000000000092';
 const businessUserId = '20000000-0000-4000-8000-000000000092';
+const serviceJobId = '30000000-0000-4000-8000-000000000092';
 
 function jsonResponse(data, status = 200) {
   return {
@@ -101,6 +102,16 @@ async function installAuthenticatedShellMock(page) {
       }));
       return;
     }
+    if (url.pathname === '/rest/v1/service_jobs') {
+      await route.fulfill(jsonResponse([{
+        id: serviceJobId,
+        job_number: 'SJ-2048',
+        summary: 'Quarterly coffee machine service',
+        branch: 'johannesburg',
+        status: 'assigned',
+      }]));
+      return;
+    }
     if (url.pathname === '/rest/v1/rpc/claim_current_app_user') {
       await route.fulfill(jsonResponse(null));
       return;
@@ -190,6 +201,26 @@ test('Quick Access traps focus, isolates the background, closes on Escape and re
   }));
   expect(restored.portalCount).toBe(0);
   expect(restored.overflow).toBe('');
+
+  await context.close();
+});
+
+test('Quick Access recent history shows a business job number instead of the selected record UUID', async ({ browser }) => {
+  const context = await browser.newContext({
+    viewport: { width: 1280, height: 900 },
+    hasTouch: false,
+    isMobile: false,
+  });
+  const page = await context.newPage();
+  await installAuthenticatedShellMock(page);
+  await page.goto(`${baseURL}/operations/service-jobs?job=${serviceJobId}`, { waitUntil: 'domcontentloaded' });
+  await waitForStableShell(page);
+
+  await page.getByRole('button', { name: 'Quick access' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Quick access' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('SJ-2048');
+  await expect(dialog).not.toContainText(serviceJobId);
 
   await context.close();
 });
