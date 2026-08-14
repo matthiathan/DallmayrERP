@@ -5,6 +5,8 @@ import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { isNavItemAllowed, navSections } from '@/lib/auth/permissions';
+import { groupEnterpriseNavigationSections } from '@/lib/navigation/enterpriseNavigation';
+import { getSupplementalNavigationSections } from '@/lib/navigation/supplementalNavigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type SearchResult = {
@@ -23,7 +25,7 @@ type GlobalSearchProps = {
 };
 
 const OPEN_SEARCH_EVENT = 'dallmayr-open-global-search';
-const MESSAGING_ENABLED = process.env.NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED !== 'false';
+const MESSAGING_ENABLED = process.env.NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED === 'true';
 const GLOBAL_SEARCH_DIALOG_ID = 'global-search-dialog';
 
 function safeFilterTerm(value: string) {
@@ -55,25 +57,23 @@ export function GlobalSearch({
   const availablePages = useMemo<SearchResult[]>(() => {
     if (!userDetails?.role) return [];
     const seen = new Set<string>();
-    const pages = navSections.flatMap((section) => section.items
-      .filter((item) => isNavItemAllowed(userDetails.role, item))
-      .map((item) => ({
-        id: item.href,
-        type: 'Page' as const,
-        title: item.label,
-        subtitle: `${section.heading}${item.description ? ` • ${item.description}` : ''}`,
-        href: item.href,
-      })));
-
-    if (MESSAGING_ENABLED) {
-      pages.unshift({
-        id: '/work/messages',
-        type: 'Page',
-        title: 'Messages',
-        subtitle: 'Communications • Direct and group conversations with colleagues.',
-        href: '/work/messages',
-      });
-    }
+    const roleSections = navSections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => isNavItemAllowed(userDetails.role, item)),
+      }))
+      .filter((section) => section.items.length > 0);
+    const searchSections = groupEnterpriseNavigationSections(userDetails.role, [
+      ...getSupplementalNavigationSections(userDetails.role, MESSAGING_ENABLED),
+      ...roleSections,
+    ]);
+    const pages = searchSections.flatMap((section) => section.items.map((item) => ({
+      id: item.href,
+      type: 'Page' as const,
+      title: item.label,
+      subtitle: `${section.heading}${item.description ? ` • ${item.description}` : ''}`,
+      href: item.href,
+    })));
 
     return pages.filter((page) => {
       if (seen.has(page.href)) return false;
