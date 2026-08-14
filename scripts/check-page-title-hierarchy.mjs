@@ -16,6 +16,8 @@ function forbid(sourceName, source, forbidden, message) {
 const shell = read('components/layout/AppShell.tsx');
 const erpLayout = read('components/ui/ErpLayout.tsx');
 const serviceJobsPage = read('app/operations/service-jobs/page.tsx');
+const connectedWorkflow = read('components/layout/ConnectedWorkflowBar.tsx');
+const applicationStyles = read('app/styles/application.css');
 
 requireText(
   'application shell',
@@ -54,10 +56,53 @@ requireText(
   'the representative operational route must retain its page-owned h1.',
 );
 
+requireText(
+  'connected workflow',
+  connectedWorkflow,
+  'className="connected-workflow-strip"',
+  'connected record context must use the compact supporting strip.',
+);
+requireText(
+  'connected workflow',
+  connectedWorkflow,
+  '<nav aria-label="Connected records" className="connected-workflow-links">',
+  'related-record navigation must remain directly available in the compact strip.',
+);
+forbid(
+  'connected workflow',
+  connectedWorkflow,
+  'className="neo-card"',
+  'connected record context must not compete with route content as a full card.',
+);
+forbid(
+  'connected workflow',
+  connectedWorkflow,
+  'page-toolbar-heading',
+  'connected record context must not use page-heading presentation.',
+);
+forbid(
+  'connected workflow',
+  connectedWorkflow,
+  'feature-pill',
+  'connected record context must not reuse prominent generic feature pills.',
+);
+requireText(
+  'application styles',
+  applicationStyles,
+  '.connected-workflow-strip {',
+  'the compact connected workflow strip must have canonical application styling.',
+);
+requireText(
+  'application styles',
+  applicationStyles,
+  'box-shadow: none;',
+  'the supporting connected workflow strip must remain visually flatter than page cards.',
+);
+
 if (failures.length) {
-  console.error('Page title hierarchy contract failed:');
+  console.error('Page and supporting-context hierarchy contract failed:');
   for (const failure of failures) console.error(`- ${failure}`);
   process.exit(1);
 }
 
-console.log('Page title hierarchy contract passed.');
+console.log('Page and supporting-context hierarchy contract passed.');
