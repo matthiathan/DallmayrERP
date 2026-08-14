@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BarChart, DonutChart, LineChart, StatStrip } from '@/components/ui/MiniCharts';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/browserStorage';
+import { formatLocalDate } from '@/lib/dates/local-date';
 import {
   DEFAULT_EXECUTIVE_KPIS,
   EXECUTIVE_KPI_CATALOG,
@@ -212,7 +213,7 @@ export function ExecutiveReportingPanel() {
 
   function printManagementPack() {
     const previousTitle = document.title;
-    document.title = `DallmayrERP Executive Management Pack ${new Date().toISOString().slice(0, 10)}`;
+    document.title = `DallmayrERP Executive Management Pack ${formatLocalDate()}`;
     window.print();
     window.setTimeout(() => { document.title = previousTitle; }, 0);
   }
@@ -227,7 +228,7 @@ export function ExecutiveReportingPanel() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `dallmayrerp-executive-summary-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `dallmayrerp-executive-summary-${formatLocalDate()}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   }
