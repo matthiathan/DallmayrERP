@@ -22,7 +22,9 @@
     "mobile:run:android": "cap run android",
     "mobile:run:ios": "cap run ios",
     "lint": "next lint",
-    "test": "npm run typecheck",
+    "test": "node --test --import ./tests/unit/register-typescript-loader.mjs tests/unit/*.test.mjs",
+    "test:unit": "node --test --import ./tests/unit/register-typescript-loader.mjs tests/unit/core-contracts.test.mjs",
+    "test:components": "node --test --import ./tests/unit/register-typescript-loader.mjs tests/unit/components.test.mjs",
     "feature:check": "node scripts/check-feature-flags.mjs",
     "sourcecheck": "node scripts/check-source-safety.mjs",
     "contractcheck": "node scripts/check-rpc-contracts.mjs",
@@ -32,7 +34,7 @@
     "accessibility:check": "node scripts/check-responsive-accessibility.mjs",
     "security:pentest": "node scripts/security-pentest.mjs",
     "typecheck": "tsc --noEmit",
-    "check": "npm run feature:check && npm run sourcecheck && npm run contractcheck && npm run stylecheck && npm run mobile:interaction-check && npm run accessibility:check && npm run typecheck && npm run build"
+    "check": "npm run feature:check && npm run sourcecheck && npm run contractcheck && npm run stylecheck && npm run mobile:interaction-check && npm run accessibility:check && npm test && npm run typecheck && npm run build"
   },
   "dependencies": {
     "@capacitor/android": "8.5.0",

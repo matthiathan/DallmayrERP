@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    name: Typecheck, build and browser-test Next.js app
+    name: Test, typecheck, build and browser-test Next.js app
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -52,10 +52,14 @@ jobs:
       - name: Check responsive and accessibility contracts
         run: npm run accessibility:check
 
-      - name: Check production visual harness syntax
+      - name: Run unit and component tests
+        run: npm test
+
+      - name: Check production visual and browser harness syntax
         run: |
           node --check tests/production-visual.spec.mjs
           node --check tests/production-role-ui.spec.mjs
+          node --check tests/workflow-actions.spec.mjs
           python -m py_compile scripts/compare-production-screenshots.py
 
       - name: Typecheck application
@@ -64,12 +68,12 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Install mobile browser test runner and Chromium
+      - name: Install browser test runner and Chromium
         run: |
           npm install --no-save --no-package-lock --no-audit --no-fund @playwright/test@1.55.0
           npx playwright install --with-deps chromium
 
-      - name: Run security and real-browser mobile tests against local production server
+      - name: Run security and real-browser tests against local production server
         shell: bash
         env:
           SECURITY_PENTEST_TARGET: http://localhost:3000
@@ -91,7 +95,7 @@ jobs:
           for attempt in {1..45}; do
             if curl -fsS "$SECURITY_PENTEST_TARGET/login" > /dev/null; then
               npm run security:pentest
-              npx playwright test tests/mobile-login.spec.mjs --reporter=line
+              npx playwright test tests/mobile-login.spec.mjs tests/workflow-actions.spec.mjs --reporter=line
               exit 0
             fi
             sleep 2
