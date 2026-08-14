@@ -27,6 +27,39 @@ export function BarChart({ title, data }: { title: string; data: ChartPoint[] })
   );
 }
 
+export function LineChart({ title, data }: { title: string; data: ChartPoint[] }) {
+  const max = safeMax(data);
+  const width = 520;
+  const height = 180;
+  const padding = 18;
+  const usableWidth = width - padding * 2;
+  const usableHeight = height - padding * 2;
+  const points = data.map((item, index) => {
+    const x = padding + (data.length <= 1 ? usableWidth / 2 : (index / (data.length - 1)) * usableWidth);
+    const y = padding + usableHeight - (item.value / max) * usableHeight;
+    return { ...item, x, y };
+  });
+  const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
+
+  return (
+    <div className="neo-card chart-card spatial-card">
+      <h3>{title}</h3>
+      <svg aria-label={title} role="img" viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', minHeight: 190, overflow: 'visible' }}>
+        <line x1={padding} x2={width - padding} y1={height - padding} y2={height - padding} stroke="var(--content-border)" strokeWidth="1" />
+        <path d={path} fill="none" stroke="var(--content-accent-text)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        {points.map((point) => (
+          <g key={point.label}>
+            <circle cx={point.x} cy={point.y} fill="var(--content-surface)" r="5" stroke="var(--content-accent-text)" strokeWidth="3" />
+            <text fill="var(--content-muted)" fontSize="11" textAnchor="middle" x={point.x} y={height - 2}>{point.label}</text>
+            <title>{point.label}: {point.value.toLocaleString()}</title>
+          </g>
+        ))}
+      </svg>
+      <div className="chart-legend" aria-hidden="true">{data.map((item) => <div key={item.label}>{item.label}: <strong>{item.value.toLocaleString()}</strong></div>)}</div>
+    </div>
+  );
+}
+
 export function DonutChart({ title, data }: { title: string; data: ChartPoint[] }) {
   const total = data.reduce((sum, item) => sum + item.value, 0) || 1;
   let offset = 0;
