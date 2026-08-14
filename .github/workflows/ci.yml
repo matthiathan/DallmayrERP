@@ -143,4 +143,4 @@ jobs:
 
       - name: Compile Android debug package
         working-directory: android
-        run: bash ./gradlew assembleDebug
+        run: bash ./gradlew assembleDebug --stacktrace
