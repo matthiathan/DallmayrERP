@@ -142,7 +142,7 @@ async function readShellMetrics(page) {
 }
 
 test('fine-pointer laptop widths use compact desktop navigation without horizontal overflow', async ({ browser }) => {
-  for (const width of [1024, 1279]) {
+  for (const width of [901, 1024, 1279]) {
     const context = await browser.newContext({
       viewport: { width, height: 820 },
       hasTouch: false,
