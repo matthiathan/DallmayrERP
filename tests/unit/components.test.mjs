@@ -3,6 +3,7 @@ import test from 'node:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
+import { BarChart, DonutChart } from '../../components/ui/MiniCharts.tsx';
 import { StatusBadge } from '../../components/ui/StatusBadge.tsx';
 import { StatusTimeline } from '../../components/ui/StatusTimeline.tsx';
 
@@ -53,4 +54,49 @@ test('StatusTimeline clamps an out-of-range current index and compact mode hides
   assert.equal((markup.match(/is-complete/g) ?? []).length, 1);
   assert.doesNotMatch(markup, /Hidden detail|Also hidden/);
   assert.match(markup, /is-compact/);
+});
+
+test('BarChart keeps zero values at zero width and uses exact proportional widths', () => {
+  const markup = renderToStaticMarkup(createElement(BarChart, {
+    title: 'Branch activity',
+    data: [
+      { label: 'None', value: 0 },
+      { label: 'Half', value: 5 },
+      { label: 'Full', value: 10 },
+    ],
+  }));
+
+  assert.match(markup, /style="width:0%"/);
+  assert.match(markup, /style="width:50%"/);
+  assert.match(markup, /style="width:100%"/);
+});
+
+test('DonutChart renders an all-zero dataset as zero without inventing a segment', () => {
+  const markup = renderToStaticMarkup(createElement(DonutChart, {
+    title: 'Operational work captured',
+    data: [
+      { label: 'Closures', value: 0 },
+      { label: 'Deliveries', value: 0 },
+      { label: 'Stock scans', value: 0 },
+    ],
+  }));
+
+  assert.match(markup, /<span>0<\/span>/);
+  assert.doesNotMatch(markup, /conic-gradient/);
+  assert.match(markup, /var\(--content-border, #d8cdbc\)/);
+});
+
+test('DonutChart assigns distinct segment colours to distinct positive categories', () => {
+  const markup = renderToStaticMarkup(createElement(DonutChart, {
+    title: 'Operational mix',
+    data: [
+      { label: 'Closures', value: 3 },
+      { label: 'Deliveries', value: 2 },
+      { label: 'Stock scans', value: 1 },
+    ],
+  }));
+
+  assert.match(markup, /var\(--ui-gold-dark, #6d4b16\)/);
+  assert.match(markup, /var\(--ui-gold, #b8862f\)/);
+  assert.match(markup, /var\(--ui-focus, #2563eb\)/);
 });
