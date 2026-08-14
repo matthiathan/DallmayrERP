@@ -133,6 +133,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   const {
+    activeHref,
     activeSection,
     activeTitle,
     allowedPath,
@@ -206,6 +207,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <MobileNavigationDrawer
+          activeHref={activeHref}
           activeTitle={activeTitle}
           favorites={visibleFavorites}
           homePath={homePath}
@@ -221,6 +223,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <DesktopNavigationRail
+        activeHref={activeHref}
         collapsed={railCollapsed}
         homePath={homePath}
         onToggleCollapse={toggleRail}
