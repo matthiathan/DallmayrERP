@@ -51,9 +51,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { authUser, businessProfile, businessUser, userDetails, loading, error } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { favoriteEntries, railCollapsed, toggleFavorite, toggleRail } = useAppShellPreferences();
   const profileComplete = isProfileComplete(userDetails);
   const role = userDetails?.role;
+  const { favoriteEntries, railCollapsed, toggleFavorite, toggleRail } = useAppShellPreferences(role);
 
   useEffect(() => {
     if (!loading && !authUser) router.replace('/login');
