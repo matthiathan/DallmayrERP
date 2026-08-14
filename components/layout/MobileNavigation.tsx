@@ -42,9 +42,11 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || (href !== '/' && pathname.startsWith(`${href}/`));
 }
 
-function isPinnedPathActive(pathname: string, href: string) {
+function isPinnedPathActive(pathname: string, href: string, activeHref: string | null) {
   if (href.includes('?')) return false;
-  return isActivePath(pathname, favoritePathname(href));
+  const pinnedPath = favoritePathname(href);
+  if (pinnedPath === activeHref) return false;
+  return isActivePath(pathname, pinnedPath);
 }
 
 function groupedSections(sections: NavSection[], homePath: string) {
@@ -200,7 +202,7 @@ export function MobileNavigationDrawer({
                 const pinnedPath = favoritePathname(item.href);
                 return (
                   <div className="mobile-menu-v2-item-with-action" key={`fav-${item.href}`}>
-                    <Link aria-current={isPinnedPathActive(pathname, item.href) ? 'page' : undefined} className="mobile-menu-v2-link" href={item.href} onClick={() => setOpen(false)}>
+                    <Link aria-current={isPinnedPathActive(pathname, item.href, activeHref) ? 'page' : undefined} className="mobile-menu-v2-link" href={item.href} onClick={() => setOpen(false)}>
                       <span className="mobile-menu-v2-icon" aria-hidden="true"><NavigationIcon kind={navigationIconKind(item.label, pinnedPath)} /></span>
                       <span className="mobile-menu-v2-copy"><strong>{item.label}</strong></span>
                       <span className="mobile-menu-v2-chevron" aria-hidden="true"><NavigationIcon kind="chevron-right" /></span>
