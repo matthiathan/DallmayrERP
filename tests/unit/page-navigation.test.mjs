@@ -24,7 +24,7 @@ test('page navigation uses explicit section metadata in declared order', () => {
   ]);
 });
 
-test('dynamic record breadcrumbs never expose URL identifiers and use stable record parents', () => {
+test('dynamic record breadcrumbs never expose URL identifiers in display labels and use stable record parents', () => {
   const cases = [
     ['/customers/' + uuid, 'Customer record', '/customers', 'Customer Master'],
     ['/operations/assets/' + uuid, 'Machine record', '/operations/assets', 'Machine Master'],
@@ -37,7 +37,10 @@ test('dynamic record breadcrumbs never expose URL identifiers and use stable rec
     assert.equal(navigation.currentLabel, label);
     assert.deepEqual(navigation.backTarget, { href: parentHref, label: parentLabel });
     assert.equal(navigation.crumbs.at(-1)?.label, label);
-    assert.equal(JSON.stringify(navigation).includes(uuid), false);
+    assert.equal(navigation.currentLabel.includes(uuid), false);
+    assert.equal(navigation.backTarget.label.includes(uuid), false);
+    assert.equal(navigation.crumbs.some((crumb) => crumb.label.includes(uuid)), false);
+    assert.equal(navigation.crumbs.at(-1)?.href, pathname);
   }
 });
 
