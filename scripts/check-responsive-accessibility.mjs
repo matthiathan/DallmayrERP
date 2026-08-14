@@ -160,7 +160,7 @@ requireContracts('Application failure screen', applicationFailureScreen, [
   "aria-live={announceAsAlert ? 'assertive' : 'polite'}",
   "role={announceAsAlert ? 'alert' : 'status'}",
   'onClick={handleRetry}',
-  '>Retry',
+  'Retry',
   'href="/"',
   'Return to Dashboard',
   'Support reference',
