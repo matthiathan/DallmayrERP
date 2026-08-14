@@ -2,18 +2,19 @@
 
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { NavigationIcon, navigationIconKind, type NavigationIconKind } from '@/components/layout/NavigationIcon';
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import type { NavSection } from '@/lib/auth/permissions';
+import { favoritePathname, MAX_FAVORITES, type FavoriteEntry } from '@/lib/navigation/favorites';
 import type { BusinessRole } from '@/types/dallmayrerp';
 
 type MobileNavigationDrawerProps = {
   activeTitle: string;
-  favoriteHrefs: string[];
+  favorites: FavoriteEntry[];
   homePath: string;
-  onToggleFavorite: (href: string) => void;
+  onToggleFavorite: (href: string, label?: string) => void;
   open: boolean;
   pathname: string;
   profileComplete: boolean;
@@ -33,7 +34,6 @@ type MobileQuickBarProps = {
   taskPath: string;
 };
 
-const MAX_FAVORITES = 4;
 const OPEN_SEARCH_EVENT = 'dallmayr-open-global-search';
 
 function isActivePath(pathname: string, href: string) {
@@ -48,7 +48,7 @@ function initials(name: string) {
 
 export function MobileNavigationDrawer({
   activeTitle,
-  favoriteHrefs,
+  favorites,
   homePath,
   onToggleFavorite,
   open,
@@ -63,6 +63,7 @@ export function MobileNavigationDrawer({
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const [mounted, setMounted] = useState(false);
+  const favoriteHrefs = favorites.map((entry) => entry.href);
 
   useEffect(() => setMounted(true), []);
 
@@ -119,21 +120,6 @@ export function MobileNavigationDrawer({
     };
   }, [open, setOpen]);
 
-  const allItems = useMemo(() => {
-    const items = new Map<string, NavSection['items'][number]>();
-    sections.forEach((section) => section.items.forEach((item) => {
-      if (!items.has(item.href)) items.set(item.href, item);
-    }));
-    return Array.from(items.values());
-  }, [sections]);
-
-  const favoriteItems = useMemo(
-    () => favoriteHrefs
-      .map((href) => allItems.find((item) => item.href === href))
-      .filter((item): item is NavSection['items'][number] => Boolean(item)),
-    [allItems, favoriteHrefs],
-  );
-
   if (!mounted || !open) return null;
 
   return createPortal(
@@ -184,19 +170,22 @@ export function MobileNavigationDrawer({
             <span className="mobile-menu-v2-chevron" aria-hidden="true"><NavigationIcon kind="chevron-right" /></span>
           </div>
 
-          {favoriteItems.length > 0 ? (
+          {favorites.length > 0 ? (
             <section className="mobile-menu-v2-group mobile-menu-v2-favorites" aria-label="Pinned pages">
               <p className="mobile-menu-v2-section-label">Pinned</p>
-              {favoriteItems.map((item) => (
-                <div className="mobile-menu-v2-item-with-action" key={`fav-${item.href}`}>
-                  <Link className="mobile-menu-v2-link" href={item.href} onClick={() => setOpen(false)}>
-                    <span className="mobile-menu-v2-icon" aria-hidden="true"><NavigationIcon kind={navigationIconKind(item.label, item.href)} /></span>
-                    <span className="mobile-menu-v2-copy"><strong>{item.label}</strong>{item.description ? <small>{item.description}</small> : null}</span>
-                    <span className="mobile-menu-v2-chevron" aria-hidden="true"><NavigationIcon kind="chevron-right" /></span>
-                  </Link>
-                  <button aria-label={`Unpin ${item.label}`} className="mobile-menu-v2-pin" onClick={() => onToggleFavorite(item.href)} type="button"><NavigationIcon kind="pin-filled" /></button>
-                </div>
-              ))}
+              {favorites.map((item) => {
+                const pinnedPath = favoritePathname(item.href);
+                return (
+                  <div className="mobile-menu-v2-item-with-action" key={`fav-${item.href}`}>
+                    <Link aria-current={isActivePath(pathname, pinnedPath) ? 'page' : undefined} className="mobile-menu-v2-link" href={item.href} onClick={() => setOpen(false)}>
+                      <span className="mobile-menu-v2-icon" aria-hidden="true"><NavigationIcon kind={navigationIconKind(item.label, pinnedPath)} /></span>
+                      <span className="mobile-menu-v2-copy"><strong>{item.label}</strong></span>
+                      <span className="mobile-menu-v2-chevron" aria-hidden="true"><NavigationIcon kind="chevron-right" /></span>
+                    </Link>
+                    <button aria-label={`Unpin ${item.label}`} className="mobile-menu-v2-pin" onClick={() => onToggleFavorite(item.href, item.label)} type="button"><NavigationIcon kind="pin-filled" /></button>
+                  </div>
+                );
+              })}
             </section>
           ) : null}
 
@@ -206,7 +195,7 @@ export function MobileNavigationDrawer({
               {section.items.map((item) => {
                 const active = isActivePath(pathname, item.href);
                 const pinned = favoriteHrefs.includes(item.href);
-                const pinDisabled = !pinned && favoriteHrefs.length >= MAX_FAVORITES;
+                const pinDisabled = !pinned && favorites.length >= MAX_FAVORITES;
                 return (
                   <div className="mobile-menu-v2-item-with-action" key={item.href}>
                     <Link aria-current={active ? 'page' : undefined} className={`mobile-menu-v2-link ${active ? 'is-active' : ''}`} href={item.href} onClick={() => setOpen(false)}>
@@ -214,7 +203,7 @@ export function MobileNavigationDrawer({
                       <span className="mobile-menu-v2-copy"><strong>{item.label}</strong>{item.description ? <small>{item.description}</small> : null}</span>
                       <span className="mobile-menu-v2-chevron" aria-hidden="true"><NavigationIcon kind="chevron-right" /></span>
                     </Link>
-                    <button aria-label={pinned ? `Unpin ${item.label}` : `Pin ${item.label}`} aria-pressed={pinned} className="mobile-menu-v2-pin" disabled={pinDisabled} onClick={() => onToggleFavorite(item.href)} title={pinDisabled ? `You can pin up to ${MAX_FAVORITES} pages` : undefined} type="button"><NavigationIcon kind={pinned ? 'pin-filled' : 'pin'} /></button>
+                    <button aria-label={pinned ? `Unpin ${item.label}` : `Pin ${item.label}`} aria-pressed={pinned} className="mobile-menu-v2-pin" disabled={pinDisabled} onClick={() => onToggleFavorite(item.href, item.label)} title={pinDisabled ? `You can pin up to ${MAX_FAVORITES} pages` : undefined} type="button"><NavigationIcon kind={pinned ? 'pin-filled' : 'pin'} /></button>
                   </div>
                 );
               })}
