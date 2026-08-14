@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { AccessibleDialog } from '@/components/ui/AccessibleDialog';
 import { canAccessPath } from '@/lib/auth/permissions';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/browserStorage';
 import {
@@ -18,7 +19,12 @@ import {
   type NotificationPreferences,
   type RecentHistoryItem,
 } from '@/lib/productivity/enterpriseFinish';
-import { AccessibleDialog } from '@/components/ui/AccessibleDialog';
+import {
+  recentHistoryDisplayLabel,
+  recentRecordTarget,
+  type RecentRecordTarget,
+} from '@/lib/productivity/recentHistoryLabels';
+import { getSupabaseClient } from '@/lib/supabase/client';
 import type { BusinessRole } from '@/types/dallmayrerp';
 
 const RECENT_HISTORY_KEY = 'dallmayrerp-recent-history-v1';
@@ -69,21 +75,66 @@ function readNotificationPreferences(): NotificationPreferences {
   }
 }
 
-function recentLabel(activeTitle: string) {
-  if (typeof window === 'undefined') return activeTitle;
-  const query = new URLSearchParams(window.location.search);
-  const record = query.get('job') ?? query.get('order') ?? query.get('machine') ?? query.get('customer');
-  if (record) return `${activeTitle} · ${record}`;
-  const segments = window.location.pathname.split('/').filter(Boolean);
-  const finalSegment = segments.at(-1);
-  if (segments.length >= 2 && finalSegment && !['workspace', 'customers', 'work', 'assets', 'stock'].includes(finalSegment)) {
-    try {
-      return `${activeTitle} · ${decodeURIComponent(finalSegment)}`;
-    } catch {
-      return activeTitle;
-    }
+function cleanLabelPart(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+function primaryAndSecondary(primary: string | null | undefined, secondary: string | null | undefined, separator = ' — ') {
+  const first = cleanLabelPart(primary);
+  const second = cleanLabelPart(secondary);
+  if (first && second && first !== second) return `${first}${separator}${second}`;
+  return first ?? second;
+}
+
+async function resolveRecentRecordLabel(target: RecentRecordTarget): Promise<string | null> {
+  const client = getSupabaseClient();
+
+  if (target.kind === 'service-job') {
+    const { data, error } = await client.from('service_jobs').select('job_number').eq('id', target.id).limit(1);
+    if (error) return null;
+    const row = (data ?? [])[0] as { job_number?: string | null } | undefined;
+    return cleanLabelPart(row?.job_number);
   }
-  return activeTitle;
+
+  if (target.kind === 'delivery-order') {
+    const { data, error } = await client.from('delivery_orders').select('order_number, customer_name').eq('id', target.id).limit(1);
+    if (error) return null;
+    const row = (data ?? [])[0] as { order_number?: string | null; customer_name?: string | null } | undefined;
+    return primaryAndSecondary(row?.order_number, row?.customer_name);
+  }
+
+  if (target.kind === 'customer') {
+    const { data, error } = await client.from('customers').select('customer_name, customer_code').eq('id', target.id).limit(1);
+    if (error) return null;
+    const row = (data ?? [])[0] as { customer_name?: string | null; customer_code?: string | null } | undefined;
+    const name = cleanLabelPart(row?.customer_name);
+    const code = cleanLabelPart(row?.customer_code);
+    return name && code ? `${name} (${code})` : name ?? code;
+  }
+
+  if (target.kind === 'machine') {
+    const { data, error } = await client.from('machines').select('machine_name, serial_number, machine_barcode').eq('id', target.id).limit(1);
+    if (error) return null;
+    const row = (data ?? [])[0] as { machine_name?: string | null; serial_number?: string | null; machine_barcode?: string | null } | undefined;
+    const name = cleanLabelPart(row?.machine_name);
+    const serial = cleanLabelPart(row?.serial_number);
+    const barcode = cleanLabelPart(row?.machine_barcode);
+    if (name && serial) return `${name} · SN ${serial}`;
+    return name ?? serial ?? barcode;
+  }
+
+  if (target.kind === 'work-item') {
+    const { data, error } = await client.from('work_items').select('work_number, title').eq('id', target.id).limit(1);
+    if (error) return null;
+    const row = (data ?? [])[0] as { work_number?: string | null; title?: string | null } | undefined;
+    return primaryAndSecondary(row?.work_number, row?.title);
+  }
+
+  const { data, error } = await client.from('stock_items').select('stock_name, item_barcode').eq('id', target.id).limit(1);
+  if (error) return null;
+  const row = (data ?? [])[0] as { stock_name?: string | null; item_barcode?: string | null } | undefined;
+  return primaryAndSecondary(row?.stock_name, row?.item_barcode, ' · ');
 }
 
 export function EnterpriseProductivityHub({
@@ -106,7 +157,10 @@ export function EnterpriseProductivityHub({
   const [open, setOpen] = useState(false);
   const [recent, setRecent] = useState<RecentHistoryItem[]>([]);
   const [notifications, setNotifications] = useState<NotificationPreferences>(DEFAULT_NOTIFICATION_PREFERENCES);
+  const [resolvedRecord, setResolvedRecord] = useState<{ href: string; label: string } | null>(null);
   const shortcuts = useMemo(() => enterpriseShortcutsForRole(role), [role]);
+  const resolvedRecordLabel = resolvedRecord?.href === currentHref ? resolvedRecord.label : null;
+  const currentDisplayLabel = recentHistoryDisplayLabel(activeTitle, resolvedRecordLabel);
 
   useEffect(() => {
     setRecent(readRecentHistory());
@@ -114,14 +168,31 @@ export function EnterpriseProductivityHub({
   }, []);
 
   useEffect(() => {
+    const target = recentRecordTarget(pathname, search);
+    if (!target) {
+      setResolvedRecord(null);
+      return;
+    }
+
+    let cancelled = false;
+    void resolveRecentRecordLabel(target).then((label) => {
+      if (cancelled || !label) return;
+      setResolvedRecord({ href: currentHref, label });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentHref, pathname, search]);
+
+  useEffect(() => {
     const next = mergeRecentHistory(readRecentHistory(), {
       href: currentHref,
-      label: recentLabel(activeTitle),
+      label: currentDisplayLabel,
       visitedAt: new Date().toISOString(),
     });
     safeLocalStorageSet(RECENT_HISTORY_KEY, JSON.stringify(next));
     setRecent(next);
-  }, [activeTitle, currentHref]);
+  }, [currentDisplayLabel, currentHref]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -134,7 +205,7 @@ export function EnterpriseProductivityHub({
       if (open) return;
       if (event.altKey && event.shiftKey && event.key.toLowerCase() === 'p' && !event.ctrlKey && !event.metaKey) {
         event.preventDefault();
-        onToggleFavorite(currentHref, recentLabel(activeTitle));
+        onToggleFavorite(currentHref, currentDisplayLabel);
         return;
       }
       const href = shortcutHrefForEvent(role, event);
@@ -145,7 +216,7 @@ export function EnterpriseProductivityHub({
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTitle, currentHref, onToggleFavorite, open, role, router]);
+  }, [currentDisplayLabel, currentHref, onToggleFavorite, open, role, router]);
 
   function updateNotifications(patch: Partial<NotificationPreferences>) {
     setNotifications((current) => {
@@ -197,7 +268,7 @@ export function EnterpriseProductivityHub({
             <button
               className="button secondary"
               disabled={pinLimitReached}
-              onClick={() => onToggleFavorite(currentHref, recentLabel(activeTitle))}
+              onClick={() => onToggleFavorite(currentHref, currentDisplayLabel)}
               title={pinLimitReached ? `You can pin up to ${MAX_FAVORITES} pages` : undefined}
               type="button"
             >
