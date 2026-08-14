@@ -3,24 +3,177 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'self' data:" />
-    <meta http-equiv="refresh" content="0; url=https://dallmayrerp.onrender.com" />
-    <title>DallmayrERP</title>
-    <style>
-      body {
-        display: grid;
-        min-height: 100vh;
-        margin: 0;
-        place-items: center;
-        background: #0078d4;
-        color: #ffffff;
-        font-family: Arial, Helvetica, sans-serif;
-      }
-    </style>
+    <meta name="theme-color" content="#0f1419" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src https://*.supabase.co"
+    />
+    <title>DallmayrERP Field</title>
+    <link rel="stylesheet" href="./field-app.css" />
+    <script src="./runtime-config.js" defer></script>
+    <script src="./vendor/html5-qrcode.min.js" defer></script>
+    <script src="./field-app.js" defer></script>
   </head>
   <body>
-    <main>
-      <strong>Loading DallmayrERP...</strong>
-    </main>
+    <div class="app-shell">
+      <header class="app-header">
+        <div>
+          <span class="eyebrow">Dallmayr South Africa</span>
+          <h1>DallmayrERP Field</h1>
+          <p>Offline-capable technician service, machine verification and closure evidence.</p>
+        </div>
+        <div class="header-status">
+          <span id="connectionBadge" class="status-badge">Checking connection</span>
+          <span id="syncBadge" class="status-badge muted">0 pending</span>
+        </div>
+      </header>
+
+      <div id="runtimeMessage" class="message hidden" role="alert"></div>
+
+      <main>
+        <section id="authView" class="card auth-card">
+          <div class="section-heading">
+            <span class="eyebrow">Secure field access</span>
+            <h2>Sign in</h2>
+            <p>Use your DallmayrERP account. This Android client is limited to technician and road-technician roles.</p>
+          </div>
+          <form id="loginForm" class="stack">
+            <label>
+              Work email
+              <input id="emailInput" type="email" autocomplete="username" required />
+            </label>
+            <label>
+              Password
+              <input id="passwordInput" type="password" autocomplete="current-password" required />
+            </label>
+            <button id="loginButton" class="button primary" type="submit">Sign in</button>
+          </form>
+          <p class="privacy-note">Passwords are sent directly to Supabase Auth and are not stored by this field client.</p>
+        </section>
+
+        <section id="workspaceView" class="hidden">
+          <div class="workspace-toolbar card">
+            <div>
+              <span class="eyebrow">Authenticated field workspace</span>
+              <h2 id="userName">Field technician</h2>
+              <p id="userContext">Role and branch</p>
+            </div>
+            <div class="toolbar-actions">
+              <button id="refreshButton" class="button secondary" type="button">Refresh jobs</button>
+              <button id="syncButton" class="button secondary" type="button">Sync pending</button>
+              <button id="signOutButton" class="button ghost" type="button">Sign out</button>
+            </div>
+          </div>
+
+          <div id="workspaceMessage" class="message hidden" role="status" aria-live="polite"></div>
+
+          <section class="metrics" aria-label="Field queue summary">
+            <article class="metric"><span>Open jobs</span><strong id="metricOpen">0</strong><small>Cached on this device</small></article>
+            <article class="metric"><span>Overdue</span><strong id="metricOverdue">0</strong><small>Past due time</small></article>
+            <article class="metric"><span>In progress</span><strong id="metricProgress">0</strong><small>Work underway</small></article>
+            <article class="metric"><span>Pending sync</span><strong id="metricPending">0</strong><small>Saved offline</small></article>
+          </section>
+
+          <div class="workspace-grid">
+            <aside class="card queue-panel">
+              <div class="section-heading compact">
+                <span class="eyebrow">My assigned work</span>
+                <h2>Service queue</h2>
+                <p id="cacheStatus">Loading assigned jobs…</p>
+              </div>
+              <div id="queueFilters" class="filter-row" role="group" aria-label="Filter service jobs">
+                <button class="filter active" data-filter="all" type="button">All open</button>
+                <button class="filter" data-filter="overdue" type="button">Overdue</button>
+                <button class="filter" data-filter="in_progress" type="button">In progress</button>
+                <button class="filter" data-filter="high_priority" type="button">High priority</button>
+              </div>
+              <div id="jobList" class="job-list"></div>
+            </aside>
+
+            <section class="card execution-panel">
+              <div id="emptySelection" class="empty-state">
+                <span class="eyebrow">Guided completion</span>
+                <h2>Select an assigned job</h2>
+                <p>Jobs are cached after an online refresh so service can continue through temporary connectivity loss.</p>
+              </div>
+
+              <form id="closureForm" class="hidden">
+                <div class="section-heading">
+                  <span class="eyebrow">Guided completion</span>
+                  <h2 id="jobHeading">Complete job</h2>
+                  <p id="jobSummary"></p>
+                </div>
+
+                <dl id="jobDetails" class="details-grid"></dl>
+
+                <section class="form-section">
+                  <div class="step-heading"><span>1</span><div><strong>Verify assigned machine</strong><small>Required before closure</small></div></div>
+                  <p>Scan or enter the machine barcode, serial number or asset tag. The code must match the assigned machine cached with this job.</p>
+                  <div id="reader" class="scanner-view"></div>
+                  <div class="button-row">
+                    <button id="startScanButton" class="button primary" type="button">Start camera scan</button>
+                    <button id="stopScanButton" class="button secondary" type="button" disabled>Stop camera</button>
+                  </div>
+                  <label>
+                    Machine code
+                    <input id="machineCodeInput" autocomplete="off" autocapitalize="characters" spellcheck="false" />
+                  </label>
+                  <label>
+                    Scan from photo
+                    <input id="scanPhotoInput" type="file" accept="image/*" capture="environment" />
+                  </label>
+                  <div id="machineMatch" class="match-state">Waiting for a machine scan.</div>
+                </section>
+
+                <section class="form-section">
+                  <div class="step-heading"><span>2</span><div><strong>Record outcome</strong><small>Choose one</small></div></div>
+                  <div id="outcomeOptions" class="outcome-grid">
+                    <label><input type="radio" name="outcome" value="completed" checked /><span><strong>Completed</strong><small>Machine ready for service.</small></span></label>
+                    <label><input type="radio" name="outcome" value="follow_up_required" /><span><strong>Follow-up required</strong><small>Additional technical work is needed.</small></span></label>
+                    <label><input type="radio" name="outcome" value="parts_required" /><span><strong>Parts required</strong><small>Parts must be supplied before completion.</small></span></label>
+                    <label><input type="radio" name="outcome" value="customer_unavailable" /><span><strong>Customer unavailable</strong><small>Visit could not be completed with the customer.</small></span></label>
+                  </div>
+                </section>
+
+                <section class="form-section">
+                  <div class="step-heading"><span>3</span><div><strong>Add evidence</strong><small>Optional but recommended</small></div></div>
+                  <label>
+                    Closure notes
+                    <textarea id="notesInput" rows="5" placeholder="Work completed, checks, outstanding risk or follow-up."></textarea>
+                  </label>
+                  <label>
+                    Closure photo
+                    <input id="closurePhotoInput" type="file" accept="image/*" capture="environment" />
+                  </label>
+                  <div id="photoMeta" class="photo-meta hidden"></div>
+                </section>
+
+                <div class="submit-bar">
+                  <div>
+                    <strong id="submitState">Machine verification required</strong>
+                    <small>Closures are first saved on-device, then re-authorized and synced to Supabase when online.</small>
+                  </div>
+                  <button id="completeButton" class="button primary" type="submit" disabled>Save closure</button>
+                </div>
+              </form>
+            </section>
+          </div>
+
+          <section class="card sync-panel">
+            <div class="section-heading compact">
+              <span class="eyebrow">Offline outbox</span>
+              <h2>Pending closures</h2>
+              <p>Queued records remain on this device until the server accepts them. Conflicts require review rather than silent deletion.</p>
+            </div>
+            <div id="pendingList" class="pending-list"></div>
+          </section>
+        </section>
+      </main>
+
+      <footer>
+        <span>Android-first field client</span>
+        <span>Full ERP remains available through the hosted DallmayrERP application.</span>
+      </footer>
+    </div>
   </body>
 </html>
