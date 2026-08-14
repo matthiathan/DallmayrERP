@@ -19,6 +19,11 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || (href !== '/' && pathname.startsWith(`${href}/`));
 }
 
+function isPinnedPathActive(pathname: string, href: string) {
+  if (href.includes('?')) return false;
+  return isActivePath(pathname, favoritePathname(href));
+}
+
 function groupedSections(sections: NavSection[], homePath: string) {
   const seen = new Set<string>();
   return sections
@@ -74,7 +79,7 @@ export function DesktopNavigationRail({
                 const pinnedPath = favoritePathname(item.href);
                 return (
                   <Link
-                    aria-current={isActivePath(pathname, pinnedPath) ? 'page' : undefined}
+                    aria-current={isPinnedPathActive(pathname, item.href) ? 'page' : undefined}
                     className="dallmayr-sidebar-link"
                     href={item.href}
                     key={item.href}
