@@ -9,26 +9,53 @@ function requireText(sourceName, source, expected, message) {
   if (!source.includes(expected)) failures.push(`${sourceName}: ${message}`);
 }
 
-const shell = read('components/layout/appShellNavigation.ts');
+const shellNavigation = read('components/layout/appShellNavigation.ts');
+const appShell = read('components/layout/AppShell.tsx');
+const desktopNavigation = read('components/layout/DesktopNavigationRail.tsx');
+const mobileNavigation = read('components/layout/MobileNavigation.tsx');
 const enterpriseNavigation = read('lib/navigation/enterpriseNavigation.ts');
 
 requireText(
   'app shell navigation',
-  shell,
+  shellNavigation,
   "import { groupEnterpriseNavigationSections } from '@/lib/navigation/enterpriseNavigation';",
   'the shell must import the enterprise grouping contract.',
 );
 requireText(
   'app shell navigation',
-  shell,
+  shellNavigation,
   'groupEnterpriseNavigationSections(role, orderedNavigationSections)',
   'the role-filtered navigation must be regrouped through the enterprise navigation contract.',
+);
+requireText(
+  'app shell navigation',
+  shellNavigation,
+  'selectActiveNavigationHref(pathname, allNavigationItems.map((item) => item.href))',
+  'active navigation must resolve the most specific authorized route.',
 );
 requireText(
   'enterprise navigation',
   enterpriseNavigation,
   "new Set<BusinessRole>(['admin', 'executive'])",
   'task-oriented regrouping must remain limited to administrator and executive roles.',
+);
+requireText(
+  'app shell',
+  appShell,
+  'activeHref={activeHref}',
+  'the canonical active route must be passed to desktop and mobile navigation surfaces.',
+);
+requireText(
+  'desktop navigation',
+  desktopNavigation,
+  "aria-current={activeHref === item.href ? 'page' : undefined}",
+  'desktop navigation must mark only the canonical route as current.',
+);
+requireText(
+  'mobile navigation',
+  mobileNavigation,
+  'const active = activeHref === item.href;',
+  'mobile navigation must mark only the canonical route as current.',
 );
 
 for (const heading of ['Work', 'Customers & Assets', 'Inventory', 'Commercial', 'Insights', 'Administration']) {
