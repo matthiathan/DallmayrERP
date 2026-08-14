@@ -135,13 +135,16 @@ test('Quick Access traps focus, isolates the background, closes on Escape and re
   await page.goto(`${baseURL}/operations/service-jobs`, { waitUntil: 'domcontentloaded' });
   await waitForStableShell(page);
 
-  const trigger = page.getByRole('button', { name: 'Quick access' });
+  const accessibleTrigger = page.getByRole('button', { name: 'Quick access' });
+  const trigger = page.locator('button[aria-controls="quick-access-dialog"]');
+  await expect(accessibleTrigger).toBeVisible();
   await trigger.focus();
   await trigger.click();
 
   const dialog = page.getByRole('dialog', { name: 'Quick access' });
   await expect(dialog).toBeVisible();
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  await expect(accessibleTrigger).toHaveCount(0);
   await expect(dialog.getByRole('button', { name: 'Close' })).toBeFocused();
 
   const isolated = await page.evaluate(() => {
@@ -178,7 +181,8 @@ test('Quick Access traps focus, isolates the background, closes on Escape and re
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
-  await expect(trigger).toBeFocused();
+  await expect(accessibleTrigger).toBeVisible();
+  await expect(accessibleTrigger).toBeFocused();
 
   const restored = await page.evaluate(() => ({
     portalCount: document.querySelectorAll('[data-dallmayr-dialog-portal="true"]').length,
