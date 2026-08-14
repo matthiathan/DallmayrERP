@@ -18,6 +18,7 @@ const permissions = read('lib/auth/permissions.ts');
 const desktop = read('components/layout/DesktopNavigationRail.tsx');
 const mobile = read('components/layout/MobileNavigation.tsx');
 const breadcrumbs = read('components/ui/Breadcrumbs.tsx');
+const pageNavigation = read('lib/navigation/pageNavigation.ts');
 const shell = read('components/layout/AppShell.tsx');
 
 requireText('terminology', terminology, "TODAY_LABEL = 'Today'", 'Today must be the canonical role-landing label.');
@@ -39,9 +40,9 @@ requireText('mobile navigation', mobile, "item.href === homePath || item.href ==
 forbid('mobile navigation', mobile, '<strong>Dashboard</strong>', 'the role landing must not be renamed Dashboard in the drawer.');
 
 requireText('breadcrumbs', breadcrumbs, '<Link href="/workspace">{TODAY_LABEL}</Link>', 'breadcrumbs must root nested pages at Today.');
-requireText('breadcrumbs', breadcrumbs, "{ href: '/workspace', label: TODAY_LABEL }", 'mobile back navigation must fall back to Today.');
+requireText('page navigation', pageNavigation, "{ href: '/workspace', label: TODAY_LABEL }", 'mobile back navigation must fall back to Today.');
 forbid('breadcrumbs', breadcrumbs, '>Workspace</Link>', 'the /workspace route must not be renamed Workspace in breadcrumbs.');
-forbid('breadcrumbs', breadcrumbs, "label: 'Start Page'", 'the /workspace route must not use the ambiguous Start Page alias.');
+forbid('page navigation', pageNavigation, "label: 'Start Page'", 'the /workspace route must not use the ambiguous Start Page alias.');
 
 requireText('application shell', shell, 'aria-label="Open Today workspace"', 'the application brand must identify the role landing as Today.');
 requireText('application shell', shell, '>Go to Today</Link>', 'access-denied recovery must return users to Today.');
