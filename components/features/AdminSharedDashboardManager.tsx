@@ -456,7 +456,7 @@ export function AdminSharedDashboardManager() {
                     )}
                   />
                   <p>
-                    Direct URL: <Link href={`/workspace/dashboards/${encodeURIComponent(selected.slug)}`}>/workspace/dashboards/{selected.slug}</Link>
+                    Shareable route for the authorised target audience: <code>/workspace/dashboards/{selected.slug}</code>
                   </p>
                 </ErpFormSection>
 
