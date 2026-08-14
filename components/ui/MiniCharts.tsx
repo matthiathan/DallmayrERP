@@ -5,8 +5,25 @@ export type ChartPoint = {
   value: number;
 };
 
+const DONUT_SEGMENT_COLORS = [
+  'var(--ui-gold-dark, #6d4b16)',
+  'var(--ui-gold, #b8862f)',
+  'var(--ui-focus, #2563eb)',
+  'var(--ui-success, #2f7d4a)',
+  'var(--ui-warning, #9a6a14)',
+  'var(--ui-danger, #a32222)',
+];
+
+function finiteValue(value: number) {
+  return Number.isFinite(value) ? value : 0;
+}
+
+function nonNegativeValue(value: number) {
+  return Math.max(0, finiteValue(value));
+}
+
 function safeMax(data: ChartPoint[]) {
-  return Math.max(1, ...data.map((item) => item.value));
+  return Math.max(1, ...data.map((item) => nonNegativeValue(item.value)));
 }
 
 export function BarChart({ title, data }: { title: string; data: ChartPoint[] }) {
@@ -15,13 +32,17 @@ export function BarChart({ title, data }: { title: string; data: ChartPoint[] })
     <div className="neo-card chart-card spatial-card">
       <h3>{title}</h3>
       <div className="bar-chart" aria-label={title}>
-        {data.map((item) => (
-          <div className="bar-row" key={item.label}>
-            <span>{item.label}</span>
-            <div className="bar-track"><div className="bar-fill" style={{ width: `${Math.max(4, (item.value / max) * 100)}%` }} /></div>
-            <strong>{item.value.toLocaleString()}</strong>
-          </div>
-        ))}
+        {data.map((item) => {
+          const value = nonNegativeValue(item.value);
+          const width = (value / max) * 100;
+          return (
+            <div className="bar-row" key={item.label}>
+              <span>{item.label}</span>
+              <div className="bar-track"><div className="bar-fill" style={{ width: `${width}%` }} /></div>
+              <strong>{value.toLocaleString()}</strong>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -35,9 +56,10 @@ export function LineChart({ title, data }: { title: string; data: ChartPoint[] }
   const usableWidth = width - padding * 2;
   const usableHeight = height - padding * 2;
   const points = data.map((item, index) => {
+    const value = nonNegativeValue(item.value);
     const x = padding + (data.length <= 1 ? usableWidth / 2 : (index / (data.length - 1)) * usableWidth);
-    const y = padding + usableHeight - (item.value / max) * usableHeight;
-    return { ...item, x, y };
+    const y = padding + usableHeight - (value / max) * usableHeight;
+    return { ...item, value, x, y };
   });
   const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
 
@@ -55,31 +77,42 @@ export function LineChart({ title, data }: { title: string; data: ChartPoint[] }
           </g>
         ))}
       </svg>
-      <div className="chart-legend" aria-hidden="true">{data.map((item) => <div key={item.label}>{item.label}: <strong>{item.value.toLocaleString()}</strong></div>)}</div>
+      <div className="chart-legend" aria-hidden="true">{points.map((item) => <div key={item.label}>{item.label}: <strong>{item.value.toLocaleString()}</strong></div>)}</div>
     </div>
   );
 }
 
 export function DonutChart({ title, data }: { title: string; data: ChartPoint[] }) {
-  const total = data.reduce((sum, item) => sum + item.value, 0) || 1;
+  const values = data.map((item) => ({ ...item, value: nonNegativeValue(item.value) }));
+  const total = values.reduce((sum, item) => sum + item.value, 0);
   let offset = 0;
-  const stops = data.map((item) => {
+  const positiveSegments = values.filter((item) => item.value > 0);
+  const stops = positiveSegments.map((item, index) => {
     const start = offset;
     const end = offset + (item.value / total) * 100;
     offset = end;
-    return `var(--gold${start > 40 ? '-2' : ''}) ${start}% ${end}%`;
+    return `${DONUT_SEGMENT_COLORS[index % DONUT_SEGMENT_COLORS.length]} ${start}% ${end}%`;
   }).join(', ');
+  const background = total > 0
+    ? `conic-gradient(${stops})`
+    : 'var(--content-border, #d8cdbc)';
 
   return (
     <div className="neo-card chart-card spatial-card">
       <h3>{title}</h3>
       <div className="donut-wrap">
-        <div className="donut" style={{ background: `conic-gradient(${stops}, rgba(255,255,255,0.08) 0)` }}>
+        <div className="donut" style={{ background }}>
           <span>{total.toLocaleString()}</span>
         </div>
         <div className="chart-legend">
-          {data.map((item) => (
-            <div key={item.label}><span className="legend-dot" />{item.label}: <strong>{item.value.toLocaleString()}</strong></div>
+          {values.map((item, index) => (
+            <div key={item.label}>
+              <span
+                className="legend-dot"
+                style={{ background: item.value > 0 ? DONUT_SEGMENT_COLORS[index % DONUT_SEGMENT_COLORS.length] : 'var(--content-border, #d8cdbc)' }}
+              />
+              {item.label}: <strong>{item.value.toLocaleString()}</strong>
+            </div>
           ))}
         </div>
       </div>
@@ -93,7 +126,7 @@ export function StatStrip({ data }: { data: ChartPoint[] }) {
       {data.map((item) => (
         <div className="card spatial-card" key={item.label}>
           <div className="nav-heading">{item.label}</div>
-          <div className="kpi-value">{item.value.toLocaleString()}</div>
+          <div className="kpi-value">{nonNegativeValue(item.value).toLocaleString()}</div>
         </div>
       ))}
     </div>
