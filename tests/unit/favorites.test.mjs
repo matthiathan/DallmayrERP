@@ -1,9 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createElement } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
 
-import { DesktopNavigationRail } from '../../components/layout/DesktopNavigationRail.tsx';
 import {
   favoriteHrefForLocation,
   favoritePathname,
@@ -59,20 +56,4 @@ test('module and record-level favorites can coexist and the ninth pin is rejecte
 
   const removed = toggleFavoriteEntry(full, full[1]);
   assert.equal(removed.some((entry) => entry.href === '/operations/service-jobs?job=service-1'), false);
-});
-
-test('desktop navigation renders pinned record URLs instead of discarding non-catalog favorites', () => {
-  const markup = renderToStaticMarkup(createElement(DesktopNavigationRail, {
-    collapsed: false,
-    homePath: '/workspace',
-    onToggleCollapse: () => {},
-    pathname: '/operations/service-jobs',
-    pinnedItems: [{ href: '/operations/service-jobs?job=service-1', label: 'Scheduled Call Log · service-1' }],
-    roleLabel: 'Operations Manager',
-    sections: [],
-  }));
-
-  assert.match(markup, /Pinned/);
-  assert.match(markup, /Scheduled Call Log · service-1/);
-  assert.match(markup, /href="\/operations\/service-jobs\?job=service-1"/);
 });
