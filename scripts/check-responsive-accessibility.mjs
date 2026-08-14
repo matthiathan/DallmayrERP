@@ -153,6 +153,50 @@ requireContracts('Login', login, [
   "autoComplete={isActivate ? 'new-password' : 'current-password'}",
 ]);
 
+const applicationFailureScreen = await source('components/system/ApplicationFailureScreen.tsx');
+requireContracts('Application failure screen', applicationFailureScreen, [
+  "'use client';",
+  'aria-labelledby="application-failure-title"',
+  "aria-live={announceAsAlert ? 'assertive' : 'polite'}",
+  "role={announceAsAlert ? 'alert' : 'status'}",
+  'onClick={handleRetry}',
+  '>Retry',
+  'href="/"',
+  'Return to Dashboard',
+  'Support reference',
+  'provide this reference to ERP support',
+]);
+
+const routeError = await source('app/error.tsx');
+requireContracts('Route error boundary', routeError, [
+  "'use client';",
+  'error: Error & { digest?: string }',
+  'error.digest',
+  'ERP-ROUTE-UNEXPECTED',
+  'onRetry={reset}',
+  'announceAsAlert',
+]);
+
+const globalError = await source('app/global-error.tsx');
+requireContracts('Global error boundary', globalError, [
+  "'use client';",
+  'error: Error & { digest?: string }',
+  'error.digest',
+  'ERP-GLOBAL-UNEXPECTED',
+  '<html lang="en">',
+  '<body',
+  'onRetry={reset}',
+  'announceAsAlert',
+]);
+
+const notFound = await source('app/not-found.tsx');
+requireContracts('Not found boundary', notFound, [
+  'ApplicationFailureScreen',
+  'Page not found',
+  'ERP-404-NOT-FOUND',
+  'tone="warning"',
+]);
+
 const responsive = await source('app/responsive-mobile-tablet.css');
 const responsiveWithoutComments = responsive.replace(/\/\*[\s\S]*?\*\//g, '').trim();
 if (!responsiveWithoutComments.startsWith('@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {')) {
@@ -179,4 +223,4 @@ requireContracts('Canonical readability safety', readability, [
 ]);
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('Responsive/accessibility check passed: keyboard focus, dialog semantics, live status, combobox/table/tab semantics, touch targets and responsive overflow contracts are present.');
+console.log('Responsive/accessibility check passed: keyboard focus, dialog semantics, application failure recovery, live status, combobox/table/tab semantics, touch targets and responsive overflow contracts are present.');
