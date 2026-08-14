@@ -130,7 +130,11 @@ const shortcutCandidates: Array<EnterpriseShortcut & { roles?: BusinessRole[] }>
 export function enterpriseShortcutsForRole(role: BusinessRole): EnterpriseShortcut[] {
   return shortcutCandidates
     .filter((shortcut) => !shortcut.roles || shortcut.roles.includes(role))
-    .map(({ roles: _roles, ...shortcut }) => shortcut);
+    .map((shortcut) => ({
+      key: shortcut.key,
+      label: shortcut.label,
+      ...(shortcut.href ? { href: shortcut.href } : {}),
+    }));
 }
 
 export function shortcutHrefForEvent(
