@@ -241,7 +241,7 @@ async function loadStockContext(stockId: string): Promise<WorkflowContext | null
     usedWork = (usedWorkResult.data ?? []) as WorkRow[];
   }
   const work = sortOpenFirst([...directWork, ...usedWork].filter((row, index, rows) => rows.findIndex((candidate) => candidate.id === row.id) === index));
-  const links = work.slice(0, 3).map((item) => ({ href: connectedRecordHref('work', item.id), label: `Work · ${item.work_number}`, kind: 'work' as const }));
+  const links: WorkflowLink[] = work.slice(0, 3).map((item) => ({ href: connectedRecordHref('work', item.id), label: `Work · ${item.work_number}`, kind: 'work' }));
   if (work[0]?.machine_id) links.push({ href: connectedRecordHref('machine', work[0].machine_id), label: 'Open related machine', kind: 'machine' });
   if (work[0]?.customer_id) links.push({ href: connectedRecordHref('customer', work[0].customer_id), label: 'Open related customer', kind: 'customer' });
   return {
