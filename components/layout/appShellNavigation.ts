@@ -80,12 +80,16 @@ function orderNavigationSections(role: BusinessRole, sections: NavSection[]) {
     .filter((section) => section.items.length > 0);
 }
 
-export function deriveAppShellNavigation(role: BusinessRole, pathname: string) {
-  const homePath = getDefaultPathForRole(role);
+export function canAccessShellPath(role: BusinessRole, pathname: string) {
   const telemetryPathAllowed = pathname === '/telemetry'
     ? role === 'admin' || role === 'executive'
     : pathname.startsWith('/telemetry/devices') && role === 'admin';
-  const allowedPath = canAccessPath(role, pathname) || telemetryPathAllowed;
+  return canAccessPath(role, pathname) || telemetryPathAllowed;
+}
+
+export function deriveAppShellNavigation(role: BusinessRole, pathname: string) {
+  const homePath = getDefaultPathForRole(role);
+  const allowedPath = canAccessShellPath(role, pathname);
   const roleSections = navSections
     .map((section) => ({
       ...section,
