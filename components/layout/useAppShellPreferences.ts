@@ -5,7 +5,7 @@ import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/browserStorage';
 
 const FAVORITES_KEY = 'dallmayr-mobile-favorites-v1';
 const RAIL_COLLAPSED_KEY = 'dallmayr-desktop-rail-collapsed-v1';
-const MAX_FAVORITES = 4;
+const MAX_FAVORITES = 8;
 
 function safeFavoriteList(value: string | null) {
   if (!value) return [];
