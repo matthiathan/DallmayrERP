@@ -1,31 +1,34 @@
 /*
- * Legacy feature manifest.
+ * Transitional feature registry.
  *
- * These files still contain route-specific selectors used by operational,
- * warehouse, customer, administration, mobile and field-service components.
- * Do not add new imports here. Remove an import only after its selectors have
- * been migrated to the canonical component or page-family stylesheets.
+ * Live feature styles are classified under explicit ownership folders while this
+ * registry preserves the approved historical cascade. Import order is contractual:
+ * moving a stylesheet does not authorize changing its selectors, specificity or
+ * position in the cascade.
+ *
+ * Do not add new unclassified/root-level feature imports here. New feature CSS
+ * belongs in ./features, ./page-families, ./themes, or a component-scoped file.
  */
 @import '../globals.css';
-@import '../feature-widgets.css';
-@import '../enterprise-ui.css';
-@import '../stock-control.css';
-@import '../professional-ops.css';
-@import '../minimalist-operations.css';
-@import '../density.css';
-@import '../asset-ticket.css';
-@import '../text-visibility-polish.css';
-@import '../resizable-tables.css';
-@import '../account-menu.css';
-@import '../role-workspace-details.css';
-@import '../reliability-machine-search.css';
-@import '../operations-manager.css';
-@import '../operational-admin-forms.css';
-@import '../appearance-panel.css';
-@import '../appearance-customization.css';
-@import '../field-service-workflow.css';
-@import '../operations-dispatch.css';
-@import '../customer-360.css';
-@import '../operations-exceptions.css';
-@import '../slate-sand-themes.css';
+@import './features/feature-widgets.css';
+@import './features/enterprise-ui.css';
+@import './page-families/stock-control.css';
+@import './page-families/professional-ops.css';
+@import './page-families/minimalist-operations.css';
+@import './features/density.css';
+@import './features/asset-ticket.css';
+@import './features/text-visibility-polish.css';
+@import './features/resizable-tables.css';
+@import './features/account-menu.css';
+@import './page-families/role-workspace-details.css';
+@import './page-families/reliability-machine-search.css';
+@import './page-families/operations-manager.css';
+@import './page-families/operational-admin-forms.css';
+@import './features/appearance-panel.css';
+@import './features/appearance-customization.css';
+@import './page-families/field-service-workflow.css';
+@import './page-families/operations-dispatch.css';
+@import './page-families/customer-360.css';
+@import './page-families/operations-exceptions.css';
+@import './themes/slate-sand-themes.css';
 @import './active-mobile-workspaces.css';
