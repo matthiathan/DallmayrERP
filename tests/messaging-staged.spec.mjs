@@ -51,6 +51,13 @@ async function selectDirectRecipient(page, email) {
   await expect(page.getByLabel('Message', { exact: true })).toBeVisible({ timeout: 15000 });
 }
 
+async function expectSelectedConversationOnline(page) {
+  await expect(
+    page.locator('.messages-v2-chat header').getByText(/· Online$/),
+    'the selected private thread should report the other member online before live delivery is tested',
+  ).toBeVisible({ timeout: 15000 });
+}
+
 async function assertNoHorizontalOverflow(page) {
   const result = await page.evaluate(() => ({
     documentWidth: document.documentElement.scrollWidth,
@@ -77,6 +84,10 @@ test('two authenticated users exchange a committed message through the messaging
     await selectDirectRecipient(pageA, userB.email);
     await pageB.reload();
     await expect(pageB.getByLabel('Message', { exact: true })).toBeVisible({ timeout: 15000 });
+    await Promise.all([
+      expectSelectedConversationOnline(pageA),
+      expectSelectedConversationOnline(pageB),
+    ]);
 
     const marker = `browser-stage-${randomUUID()}`;
     await pageA.getByLabel('Message', { exact: true }).fill(marker);
