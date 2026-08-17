@@ -33,7 +33,7 @@
     "page:title-check": "node scripts/check-page-title-hierarchy.mjs",
     "design-system:check": "node scripts/check-design-system-authority.mjs",
     "prestylecheck": "node scripts/check-retired-shell-navigation.mjs",
-    "stylecheck": "node scripts/check-style-architecture.mjs",
+    "stylecheck": "node scripts/check-style-architecture.mjs && node scripts/check-style-feature-ownership.mjs",
     "mobile:interaction-check": "node scripts/check-mobile-interactions.mjs && node scripts/check-universal-phone.mjs",
     "accessibility:check": "node scripts/check-responsive-accessibility.mjs && node scripts/check-dialog-accessibility.mjs",
     "security:pentest": "node scripts/security-pentest.mjs",

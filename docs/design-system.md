@@ -8,15 +8,26 @@
 import './styles/index.css';
 ```
 
-`app/styles/index.css` is the only registry for application-wide CSS. Its order is deliberate:
+`app/styles/index.css` is the only top-level registry for application-wide CSS. Its order is deliberate:
 
 1. `tokens.css` — stable spacing, typography, sizing, radius, elevation and z-index variables.
-2. Existing foundations and feature styles — retained in their established order while migration continues.
+2. `legacy-feature-manifest.css` — transitional cascade registry while remaining broad legacy selectors are decomposed.
 3. `foundations.css` — reusable layout and component primitives.
-4. Current shell, page-template and Today-workspace systems.
-5. `navigation-contract.css` and `compatibility-overrides.css` — explicit final contracts.
+4. `legacy-layout-manifest.css` — remaining active layout/safety boundaries only.
+5. `application.css` — current shell, route-family and responsive visual authority.
 
-Do not add another CSS import to `app/layout.tsx`. Register new global styles in `app/styles/index.css` and place them in the correct group.
+Do not add another CSS import to `app/layout.tsx`.
+
+## CSS ownership
+
+New and migrated styles must have an explicit owner:
+
+- `app/styles/features/` for reusable feature presentation and shared interaction surfaces.
+- `app/styles/page-families/` for workflow/route-family presentation.
+- `app/styles/themes/` for required theme compatibility.
+- component- or route-scoped stylesheets when the selectors have a single clear owner.
+
+Do not create new root-level `app/*.css` feature files. The remaining `app/globals.css` is transitional and should be decomposed separately because it mixes old global element, shell and component selectors.
 
 ## Tokens
 
@@ -33,11 +44,11 @@ Primary groups:
 - motion: `--ds-duration-*` and `--ds-ease-standard`
 - semantic theme aliases: `--ds-surface`, `--ds-text`, `--ds-border`, `--ds-accent`, `--ds-focus`
 
-Slate Modern and Warm Sand continue to provide the underlying colour values through the existing appearance variables.
+Slate Modern and Warm Sand continue to provide underlying appearance values through the active appearance system.
 
 ## CSS primitives
 
-`app/styles/foundations.css` provides:
+`app/styles/foundations.css` provides shared primitives such as:
 
 - `.ds-stack`
 - `.ds-cluster`
@@ -68,14 +79,12 @@ The shared `PageToolbar` uses these primitives. New workspace components should 
 
 ## Compatibility policy
 
-Do not create new files named `*-final.css`. When a feature needs a late compatibility rule:
+Do not create new files named `*-final.css` and do not add another blanket override layer. When a compatibility rule is needed:
 
-1. Prefer fixing the owning component or feature stylesheet.
+1. Prefer fixing the owning component or canonical feature/page-family stylesheet.
 2. Use a shared primitive or token where possible.
-3. Only use `app/styles/compatibility-overrides.css` when the rule genuinely spans legacy systems.
-4. Record the selector and the reason in that file.
-
-The previous adaptive-contrast, mobile-layout and navigation `*-final.css` files were migrated into named contracts.
+3. Keep unavoidable compatibility selectors beside the feature that owns them.
+4. Document why broad compatibility is still necessary before adding it to a global authority layer.
 
 ## Automated enforcement
 
@@ -85,13 +94,12 @@ Run:
 npm run stylecheck
 ```
 
-The check verifies that:
+The checks verify that:
 
-- `app/layout.tsx` has one CSS import.
-- the import is `./styles/index.css`.
-- the stylesheet registry contains no duplicates.
-- no `*-final.css` file is registered.
-- required design-system files are present.
-- every registered local stylesheet resolves to an existing file.
+- `app/layout.tsx` has exactly one CSS import and it is `./styles/index.css`.
+- the registered stylesheet graph resolves without cycles or duplicate imports.
+- current desktop and responsive authority order is intact.
+- migrated live feature CSS remains under canonical ownership folders.
+- retired root-level feature paths cannot be reintroduced silently.
 
-CI runs this check before TypeScript validation and the production build.
+CI runs these checks before TypeScript validation and the production build.
