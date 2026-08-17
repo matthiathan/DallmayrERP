@@ -1,40 +1,15 @@
 /*
  * Canonical DallmayrERP application stylesheet.
  *
- * Desktop composition is owned by the stabilization contract plus the approved
- * reference layout and professional UI system. Concentrix-derived shell, dashboard,
- * operational, specialist, access-entry, execution-detail and final-audit layers
- * then adapt the desktop presentation. Canonical shell utilities own cross-route
- * overlays such as the notification inbox. Responsive work for phones and touch
- * tablets remains the final authority.
+ * The global application cascade has three explicit authorities. Their internal
+ * leaf order is contractual and validated by stylecheck:
+ * 1. base composition and shared compatibility
+ * 2. desktop authority
+ * 3. responsive authority
+ *
+ * Add visual rules to the owning stylesheet. Do not add ad-hoc fix/final layers
+ * directly to this registry.
  */
-@import '../full-application-rebuild.css';
-@import '../route-composition-system.css';
-@import '../dashboard-role-workspace-rebuild.css';
-@import '../final-route-family-rebuild.css';
-@import '../navigation-contrast-phase-1.css';
-@import '../page-cleanup-phase-4.css';
-@import '../component-library-phase-3.css';
-@import '../canonical-component-utilities.css';
-@import '../canonical-dialog.css';
-@import '../ui-stabilization-contract.css';
-@import '../canonical-navigation-baseline.css';
-@import '../canonical-appearance-runtime.css';
-@import '../desktop-reference-layout.css';
-@import '../desktop-layout-regression-fixes.css';
-@import '../professional-ui-system.css';
-@import '../concentrix-dallmayr-shell.css';
-@import '../concentrix-dallmayr-dashboard.css';
-@import '../concentrix-operational-pages.css';
-@import '../concentrix-specialist-workspaces.css';
-@import '../concentrix-access-entry.css';
-@import '../concentrix-execution-details.css';
-@import '../concentrix-final-audit.css';
-@import '../canonical-shell-utilities.css';
-@import '../responsive-runtime-authority.css';
-@import '../responsive-mobile-interactions.css';
-@import '../professional-finish.css';
-@import '../professional-finish-details.css';
-@import '../compact-desktop-authority.css';
-@import './connected-workflow-strip.css';
-@import '../responsive-mobile-tablet.css';
+@import './application/base.css';
+@import './application/desktop.css';
+@import './application/responsive.css';
