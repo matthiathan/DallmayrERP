@@ -132,6 +132,8 @@ ANDROID_SERIAL="DEVICE_SERIAL" npm run mobile:install:android:release
 
 The installer uses `adb install -r` and then verifies that `za.co.dallmayr.erp` is present on the selected device.
 
+If replacement fails because a previous debug build was signed with a different key (or because the installed version code is newer), the helper stops and **does not uninstall the existing app**. Before any manual uninstall, confirm that the current installation has no unsynced closures or evidence because uninstalling Android application data would erase that local outbox.
+
 ## CI versus field-test packages
 
 The normal GitHub CI Android job is a compile/readiness gate and uses a non-production placeholder native key. **Do not use that debug CI build for technician acceptance or production testing.** Field acceptance must use the locally generated, preflight-validated signed release APK described above.
