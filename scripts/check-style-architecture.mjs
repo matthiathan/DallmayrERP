@@ -17,6 +17,10 @@ function cssImports(source) {
   return [...source.matchAll(/@import\s+['"]([^'"]+\.css)['"];?/g)].map((match) => match[1]);
 }
 
+function repoPath(filePath) {
+  return path.relative(root, filePath).split(path.sep).join('/');
+}
+
 const layout = await readFile(layoutPath, 'utf8');
 const layoutCssImports = [...layout.matchAll(/import\s+['"]([^'"]+\.css)['"];?/g)].map((match) => match[1]);
 if (layoutCssImports.length !== 1 || layoutCssImports[0] !== './styles/index.css') {
@@ -41,7 +45,7 @@ const activeStack = new Set();
 async function validateStylesheet(filePath) {
   const normalized = path.normalize(filePath);
   if (activeStack.has(normalized)) {
-    fail(`Stylesheet import cycle detected at ${path.relative(root, normalized)}.`);
+    fail(`Stylesheet import cycle detected at ${repoPath(normalized)}.`);
     return;
   }
   if (visited.has(normalized)) return;
@@ -53,13 +57,14 @@ async function validateStylesheet(filePath) {
     await access(normalized);
     source = await readFile(normalized, 'utf8');
   } catch {
-    fail(`Stylesheet ${path.relative(root, normalized)} does not exist or cannot be read.`);
+    fail(`Stylesheet ${repoPath(normalized)} does not exist or cannot be read.`);
     activeStack.delete(normalized);
     return;
   }
 
+  if (/-final\.css$/i.test(normalized)) fail(`Compatibility stylesheet ${repoPath(normalized)} must not use the retired *-final.css naming pattern.`);
   const imports = cssImports(source);
-  if (new Set(imports).size !== imports.length) fail(`${path.relative(root, normalized)} contains duplicate imports.`);
+  if (new Set(imports).size !== imports.length) fail(`${repoPath(normalized)} contains duplicate imports.`);
   for (const importPath of imports) await validateStylesheet(path.resolve(path.dirname(normalized), importPath));
   activeStack.delete(normalized);
 }
@@ -70,7 +75,7 @@ for (const manifestPath of [
   path.join(stylesDirectory, 'legacy-layout-manifest.css'),
 ]) {
   const source = await readFile(manifestPath, 'utf8');
-  if (!source.includes('Do not add new')) fail(`${path.relative(root, manifestPath)} must retain its quarantine guidance.`);
+  if (!source.includes('Do not add new')) fail(`${repoPath(manifestPath)} must retain its quarantine/ownership guidance.`);
 }
 
 const legacyLayoutSource = await readFile(path.join(stylesDirectory, 'legacy-layout-manifest.css'), 'utf8');
@@ -86,9 +91,7 @@ for (const retiredLayout of [
   "@import './navigation-contract.css'",
   "@import './compatibility-overrides.css'",
 ]) {
-  if (legacyLayoutSource.includes(retiredLayout)) {
-    fail(`Retired layout programme ${retiredLayout} must not be registered in legacy-layout-manifest.css.`);
-  }
+  if (legacyLayoutSource.includes(retiredLayout)) fail(`Retired layout programme ${retiredLayout} must not be registered in legacy-layout-manifest.css.`);
 }
 
 const expectedActiveLayoutImports = [
@@ -102,75 +105,71 @@ if (JSON.stringify(legacyLayoutImports) !== JSON.stringify(expectedActiveLayoutI
   fail(`legacy-layout-manifest.css must contain only the active feature/safety boundaries ${JSON.stringify(expectedActiveLayoutImports)}; found ${JSON.stringify(legacyLayoutImports)}.`);
 }
 
+const expectedApplicationManifests = [
+  './application/base.css',
+  './application/desktop.css',
+  './application/responsive.css',
+];
 const applicationSource = await readFile(applicationPath, 'utf8');
 const applicationImports = cssImports(applicationSource);
-const requiredDesktopImports = [
-  '../full-application-rebuild.css',
-  '../route-composition-system.css',
-  '../dashboard-role-workspace-rebuild.css',
-  '../final-route-family-rebuild.css',
-  '../navigation-contrast-phase-1.css',
-  '../page-cleanup-phase-4.css',
-  '../component-library-phase-3.css',
-  '../ui-stabilization-contract.css',
-  '../desktop-reference-layout.css',
-  '../desktop-layout-regression-fixes.css',
-  '../professional-ui-system.css',
-  '../concentrix-dallmayr-shell.css',
-  '../concentrix-dallmayr-dashboard.css',
-  '../concentrix-operational-pages.css',
-  '../concentrix-specialist-workspaces.css',
-  '../concentrix-access-entry.css',
-  '../concentrix-execution-details.css',
-  '../concentrix-final-audit.css',
-  '../canonical-shell-utilities.css',
+if (JSON.stringify(applicationImports) !== JSON.stringify(expectedApplicationManifests)) {
+  fail(`app/styles/application.css must contain only the ordered application authorities ${JSON.stringify(expectedApplicationManifests)}; found ${JSON.stringify(applicationImports)}.`);
+}
+
+const expectedApplicationLeaves = [
+  'app/full-application-rebuild.css',
+  'app/route-composition-system.css',
+  'app/dashboard-role-workspace-rebuild.css',
+  'app/final-route-family-rebuild.css',
+  'app/navigation-contrast-phase-1.css',
+  'app/page-cleanup-phase-4.css',
+  'app/component-library-phase-3.css',
+  'app/canonical-component-utilities.css',
+  'app/canonical-dialog.css',
+  'app/ui-stabilization-contract.css',
+  'app/canonical-navigation-baseline.css',
+  'app/canonical-appearance-runtime.css',
+  'app/desktop-reference-layout.css',
+  'app/desktop-layout-regression-fixes.css',
+  'app/professional-ui-system.css',
+  'app/concentrix-dallmayr-shell.css',
+  'app/concentrix-dallmayr-dashboard.css',
+  'app/concentrix-operational-pages.css',
+  'app/concentrix-specialist-workspaces.css',
+  'app/concentrix-access-entry.css',
+  'app/concentrix-execution-details.css',
+  'app/concentrix-final-audit.css',
+  'app/canonical-shell-utilities.css',
+  'app/responsive-runtime-authority.css',
+  'app/responsive-mobile-interactions.css',
+  'app/professional-finish.css',
+  'app/professional-finish-details.css',
+  'app/compact-desktop-authority.css',
+  'app/styles/connected-workflow-strip.css',
+  'app/responsive-mobile-tablet.css',
 ];
-for (const requiredImport of requiredDesktopImports) {
-  if (!applicationImports.includes(requiredImport)) fail(`app/styles/application.css is missing ${requiredImport}.`);
+const applicationLeaves = [];
+for (const manifestImport of expectedApplicationManifests) {
+  const manifestPath = path.resolve(path.dirname(applicationPath), manifestImport);
+  const manifestSource = await readFile(manifestPath, 'utf8');
+  for (const leafImport of cssImports(manifestSource)) {
+    applicationLeaves.push(repoPath(path.resolve(path.dirname(manifestPath), leafImport)));
+  }
 }
-
-const desktopReferenceIndex = applicationImports.indexOf('../desktop-reference-layout.css');
-const desktopFixIndex = applicationImports.indexOf('../desktop-layout-regression-fixes.css');
-const professionalUiIndex = applicationImports.indexOf('../professional-ui-system.css');
-const concentrixShellIndex = applicationImports.indexOf('../concentrix-dallmayr-shell.css');
-const concentrixDashboardIndex = applicationImports.indexOf('../concentrix-dallmayr-dashboard.css');
-const concentrixOperationalIndex = applicationImports.indexOf('../concentrix-operational-pages.css');
-const concentrixSpecialistIndex = applicationImports.indexOf('../concentrix-specialist-workspaces.css');
-const concentrixAccessIndex = applicationImports.indexOf('../concentrix-access-entry.css');
-const concentrixExecutionIndex = applicationImports.indexOf('../concentrix-execution-details.css');
-const concentrixFinalAuditIndex = applicationImports.indexOf('../concentrix-final-audit.css');
-const shellUtilitiesIndex = applicationImports.indexOf('../canonical-shell-utilities.css');
-const responsiveAuthorityIndex = applicationImports.indexOf('../responsive-runtime-authority.css');
-if (!(
-  desktopReferenceIndex >= 0
-  && desktopFixIndex === desktopReferenceIndex + 1
-  && professionalUiIndex === desktopFixIndex + 1
-  && concentrixShellIndex === professionalUiIndex + 1
-  && concentrixDashboardIndex === concentrixShellIndex + 1
-  && concentrixOperationalIndex === concentrixDashboardIndex + 1
-  && concentrixSpecialistIndex === concentrixOperationalIndex + 1
-  && concentrixAccessIndex === concentrixSpecialistIndex + 1
-  && concentrixExecutionIndex === concentrixAccessIndex + 1
-  && concentrixFinalAuditIndex === concentrixExecutionIndex + 1
-  && shellUtilitiesIndex === concentrixFinalAuditIndex + 1
-  && responsiveAuthorityIndex === shellUtilitiesIndex + 1
-)) {
-  fail('Desktop reference/fixes/professional UI, Concentrix migration layers and canonical shell utilities must load consecutively before responsive authority.');
+if (JSON.stringify(applicationLeaves) !== JSON.stringify(expectedApplicationLeaves)) {
+  fail(`Application authority manifests must preserve the approved flattened cascade ${JSON.stringify(expectedApplicationLeaves)}; found ${JSON.stringify(applicationLeaves)}.`);
 }
-
-const responsiveImport = '../responsive-mobile-tablet.css';
-if (applicationImports.at(-1) !== responsiveImport) {
-  fail(`The unified responsive contract must be the final application import; found ${applicationImports.at(-1)}.`);
+if (applicationLeaves.at(-1) !== 'app/responsive-mobile-tablet.css') {
+  fail(`The unified responsive contract must remain the final application leaf; found ${applicationLeaves.at(-1)}.`);
 }
-
-for (const retiredImport of [
-  '../mobile-functional-experience.css',
-  '../mobile-menu-stacking-fix.css',
-  '../mobile-overhaul.css',
-  '../mobile-universal-phone.css',
-  '../mobile-browser-native.css',
+for (const retiredLeaf of [
+  'app/mobile-functional-experience.css',
+  'app/mobile-menu-stacking-fix.css',
+  'app/mobile-overhaul.css',
+  'app/mobile-universal-phone.css',
+  'app/mobile-browser-native.css',
 ]) {
-  if (applicationImports.includes(retiredImport)) fail(`Retired responsive layer ${retiredImport} must not be registered.`);
+  if (applicationLeaves.includes(retiredLeaf)) fail(`Retired responsive layer ${retiredLeaf} must not be registered.`);
 }
 
 const tokenSource = await readFile(path.join(stylesDirectory, 'tokens.css'), 'utf8');
@@ -363,4 +362,4 @@ for (const requiredRule of [
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered with obsolete shell/full-app/page-template/navigation/compatibility programmes retired, active feature layouts explicitly bundled, semantic/readability safety isolated, and canonical Concentrix plus final mobile/tablet ownership enforced.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered, application cascade grouped into base/desktop/responsive authorities with exact leaf order preserved, retired compatibility programmes excluded, and final mobile/tablet ownership enforced.`);
