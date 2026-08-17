@@ -1,13 +1,14 @@
 import { readFile } from 'node:fs/promises';
 import process from 'node:process';
 
-const [page, secureWorkspace, envExample, hardeningMigration, localWorkflow, seedScript] = await Promise.all([
+const [page, secureWorkspace, envExample, hardeningMigration, localWorkflow, seedScript, nextConfig] = await Promise.all([
   readFile('app/work/messages/page.tsx', 'utf8'),
   readFile('components/features/SecureInternalMessagingWorkspace.tsx', 'utf8'),
   readFile('.env.example', 'utf8'),
   readFile('supabase/migrations/20260812083000_harden_internal_messaging_phase_1.sql', 'utf8'),
   readFile('.github/workflows/internal-messaging-staged.yml', 'utf8'),
   readFile('scripts/seed-local-messaging-users.mjs', 'utf8'),
+  readFile('next.config.ts', 'utf8'),
 ]);
 
 function fail(message) {
@@ -85,6 +86,14 @@ if (!sendBlock || /['"]body['"]/.test(sendBlock)) {
   fail('the committed-message Realtime payload must exist and must not contain a message body field.');
 }
 
+if (!nextConfig.includes("if (url.protocol === 'https:') url.protocol = 'wss:';") ||
+    !nextConfig.includes("else if (url.protocol === 'http:') url.protocol = 'ws:';")) {
+  fail('Supabase CSP Realtime origins must map HTTPS to WSS and HTTP to WS.');
+}
+if (!nextConfig.includes('supabaseRealtimeOrigin') || !nextConfig.includes('connectSources')) {
+  fail('the protocol-matched Supabase Realtime origin must be included in CSP connect-src.');
+}
+
 if (!localWorkflow.includes('Internal Messaging Local Full-Stack Validation')) {
   fail('authenticated messaging validation must run against an ephemeral local Supabase full stack.');
 }
@@ -114,5 +123,5 @@ if (/supabase\.co/.test(seedScript)) {
 }
 
 if (!process.exitCode) {
-  console.log('Internal messaging security contracts passed: fail-closed feature flag, minimal directory RPC, private thread Realtime, scoped membership refresh, body-free signals and zero-cost loopback-only full-stack validation are enforced.');
+  console.log('Internal messaging security contracts passed: fail-closed feature flag, minimal directory RPC, private thread Realtime, scoped membership refresh, body-free signals, protocol-matched CSP and zero-cost loopback-only full-stack validation are enforced.');
 }
