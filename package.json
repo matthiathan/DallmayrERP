@@ -42,7 +42,8 @@
     "mobile:prepare": "node scripts/prepare-mobile-field.mjs",
     "mobile:release:preflight": "node scripts/check-android-release-preflight.mjs",
     "mobile:bundle:android": "node scripts/build-android-release.mjs",
-    "native:check": "node --check scripts/check-android-release-preflight.mjs && node --check scripts/build-android-release.mjs && node scripts/check-native-readiness.mjs"
+    "mobile:install:android:release": "node scripts/install-android-release.mjs",
+    "native:check": "node --check scripts/check-android-release-preflight.mjs && node --check scripts/build-android-release.mjs && node --check scripts/install-android-release.mjs && node scripts/check-native-readiness.mjs"
   },
   "dependencies": {
     "@capacitor/android": "8.5.0",
