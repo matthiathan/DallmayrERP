@@ -3,11 +3,12 @@ import path from 'node:path';
 import process from 'node:process';
 
 const root = process.cwd();
-const [search, mobile, responsive, application, hygiene] = await Promise.all([
+const [search, mobile, responsive, application, responsiveAuthority, hygiene] = await Promise.all([
   readFile(path.join(root, 'components', 'ui', 'GlobalSearch.tsx'), 'utf8'),
   readFile(path.join(root, 'components', 'layout', 'MobileNavigation.tsx'), 'utf8'),
   readFile(path.join(root, 'app', 'responsive-mobile-tablet.css'), 'utf8'),
   readFile(path.join(root, 'app', 'styles', 'application.css'), 'utf8'),
+  readFile(path.join(root, 'app', 'styles', 'application', 'responsive.css'), 'utf8'),
   readFile(path.join(root, 'components', 'layout', 'MobileBrowserHygiene.tsx'), 'utf8'),
 ]);
 
@@ -29,9 +30,13 @@ requireSource(mobile, /event\.key === 'Escape'/, 'Responsive navigation must clo
 requireSource(mobile, /event\.key !== 'Tab'/, 'Responsive navigation must trap keyboard focus.');
 requireSource(mobile, /window\.dispatchEvent\(new Event\(OPEN_SEARCH_EVENT\)\)/, 'Bottom Search must open Global Search directly.');
 
-requireSource(application, /@import ['"]\.\.\/responsive-mobile-tablet\.css['"];/, 'Unified responsive stylesheet must be registered.');
+requireSource(application, /@import ['"]\.\/application\/responsive\.css['"];/, 'Application registry must delegate responsive ownership to the responsive authority manifest.');
+requireSource(responsiveAuthority, /@import ['"]\.\.\/\.\.\/responsive-mobile-tablet\.css['"];/, 'Unified responsive stylesheet must be registered by the responsive authority.');
+if (!responsiveAuthority.trim().endsWith("@import '../../responsive-mobile-tablet.css';")) {
+  failures.push('Unified responsive stylesheet must remain the final responsive authority import.');
+}
 for (const retired of ['mobile-functional-experience.css', 'mobile-menu-stacking-fix.css', 'mobile-overhaul.css', 'mobile-universal-phone.css', 'mobile-browser-native.css']) {
-  if (application.includes(retired)) failures.push(`Retired responsive stylesheet ${retired} is still registered.`);
+  if (application.includes(retired) || responsiveAuthority.includes(retired)) failures.push(`Retired responsive stylesheet ${retired} is still registered.`);
 }
 
 requireSource(responsive, /^\/\*[\s\S]*@media \(max-width: 900px\), \(max-width: 1366px\) and \(hover: none\) and \(pointer: coarse\) \{/m, 'Responsive contract must cover phones plus touch tablets.');
@@ -57,4 +62,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Responsive interaction contract passed: phones and touch tablets use one portal/navigation/search/form/table/messaging contract while desktop styles remain isolated.');
+console.log('Responsive interaction contract passed: phones and touch tablets use one portal/navigation/search/form/table/messaging contract through the explicit responsive authority while desktop styles remain isolated.');

@@ -3,10 +3,11 @@ import path from 'node:path';
 import process from 'node:process';
 
 const root = process.cwd();
-const [responsive, authority, application, hygiene] = await Promise.all([
+const [responsive, authority, application, responsiveManifest, hygiene] = await Promise.all([
   readFile(path.join(root, 'app', 'responsive-mobile-tablet.css'), 'utf8'),
   readFile(path.join(root, 'app', 'responsive-runtime-authority.css'), 'utf8'),
   readFile(path.join(root, 'app', 'styles', 'application.css'), 'utf8'),
+  readFile(path.join(root, 'app', 'styles', 'application', 'responsive.css'), 'utf8'),
   readFile(path.join(root, 'components', 'layout', 'MobileBrowserHygiene.tsx'), 'utf8'),
 ]);
 
@@ -15,9 +16,10 @@ function requireText(source, text, message) {
   if (!source.includes(text)) failures.push(message);
 }
 
-requireText(application, "@import '../responsive-mobile-tablet.css';", 'Unified responsive CSS must be registered.');
-if (!application.trim().endsWith("@import '../responsive-mobile-tablet.css';")) {
-  failures.push('Unified responsive CSS must remain the final application import.');
+requireText(application, "@import './application/responsive.css';", 'Application registry must delegate responsive ownership to the responsive manifest.');
+requireText(responsiveManifest, "@import '../../responsive-mobile-tablet.css';", 'Unified responsive CSS must be registered by the responsive authority.');
+if (!responsiveManifest.trim().endsWith("@import '../../responsive-mobile-tablet.css';")) {
+  failures.push('Unified responsive CSS must remain the final responsive authority import.');
 }
 
 requireText(responsive, '@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse)', 'Responsive CSS must cover phones and touch tablets.');
@@ -51,4 +53,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Responsive coverage contract passed: phones, tablets, native scrolling, desktop palette authority, narrow-phone dashboard density, navigation, search, forms, tables, messaging and safe areas are covered.');
+console.log('Responsive coverage contract passed: phones, tablets, native scrolling, desktop palette authority, narrow-phone dashboard density, navigation, search, forms, tables, messaging and safe areas are covered through the explicit responsive authority.');

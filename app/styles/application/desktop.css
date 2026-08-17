@@ -1,0 +1,17 @@
+/*
+ * Desktop application authority.
+ *
+ * The approved desktop reference, compatibility fixes, professional UI and
+ * Concentrix-derived authorities load consecutively here. Keep order stable.
+ */
+@import '../../desktop-reference-layout.css';
+@import '../../desktop-layout-regression-fixes.css';
+@import '../../professional-ui-system.css';
+@import '../../concentrix-dallmayr-shell.css';
+@import '../../concentrix-dallmayr-dashboard.css';
+@import '../../concentrix-operational-pages.css';
+@import '../../concentrix-specialist-workspaces.css';
+@import '../../concentrix-access-entry.css';
+@import '../../concentrix-execution-details.css';
+@import '../../concentrix-final-audit.css';
+@import '../../canonical-shell-utilities.css';

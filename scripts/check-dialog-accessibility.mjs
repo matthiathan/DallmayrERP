@@ -21,6 +21,7 @@ const dialog = await source('components/ui/AccessibleDialog.tsx');
 const quickAccess = await source('components/layout/EnterpriseProductivityHub.tsx');
 const dialogStyles = await source('app/canonical-dialog.css');
 const applicationStyles = await source('app/styles/application.css');
+const baseAuthority = await source('app/styles/application/base.css');
 
 for (const [expected, message] of [
   ["import { createPortal } from 'react-dom';", 'must render outside the inert application background.'],
@@ -72,16 +73,28 @@ for (const expected of [
 ]) requireText('Canonical dialog styles', dialogStyles, expected, `missing ${expected}.`);
 
 requireText(
-  'Application stylesheet',
-  applicationStyles,
-  "@import '../canonical-dialog.css';",
+  'Base application authority',
+  baseAuthority,
+  "@import '../../canonical-dialog.css';",
   'must register the canonical dialog stylesheet.',
 );
+requireText(
+  'Application stylesheet',
+  applicationStyles,
+  "@import './application/base.css';",
+  'must register the base authority containing canonical dialog styles.',
+);
+requireText(
+  'Application stylesheet',
+  applicationStyles,
+  "@import './application/responsive.css';",
+  'must register the final responsive authority.',
+);
 
-const dialogImport = applicationStyles.indexOf("@import '../canonical-dialog.css';");
-const responsiveImport = applicationStyles.lastIndexOf("@import '../responsive-mobile-tablet.css';");
-if (dialogImport === -1 || responsiveImport === -1 || dialogImport > responsiveImport) {
-  failures.push('Application stylesheet: canonical dialog styles must load before the final responsive authority.');
+const baseImport = applicationStyles.indexOf("@import './application/base.css';");
+const responsiveImport = applicationStyles.indexOf("@import './application/responsive.css';");
+if (baseImport === -1 || responsiveImport === -1 || baseImport > responsiveImport) {
+  failures.push('Application stylesheet: base authority containing canonical dialog styles must load before responsive authority.');
 }
 
 if (failures.length) {
@@ -90,4 +103,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Dialog accessibility contract passed: modal semantics, focus containment, background isolation, scroll lock and focus restoration are enforced.');
+console.log('Dialog accessibility contract passed: modal semantics, focus containment, background isolation, scroll lock, focus restoration and base-before-responsive stylesheet ownership are enforced.');
