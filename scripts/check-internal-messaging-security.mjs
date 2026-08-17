@@ -36,8 +36,19 @@ if (!secureWorkspace.includes('thread:${')) {
 if (secureWorkspace.includes('internal-messaging-presence')) {
   fail('the legacy shared presence channel must not return.');
 }
-if (/['"]postgres_changes['"]/.test(secureWorkspace)) {
-  fail('the secure client must not subscribe to broad postgres_changes feeds.');
+
+const postgresChangeCount = (secureWorkspace.match(/['"]postgres_changes['"]/g) ?? []).length;
+if (postgresChangeCount > 1) {
+  fail('the secure client may use only one scoped membership postgres_changes subscription.');
+}
+if (postgresChangeCount === 1) {
+  if (!secureWorkspace.includes("table: 'message_thread_members'") ||
+      !secureWorkspace.includes('filter: `user_id=eq.${businessUser.id}`')) {
+    fail('the only permitted postgres_changes subscription must be filtered to the current user membership row.');
+  }
+  if (/['"]postgres_changes['"][\s\S]{0,240}table:\s*['"](?:messages|message_threads)['"]/.test(secureWorkspace)) {
+    fail('broad message or thread postgres_changes subscriptions must not return.');
+  }
 }
 if (!secureWorkspace.includes('message_committed')) {
   fail('the secure client must reconcile committed-message signals from Postgres.');
@@ -66,5 +77,5 @@ if (!stagedWorkflow.includes('authenticated staged validation is intentionally s
 }
 
 if (!process.exitCode) {
-  console.log('Internal messaging security contracts passed: fail-closed flag, private thread channels, body-free signals and staging isolation are enforced.');
+  console.log('Internal messaging security contracts passed: fail-closed flag, private thread channels, scoped membership refresh, body-free signals and staging isolation are enforced.');
 }
