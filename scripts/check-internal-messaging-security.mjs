@@ -1,12 +1,13 @@
 import { readFile } from 'node:fs/promises';
 import process from 'node:process';
 
-const [page, secureWorkspace, envExample, hardeningMigration, stagedWorkflow] = await Promise.all([
+const [page, secureWorkspace, envExample, hardeningMigration, localWorkflow, seedScript] = await Promise.all([
   readFile('app/work/messages/page.tsx', 'utf8'),
   readFile('components/features/SecureInternalMessagingWorkspace.tsx', 'utf8'),
   readFile('.env.example', 'utf8'),
   readFile('supabase/migrations/20260812083000_harden_internal_messaging_phase_1.sql', 'utf8'),
   readFile('.github/workflows/internal-messaging-staged.yml', 'utf8'),
+  readFile('scripts/seed-local-messaging-users.mjs', 'utf8'),
 ]);
 
 function fail(message) {
@@ -53,7 +54,22 @@ if (postgresChangeCount === 1) {
 if (!secureWorkspace.includes('message_committed')) {
   fail('the secure client must reconcile committed-message signals from Postgres.');
 }
+if (!secureWorkspace.includes("rpc('list_internal_messaging_directory')")) {
+  fail('the secure client must load its employee directory through the minimal messaging directory RPC.');
+}
+if (/\.from\(['"](?:users|user_details)['"]\)/.test(secureWorkspace)) {
+  fail('the secure messaging client must not bypass employee-profile RLS with direct users/user_details directory reads.');
+}
 
+if (!hardeningMigration.includes('list_internal_messaging_directory')) {
+  fail('the hardening migration must define the minimal active-employee messaging directory RPC.');
+}
+if (!hardeningMigration.includes('returns table(') ||
+    !hardeningMigration.includes('user_id uuid') ||
+    !hardeningMigration.includes('first_name text') ||
+    !hardeningMigration.includes('last_name text')) {
+  fail('the messaging directory RPC must expose only its minimal addressing shape.');
+}
 if (!hardeningMigration.includes('internal_messaging_realtime_thread_read') ||
     !hardeningMigration.includes('internal_messaging_realtime_thread_write')) {
   fail('the hardening migration must authorize private Realtime thread topics.');
@@ -69,13 +85,34 @@ if (!sendBlock || /['"]body['"]/.test(sendBlock)) {
   fail('the committed-message Realtime payload must exist and must not contain a message body field.');
 }
 
-if (!stagedWorkflow.includes('https://egbiiizxsqlarqpnzxxs.supabase.co')) {
-  fail('staged validation must explicitly refuse the production Supabase URL.');
+if (!localWorkflow.includes('Internal Messaging Local Full-Stack Validation')) {
+  fail('authenticated messaging validation must run against an ephemeral local Supabase full stack.');
 }
-if (!stagedWorkflow.includes('authenticated staged validation is intentionally skipped')) {
-  fail('staged validation must clearly distinguish missing staging inputs from a functional pass.');
+if (!localWorkflow.includes('supabase/setup-cli@v1') || !localWorkflow.includes('version: 2.111.0')) {
+  fail('the local full-stack validation must use the pinned Supabase CLI.');
+}
+if (!localWorkflow.includes('supabase start') || !localWorkflow.includes('supabase stop --no-backup')) {
+  fail('the local full-stack validation must create and destroy its disposable Supabase stack.');
+}
+if (!localWorkflow.includes('http://127.0.0.1:') || !localWorkflow.includes('Refusing non-local Supabase API URL')) {
+  fail('the local full-stack validation must enforce loopback-only Supabase endpoints.');
+}
+if (/\$\{\{\s*secrets\./.test(localWorkflow)) {
+  fail('zero-cost local messaging validation must not depend on repository or environment secrets.');
+}
+if (localWorkflow.includes('egbiiizxsqlarqpnzxxs.supabase.co')) {
+  fail('the zero-cost local messaging workflow must never target the production Supabase project.');
+}
+if (!localWorkflow.includes('validate-staged-messaging.mjs') || !localWorkflow.includes('messaging-staged.spec.mjs')) {
+  fail('the local full-stack workflow must execute authenticated backend/Realtime and browser acceptance tests.');
+}
+if (!seedScript.includes('auth.admin.createUser')) {
+  fail('the local full-stack test must create real synthetic Supabase Auth users.');
+}
+if (/supabase\.co/.test(seedScript)) {
+  fail('the local synthetic-user seed script must not contain a hosted Supabase endpoint.');
 }
 
 if (!process.exitCode) {
-  console.log('Internal messaging security contracts passed: fail-closed flag, private thread channels, scoped membership refresh, body-free signals and staging isolation are enforced.');
+  console.log('Internal messaging security contracts passed: fail-closed feature flag, minimal directory RPC, private thread Realtime, scoped membership refresh, body-free signals and zero-cost loopback-only full-stack validation are enforced.');
 }

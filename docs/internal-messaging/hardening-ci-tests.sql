@@ -9,6 +9,30 @@ select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000001
 select public.create_direct_message_thread('00000000-0000-0000-0000-000000000002') as direct_thread \gset
 reset role;
 
+-- The messaging directory is available to an active ERP caller, contains active
+-- colleagues, excludes inactive users and exposes only the intentionally minimal
+-- addressing fields defined by the RPC return type.
+set role authenticated;
+select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000001', false);
+select 1 / case when (
+  select count(*) = 4
+  from public.list_internal_messaging_directory()
+) then 1 else 0 end;
+select 1 / case when exists (
+  select 1
+  from public.list_internal_messaging_directory()
+  where user_id = '00000000-0000-0000-0000-000000000002'::uuid
+    and email = 'member-b@example.invalid'
+    and first_name = 'Member'
+    and last_name = 'B'
+) then 1 else 0 end;
+select 1 / case when not exists (
+  select 1
+  from public.list_internal_messaging_directory()
+  where user_id = '00000000-0000-0000-0000-000000000004'::uuid
+) then 1 else 0 end;
+reset role;
+
 -- Own mute/archive preference updates are permitted.
 set role authenticated;
 select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000001', false);

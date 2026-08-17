@@ -1,13 +1,62 @@
 -- Harden Phase 1 internal messaging without widening private-conversation access.
 --
 -- Adds:
+--   * a minimal active-employee directory RPC for messaging discovery
 --   * column-scoped mute/archive updates for a member's own active membership row
 --   * topic-scoped Realtime Broadcast + Presence authorization
 --   * reliable thread activity timestamps on committed messages
 --   * a minimal post-commit message signal on private thread:<uuid> topics
 --
 -- Message bodies remain authoritative in public.messages and are never included in
--- Presence or the database broadcast payload.
+-- Presence or the database broadcast payload. The directory deliberately exposes
+-- only the fields needed to address another active employee; broader profile data
+-- remains protected by the existing users/user_details RLS policies.
+
+create or replace function public.list_internal_messaging_directory()
+returns table(
+  user_id uuid,
+  email text,
+  first_name text,
+  last_name text
+)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_current_user_id uuid := public.current_app_user_id();
+begin
+  if v_current_user_id is null or not exists (
+    select 1
+    from public.users caller
+    where caller.id = v_current_user_id
+      and caller.is_active = true
+  ) then
+    raise exception 'An active authenticated ERP user is required'
+      using errcode = '42501';
+  end if;
+
+  return query
+  select
+    app_user.id,
+    app_user.email,
+    details.first_name,
+    details.last_name
+  from public.users app_user
+  left join public.user_details details on details.user_id = app_user.id
+  where app_user.is_active = true
+  order by
+    pg_catalog.lower(pg_catalog.coalesce(details.first_name, '')),
+    pg_catalog.lower(pg_catalog.coalesce(details.last_name, '')),
+    pg_catalog.lower(app_user.email),
+    app_user.id
+  limit 1000;
+end;
+$$;
+
+revoke all on function public.list_internal_messaging_directory() from public, anon, authenticated;
+grant execute on function public.list_internal_messaging_directory() to authenticated;
 
 -- The base migration intentionally granted SELECT only on memberships. Allow users
 -- to change only their own personal mute/archive fields; do not grant UPDATE on role,

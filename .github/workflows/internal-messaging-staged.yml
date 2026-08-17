@@ -1,4 +1,4 @@
-name: Internal Messaging Staged Auth Validation
+name: Internal Messaging Local Full-Stack Validation
 
 on:
   pull_request:
@@ -8,9 +8,16 @@ on:
       - "app/messages/page.tsx"
       - "app/work/messages/page.tsx"
       - "lib/features/internalMessaging.ts"
+      - "scripts/check-internal-messaging-security.mjs"
+      - "scripts/seed-local-messaging-users.mjs"
       - "scripts/validate-staged-messaging.mjs"
       - "tests/messaging-staged.spec.mjs"
       - "docs/internal-messaging/**"
+      - "supabase/migrations/20260728052000_link_users_to_auth_uid.sql"
+      - "supabase/migrations/20260722143000_add_user_appearance_preferences.sql"
+      - "supabase/migrations/20260804094500_add_internal_messaging_phase_1.sql"
+      - "supabase/migrations/20260804115800_add_internal_messaging_supporting_indexes.sql"
+      - "supabase/migrations/20260805061000_enable_internal_messaging_realtime.sql"
       - "supabase/migrations/20260812083000_harden_internal_messaging_phase_1.sql"
       - "supabase/rollback/20260812083000_unharden_internal_messaging_phase_1.sql"
       - ".github/workflows/internal-messaging-staged.yml"
@@ -20,19 +27,18 @@ permissions:
   contents: read
 
 jobs:
-  staged-auth-validation:
-    name: Authenticated Supabase Realtime and browser validation
+  local-auth-realtime-browser-validation:
+    name: Local Supabase Auth, Realtime and browser validation
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     env:
-      STAGED_SUPABASE_URL: ${{ secrets.STAGED_SUPABASE_URL }}
-      STAGED_SUPABASE_KEY: ${{ secrets.STAGED_SUPABASE_KEY }}
-      STAGED_USER_A_EMAIL: ${{ secrets.STAGED_USER_A_EMAIL }}
-      STAGED_USER_A_PASSWORD: ${{ secrets.STAGED_USER_A_PASSWORD }}
-      STAGED_USER_B_EMAIL: ${{ secrets.STAGED_USER_B_EMAIL }}
-      STAGED_USER_B_PASSWORD: ${{ secrets.STAGED_USER_B_PASSWORD }}
-      STAGED_USER_C_EMAIL: ${{ secrets.STAGED_USER_C_EMAIL }}
-      STAGED_USER_C_PASSWORD: ${{ secrets.STAGED_USER_C_PASSWORD }}
+      STAGED_USER_A_EMAIL: messaging-a@example.invalid
+      STAGED_USER_A_PASSWORD: LocalMessaging-A-2026!
+      STAGED_USER_B_EMAIL: messaging-b@example.invalid
+      STAGED_USER_B_PASSWORD: LocalMessaging-B-2026!
+      STAGED_USER_C_EMAIL: messaging-c@example.invalid
+      STAGED_USER_C_PASSWORD: LocalMessaging-C-2026!
+      LOCAL_AUTH_LINK_SQL: ${{ github.workspace }}/.local-messaging/auth-links.sql
 
     steps:
       - name: Check out repository
@@ -43,75 +49,118 @@ jobs:
         with:
           node-version: 22
 
-      - name: Detect dedicated staging configuration
-        id: stage-config
+      - name: Setup pinned Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.111.0
+
+      - name: Install application and PostgreSQL dependencies
+        run: |
+          npm ci --no-audit --no-fund
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+
+      - name: Start isolated local Supabase stack
         shell: bash
         run: |
-          configured=true
-          required=(
-            STAGED_SUPABASE_URL STAGED_SUPABASE_KEY
-            STAGED_USER_A_EMAIL STAGED_USER_A_PASSWORD
-            STAGED_USER_B_EMAIL STAGED_USER_B_PASSWORD
-            STAGED_USER_C_EMAIL STAGED_USER_C_PASSWORD
-          )
-          for name in "${required[@]}"; do
-            if [ -z "${!name}" ]; then
-              configured=false
-            fi
-          done
+          set -euo pipefail
+          mkdir -p .local-messaging
+          cd .local-messaging
+          supabase init
+          supabase start
 
-          if [ "$configured" = "true" ] && [ "$STAGED_SUPABASE_URL" = "https://egbiiizxsqlarqpnzxxs.supabase.co" ]; then
-            echo "Refusing staged validation against the production DallmayrERP Supabase project." >&2
-            exit 1
-          fi
+      - name: Capture disposable local endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .local-messaging
+          supabase status -o env > status.env
+          set -a
+          source status.env
+          set +a
 
-          echo "configured=$configured" >> "$GITHUB_OUTPUT"
-          if [ "$configured" != "true" ]; then
-            echo "Dedicated staging secrets are not configured yet; authenticated staged validation is intentionally skipped."
-          fi
+          case "$API_URL" in
+            http://127.0.0.1:*|http://localhost:*) ;;
+            *) echo "Refusing non-local Supabase API URL: $API_URL" >&2; exit 1 ;;
+          esac
+          case "$DB_URL" in
+            postgresql://*@127.0.0.1:*/*|postgresql://*@localhost:*/*) ;;
+            *) echo "Refusing non-local Supabase database URL." >&2; exit 1 ;;
+          esac
 
-      - name: Install application dependencies
-        if: steps.stage-config.outputs.configured == 'true'
-        run: npm ci --no-audit --no-fund
+          echo "::add-mask::$ANON_KEY"
+          echo "::add-mask::$SERVICE_ROLE_KEY"
+          echo "::add-mask::$DB_URL"
+          {
+            echo "LOCAL_SUPABASE_URL=$API_URL"
+            echo "LOCAL_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "LOCAL_SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "LOCAL_SUPABASE_DB_URL=$DB_URL"
+            echo "STAGED_SUPABASE_URL=$API_URL"
+            echo "STAGED_SUPABASE_KEY=$ANON_KEY"
+          } >> "$GITHUB_ENV"
+          rm -f status.env
 
-      - name: Run authenticated messaging backend contracts
-        if: steps.stage-config.outputs.configured == 'true'
+      - name: Apply production-shaped ERP and messaging schema locally
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql "$LOCAL_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f docs/internal-messaging/local-fullstack-fixtures.sql
+          psql "$LOCAL_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20260728052000_link_users_to_auth_uid.sql
+          psql "$LOCAL_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f docs/internal-messaging/local-fullstack-access.sql
+          psql "$LOCAL_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20260722143000_add_user_appearance_preferences.sql
+          psql "$LOCAL_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20260804094500_add_internal_messaging_phase_1.sql
+          psql "$LOCAL_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20260804115800_add_internal_messaging_supporting_indexes.sql
+          psql "$LOCAL_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20260805061000_enable_internal_messaging_realtime.sql
+          psql "$LOCAL_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20260812083000_harden_internal_messaging_phase_1.sql
+          psql "$LOCAL_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -c "notify pgrst, 'reload schema';"
+
+      - name: Seed three synthetic Supabase Auth users
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/seed-local-messaging-users.mjs
+          psql "$LOCAL_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f "$LOCAL_AUTH_LINK_SQL"
+          rm -f "$LOCAL_AUTH_LINK_SQL"
+          psql "$LOCAL_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -c "notify pgrst, 'reload schema';"
+          sleep 2
+
+      - name: Run authenticated messaging backend and private Realtime contracts
         run: node scripts/validate-staged-messaging.mjs
 
-      - name: Build messaging-enabled app against staging Supabase
-        if: steps.stage-config.outputs.configured == 'true'
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGED_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGED_SUPABASE_KEY }}
-          NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED: "true"
-        run: npm run build
+      - name: Build messaging-enabled app against local Supabase
+        shell: bash
+        run: |
+          NEXT_PUBLIC_SUPABASE_URL="$LOCAL_SUPABASE_URL" \
+          NEXT_PUBLIC_SUPABASE_ANON_KEY="$LOCAL_SUPABASE_ANON_KEY" \
+          NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED=true \
+          npm run build
 
       - name: Install Playwright Chromium
-        if: steps.stage-config.outputs.configured == 'true'
         run: |
           npm install --no-save --no-package-lock --no-audit --no-fund @playwright/test@1.55.0
           npx playwright install --with-deps chromium
 
       - name: Run authenticated messaging browser tests
-        if: steps.stage-config.outputs.configured == 'true'
         shell: bash
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGED_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGED_SUPABASE_KEY }}
-          NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED: "true"
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
         run: |
-          npm run start > staged-messaging-server.log 2>&1 &
+          set -euo pipefail
+          NEXT_PUBLIC_SUPABASE_URL="$LOCAL_SUPABASE_URL" \
+          NEXT_PUBLIC_SUPABASE_ANON_KEY="$LOCAL_SUPABASE_ANON_KEY" \
+          NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED=true \
+          npm run start > local-messaging-server.log 2>&1 &
           server_pid="$!"
 
-          cleanup() {
+          cleanup_server() {
             kill "$server_pid" 2>/dev/null || true
             wait "$server_pid" 2>/dev/null || true
-            if [ -f staged-messaging-server.log ]; then
-              tail -n 100 staged-messaging-server.log
+            if [ -f local-messaging-server.log ]; then
+              tail -n 100 local-messaging-server.log
             fi
           }
-          trap cleanup EXIT
+          trap cleanup_server EXIT
 
           for attempt in {1..45}; do
             if curl -fsS "$PLAYWRIGHT_BASE_URL/login" > /dev/null; then
@@ -121,5 +170,25 @@ jobs:
             sleep 2
           done
 
-          cat staged-messaging-server.log
+          cat local-messaging-server.log
           exit 1
+
+      - name: Verify hardening rollback on local Supabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql "$LOCAL_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/rollback/20260812083000_unharden_internal_messaging_phase_1.sql
+          test "$(psql "$LOCAL_SUPABASE_DB_URL" -Atq -c "select count(*) from pg_policies where schemaname='realtime' and tablename='messages' and policyname like 'internal_messaging_realtime_thread_%'")" = "0"
+          test "$(psql "$LOCAL_SUPABASE_DB_URL" -Atq -c "select count(*) from pg_policies where schemaname='public' and tablename='message_thread_members' and policyname='message_members_update_own_preferences'")" = "0"
+          test "$(psql "$LOCAL_SUPABASE_DB_URL" -Atq -c "select count(*) from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relname='messages' and t.tgname='handle_committed_internal_message' and not t.tgisinternal")" = "0"
+          test "$(psql "$LOCAL_SUPABASE_DB_URL" -Atq -c "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='list_internal_messaging_directory'")" = "0"
+
+      - name: Destroy local Supabase stack
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          if [ -d .local-messaging/supabase ]; then
+            cd .local-messaging
+            supabase stop --no-backup
+          fi

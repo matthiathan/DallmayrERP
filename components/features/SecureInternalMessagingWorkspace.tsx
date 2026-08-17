@@ -185,17 +185,14 @@ export function SecureInternalMessagingWorkspace() {
 
   const loadDirectory = useCallback(async () => {
     const client = getSupabaseClient();
-    const [{ data: users, error: usersError }, { data: details, error: detailsError }] = await Promise.all([
-      client.from('users').select('id,email').eq('is_active', true).order('email').range(0, DIRECTORY_LIMIT - 1),
-      client.from('user_details').select('user_id,first_name,last_name').range(0, DIRECTORY_LIMIT - 1),
-    ]);
-    if (usersError) throw usersError;
-    if (detailsError) throw detailsError;
-    const detailMap = new Map((details ?? []).map((row) => [String(row.user_id), row as Record<string, unknown>]));
-    setDirectory((users ?? []).map((row) => ({
-      id: String(row.id),
+    const { data, error: directoryError } = await client.rpc('list_internal_messaging_directory');
+    if (directoryError) throw directoryError;
+
+    const rows = (data ?? []) as Array<Record<string, unknown> & { user_id: string; email: string }>;
+    setDirectory(rows.slice(0, DIRECTORY_LIMIT).map((row) => ({
+      id: String(row.user_id),
       email: String(row.email),
-      label: displayName(detailMap.get(String(row.id)), String(row.email)),
+      label: displayName(row, String(row.email)),
     })));
   }, []);
 

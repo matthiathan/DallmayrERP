@@ -9,3 +9,5 @@ drop policy if exists internal_messaging_realtime_thread_read on realtime.messag
 
 drop policy if exists message_members_update_own_preferences on public.message_thread_members;
 revoke update on public.message_thread_members from authenticated;
+
+drop function if exists public.list_internal_messaging_directory();

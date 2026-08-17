@@ -20,6 +20,12 @@ create table public.users (
   is_active boolean not null default true
 );
 
+create table public.user_details (
+  user_id uuid primary key references public.users(id) on delete cascade,
+  first_name text,
+  last_name text
+);
+
 create or replace function public.current_app_user_id()
 returns uuid
 language sql
@@ -42,3 +48,10 @@ insert into public.users (id, auth_user_id, email, is_active) values
   ('00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000003', 'non-member@example.invalid', true),
   ('00000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000004', 'inactive@example.invalid', false),
   ('00000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000005', 'admin-non-member@example.invalid', true);
+
+insert into public.user_details (user_id, first_name, last_name) values
+  ('00000000-0000-0000-0000-000000000001', 'Member', 'A'),
+  ('00000000-0000-0000-0000-000000000002', 'Member', 'B'),
+  ('00000000-0000-0000-0000-000000000003', 'Non', 'Member'),
+  ('00000000-0000-0000-0000-000000000004', 'Inactive', 'User'),
+  ('00000000-0000-0000-0000-000000000005', 'Admin', 'Observer');
