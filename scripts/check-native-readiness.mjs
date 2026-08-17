@@ -54,6 +54,7 @@ assert.match(manifest, /android\.hardware\.camera\.any[\s\S]*android:required="f
 
 assert.match(androidGitignore, /\*\.jks/, 'Android upload keystores must be ignored.');
 assert.match(androidGitignore, /keystore\.properties/, 'Android signing properties must be ignored.');
+assert.match(androidGitignore, /(?:^|\n)build\//, 'Android generated release packages and acceptance evidence must remain ignored under build/.');
 assert.match(mobileGitignore, /runtime-config\.js/, 'Generated native runtime config must not be committed.');
 assert.match(mobileGitignore, /www\/vendor\//, 'Generated native scanner vendor assets must not be committed.');
 
@@ -91,6 +92,9 @@ assert.match(releaseBuilder, /status[\s\S]*--porcelain/, 'Signed Android builds 
 assert.match(releaseInstaller, /ANDROID_SERIAL/, 'Device acceptance install must support explicit Android device selection.');
 assert.match(releaseInstaller, /install['"],\s*['"]-r['"]/, 'Device acceptance install must replace-install the verified signed APK.');
 assert.match(releaseInstaller, /release-checksums\.sha256/, 'Device acceptance install must verify the APK against the release checksum manifest.');
+assert.match(releaseInstaller, /release-metadata\.json/, 'Device acceptance install must verify the APK against build-time release metadata.');
+assert.match(releaseInstaller, /versionCode/, 'Device acceptance install must verify the installed versionCode.');
+assert.match(releaseInstaller, /versionName/, 'Device acceptance install must verify the installed versionName.');
 assert.match(releaseInstaller, /za\.co\.dallmayr\.erp/, 'Device acceptance install must verify the production Android package ID.');
 assert.match(acceptanceRecorder, /release-metadata\.json/, 'Acceptance records must use build-time release metadata.');
 assert.match(acceptanceRecorder, /release-checksums\.sha256/, 'Acceptance records must verify the release checksum manifest.');
@@ -99,6 +103,7 @@ assert.match(acceptanceRecorder, /versionCode/, 'Acceptance records must record 
 assert.match(acceptanceRecorder, /versionName/, 'Acceptance records must record and compare Android versionName.');
 assert.match(acceptanceRecorder, /ro\.product\.model/, 'Acceptance records must capture representative device model information.');
 assert.match(acceptanceRecorder, /ANDROID_SERIAL/, 'Acceptance records must support explicit device selection.');
+assert.match(acceptanceRecorder, /PASS[\s\S]*FAIL|FAIL[\s\S]*PASS/, 'Acceptance records must require an explicit PASS or FAIL result.');
 
 assert.match(nativeDocs, /Android-first/i, 'Native documentation must record the Android-first product decision.');
 assert.match(nativeDocs, /locally bundled/i, 'Native documentation must describe the local field bundle architecture.');
