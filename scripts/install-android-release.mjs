@@ -6,8 +6,10 @@ import path from 'node:path';
 import process from 'node:process';
 
 const root = process.cwd();
-const apkPath = path.join(root, 'android', 'app', 'build', 'outputs', 'apk', 'release', 'app-release.apk');
-const checksumPath = path.join(root, 'android', 'app', 'build', 'outputs', 'release-checksums.sha256');
+const outputsDir = path.join(root, 'android', 'app', 'build', 'outputs');
+const apkPath = path.join(outputsDir, 'apk', 'release', 'app-release.apk');
+const checksumPath = path.join(outputsDir, 'release-checksums.sha256');
+const metadataPath = path.join(outputsDir, 'release-metadata.json');
 const packageId = 'za.co.dallmayr.erp';
 const adbCommand = process.platform === 'win32' ? 'adb.exe' : 'adb';
 
@@ -33,11 +35,19 @@ function adb(args, options = {}) {
   return result;
 }
 
-if (!existsSync(apkPath)) {
-  throw new Error('Signed release APK not found. Run npm run mobile:bundle:android first.');
+for (const [label, filePath] of [
+  ['signed release APK', apkPath],
+  ['release checksum manifest', checksumPath],
+  ['release metadata', metadataPath],
+]) {
+  if (!existsSync(filePath)) {
+    throw new Error(`${label} not found. Run npm run mobile:bundle:android first.`);
+  }
 }
-if (!existsSync(checksumPath)) {
-  throw new Error('Release checksum manifest not found. Rebuild with npm run mobile:bundle:android before installing.');
+
+const metadata = JSON.parse(await readFile(metadataPath, 'utf8'));
+if (metadata?.schemaVersion !== 1 || metadata?.packageId !== packageId || !metadata?.sourceCommit) {
+  throw new Error('Release metadata is missing or invalid. Rebuild the release candidate before installing.');
 }
 
 const checksumSource = await readFile(checksumPath, 'utf8');
@@ -47,8 +57,12 @@ const checksumLine = checksumSource
 if (!checksumLine) throw new Error('Release checksum manifest does not contain the signed APK entry. Rebuild the release candidate.');
 const expectedHash = checksumLine.trim().split(/\s+/)[0]?.toLowerCase();
 const actualHash = String(await sha256(apkPath)).toLowerCase();
-if (!expectedHash || expectedHash !== actualHash) {
-  throw new Error('Signed APK checksum does not match the release manifest. Do not install this package; rebuild the release candidate.');
+if (
+  !expectedHash
+  || expectedHash !== actualHash
+  || String(metadata.apk?.sha256 || '').toLowerCase() !== actualHash
+) {
+  throw new Error('Signed APK checksum does not match both the release manifest and release metadata. Do not install this package; rebuild the release candidate.');
 }
 
 const devicesResult = adb(['devices']);
@@ -76,6 +90,8 @@ if (requestedSerial) {
 }
 
 console.log(`Verified signed APK SHA-256: ${actualHash}`);
+console.log(`Release source commit: ${metadata.sourceCommit}`);
+console.log(`Release version: ${metadata.versionName} (${metadata.versionCode})`);
 console.log(`Installing ${path.relative(root, apkPath)} on Android device ${serial}...`);
 const install = adb(['-s', serial, 'install', '-r', apkPath], { stdio: 'inherit' });
 if (install.status !== 0) {
@@ -89,5 +105,15 @@ if (verify.status !== 0 || !String(verify.stdout).includes('package:')) {
   throw new Error(`ADB reported installation success but ${packageId} could not be verified on device ${serial}.`);
 }
 
-console.log(`Verified ${packageId} is installed on ${serial}.`);
-console.log('Proceed with docs/ANDROID_RELEASE_CHECKLIST.md device acceptance checks before wider distribution.');
+const packageDump = adb(['-s', serial, 'shell', 'dumpsys', 'package', packageId]);
+if (packageDump.status !== 0) throw new Error(packageDump.stderr || `Could not inspect ${packageId} after installation.`);
+const installedVersionCode = String(packageDump.stdout).match(/\bversionCode=(\d+)/)?.[1] ?? '';
+const installedVersionName = String(packageDump.stdout).match(/\bversionName=([^\s]+)/)?.[1] ?? '';
+if (Number(installedVersionCode) !== Number(metadata.versionCode) || installedVersionName !== String(metadata.versionName)) {
+  throw new Error(
+    `Installed package version ${installedVersionName || 'unknown'} (${installedVersionCode || 'unknown'}) does not match release metadata ${metadata.versionName} (${metadata.versionCode}).`,
+  );
+}
+
+console.log(`Verified ${packageId} ${installedVersionName} (${installedVersionCode}) is installed on ${serial}.`);
+console.log('Run npm run mobile:acceptance:android:record to create the auditable device acceptance record before testing.');
