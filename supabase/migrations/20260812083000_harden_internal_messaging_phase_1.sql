@@ -47,8 +47,8 @@ begin
   left join public.user_details details on details.user_id = app_user.id
   where app_user.is_active = true
   order by
-    pg_catalog.lower(pg_catalog.coalesce(details.first_name, '')),
-    pg_catalog.lower(pg_catalog.coalesce(details.last_name, '')),
+    pg_catalog.lower(coalesce(details.first_name, '')),
+    pg_catalog.lower(coalesce(details.last_name, '')),
     pg_catalog.lower(app_user.email),
     app_user.id
   limit 1000;
