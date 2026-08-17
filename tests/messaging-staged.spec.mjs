@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 
 const requiredEnv = [
+  'PLAYWRIGHT_BASE_URL',
   'STAGED_USER_A_EMAIL',
   'STAGED_USER_A_PASSWORD',
   'STAGED_USER_B_EMAIL',
@@ -12,6 +13,7 @@ for (const name of requiredEnv) {
   if (!process.env[name]) throw new Error(`Missing required staged messaging environment variable: ${name}`);
 }
 
+const baseUrl = process.env.PLAYWRIGHT_BASE_URL;
 const userA = {
   email: process.env.STAGED_USER_A_EMAIL,
   password: process.env.STAGED_USER_A_PASSWORD,
@@ -21,8 +23,12 @@ const userB = {
   password: process.env.STAGED_USER_B_PASSWORD,
 };
 
+function appUrl(pathname) {
+  return new URL(pathname, baseUrl).toString();
+}
+
 async function signIn(page, credentials) {
-  await page.goto('/login');
+  await page.goto(appUrl('/login'));
   await page.getByLabel('Email', { exact: true }).fill(credentials.email);
   await page.getByLabel('Password', { exact: true }).fill(credentials.password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
@@ -30,7 +36,7 @@ async function signIn(page, credentials) {
 }
 
 async function openMessages(page) {
-  await page.goto('/work/messages');
+  await page.goto(appUrl('/work/messages'));
   await expect(page.getByRole('heading', { name: 'Messages', exact: true })).toBeVisible({ timeout: 20000 });
   await expect(page.getByLabel('Search company directory')).toBeVisible();
 }
