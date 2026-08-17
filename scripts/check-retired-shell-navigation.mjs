@@ -3,8 +3,8 @@ import path from 'node:path';
 import process from 'node:process';
 
 const root = process.cwd();
-const manifestPath = path.join(root, 'app', 'styles', 'legacy-feature-manifest.css');
-const manifest = await readFile(manifestPath, 'utf8');
+const styles = path.join(root, 'app', 'styles');
+const manifest = await readFile(path.join(styles, 'legacy-feature-manifest.css'), 'utf8');
 
 const retiredImports = [
   "@import '../navigation.css'",
@@ -32,7 +32,6 @@ const retiredImports = [
   "@import '../contrast-pairing.css'",
   "@import '../professional-nowrap-layout.css'",
 ];
-
 for (const retiredImport of retiredImports) {
   if (manifest.includes(retiredImport)) {
     console.error(`Retired or consolidated legacy registration must not be reintroduced: ${retiredImport}`);
@@ -41,14 +40,14 @@ for (const retiredImport of retiredImports) {
 }
 
 for (const requiredActiveImport of [
-  "@import '../account-menu.css'",
-  "@import '../minimalist-operations.css'",
-  "@import '../density.css'",
-  "@import '../text-visibility-polish.css'",
-  "@import '../reliability-machine-search.css'",
-  "@import '../appearance-panel.css'",
-  "@import '../appearance-customization.css'",
-  "@import '../slate-sand-themes.css'",
+  "@import './features/account-menu.css'",
+  "@import './page-families/minimalist-operations.css'",
+  "@import './features/density.css'",
+  "@import './features/text-visibility-polish.css'",
+  "@import './page-families/reliability-machine-search.css'",
+  "@import './features/appearance-panel.css'",
+  "@import './features/appearance-customization.css'",
+  "@import './themes/slate-sand-themes.css'",
   "@import './active-mobile-workspaces.css'",
 ]) {
   if (!manifest.includes(requiredActiveImport)) {
@@ -57,7 +56,7 @@ for (const requiredActiveImport of [
   }
 }
 
-const activeMobileBundle = await readFile(path.join(root, 'app', 'styles', 'active-mobile-workspaces.css'), 'utf8');
+const activeMobileBundle = await readFile(path.join(styles, 'active-mobile-workspaces.css'), 'utf8');
 const expectedMobileImports = [
   "@import '../mobile-navigation-drawer.css'",
   "@import '../mobile-data-views.css'",
@@ -68,19 +67,14 @@ const expectedMobileImports = [
 let previousMobileImportIndex = -1;
 for (const activeImport of expectedMobileImports) {
   const importIndex = activeMobileBundle.indexOf(activeImport);
-  if (importIndex < 0) {
-    console.error(`Active mobile workspace bundle is missing ${activeImport}`);
-    process.exitCode = 1;
-    continue;
-  }
-  if (importIndex <= previousMobileImportIndex) {
-    console.error(`Active mobile workspace bundle must preserve import order; ${activeImport} is out of order.`);
+  if (importIndex < 0 || importIndex <= previousMobileImportIndex) {
+    console.error(`Active mobile workspace bundle must contain ${activeImport} in the approved order.`);
     process.exitCode = 1;
   }
   previousMobileImportIndex = importIndex;
 }
 
-const readabilitySafety = await readFile(path.join(root, 'app', 'styles', 'canonical-readability-safety.css'), 'utf8');
+const readabilitySafety = await readFile(path.join(styles, 'canonical-readability-safety.css'), 'utf8');
 for (const requiredRule of [
   'touch-action: manipulation',
   ':is(img, svg, canvas, video)',
@@ -106,7 +100,7 @@ for (const requiredRule of ['.breadcrumbs', '.empty-state', '.status-timeline', 
   }
 }
 
-const roleWorkspaceDetails = await readFile(path.join(root, 'app', 'role-workspace-details.css'), 'utf8');
+const roleWorkspaceDetails = await readFile(path.join(styles, 'page-families', 'role-workspace-details.css'), 'utf8');
 for (const requiredRule of ['.role-workspace-stage', '.role-action-grid', '.role-action-card']) {
   if (!roleWorkspaceDetails.includes(requiredRule)) {
     console.error(`Role workspace owner is missing migrated UX structure: ${requiredRule}`);
@@ -114,12 +108,8 @@ for (const requiredRule of ['.role-workspace-stage', '.role-action-grid', '.role
   }
 }
 
-const reliabilitySearch = await readFile(path.join(root, 'app', 'reliability-machine-search.css'), 'utf8');
-for (const requiredRule of [
-  '.machine-match-options',
-  '.machine-match-list',
-  '.machine-match-option',
-]) {
+const reliabilitySearch = await readFile(path.join(styles, 'page-families', 'reliability-machine-search.css'), 'utf8');
+for (const requiredRule of ['.machine-match-options', '.machine-match-list', '.machine-match-option']) {
   if (!reliabilitySearch.includes(requiredRule)) {
     console.error(`Reliability machine-search owner is missing migrated compatibility rule: ${requiredRule}`);
     process.exitCode = 1;
@@ -127,14 +117,7 @@ for (const requiredRule of [
 }
 
 const appShell = await readFile(path.join(root, 'components', 'layout', 'AppShell.tsx'), 'utf8');
-for (const obsoleteHook of [
-  'erp-chrome',
-  'notch-navbar-frame',
-  'notch-menu-row',
-  'erp-menu-overflow',
-  'ribbon-app-background',
-  'monday-shell-phase-1',
-]) {
+for (const obsoleteHook of ['erp-chrome', 'notch-navbar-frame', 'notch-menu-row', 'erp-menu-overflow', 'ribbon-app-background', 'monday-shell-phase-1']) {
   if (appShell.includes(obsoleteHook)) {
     console.error(`Current AppShell must not regress to retired shell hook: ${obsoleteHook}`);
     process.exitCode = 1;
@@ -179,39 +162,49 @@ for (const requiredRule of ['export function NavigationIcon', 'export function n
   }
 }
 
-const applicationManifest = await readFile(path.join(root, 'app', 'styles', 'application.css'), 'utf8');
-for (const requiredCanonicalImport of [
-  "@import '../canonical-component-utilities.css'",
-  "@import '../canonical-navigation-baseline.css'",
-  "@import '../canonical-appearance-runtime.css'",
-  "@import '../professional-ui-system.css'",
-  "@import '../concentrix-dallmayr-shell.css'",
-  "@import '../concentrix-execution-details.css'",
-  "@import '../responsive-mobile-tablet.css'",
+const application = await readFile(path.join(styles, 'application.css'), 'utf8');
+for (const requiredManifest of [
+  "@import './application/base.css'",
+  "@import './application/desktop.css'",
+  "@import './application/responsive.css'",
 ]) {
-  if (!applicationManifest.includes(requiredCanonicalImport)) {
-    console.error(`Canonical application manifest must retain ${requiredCanonicalImport}`);
+  if (!application.includes(requiredManifest)) {
+    console.error(`Canonical application registry must retain ${requiredManifest}`);
     process.exitCode = 1;
   }
 }
-
-const appearanceRuntimeIndex = applicationManifest.indexOf("@import '../canonical-appearance-runtime.css'");
-const desktopReferenceIndex = applicationManifest.indexOf("@import '../desktop-reference-layout.css'");
-const responsiveRuntimeIndex = applicationManifest.indexOf("@import '../responsive-runtime-authority.css'");
-if (
-  appearanceRuntimeIndex < 0
-  || desktopReferenceIndex < 0
-  || responsiveRuntimeIndex < 0
-  || appearanceRuntimeIndex >= desktopReferenceIndex
-  || appearanceRuntimeIndex >= responsiveRuntimeIndex
-) {
-  console.error('Canonical appearance runtime must load after legacy appearance CSS and before the contiguous desktop/Concentrix and responsive authority blocks.');
+const baseAuthority = await readFile(path.join(styles, 'application', 'base.css'), 'utf8');
+const desktopAuthority = await readFile(path.join(styles, 'application', 'desktop.css'), 'utf8');
+const responsiveAuthority = await readFile(path.join(styles, 'application', 'responsive.css'), 'utf8');
+for (const requiredBase of [
+  "@import '../../canonical-component-utilities.css'",
+  "@import '../../canonical-navigation-baseline.css'",
+  "@import '../../canonical-appearance-runtime.css'",
+]) {
+  if (!baseAuthority.includes(requiredBase)) {
+    console.error(`Base application authority must retain ${requiredBase}`);
+    process.exitCode = 1;
+  }
+}
+for (const requiredDesktop of [
+  "@import '../../desktop-reference-layout.css'",
+  "@import '../../professional-ui-system.css'",
+  "@import '../../concentrix-dallmayr-shell.css'",
+  "@import '../../concentrix-execution-details.css'",
+]) {
+  if (!desktopAuthority.includes(requiredDesktop)) {
+    console.error(`Desktop application authority must retain ${requiredDesktop}`);
+    process.exitCode = 1;
+  }
+}
+if (!responsiveAuthority.trim().endsWith("@import '../../responsive-mobile-tablet.css';")) {
+  console.error('Responsive application authority must end with responsive-mobile-tablet.css.');
   process.exitCode = 1;
 }
 
 const appearanceRuntime = await readFile(path.join(root, 'app', 'canonical-appearance-runtime.css'), 'utf8');
 for (const requiredRule of [
-  "html[data-visual-theme]",
+  'html[data-visual-theme]',
   '--appearance-runtime-accent: var(--user-accent',
   '--appearance-content-surface: var(--content-surface',
   '--user-accent: var(--appearance-runtime-accent',
@@ -228,14 +221,7 @@ for (const requiredRule of [
 }
 
 const professionalUi = await readFile(path.join(root, 'app', 'professional-ui-system.css'), 'utf8');
-for (const requiredRule of [
-  '.erp-panel',
-  '.erp-table-shell',
-  '.erp-toolbar',
-  '.status-badge',
-  ':focus-visible',
-  '.dallmayr-sidebar-link svg',
-]) {
+for (const requiredRule of ['.erp-panel', '.erp-table-shell', '.erp-toolbar', '.status-badge', ':focus-visible', '.dallmayr-sidebar-link svg']) {
   if (!professionalUi.includes(requiredRule)) {
     console.error(`Canonical professional UI is missing predecessor replacement rule: ${requiredRule}`);
     process.exitCode = 1;
@@ -243,28 +229,15 @@ for (const requiredRule of [
 }
 
 const navigationBaseline = await readFile(path.join(root, 'app', 'canonical-navigation-baseline.css'), 'utf8');
-for (const requiredRule of [
-  '.skip-link',
-  '.skip-link:focus',
-  '.application-mobile-menu-button',
-  '.hamburger-button.notch-mobile-button',
-  '.application-mobile-menu-button svg',
-  '@media (prefers-reduced-motion: reduce)',
-]) {
+for (const requiredRule of ['.skip-link', '.skip-link:focus', '.application-mobile-menu-button', '.hamburger-button.notch-mobile-button', '.application-mobile-menu-button svg', '@media (prefers-reduced-motion: reduce)']) {
   if (!navigationBaseline.includes(requiredRule)) {
     console.error(`Canonical navigation baseline is missing migrated rule: ${requiredRule}`);
     process.exitCode = 1;
   }
 }
 
-const foundations = await readFile(path.join(root, 'app', 'styles', 'foundations.css'), 'utf8');
-for (const requiredRule of [
-  ':focus-visible',
-  '@media (prefers-reduced-motion: reduce)',
-  '@media print',
-  '.application-header',
-  '.dallmayr-sidebar',
-]) {
+const foundations = await readFile(path.join(styles, 'foundations.css'), 'utf8');
+for (const requiredRule of [':focus-visible', '@media (prefers-reduced-motion: reduce)', '@media print', '.application-header', '.dallmayr-sidebar']) {
   if (!foundations.includes(requiredRule)) {
     console.error(`Shared foundations are missing retired-shell replacement rule: ${requiredRule}`);
     process.exitCode = 1;
@@ -272,12 +245,7 @@ for (const requiredRule of [
 }
 
 const responsive = await readFile(path.join(root, 'app', 'responsive-mobile-tablet.css'), 'utf8');
-for (const requiredRule of [
-  '.application-header',
-  '.mobile-nav-portal-root',
-  '.mobile-quick-bar',
-  '.application-mobile-menu-button',
-]) {
+for (const requiredRule of ['.application-header', '.mobile-nav-portal-root', '.mobile-quick-bar', '.application-mobile-menu-button']) {
   if (!responsive.includes(requiredRule)) {
     console.error(`Responsive authority is missing retired-shell replacement rule: ${requiredRule}`);
     process.exitCode = 1;
@@ -285,4 +253,4 @@ for (const requiredRule of [
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('Final Work Package A guard passed: retired shell/navigation/mobile/generic visual programmes remain unregistered, active feature/appearance owners remain explicit, UX structure is canonicalized, and desktop/mobile navigation uses the shared SVG icon contract.');
+console.log('Final Work Package A guard passed: retired shell/navigation/mobile programmes remain unregistered, classified feature owners remain explicit, and base/desktop/responsive application authorities preserve the canonical navigation contracts.');
