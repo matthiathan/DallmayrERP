@@ -414,6 +414,9 @@ export function SecureInternalMessagingWorkspace() {
                 label: currentUserLabel,
                 online_at: new Date().toISOString(),
               });
+              if (cancelled) return;
+              void loadThreads();
+              if (selectedThreadIdRef.current === thread.id) void loadMessages(thread.id);
             }
           });
         nextChannels.set(thread.id, channel);
