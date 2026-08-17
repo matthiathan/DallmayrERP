@@ -77,8 +77,12 @@ if (requestedSerial) {
 
 console.log(`Verified signed APK SHA-256: ${actualHash}`);
 console.log(`Installing ${path.relative(root, apkPath)} on Android device ${serial}...`);
-const install = adb(['-s', serial, 'install', '-r', apkPath], { stdio: 'inherit', encoding: undefined });
-if (install.status !== 0) process.exit(install.status ?? 1);
+const install = adb(['-s', serial, 'install', '-r', apkPath], { stdio: 'inherit' });
+if (install.status !== 0) {
+  throw new Error(
+    'ADB could not replace the installed application. A common cause is an existing debug build signed with a different key or a higher installed version code. The installer will NOT uninstall the existing app automatically because uninstalling would erase cached jobs and any unsynced closure evidence. Confirm the device has no pending closures, then remove the incompatible build manually if appropriate and rerun the acceptance install.',
+  );
+}
 
 const verify = adb(['-s', serial, 'shell', 'pm', 'path', packageId]);
 if (verify.status !== 0 || !String(verify.stdout).includes('package:')) {
