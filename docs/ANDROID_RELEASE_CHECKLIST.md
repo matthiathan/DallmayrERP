@@ -18,6 +18,9 @@ This checklist separates repository-complete work from items that require Dallma
 - [x] Upload keystore and signing properties are excluded from Git.
 - [x] Release AAB build command and version overrides are documented.
 - [x] Native/mobile readiness is enforced in CI.
+- [x] Release preflight rejects accidental `CAPACITOR_SERVER_URL` live-reload packaging.
+- [x] Release preflight validates signing properties, the referenced upload keystore, generated runtime configuration, scanner runtime and Android version values before Gradle builds the AAB.
+- [x] Successful release builds report the generated AAB path and SHA-256 digest for release-candidate integrity tracking.
 
 ## Dallmayr-owned release inputs
 
@@ -68,8 +71,11 @@ Local prerequisites:
 - production `.env.local` or environment values for Supabase public configuration
 - `android/keystore.properties`
 - upload keystore outside Git
+- `CAPACITOR_SERVER_URL` unset for production packaging
 
-Build:
+The signing file must contain real values for `storeFile`, `storePassword`, `keyAlias` and `keyPassword`. The referenced upload keystore must exist. Placeholder `CHANGE_ME` credentials are rejected.
+
+Build the signed release candidate:
 
 ```bash
 npm ci
@@ -77,4 +83,13 @@ npm run native:check
 npm run mobile:bundle:android
 ```
 
-Increment `DALLMAYRERP_ANDROID_VERSION_CODE` for every Play upload. Keep `DALLMAYRERP_ANDROID_VERSION_NAME` aligned with the human release version.
+`mobile:bundle:android` prepares and syncs the exact native assets, runs `mobile:release:preflight`, builds the signed release AAB, verifies that `app-release.aab` exists and prints its SHA-256 digest.
+
+For preflight troubleshooting without building the AAB:
+
+```bash
+npm run mobile:sync
+npm run mobile:release:preflight
+```
+
+Increment `DALLMAYRERP_ANDROID_VERSION_CODE` for every Play upload. Keep `DALLMAYRERP_ANDROID_VERSION_NAME` aligned with the human release version. The preflight accepts the documented defaults `1` and `1.0.0` for the first release candidate when the environment overrides are not set.

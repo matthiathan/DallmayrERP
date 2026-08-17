@@ -40,8 +40,9 @@
     "typecheck": "tsc --noEmit",
     "check": "npm run feature:check && npm run sourcecheck && npm run contractcheck && npm run navigation:terminology-check && npm run navigation:ia-check && npm run page:title-check && npm run design-system:check && npm run stylecheck && npm run mobile:interaction-check && npm run accessibility:check && npm run native:check && npm test && npm run typecheck && npm run build",
     "mobile:prepare": "node scripts/prepare-mobile-field.mjs",
+    "mobile:release:preflight": "node scripts/check-android-release-preflight.mjs",
     "mobile:bundle:android": "node scripts/build-android-release.mjs",
-    "native:check": "node scripts/check-native-readiness.mjs"
+    "native:check": "node --check scripts/check-android-release-preflight.mjs && node --check scripts/build-android-release.mjs && node scripts/check-native-readiness.mjs"
   },
   "dependencies": {
     "@capacitor/android": "8.5.0",

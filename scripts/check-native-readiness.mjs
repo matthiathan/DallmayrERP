@@ -16,6 +16,8 @@ const [
   fieldJs,
   packageJsonSource,
   nativeDocs,
+  releasePreflight,
+  releaseBuilder,
 ] = await Promise.all([
   text('capacitor.config.ts'),
   text('android/app/src/main/AndroidManifest.xml'),
@@ -26,6 +28,8 @@ const [
   text('native/mobile/www/field-app.js'),
   text('package.json'),
   text('docs/NATIVE_APPS.md'),
+  text('scripts/check-android-release-preflight.mjs'),
+  text('scripts/build-android-release.mjs'),
 ]);
 
 assert.match(capacitorConfig, /CAPACITOR_SERVER_URL/, 'Capacitor live-reload URL must be opt-in.');
@@ -60,10 +64,20 @@ assert.match(fieldJs, /ALLOWED_ROLES/, 'The native field client must remain scop
 
 const packageJson = JSON.parse(packageJsonSource);
 assert.ok(packageJson.scripts['mobile:prepare'], 'package.json must expose mobile:prepare.');
+assert.ok(packageJson.scripts['mobile:release:preflight'], 'package.json must expose mobile:release:preflight.');
 assert.ok(packageJson.scripts['mobile:bundle:android'], 'package.json must expose the signed Android bundle command.');
 assert.ok(packageJson.scripts['native:check'], 'package.json must expose native:check.');
+
+assert.match(releasePreflight, /CAPACITOR_SERVER_URL/, 'Release preflight must reject live-reload server configuration.');
+assert.match(releasePreflight, /keystore\.properties/, 'Release preflight must validate Android signing properties.');
+assert.match(releasePreflight, /CHANGE_ME/, 'Release preflight must reject placeholder signing credentials.');
+assert.match(releasePreflight, /runtime-config\.js/, 'Release preflight must validate the exact generated runtime configuration.');
+assert.match(releasePreflight, /html5-qrcode\.min\.js/, 'Release preflight must validate the packaged scanner runtime.');
+assert.match(releasePreflight, /DALLMAYRERP_ANDROID_VERSION_CODE/, 'Release preflight must validate the Android version code.');
+assert.match(releaseBuilder, /mobile:release:preflight/, 'Signed Android bundle builds must execute the release preflight.');
+assert.match(releaseBuilder, /SHA-256/, 'Signed Android bundle builds must report an integrity digest for the produced AAB.');
 
 assert.match(nativeDocs, /Android-first/i, 'Native documentation must record the Android-first product decision.');
 assert.match(nativeDocs, /locally bundled/i, 'Native documentation must describe the local field bundle architecture.');
 
-console.log('Native/mobile readiness contracts passed: Android field bundle, offline queue, API 36, scoped permissions and signing hygiene are staged.');
+console.log('Native/mobile readiness contracts passed: Android field bundle, offline queue, API 36, scoped permissions, signing hygiene and release preflight are staged.');
