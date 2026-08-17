@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { WorkspaceCommandBar, WorkspaceSectionHeader } from '@/components/ui/WorkspacePrimitives';
+import { ErpCommandBar, ErpSectionHeader } from '@/components/ui/ErpLayout';
 
 const MOBILE_QUERY = '(max-width: 760px)';
 
@@ -42,12 +42,12 @@ export function PageToolbar({
   ) : null;
 
   return (
-    <WorkspaceCommandBar
+    <ErpCommandBar
       ariaLabel={`${title} controls`}
-      className="page-toolbar workspace-command-bar erp-command-bar"
+      className="page-toolbar workspace-command-bar"
       hasControls={hasControls}
     >
-      <WorkspaceSectionHeader
+      <ErpSectionHeader
         className="page-toolbar-heading workspace-command-heading"
         description={description}
         eyebrow="Workspace"
@@ -73,6 +73,6 @@ export function PageToolbar({
           </div>
         </details>
       ) : null}
-    </WorkspaceCommandBar>
+    </ErpCommandBar>
   );
 }

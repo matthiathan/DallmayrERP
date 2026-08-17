@@ -1,11 +1,18 @@
 import { ExecutiveReportingPanel } from '@/components/features/ExecutiveReportingPanel';
 import { AppShell } from '@/components/layout/AppShell';
+import { ErpPage, ErpPageHeader } from '@/components/ui/ErpLayout';
 
 export default function ExecutiveReportsPage() {
   return (
     <AppShell>
-      <div className="page-header"><div><h1>Executive Reports</h1><p>Board-level management packs, configurable KPIs, trends and saved reporting schedules.</p></div></div>
-      <ExecutiveReportingPanel />
+      <ErpPage variant="dashboard">
+        <ErpPageHeader
+          description="Board-level management packs, configurable KPIs, trends and saved reporting schedules."
+          eyebrow="Insights"
+          title="Executive Reports"
+        />
+        <ExecutiveReportingPanel />
+      </ErpPage>
     </AppShell>
   );
 }

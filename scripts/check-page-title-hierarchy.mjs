@@ -52,8 +52,20 @@ requireText(
 requireText(
   'service jobs page',
   serviceJobsPage,
+  '<ErpPageHeader',
+  'the representative operational route must delegate its page-owned h1 to the canonical ERP page header.',
+);
+requireText(
+  'service jobs page',
+  serviceJobsPage,
+  'title="Scheduled Call Log"',
+  'the representative operational route must retain Scheduled Call Log as its canonical page title.',
+);
+forbid(
+  'service jobs page',
+  serviceJobsPage,
   '<h1>Scheduled Call Log</h1>',
-  'the representative operational route must retain its page-owned h1.',
+  'the representative operational route must not duplicate the canonical ErpPageHeader h1 in route markup.',
 );
 
 requireText(

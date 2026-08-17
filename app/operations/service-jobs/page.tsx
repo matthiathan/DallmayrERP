@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { EnterpriseServiceJobBoard } from '@/components/features/EnterpriseServiceJobBoard';
 import { AppShell } from '@/components/layout/AppShell';
 import { PageNavigationMetadata, PageSectionAnchor } from '@/components/layout/PageNavigationMetadata';
+import { ErpPage, ErpPageHeader, ErpStateBanner } from '@/components/ui/ErpLayout';
 
 const SERVICE_JOB_NAVIGATION = {
   title: 'Scheduled Call Log',
@@ -15,17 +16,18 @@ export default function OperationsServiceJobsPage() {
   return (
     <AppShell>
       <PageNavigationMetadata metadata={SERVICE_JOB_NAVIGATION} />
-      <div className="page-header hero-panel spatial-card" id="service-job-overview">
-        <div>
-          <div className="badge">Operations</div>
-          <h1>Scheduled Call Log</h1>
-          <p>View service incidents, assign technicians, track follow-ups and control verified closure. Recurring plans are created under Preventive Maintenance.</p>
-        </div>
-      </div>
-      <PageSectionAnchor id="service-job-workspace" />
-      <Suspense fallback={<div className="neo-card"><h2>Loading service call log...</h2></div>}>
-        <EnterpriseServiceJobBoard />
-      </Suspense>
+      <ErpPage variant="operational">
+        <ErpPageHeader
+          description="View service incidents, assign technicians, track follow-ups and control verified closure. Recurring plans are created under Preventive Maintenance."
+          eyebrow="Operations"
+          id="service-job-overview"
+          title="Scheduled Call Log"
+        />
+        <PageSectionAnchor id="service-job-workspace" />
+        <Suspense fallback={<ErpStateBanner message="Preparing service incidents and assignment controls." title="Loading service call log" />}>
+          <EnterpriseServiceJobBoard />
+        </Suspense>
+      </ErpPage>
     </AppShell>
   );
 }

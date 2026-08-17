@@ -5,20 +5,111 @@ type PanelDensity = 'comfortable' | 'compact';
 type PanelScroll = 'none' | 'content' | 'list';
 type MetricTone = 'neutral' | 'good' | 'warning' | 'danger' | 'info';
 type StateTone = 'info' | 'success' | 'warning' | 'danger' | 'neutral';
+type SurfaceElement = 'div' | 'section' | 'article' | 'aside';
+type SurfaceElevation = 'flat' | 'raised';
+type SurfacePadding = 'none' | 'sm' | 'md' | 'lg';
+type HeadingLevel = 1 | 2 | 3;
 
 function joinClasses(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(' ');
+}
+
+export function ErpSurface({
+  as = 'section',
+  children,
+  className,
+  ariaLabel,
+  elevation = 'flat',
+  padding = 'none',
+}: {
+  as?: SurfaceElement;
+  children: ReactNode;
+  className?: string;
+  ariaLabel?: string;
+  elevation?: SurfaceElevation;
+  padding?: SurfacePadding;
+}) {
+  const Component = as;
+  return (
+    <Component
+      aria-label={ariaLabel}
+      className={joinClasses('erp-surface', 'ds-surface', className)}
+      data-elevation={elevation}
+      data-padding={padding}
+    >
+      {children}
+    </Component>
+  );
+}
+
+export function ErpSectionHeader({
+  title,
+  description,
+  eyebrow,
+  meta,
+  actions,
+  level = 2,
+  className,
+}: {
+  title: ReactNode;
+  description?: ReactNode;
+  eyebrow?: ReactNode;
+  meta?: ReactNode;
+  actions?: ReactNode;
+  level?: HeadingLevel;
+  className?: string;
+}) {
+  const Heading = level === 1 ? 'h1' : level === 3 ? 'h3' : 'h2';
+  return (
+    <div className={joinClasses('erp-section-header', 'ds-section-header', className)}>
+      <div>
+        {eyebrow ? <div className="erp-eyebrow nav-heading">{eyebrow}</div> : null}
+        <Heading>{title}</Heading>
+        {description ? <p>{description}</p> : null}
+      </div>
+      {meta || actions ? (
+        <div className="ds-cluster" data-justify="between">
+          {meta}
+          {actions}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function ErpCommandBar({
+  children,
+  className,
+  ariaLabel,
+  hasControls,
+}: {
+  children: ReactNode;
+  className?: string;
+  ariaLabel: string;
+  hasControls?: boolean;
+}) {
+  return (
+    <section
+      aria-label={ariaLabel}
+      className={joinClasses('erp-command-bar', 'ds-surface', 'ds-command-bar', className)}
+      data-elevation="flat"
+      data-has-controls={hasControls ? 'true' : 'false'}
+      data-padding="none"
+    >
+      {children}
+    </section>
+  );
 }
 
 export function ErpPage({ children, className, variant = 'default' }: { children: ReactNode; className?: string; variant?: PageVariant }) {
   return <div className={joinClasses('erp-page', className)} data-erp-page={variant}>{children}</div>;
 }
 
-export function ErpPageHeader({ actions, children, className, description, eyebrow, meta, title }: {
-  actions?: ReactNode; children?: ReactNode; className?: string; description?: ReactNode; eyebrow?: ReactNode; meta?: ReactNode; title: ReactNode;
+export function ErpPageHeader({ actions, children, className, description, eyebrow, id, meta, title }: {
+  actions?: ReactNode; children?: ReactNode; className?: string; description?: ReactNode; eyebrow?: ReactNode; id?: string; meta?: ReactNode; title: ReactNode;
 }) {
   return (
-    <section className={joinClasses('erp-page-header', className)}>
+    <section className={joinClasses('erp-page-header', className)} id={id}>
       <div className="erp-page-header-copy">
         {eyebrow ? <span className="erp-eyebrow">{eyebrow}</span> : null}
         <h1>{title}</h1>

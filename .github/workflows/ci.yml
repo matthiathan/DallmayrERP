@@ -52,6 +52,9 @@ jobs:
       - name: Check page title hierarchy
         run: npm run page:title-check
 
+      - name: Check design-system authority
+        run: npm run design-system:check
+
       - name: Check stylesheet architecture
         run: npm run stylecheck
 
@@ -75,6 +78,7 @@ jobs:
           node --check tests/compact-desktop.spec.mjs
           node --check tests/quick-access-dialog.spec.mjs
           node --check tests/page-navigation-metadata.spec.mjs
+          node --check tests/design-system-authority.spec.mjs
           python -m py_compile scripts/compare-production-screenshots.py
 
       - name: Typecheck application
@@ -110,7 +114,7 @@ jobs:
           for attempt in {1..45}; do
             if curl -fsS "$SECURITY_PENTEST_TARGET/login" > /dev/null; then
               npm run security:pentest
-              npx playwright test tests/mobile-login.spec.mjs tests/workflow-actions.spec.mjs tests/compact-desktop.spec.mjs tests/quick-access-dialog.spec.mjs tests/page-navigation-metadata.spec.mjs --reporter=line
+              npx playwright test tests/mobile-login.spec.mjs tests/workflow-actions.spec.mjs tests/compact-desktop.spec.mjs tests/quick-access-dialog.spec.mjs tests/page-navigation-metadata.spec.mjs tests/design-system-authority.spec.mjs --reporter=line
               exit 0
             fi
             sleep 2
