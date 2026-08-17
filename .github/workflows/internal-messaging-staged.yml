@@ -128,6 +128,19 @@ jobs:
       - name: Run authenticated messaging backend and private Realtime contracts
         run: node scripts/validate-staged-messaging.mjs
 
+      - name: Reset synthetic messaging data for browser acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql "$LOCAL_SUPABASE_DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          truncate table
+            public.message_read_positions,
+            public.message_audit_events,
+            public.messages,
+            public.message_thread_members,
+            public.message_threads;
+          SQL
+
       - name: Build messaging-enabled app against local Supabase
         shell: bash
         run: |
