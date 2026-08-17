@@ -27,56 +27,6 @@ function appUrl(pathname) {
   return new URL(pathname, baseUrl).toString();
 }
 
-function realtimeFrameSummary(rawPayload) {
-  if (typeof rawPayload !== 'string') return null;
-  try {
-    const parsed = JSON.parse(rawPayload);
-    if (Array.isArray(parsed)) {
-      const [, , topic, event, payload] = parsed;
-      if (!['phx_reply', 'phx_error', 'system'].includes(event)) return null;
-      const status = payload?.status ?? payload?.response?.status ?? '';
-      const reason = payload?.response?.reason ?? payload?.reason ?? payload?.message ?? '';
-      return { topic: String(topic ?? ''), event: String(event), status: String(status), reason: String(reason) };
-    }
-    if (parsed && typeof parsed === 'object') {
-      const topic = parsed.topic ?? '';
-      const event = parsed.event ?? '';
-      if (!['phx_reply', 'phx_error', 'system'].includes(event)) return null;
-      const payload = parsed.payload ?? {};
-      const status = payload.status ?? payload.response?.status ?? '';
-      const reason = payload.response?.reason ?? payload.reason ?? payload.message ?? '';
-      return { topic: String(topic), event: String(event), status: String(status), reason: String(reason) };
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
-function attachRealtimeDiagnostics(page, label) {
-  page.on('websocket', (socket) => {
-    let safeEndpoint = 'unknown';
-    try {
-      const url = new URL(socket.url());
-      safeEndpoint = `${url.protocol}//${url.host}${url.pathname}`;
-    } catch {
-      // Keep the endpoint opaque if parsing fails; never log raw query parameters.
-    }
-    console.log(`[${label}] Realtime WebSocket opened: ${safeEndpoint}`);
-    socket.on('framereceived', ({ payload }) => {
-      const summary = realtimeFrameSummary(payload);
-      if (!summary) return;
-      console.log(`[${label}] Realtime ${summary.event} topic=${summary.topic} status=${summary.status || 'n/a'} reason=${summary.reason || 'n/a'}`);
-    });
-    socket.on('socketerror', (error) => {
-      console.log(`[${label}] Realtime socket error: ${String(error).slice(0, 300)}`);
-    });
-    socket.on('close', () => {
-      console.log(`[${label}] Realtime WebSocket closed: ${safeEndpoint}`);
-    });
-  });
-}
-
 async function signIn(page, credentials) {
   await page.goto(appUrl('/login'));
   await page.getByLabel('Email', { exact: true }).fill(credentials.email);
@@ -126,8 +76,6 @@ test('two authenticated users exchange a committed message through the messaging
   const contextB = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const pageA = await contextA.newPage();
   const pageB = await contextB.newPage();
-  attachRealtimeDiagnostics(pageA, 'User A');
-  attachRealtimeDiagnostics(pageB, 'User B');
 
   try {
     await Promise.all([signIn(pageA, userA), signIn(pageB, userB)]);
