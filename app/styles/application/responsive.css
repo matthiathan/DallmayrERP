@@ -1,0 +1,13 @@
+/*
+ * Responsive application authority.
+ *
+ * Runtime/mobile interaction rules and finishing layers load after desktop.
+ * responsive-mobile-tablet.css must remain the final application leaf.
+ */
+@import '../../responsive-runtime-authority.css';
+@import '../../responsive-mobile-interactions.css';
+@import '../../professional-finish.css';
+@import '../../professional-finish-details.css';
+@import '../../compact-desktop-authority.css';
+@import '../connected-workflow-strip.css';
+@import '../../responsive-mobile-tablet.css';
