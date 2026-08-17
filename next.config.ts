@@ -10,11 +10,21 @@ const supabaseOrigin = (() => {
     return 'https://egbiiizxsqlarqpnzxxs.supabase.co';
   }
 })();
+const supabaseRealtimeOrigin = (() => {
+  try {
+    const url = new URL(supabaseOrigin);
+    if (url.protocol === 'https:') url.protocol = 'wss:';
+    else if (url.protocol === 'http:') url.protocol = 'ws:';
+    return url.origin;
+  } catch {
+    return 'wss://egbiiizxsqlarqpnzxxs.supabase.co';
+  }
+})();
 
 const connectSources = [
   "'self'",
   supabaseOrigin,
-  supabaseOrigin.replace('https://', 'wss://'),
+  supabaseRealtimeOrigin,
   ...(isDevelopment ? ['ws://localhost:*', 'http://localhost:*'] : []),
 ];
 
