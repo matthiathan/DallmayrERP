@@ -1,6 +1,6 @@
 # Android Release Checklist
 
-This checklist separates repository-complete work from items that require Dallmayr distribution credentials, approved branding or legal/compliance ownership.
+This checklist separates repository-complete work from items that require Dallmayr distribution credentials, approved branding, legal/compliance ownership or representative field hardware.
 
 ## Repository-ready
 
@@ -19,8 +19,10 @@ This checklist separates repository-complete work from items that require Dallma
 - [x] Release AAB build command and version overrides are documented.
 - [x] Native/mobile readiness is enforced in CI.
 - [x] Release preflight rejects accidental `CAPACITOR_SERVER_URL` live-reload packaging.
-- [x] Release preflight validates signing properties, the referenced upload keystore, generated runtime configuration, scanner runtime and Android version values before Gradle builds the AAB.
-- [x] Successful release builds report the generated AAB path and SHA-256 digest for release-candidate integrity tracking.
+- [x] Release preflight validates signing properties, the referenced upload keystore, generated runtime configuration, scanner runtime and Android version values before Gradle builds release packages.
+- [x] One release build produces the Google Play AAB and a signed release APK for direct physical-device acceptance.
+- [x] Release builds persist SHA-256 values for both packages in `android/app/build/outputs/release-checksums.sha256`.
+- [x] The device-install helper verifies the APK checksum, requires an authorized ADB device and confirms `za.co.dallmayr.erp` is installed after deployment.
 
 ## Dallmayr-owned release inputs
 
@@ -40,7 +42,7 @@ These cannot be safely fabricated or committed by the application repository.
 
 ## Device acceptance
 
-Before moving beyond internal testing, run the signed build on representative field hardware and verify:
+Before moving beyond internal testing, run the **signed release APK** on representative field hardware and verify:
 
 - [ ] Fresh online sign-in for technician and road-technician accounts.
 - [ ] Rejection of a non-field role.
@@ -61,12 +63,15 @@ Before moving beyond internal testing, run the signed build on representative fi
 - [ ] Sign-out clears cached jobs after the outbox is empty.
 - [ ] Android permission prompts match the privacy/store disclosures.
 
+Record the device model, Android version, app version code/name and APK SHA-256 for each acceptance run so results can be tied to an exact release candidate.
+
 ## Release build
 
 Local prerequisites:
 
 - Node.js 22
 - Android Studio / current Android SDK
+- Android SDK Platform-Tools (`adb`) for direct device installation
 - JDK compatible with the current Capacitor Android toolchain
 - production `.env.local` or environment values for Supabase public configuration
 - `android/keystore.properties`
@@ -83,13 +88,54 @@ npm run native:check
 npm run mobile:bundle:android
 ```
 
-`mobile:bundle:android` prepares and syncs the exact native assets, runs `mobile:release:preflight`, builds the signed release AAB, verifies that `app-release.aab` exists and prints its SHA-256 digest.
+`mobile:bundle:android` prepares and syncs the exact native assets, runs `mobile:release:preflight`, then produces:
 
-For preflight troubleshooting without building the AAB:
+```text
+android/app/build/outputs/bundle/release/app-release.aab
+android/app/build/outputs/apk/release/app-release.apk
+android/app/build/outputs/release-checksums.sha256
+```
+
+The AAB is the Google Play upload package. The signed APK is for controlled direct installation on representative field hardware before Play rollout.
+
+For preflight troubleshooting without building the release packages:
 
 ```bash
 npm run mobile:sync
 npm run mobile:release:preflight
 ```
+
+## Install the exact release candidate on a test device
+
+Enable Developer options and USB debugging on the Android test handset, connect it by USB, and authorize the development computer. Then run:
+
+```bash
+npm run mobile:install:android:release
+```
+
+The installer refuses to continue if the release APK or checksum manifest is missing, the SHA-256 does not match, no authorized device is connected, or more than one device is connected without an explicit target.
+
+When several devices are attached, select the intended device with `ANDROID_SERIAL`.
+
+PowerShell example:
+
+```powershell
+$env:ANDROID_SERIAL="DEVICE_SERIAL"
+npm run mobile:install:android:release
+```
+
+Bash example:
+
+```bash
+ANDROID_SERIAL="DEVICE_SERIAL" npm run mobile:install:android:release
+```
+
+The installer uses `adb install -r` and then verifies that `za.co.dallmayr.erp` is present on the selected device.
+
+## CI versus field-test packages
+
+The normal GitHub CI Android job is a compile/readiness gate and uses a non-production placeholder native key. **Do not use that debug CI build for technician acceptance or production testing.** Field acceptance must use the locally generated, preflight-validated signed release APK described above.
+
+The repository is currently public, so signed internal Dallmayr release packages should not be published as ordinary public-repository workflow artifacts. Keep the signed APK/AAB in the controlled release workspace or an organisation-approved private distribution channel.
 
 Increment `DALLMAYRERP_ANDROID_VERSION_CODE` for every Play upload. Keep `DALLMAYRERP_ANDROID_VERSION_NAME` aligned with the human release version. The preflight accepts the documented defaults `1` and `1.0.0` for the first release candidate when the environment overrides are not set.
