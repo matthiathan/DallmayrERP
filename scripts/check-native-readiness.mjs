@@ -19,6 +19,7 @@ const [
   releasePreflight,
   releaseBuilder,
   releaseInstaller,
+  acceptanceRecorder,
 ] = await Promise.all([
   text('capacitor.config.ts'),
   text('android/app/src/main/AndroidManifest.xml'),
@@ -32,6 +33,7 @@ const [
   text('scripts/check-android-release-preflight.mjs'),
   text('scripts/build-android-release.mjs'),
   text('scripts/install-android-release.mjs'),
+  text('scripts/create-android-acceptance-record.mjs'),
 ]);
 
 assert.match(capacitorConfig, /CAPACITOR_SERVER_URL/, 'Capacitor live-reload URL must be opt-in.');
@@ -69,6 +71,7 @@ assert.ok(packageJson.scripts['mobile:prepare'], 'package.json must expose mobil
 assert.ok(packageJson.scripts['mobile:release:preflight'], 'package.json must expose mobile:release:preflight.');
 assert.ok(packageJson.scripts['mobile:bundle:android'], 'package.json must expose the signed Android bundle command.');
 assert.ok(packageJson.scripts['mobile:install:android:release'], 'package.json must expose the signed Android device install command.');
+assert.ok(packageJson.scripts['mobile:acceptance:android:record'], 'package.json must expose the Android acceptance evidence command.');
 assert.ok(packageJson.scripts['native:check'], 'package.json must expose native:check.');
 
 assert.match(releasePreflight, /CAPACITOR_SERVER_URL/, 'Release preflight must reject live-reload server configuration.');
@@ -82,12 +85,22 @@ assert.match(releaseBuilder, /bundleRelease[\s\S]*assembleRelease|assembleReleas
 assert.match(releaseBuilder, /app-release\.aab/, 'Signed Android builds must verify the Play AAB output.');
 assert.match(releaseBuilder, /app-release\.apk/, 'Signed Android builds must verify the release APK output.');
 assert.match(releaseBuilder, /release-checksums\.sha256/, 'Signed Android builds must persist an integrity manifest for release outputs.');
+assert.match(releaseBuilder, /release-metadata\.json/, 'Signed Android builds must persist source/version metadata for release outputs.');
+assert.match(releaseBuilder, /rev-parse[\s\S]*HEAD/, 'Signed Android builds must record the exact Git source commit.');
+assert.match(releaseBuilder, /status[\s\S]*--porcelain/, 'Signed Android builds must reject dirty source trees.');
 assert.match(releaseInstaller, /ANDROID_SERIAL/, 'Device acceptance install must support explicit Android device selection.');
 assert.match(releaseInstaller, /install['"],\s*['"]-r['"]/, 'Device acceptance install must replace-install the verified signed APK.');
 assert.match(releaseInstaller, /release-checksums\.sha256/, 'Device acceptance install must verify the APK against the release checksum manifest.');
 assert.match(releaseInstaller, /za\.co\.dallmayr\.erp/, 'Device acceptance install must verify the production Android package ID.');
+assert.match(acceptanceRecorder, /release-metadata\.json/, 'Acceptance records must use build-time release metadata.');
+assert.match(acceptanceRecorder, /release-checksums\.sha256/, 'Acceptance records must verify the release checksum manifest.');
+assert.match(acceptanceRecorder, /dumpsys[\s\S]*package/, 'Acceptance records must verify the installed Android package version.');
+assert.match(acceptanceRecorder, /versionCode/, 'Acceptance records must record and compare Android versionCode.');
+assert.match(acceptanceRecorder, /versionName/, 'Acceptance records must record and compare Android versionName.');
+assert.match(acceptanceRecorder, /ro\.product\.model/, 'Acceptance records must capture representative device model information.');
+assert.match(acceptanceRecorder, /ANDROID_SERIAL/, 'Acceptance records must support explicit device selection.');
 
 assert.match(nativeDocs, /Android-first/i, 'Native documentation must record the Android-first product decision.');
 assert.match(nativeDocs, /locally bundled/i, 'Native documentation must describe the local field bundle architecture.');
 
-console.log('Native/mobile readiness contracts passed: Android field bundle, offline queue, API 36, scoped permissions, signing hygiene, release preflight and device-test packaging are staged.');
+console.log('Native/mobile readiness contracts passed: Android field bundle, offline queue, API 36, scoped permissions, signing hygiene, release preflight, device-test packaging and auditable acceptance evidence are staged.');
