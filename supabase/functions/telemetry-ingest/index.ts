@@ -40,6 +40,10 @@ function intOrNull(value: unknown) {
   return Number.isFinite(parsed) ? Math.trunc(parsed) : null;
 }
 
+function normalizedSerial(value: unknown) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders });
   if (request.method !== 'POST') return jsonResponse({ accepted: false, message: 'POST is required.' }, 405);
@@ -66,7 +70,7 @@ Deno.serve(async (request: Request) => {
 
   const { data: device, error: deviceError } = await supabase
     .from('telemetry_devices')
-    .select('id, device_code, status, credential_hash, machine_id')
+    .select('id, device_code, status, credential_hash, machine_id, reported_machine_serial')
     .eq('device_code', deviceCode)
     .maybeSingle();
 
@@ -76,7 +80,9 @@ Deno.serve(async (request: Request) => {
 
   let machineLink: unknown = null;
   const machineSerial = typeof payload.machine_serial === 'string' ? payload.machine_serial.trim().slice(0, 160) : '';
-  if (machineSerial) {
+  // Avoid an indexed serial lookup on every live telemetry packet. Auto-link is
+  // attempted only while unassigned AND when the device reports a new/changed S/N.
+  if (machineSerial && !device.machine_id && normalizedSerial(machineSerial) !== normalizedSerial(device.reported_machine_serial)) {
     const { data: linkResult, error: linkError } = await supabase.rpc('try_auto_link_telemetry_device', {
       p_device_id: device.id,
       p_machine_serial: machineSerial,
