@@ -40,8 +40,19 @@ function intOrNull(value: unknown) {
   return Number.isFinite(parsed) ? Math.trunc(parsed) : null;
 }
 
+function numberOrNull(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function normalizedSerial(value: unknown) {
   return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function validDateOrNull(value: unknown) {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const parsed = new Date(value);
+  return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : null;
 }
 
 Deno.serve(async (request: Request) => {
@@ -80,8 +91,6 @@ Deno.serve(async (request: Request) => {
 
   let machineLink: unknown = null;
   const machineSerial = typeof payload.machine_serial === 'string' ? payload.machine_serial.trim().slice(0, 160) : '';
-  // Avoid an indexed serial lookup on every live telemetry packet. Auto-link is
-  // attempted only while unassigned AND when the device reports a new/changed S/N.
   if (machineSerial && !device.machine_id && normalizedSerial(machineSerial) !== normalizedSerial(device.reported_machine_serial)) {
     const { data: linkResult, error: linkError } = await supabase.rpc('try_auto_link_telemetry_device', {
       p_device_id: device.id,
@@ -90,11 +99,46 @@ Deno.serve(async (request: Request) => {
     if (!linkError) machineLink = linkResult;
   }
 
+  let locationResult: unknown = null;
+  const rawLocation = payload.location;
+  if (rawLocation && typeof rawLocation === 'object' && !Array.isArray(rawLocation)) {
+    const location = rawLocation as Record<string, unknown>;
+    const latitude = numberOrNull(location.latitude ?? location.lat);
+    const longitude = numberOrNull(location.longitude ?? location.lng ?? location.lon);
+
+    if (latitude === null || longitude === null || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+      return jsonResponse({ accepted: false, message: 'Invalid location coordinates.' }, 400);
+    }
+
+    const source = typeof location.source === 'string' ? location.source.trim().toLowerCase().slice(0, 20) : 'gnss';
+    const { data: recordedLocation, error: locationError } = await supabase.rpc('record_telemetry_device_location', {
+      p_device_id: device.id,
+      p_latitude: latitude,
+      p_longitude: longitude,
+      p_accuracy_m: numberOrNull(location.accuracy_m ?? location.accuracy),
+      p_altitude_m: numberOrNull(location.altitude_m ?? location.altitude),
+      p_speed_mps: numberOrNull(location.speed_mps ?? location.speed),
+      p_satellites: intOrNull(location.satellites),
+      p_hdop: numberOrNull(location.hdop),
+      p_source: source,
+      p_fix_at: validDateOrNull(location.fix_at ?? location.timestamp),
+    });
+
+    if (locationError) {
+      const status = locationError.code === '42501' ? 403 : locationError.code === '22023' ? 400 : 500;
+      return jsonResponse({ accepted: false, message: status === 500 ? 'Location ingestion failed.' : locationError.message }, status);
+    }
+    locationResult = recordedLocation;
+  }
+
   const isSimulation = payload.simulation === true || payload.type === 'simulation_snapshot';
   let result: unknown;
   let ingestError: { code?: string; message: string } | null = null;
 
-  if (payload.type === 'simulation_snapshot') {
+  if (payload.type === 'location_update') {
+    if (!locationResult) return jsonResponse({ accepted: false, message: 'location_update requires a location object.' }, 400);
+    result = { accepted: true, location_update: true };
+  } else if (payload.type === 'simulation_snapshot') {
     const response = await supabase.rpc('ingest_telemetry_simulation_snapshot', {
       p_device_id: device.id,
       p_payload: payload,
@@ -126,7 +170,7 @@ Deno.serve(async (request: Request) => {
   if (typeof payload.cellular_model === 'string') patch.cellular_model = String(payload.cellular_model).slice(0, 120);
   if (Object.keys(patch).length > 0) await supabase.from('telemetry_devices').update(patch).eq('id', device.id);
 
-  if (!isSimulation) {
+  if (!isSimulation && payload.type !== 'location_update') {
     await supabase
       .from('telemetry_machine_state')
       .update({ simulation_mode: false, simulated_counters: [] })
@@ -134,8 +178,8 @@ Deno.serve(async (request: Request) => {
   }
 
   const responseBody = (result && typeof result === 'object' && !Array.isArray(result))
-    ? { ...(result as Record<string, unknown>), machine_link: machineLink }
-    : { accepted: true, result, machine_link: machineLink };
+    ? { ...(result as Record<string, unknown>), machine_link: machineLink, location: locationResult }
+    : { accepted: true, result, machine_link: machineLink, location: locationResult };
 
   return jsonResponse(responseBody);
 });
