@@ -40,6 +40,10 @@ function intOrNull(value: unknown) {
   return Number.isFinite(parsed) ? Math.trunc(parsed) : null;
 }
 
+function normalizedSerial(value: unknown) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders });
   if (request.method !== 'POST') return jsonResponse({ accepted: false, message: 'POST is required.' }, 405);
@@ -66,7 +70,7 @@ Deno.serve(async (request: Request) => {
 
   const { data: device, error: deviceError } = await supabase
     .from('telemetry_devices')
-    .select('id, device_code, status, credential_hash')
+    .select('id, device_code, status, credential_hash, machine_id, reported_machine_serial')
     .eq('device_code', deviceCode)
     .maybeSingle();
 
@@ -74,10 +78,37 @@ Deno.serve(async (request: Request) => {
   if (!device || device.status !== 'active') return jsonResponse({ accepted: false, message: 'Unknown or inactive telemetry device.' }, 401);
   if (!constantTimeEqual(await sha256Hex(deviceKey), device.credential_hash)) return jsonResponse({ accepted: false, message: 'Invalid telemetry device credentials.' }, 401);
 
-  const { data: result, error: ingestError } = await supabase.rpc('ingest_telemetry_payload_v3', {
-    p_device_id: device.id,
-    p_payload: payload,
-  });
+  let machineLink: unknown = null;
+  const machineSerial = typeof payload.machine_serial === 'string' ? payload.machine_serial.trim().slice(0, 160) : '';
+  // Avoid an indexed serial lookup on every live telemetry packet. Auto-link is
+  // attempted only while unassigned AND when the device reports a new/changed S/N.
+  if (machineSerial && !device.machine_id && normalizedSerial(machineSerial) !== normalizedSerial(device.reported_machine_serial)) {
+    const { data: linkResult, error: linkError } = await supabase.rpc('try_auto_link_telemetry_device', {
+      p_device_id: device.id,
+      p_machine_serial: machineSerial,
+    });
+    if (!linkError) machineLink = linkResult;
+  }
+
+  const isSimulation = payload.simulation === true || payload.type === 'simulation_snapshot';
+  let result: unknown;
+  let ingestError: { code?: string; message: string } | null = null;
+
+  if (payload.type === 'simulation_snapshot') {
+    const response = await supabase.rpc('ingest_telemetry_simulation_snapshot', {
+      p_device_id: device.id,
+      p_payload: payload,
+    });
+    result = response.data;
+    ingestError = response.error;
+  } else {
+    const response = await supabase.rpc('ingest_telemetry_payload_v3', {
+      p_device_id: device.id,
+      p_payload: payload,
+    });
+    result = response.data;
+    ingestError = response.error;
+  }
 
   if (ingestError) {
     const status = ingestError.code === '42501' ? 403 : ingestError.code === '22023' ? 400 : 500;
@@ -95,5 +126,16 @@ Deno.serve(async (request: Request) => {
   if (typeof payload.cellular_model === 'string') patch.cellular_model = String(payload.cellular_model).slice(0, 120);
   if (Object.keys(patch).length > 0) await supabase.from('telemetry_devices').update(patch).eq('id', device.id);
 
-  return jsonResponse(result ?? { accepted: true });
+  if (!isSimulation) {
+    await supabase
+      .from('telemetry_machine_state')
+      .update({ simulation_mode: false, simulated_counters: [] })
+      .eq('device_id', device.id);
+  }
+
+  const responseBody = (result && typeof result === 'object' && !Array.isArray(result))
+    ? { ...(result as Record<string, unknown>), machine_link: machineLink }
+    : { accepted: true, result, machine_link: machineLink };
+
+  return jsonResponse(responseBody);
 });
