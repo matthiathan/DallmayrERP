@@ -1,5 +1,6 @@
 import { TelemetryDashboard } from '@/components/features/TelemetryDashboard';
 import { TelemetryLiveControl } from '@/components/features/TelemetryLiveControl';
+import { TelemetryPocPanel } from '@/components/features/TelemetryPocPanel';
 import { AppShell } from '@/components/layout/AppShell';
 
 export default function TelemetryPage() {
@@ -13,6 +14,7 @@ export default function TelemetryPage() {
         </div>
       </div>
       <TelemetryLiveControl />
+      <TelemetryPocPanel />
       <TelemetryDashboard />
     </AppShell>
   );
