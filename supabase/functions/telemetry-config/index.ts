@@ -75,7 +75,7 @@ Deno.serve(async (request: Request) => {
 
   const { data: device, error: deviceError } = await supabase
     .from('telemetry_devices')
-    .select('id,device_code,status,credential_hash,machine_id,site_id,profile_id,last_counter_at,last_heartbeat_at,transport_preference,wifi_enabled,cellular_enabled')
+    .select('id,device_code,status,credential_hash,machine_id,site_id,profile_id,last_counter_at,last_heartbeat_at,transport_preference,wifi_enabled,cellular_enabled,location_enabled,location_interval_minutes,location_min_move_m,last_location_at')
     .eq('device_code', deviceCode)
     .maybeSingle();
 
@@ -92,12 +92,13 @@ Deno.serve(async (request: Request) => {
   const counterIntervalMinutes = Number(policy.counter_interval_minutes ?? 5);
   const heartbeatIntervalMinutes = Number(policy.heartbeat_interval_minutes ?? 10);
   const configRefreshMinutes = Number(policy.config_refresh_minutes ?? 5);
+  const locationIntervalMinutes = Math.max(1, Number(device.location_interval_minutes ?? 15));
 
   await supabase.from('telemetry_devices').update({ last_config_at: new Date().toISOString() }).eq('id', device.id);
 
   return jsonResponse({
     accepted: true,
-    schema: 2,
+    schema: 3,
     server_time: new Date().toISOString(),
     device_id: device.device_code,
     assignment: {
@@ -123,10 +124,16 @@ Deno.serve(async (request: Request) => {
       transport_preference: device.transport_preference ?? 'auto',
       wifi_enabled: Boolean(device.wifi_enabled),
       cellular_enabled: Boolean(device.cellular_enabled),
+      location: {
+        enabled: Boolean(device.location_enabled),
+        interval_minutes: locationIntervalMinutes,
+        min_move_m: Number(device.location_min_move_m ?? 50),
+      },
     },
     actions: {
       counter_due: counterDue(mode, counterIntervalMinutes, device.last_counter_at),
       heartbeat_due: intervalDue(heartbeatIntervalMinutes, device.last_heartbeat_at),
+      location_due: Boolean(device.location_enabled) && intervalDue(locationIntervalMinutes, device.last_location_at),
     },
   });
 });
