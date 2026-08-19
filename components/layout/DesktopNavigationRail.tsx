@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { NavigationIcon, navigationIconKind } from '@/components/layout/NavigationIcon';
 import type { NavSection } from '@/lib/auth/permissions';
 import { favoritePathname, type FavoriteEntry } from '@/lib/navigation/favorites';
@@ -58,8 +59,8 @@ export function DesktopNavigationRail({
     <aside aria-label="Application navigation" className={`dallmayr-sidebar ${collapsed ? 'is-collapsed' : ''}`}>
       <div className="dallmayr-sidebar-brand">
         <Link href={homePath} aria-label={TODAY_OPEN_LABEL}>
-          <span aria-hidden="true" className="dallmayr-crest">D</span>
-          {!collapsed ? <span><strong>Dallmayr</strong><small>Enterprise Resource Planning</small></span> : null}
+          <span aria-hidden="true" className="dallmayr-crest"><Image alt="" height={42} src="/icons/dallmayr-app.svg" width={35} /></span>
+          {!collapsed ? <span><strong>Dallmayr</strong><small>Vending &amp; coffee solutions</small></span> : null}
         </Link>
         <button aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'} onClick={onToggleCollapse} type="button">
           <span aria-hidden="true"><NavigationIcon kind={collapsed ? 'chevron-right' : 'chevron-left'} /></span>
