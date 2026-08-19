@@ -1,3 +1,4 @@
+import { TelemetryActivityLog } from '@/components/features/TelemetryActivityLog';
 import { TelemetryDashboard } from '@/components/features/TelemetryDashboard';
 import { TelemetryLiveControl } from '@/components/features/TelemetryLiveControl';
 import { TelemetryLocationMap } from '@/components/features/TelemetryLocationMap';
@@ -11,12 +12,13 @@ export default function TelemetryPage() {
         <div>
           <div className="badge">Admin &amp; Executive</div>
           <h1>Machine Telemetry</h1>
-          <p>Monitor live device connectivity, current machine location, faults and counters, remotely control telemetry mode and network preference, and review aggregated machine sales.</p>
+          <p>Monitor live device connectivity, current machine location, faults and counters, remotely control telemetry mode and network preference, and review sortable sales and error history.</p>
         </div>
       </div>
       <TelemetryLiveControl />
       <TelemetryLocationMap />
       <TelemetryPocPanel />
+      <TelemetryActivityLog />
       <TelemetryDashboard />
     </AppShell>
   );
