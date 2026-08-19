@@ -25,7 +25,7 @@
     "test": "node --test --import ./tests/unit/register-typescript-loader.mjs tests/unit/*.test.mjs",
     "test:unit": "node --test --import ./tests/unit/register-typescript-loader.mjs tests/unit/core-contracts.test.mjs",
     "test:components": "node --test --import ./tests/unit/register-typescript-loader.mjs tests/unit/components.test.mjs",
-    "feature:check": "node scripts/check-feature-flags.mjs",
+    "feature:check": "node scripts/check-feature-flags.mjs && node scripts/check-internal-messaging-security.mjs && node --check scripts/validate-staged-messaging.mjs && node --check tests/messaging-staged.spec.mjs",
     "sourcecheck": "node scripts/check-source-safety.mjs",
     "contractcheck": "node scripts/check-rpc-contracts.mjs",
     "navigation:terminology-check": "node scripts/check-navigation-terminology.mjs",

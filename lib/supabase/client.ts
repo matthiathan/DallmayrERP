@@ -75,5 +75,15 @@ export function getSupabaseClient() {
     },
   });
 
+  // Private Realtime channels are authorized with the user's JWT. Keep the
+  // Realtime client synchronized explicitly with Auth rather than relying on
+  // timing-sensitive implicit propagation during initial session recovery,
+  // sign-in or token refresh. Channel subscriptions still apply their own RLS.
+  browserClient.auth.onAuthStateChange((_event, session) => {
+    if (session?.access_token) {
+      void browserClient?.realtime.setAuth(session.access_token);
+    }
+  });
+
   return browserClient;
 }
