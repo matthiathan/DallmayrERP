@@ -28,6 +28,27 @@ const recordSelectors = [
   '.customer-detail-stage',
 ];
 
+const pageIdentitySelectors = [
+  '.erp-page-header',
+  '.page-header.hero-panel',
+  '.cx-dashboard-hero',
+  '.admin-command-header',
+];
+
+const urgentSelectors = [
+  '[role="alert"]',
+  '.erp-state-banner[data-tone="danger"]',
+  '.erp-state-banner[data-tone="warning"]',
+  '.error',
+];
+
+const summarySelectors = [
+  '.erp-metric-grid',
+  '.spatial-kpi-grid',
+  '.admin-command-kpis',
+  '.cx-dashboard-kpis',
+];
+
 function containsAny(root: HTMLElement, selectors: string[]) {
   return selectors.some((selector) => Boolean(root.querySelector(selector)));
 }
@@ -39,6 +60,39 @@ function detectLegacyTemplate(root: HTMLElement): PageTemplate {
   if (root.querySelector('.kpi-card, .grid-4, .grid-5, .grid-6, [class*="dashboard"]')) return 'dashboard';
   if (root.querySelector('form')) return 'form';
   return 'default';
+}
+
+function setRuntimePriority(element: HTMLElement, priority: string) {
+  if (element.dataset.uiPriority) return;
+  element.dataset.uiPriority = priority;
+  element.dataset.uiPrioritySource = 'runtime';
+}
+
+function markPriority(root: HTMLElement, selectors: string[], priority: string, firstOnly = false) {
+  const matches = selectors.flatMap((selector) => Array.from(root.querySelectorAll<HTMLElement>(selector)));
+  const unique = Array.from(new Set(matches));
+  (firstOnly ? unique.slice(0, 1) : unique).forEach((element) => setRuntimePriority(element, priority));
+}
+
+function applyUserFirstHierarchy(root: HTMLElement) {
+  root.dataset.userFirstHierarchy = 'true';
+
+  root.querySelectorAll<HTMLElement>('[data-ui-priority-source="runtime"]').forEach((element) => {
+    delete element.dataset.uiPriority;
+    delete element.dataset.uiPrioritySource;
+  });
+
+  markPriority(root, pageIdentitySelectors, 'identity', true);
+  markPriority(root, urgentSelectors, 'urgent');
+  markPriority(root, summarySelectors, 'summary');
+
+  root.querySelectorAll<HTMLElement>('.erp-toolbar, .page-toolbar, .erp-command-bar').forEach((element) => {
+    setRuntimePriority(element, 'action');
+  });
+
+  root.querySelectorAll<HTMLElement>('.enterprise-table-shell, .erp-table-shell, .remote-table-shell').forEach((element) => {
+    setRuntimePriority(element, 'detail');
+  });
 }
 
 function applyTemplate(root: HTMLElement, routeTemplate: PageTemplate) {
@@ -56,6 +110,7 @@ function applyTemplate(root: HTMLElement, routeTemplate: PageTemplate) {
     'template-default',
   );
   root.classList.add('workspace-template-frame', `template-${template}`);
+  applyUserFirstHierarchy(root);
 }
 
 export function PageTemplateFrame() {
@@ -63,16 +118,38 @@ export function PageTemplateFrame() {
 
   useEffect(() => {
     const routeTemplate = getPageTemplate(pathname);
+    let frameId = 0;
+    let contentObserver: MutationObserver | null = null;
+    let bootstrapObserver: MutationObserver | null = null;
 
-    function synchronizeTemplate() {
-      const root = document.querySelector<HTMLElement>('.application-main');
-      if (root) applyTemplate(root, routeTemplate);
+    function schedule(root: HTMLElement) {
+      if (frameId) window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(() => applyTemplate(root, routeTemplate));
     }
 
-    synchronizeTemplate();
-    const observer = new MutationObserver(synchronizeTemplate);
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
+    function attachToWorkspace() {
+      const root = document.querySelector<HTMLElement>('.application-main');
+      if (!root) return false;
+
+      schedule(root);
+      contentObserver?.disconnect();
+      contentObserver = new MutationObserver(() => schedule(root));
+      contentObserver.observe(root, { childList: true, subtree: true });
+      return true;
+    }
+
+    if (!attachToWorkspace()) {
+      bootstrapObserver = new MutationObserver(() => {
+        if (attachToWorkspace()) bootstrapObserver?.disconnect();
+      });
+      bootstrapObserver.observe(document.body, { childList: true, subtree: true });
+    }
+
+    return () => {
+      if (frameId) window.cancelAnimationFrame(frameId);
+      contentObserver?.disconnect();
+      bootstrapObserver?.disconnect();
+    };
   }, [pathname]);
 
   return null;

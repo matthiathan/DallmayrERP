@@ -111,30 +111,29 @@ export function OperationsManagerDashboard() {
   return (
     <div className="operations-manager-stage">
       {error ? <div className="error" role="alert">{error}</div> : null}
-
-      <PageToolbar
-        actions={<button className="button secondary" disabled={loading} onClick={loadDashboard} type="button">{loading ? 'Refreshing…' : 'Refresh Operations'}</button>}
-        description={`Daily control for ${branchLabel(userDetails?.branch ?? 'national')}: workload, service routes, deliveries, maintenance and stock exceptions.`}
-        lastUpdated={lastUpdated}
-        title="Operations Manager Start Page"
-      />
-
       {loading ? <HamsterLoader label="Loading Operations Manager workspace" /> : null}
 
       {!loading ? (
         <>
-          <section aria-label="Operations workload" className="grid grid-4 operations-manager-kpis">
-            <KpiCard label="Open branch work" value={summary?.branch_open_work ?? 0} helper="Active operational work in your branch scope." />
+          <section aria-label="Operations workload" className="grid grid-4 operations-manager-kpis" data-ui-priority="summary">
             <KpiCard label="Overdue work" value={summary?.branch_overdue_work ?? 0} helper="Work beyond its due or SLA date." />
             <KpiCard label="Unassigned work" value={summary?.unassigned_work ?? 0} helper="Open work still requiring an owner." />
             <KpiCard label="Open service jobs" value={summary?.open_service_jobs ?? 0} helper="Service jobs not completed or closed." />
-            <KpiCard label="Clients due today" value={routeMetrics.clientsDue} helper="Paid monthly and requested service work." />
             <KpiCard label="Routes unassigned" value={routeMetrics.unassigned} helper="Today’s clients still needing a driver." />
+            <KpiCard label="Open branch work" value={summary?.branch_open_work ?? 0} helper="Active operational work in your branch scope." />
+            <KpiCard label="Clients due today" value={routeMetrics.clientsDue} helper="Paid monthly and requested service work." />
             <KpiCard label="Open deliveries" value={summary?.open_deliveries ?? 0} helper="Delivery orders not delivered or closed." />
             <KpiCard label="Stock alerts" value={summary?.stock_alerts ?? 0} helper="Open inventory alerts requiring review." />
           </section>
 
-          <section className="neo-card operations-manager-section">
+          <PageToolbar
+            actions={<button className="button secondary" disabled={loading} onClick={loadDashboard} type="button">Refresh Operations</button>}
+            description={`Daily control for ${branchLabel(userDetails?.branch ?? 'national')}: workload, service routes, deliveries, maintenance and stock exceptions.`}
+            lastUpdated={lastUpdated}
+            title="Operations controls"
+          />
+
+          <section className="neo-card operations-manager-section" data-ui-priority="primary">
             <div className="minimal-panel-header">
               <div>
                 <span className="minimal-kicker">Today’s service pressure</span>
@@ -171,7 +170,7 @@ export function OperationsManagerDashboard() {
             )}
           </section>
 
-          <section className="neo-card operations-manager-section">
+          <section className="neo-card operations-manager-section" data-ui-priority="secondary">
             <div className="minimal-panel-header">
               <div>
                 <span className="minimal-kicker">Manager shortcuts</span>

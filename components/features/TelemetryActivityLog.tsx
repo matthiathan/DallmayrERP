@@ -203,8 +203,8 @@ export function TelemetryActivityLog() {
       <div className="page-header">
         <div>
           <div className="badge">Sales &amp; errors</div>
-          <h2>Telemetry activity log</h2>
-          <p>Browse every stored sales aggregate and machine fault event for the selected period. Sorting is applied on the server before pagination, so it covers the complete result set rather than only the visible page.</p>
+          <h2>Telemetry activity</h2>
+          <p>See sales, revenue and machine errors first, then filter or sort the complete server-side result set by machine, error or sales performance.</p>
         </div>
         <div>
           <button className="button secondary" type="button" disabled={loading} onClick={() => load()}>Refresh</button>
@@ -212,75 +212,85 @@ export function TelemetryActivityLog() {
         </div>
       </div>
 
-      {error ? <div className="error">{error}</div> : null}
-
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end', marginBottom: 16 }}>
-        <label>
-          <span>Period</span>
-          <select value={period} onChange={(event) => setPeriod(event.target.value as Period)}>
-            {(Object.keys(periodLabels) as Period[]).map((value) => <option key={value} value={value}>{periodLabels[value]}</option>)}
-          </select>
-        </label>
-        <label>
-          <span>Dataset</span>
-          <select value={dataset} onChange={(event) => setDataset(event.target.value as Dataset)}>
-            <option value="production">Production telemetry</option>
-            <option value="simulation">POC simulation</option>
-          </select>
-        </label>
-        <label>
-          <span>Show</span>
-          <select value={kind} onChange={(event) => setKind(event.target.value as Kind)}>
-            <option value="all">All sales &amp; errors</option>
-            <option value="sale">Sales only</option>
-            <option value="error">Errors only</option>
-          </select>
-        </label>
-        <label>
-          <span>Sort by</span>
-          <select value={sort} onChange={(event) => setSort(event.target.value as SortMode)}>
-            {(Object.keys(sortLabels) as SortMode[]).map((value) => <option key={value} value={value}>{sortLabels[value]}</option>)}
-          </select>
-        </label>
-        <label>
-          <span>Branch</span>
-          <select value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>
-            {(Object.keys(branchLabels) as Branch[]).map((value) => <option key={value} value={value}>{branchLabels[value]}</option>)}
-          </select>
-        </label>
-        <label>
-          <span>Rows</span>
-          <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-            <option value={250}>250</option>
-          </select>
-        </label>
-      </div>
-
-      <form onSubmit={submitSearch} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-        <input
-          aria-label="Search telemetry activity"
-          placeholder="Search machine, S/N, device, item, error code or detail"
-          value={searchInput}
-          onChange={(event) => setSearchInput(event.target.value)}
-          style={{ minWidth: 320, flex: '1 1 320px' }}
-        />
-        <button className="button secondary" type="submit">Search</button>
-        {search ? <button className="button secondary" type="button" onClick={() => { setSearchInput(''); setSearch(''); }}>Clear</button> : null}
-      </form>
-
+      {error ? <div className="error" role="alert">{error}</div> : null}
       {loading && !data ? <HamsterLoader label="Loading sales and errors" /> : null}
 
       {data ? (
-        <>
-          <div className="grid grid-3 spatial-kpi-grid">
-            <KpiCard label="Sales units" value={data.summary.units_sold} helper={`${data.date_from} to ${data.date_to}`} />
-            <KpiCard label="Revenue" value={money(data.summary.revenue_cents)} helper={`${data.summary.sale_rows.toLocaleString('en-ZA')} stored sales row(s)`} />
-            <KpiCard label="Error events" value={data.summary.error_events} helper={`${data.summary.active_errors.toLocaleString('en-ZA')} active`} />
-          </div>
+        <div className="grid grid-3 spatial-kpi-grid" aria-label="Sales and error summary">
+          <KpiCard label="Sales units" value={data.summary.units_sold} helper={`${data.date_from} to ${data.date_to}`} />
+          <KpiCard label="Revenue" value={money(data.summary.revenue_cents)} helper={`${data.summary.sale_rows.toLocaleString('en-ZA')} stored sales row(s)`} />
+          <KpiCard label="Error events" value={data.summary.error_events} helper={`${data.summary.active_errors.toLocaleString('en-ZA')} active`} />
+        </div>
+      ) : null}
 
-          {dataset === 'simulation' ? <div className="success">POC sales remain isolated from production. Safe simulation mode does not write real machine fault events.</div> : null}
+      <section aria-label="Activity filters and sorting" style={{ marginTop: 18 }}>
+        <h3 style={{ marginBottom: 10 }}>Filter &amp; sort</h3>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end', marginBottom: 12 }}>
+          <label>
+            <span>Period</span>
+            <select value={period} onChange={(event) => setPeriod(event.target.value as Period)}>
+              {(Object.keys(periodLabels) as Period[]).map((value) => <option key={value} value={value}>{periodLabels[value]}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Show</span>
+            <select value={kind} onChange={(event) => setKind(event.target.value as Kind)}>
+              <option value="all">All sales &amp; errors</option>
+              <option value="sale">Sales only</option>
+              <option value="error">Errors only</option>
+            </select>
+          </label>
+          <label>
+            <span>Sort by</span>
+            <select value={sort} onChange={(event) => setSort(event.target.value as SortMode)}>
+              {(Object.keys(sortLabels) as SortMode[]).map((value) => <option key={value} value={value}>{sortLabels[value]}</option>)}
+            </select>
+          </label>
+        </div>
+
+        <form onSubmit={submitSearch} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+          <input
+            aria-label="Search telemetry activity"
+            placeholder="Search machine, S/N, device, item, error code or detail"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            style={{ minWidth: 260, flex: '1 1 320px' }}
+          />
+          <button className="button secondary" type="submit">Search</button>
+          {search ? <button className="button secondary" type="button" onClick={() => { setSearchInput(''); setSearch(''); }}>Clear</button> : null}
+        </form>
+
+        <details>
+          <summary className="button secondary">Advanced filters</summary>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end', marginTop: 12, marginBottom: 16 }}>
+            <label>
+              <span>Dataset</span>
+              <select value={dataset} onChange={(event) => setDataset(event.target.value as Dataset)}>
+                <option value="production">Production telemetry</option>
+                <option value="simulation">POC simulation</option>
+              </select>
+            </label>
+            <label>
+              <span>Branch</span>
+              <select value={branch} onChange={(event) => setBranch(event.target.value as Branch)}>
+                {(Object.keys(branchLabels) as Branch[]).map((value) => <option key={value} value={value}>{branchLabels[value]}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Rows per page</span>
+              <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={250}>250</option>
+              </select>
+            </label>
+          </div>
+        </details>
+      </section>
+
+      {data ? (
+        <>
+          {dataset === 'simulation' ? <div className="success" role="status">POC sales remain isolated from production. Safe simulation mode does not write real machine fault events.</div> : null}
 
           <div className="table-scroll" style={{ marginTop: 16 }}>
             <table>

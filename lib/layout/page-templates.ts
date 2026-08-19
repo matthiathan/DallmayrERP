@@ -16,6 +16,7 @@ const dashboardPaths = new Set([
   '/executive/service',
   '/executive/warehouse',
   '/executive/reports',
+  '/telemetry',
 ]);
 
 const operationalPrefixes = [
@@ -49,6 +50,7 @@ const listPaths = new Set([
   '/marketing/contract-renewals',
   '/finance/service-coverage',
   '/utilities/data-matching',
+  '/telemetry/devices',
 ]);
 
 const formPaths = new Set([

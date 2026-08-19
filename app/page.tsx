@@ -52,38 +52,38 @@ export default function DashboardPage() {
   return (
     <AppShell>
       <section className="admin-command-dashboard cx-dashboard">
-        <section className="cx-dashboard-hero">
+        <section className="cx-dashboard-hero" data-ui-priority="identity">
           <div className="cx-dashboard-hero-copy">
             <span className="cx-dashboard-live"><i aria-hidden="true" />Live DallmayrERP data</span>
             <h1>Dallmayr South Africa operations at a glance.</h1>
-            <p>Customers, contracts, equipment, service activity, stock and ERP users in one operational workspace.</p>
+            <p>See equipment, service workload, customers, contracts and stock before opening detailed operational reporting.</p>
           </div>
           <div className="cx-dashboard-hero-status" aria-label="Dashboard status">
             <span>Workspace</span>
             <strong>All branches</strong>
-            <small>Supabase operational overview</small>
+            <small>National operational overview</small>
           </div>
         </section>
 
-        {error ? <div className="error">{error}</div> : null}
+        {error ? <div className="error" role="alert">{error}</div> : null}
         {loading ? <HamsterLoader label="Loading dashboard" /> : null}
 
-        <section aria-label="Key performance indicators" className="admin-command-kpis cx-dashboard-kpis">
-          <KpiCard label="Customers" value={data.customers} helper="JHB, CPT and KZN customer master rows" />
-          <KpiCard label="Contracts" value={data.contracts} helper="All branch contract agreement rows" />
-          <KpiCard label="Machines / Assets" value={data.assets} helper="Fixed assets imported into Supabase" />
-          <KpiCard label="Service Calls" value={data.serviceCalls} helper="JHB, KZN and CPT preventive service logs" />
-          <KpiCard label="Stock Items" value={data.stockItems} helper="Warehouse product records" />
-          <KpiCard label="Business Users" value={data.users} helper="Staff records in public.users" />
+        <section aria-label="Key operational summary" className="admin-command-kpis cx-dashboard-kpis" data-ui-priority="summary">
+          <KpiCard label="Machines / Assets" value={data.assets} helper="Equipment recorded across the business" />
+          <KpiCard label="Service Calls" value={data.serviceCalls} helper="Recorded service activity across JHB, CPT and KZN" />
+          <KpiCard label="Customers" value={data.customers} helper="Customers across Johannesburg, Cape Town and KwaZulu-Natal" />
+          <KpiCard label="Contracts" value={data.contracts} helper="Customer agreements across all branches" />
+          <KpiCard label="Stock Items" value={data.stockItems} helper="Products available to warehouse workflows" />
+          <KpiCard label="Business Users" value={data.users} helper="Staff with ERP user records" />
         </section>
 
-        <section className="admin-command-reporting cx-dashboard-reporting">
+        <section className="admin-command-reporting cx-dashboard-reporting" data-ui-priority="secondary">
           <div className="cx-dashboard-section-heading">
             <div>
               <span>Operational reporting</span>
               <h2>Performance and accountability</h2>
             </div>
-            <p>Existing DallmayrERP reporting data and controls are unchanged.</p>
+            <p>Use the detailed reporting below after reviewing the operational summary above.</p>
           </div>
           <ExecutiveReportingPanel />
         </section>
