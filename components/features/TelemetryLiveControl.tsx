@@ -35,6 +35,14 @@ type DeviceState = {
   last_counter_at: string | null;
   last_heartbeat_at: string | null;
   last_config_at: string | null;
+  expected_update_minutes: number;
+  grace_minutes: number;
+  offline_after_minutes: number;
+  update_deadline_at: string;
+  communication_status: 'online' | 'offline';
+  communication_error: boolean;
+  communication_error_code: string | null;
+  minutes_overdue: number;
 };
 
 type ActiveFault = {
@@ -48,10 +56,11 @@ type ActiveFault = {
   severity: string;
   detail: string | null;
   started_at: string;
-  last_seen_at: string;
+  last_seen_at: string | null;
+  fault_source?: 'machine' | 'connectivity';
 };
 
-type TelemetryDashboardPayload = {
+type TelemetryLivePayload = {
   device_states?: DeviceState[];
   active_faults?: ActiveFault[];
 };
@@ -67,26 +76,23 @@ function formatDate(value: string | null) {
   });
 }
 
-function online(lastSeen: string | null) {
-  return Boolean(lastSeen && Date.now() - new Date(lastSeen).getTime() <= 30 * 60 * 1000);
-}
-
 function machineLabel(row: DeviceState) {
   if (!row.machine_id) return 'Unassigned';
   return row.machine_name ?? row.serial_number ?? row.machine_id;
 }
 
 function connectionDetail(row: DeviceState) {
-  if (row.last_transport === 'wifi') {
-    return row.wifi_rssi === null ? 'Wi-Fi' : `Wi-Fi ${row.wifi_rssi} dBm`;
+  const network = row.last_transport === 'wifi'
+    ? (row.wifi_rssi === null ? 'Wi-Fi' : `Wi-Fi ${row.wifi_rssi} dBm`)
+    : row.last_transport === 'cellular'
+      ? ['SIM', row.cellular_operator, row.cellular_csq === null ? null : `CSQ ${row.cellular_csq}`].filter(Boolean).join(' · ')
+      : 'No successful transport yet';
+
+  if (!row.communication_error) {
+    return `${network} · expected every ${row.expected_update_minutes} min`;
   }
-  if (row.last_transport === 'cellular') {
-    const parts = ['SIM'];
-    if (row.cellular_operator) parts.push(row.cellular_operator);
-    if (row.cellular_csq !== null) parts.push(`CSQ ${row.cellular_csq}`);
-    return parts.join(' · ');
-  }
-  return 'No successful transport yet';
+
+  return `${network} · TELEMETRY_TIMEOUT · ${row.minutes_overdue} min overdue`;
 }
 
 export function TelemetryLiveControl() {
@@ -99,23 +105,20 @@ export function TelemetryLiveControl() {
   const [message, setMessage] = useState<string | null>(null);
 
   const canControl = ['admin', 'operations'].includes(userDetails?.role ?? '');
-  const onlineDevices = devices.filter((row) => online(row.last_seen_at)).length;
-  const offlineDevices = devices.length - onlineDevices;
+  const onlineDevices = devices.filter((row) => row.communication_status === 'online').length;
+  const offlineDevices = devices.filter((row) => row.communication_status === 'offline').length;
   const unassignedDevices = devices.filter((row) => !row.machine_id).length;
 
   const load = useCallback(async (quiet = false) => {
     if (!quiet) setLoading(true);
     setError(null);
-    const { data, error: loadError } = await getSupabaseClient().rpc('get_telemetry_dashboard', {
-      p_period: 'today',
-      p_branch: 'all',
-    });
+    const { data, error: loadError } = await getSupabaseClient().rpc('get_telemetry_live_status');
     if (loadError) {
       setError(loadError.message);
       setLoading(false);
       return;
     }
-    const payload = (data ?? {}) as TelemetryDashboardPayload;
+    const payload = (data ?? {}) as TelemetryLivePayload;
     setDevices(payload.device_states ?? []);
     setFaults(payload.active_faults ?? []);
     setLoading(false);
@@ -169,7 +172,9 @@ export function TelemetryLiveControl() {
         <div>
           <div className="badge">Live health</div>
           <h2>Device health &amp; active faults</h2>
-          <p>Operational health is shown before configuration. Device controls are available below when an administrator or operations user needs them.</p>
+          <p>
+            Connectivity is checked against each device&apos;s effective telemetry policy. A device that misses its required update window is automatically shown as offline and raised as a telemetry timeout error.
+          </p>
         </div>
         <button className="button secondary" disabled={loading} onClick={() => load()} type="button">Refresh</button>
       </div>
@@ -182,23 +187,24 @@ export function TelemetryLiveControl() {
 
       {devices.length > 0 ? (
         <div className="grid grid-4 spatial-kpi-grid" aria-label="Live telemetry summary">
-          <KpiCard label="Online devices" value={onlineDevices} helper="Seen within 30 minutes" />
-          <KpiCard label="Offline devices" value={offlineDevices} helper="Needs connectivity attention" />
-          <KpiCard label="Active faults" value={faults.length} helper="Current machine fault events" />
+          <KpiCard label="Online devices" value={onlineDevices} helper="Within required policy update window" />
+          <KpiCard label="Offline devices" value={offlineDevices} helper="Missed required update deadline" />
+          <KpiCard label="Active errors" value={faults.length} helper="Machine faults + telemetry timeouts" />
           <KpiCard label="Unassigned devices" value={unassignedDevices} helper="Needs machine assignment" />
         </div>
       ) : null}
 
       {faults.length > 0 ? (
-        <section aria-label="Active machine faults" style={{ marginTop: 20 }}>
-          <h3>Active machine faults</h3>
-          <p className="muted">Faults are kept above configuration because they require operational attention first.</p>
+        <section aria-label="Active telemetry and machine errors" style={{ marginTop: 20 }}>
+          <h3>Active errors requiring attention</h3>
+          <p className="muted">Communication timeouts are derived from the device reporting policy and clear automatically when valid telemetry resumes.</p>
           <div className="table-scroll">
             <table>
               <thead>
                 <tr>
                   <th>Machine</th>
-                  <th>Fault</th>
+                  <th>Error</th>
+                  <th>Source</th>
                   <th>Severity</th>
                   <th>Detail</th>
                   <th>Started</th>
@@ -209,6 +215,7 @@ export function TelemetryLiveControl() {
                   <tr key={fault.id}>
                     <td>{fault.machine_name ?? fault.serial_number ?? fault.device_code}</td>
                     <td>{fault.fault_code}</td>
+                    <td>{fault.fault_source === 'connectivity' ? 'Telemetry' : 'Machine'}</td>
                     <td><StatusBadge value={fault.severity} /></td>
                     <td>{fault.detail ?? 'No detail reported'}</td>
                     <td>{formatDate(fault.started_at)}</td>
@@ -219,7 +226,7 @@ export function TelemetryLiveControl() {
           </div>
         </section>
       ) : devices.length > 0 && !loading ? (
-        <div className="success" role="status" style={{ marginTop: 16 }}>No active machine faults are currently reported.</div>
+        <div className="success" role="status" style={{ marginTop: 16 }}>No active machine or telemetry errors are currently reported.</div>
       ) : null}
 
       {devices.length > 0 ? (
@@ -228,7 +235,7 @@ export function TelemetryLiveControl() {
             {canControl ? 'Device status & remote controls' : 'Device status details'} ({devices.length})
           </summary>
           <p className="muted" style={{ marginTop: 12 }}>
-            Open this section when you need firmware details, network preferences or reporting-mode controls.
+            Open this section when you need firmware details, network preferences, reporting-mode controls or the exact communication deadline.
           </p>
           <div className="table-scroll">
             <table>
@@ -241,7 +248,7 @@ export function TelemetryLiveControl() {
                   <th>Mode</th>
                   <th>Preferred network</th>
                   <th>Networks enabled</th>
-                  <th>Last seen</th>
+                  <th>Last update / deadline</th>
                 </tr>
               </thead>
               <tbody>
@@ -258,12 +265,16 @@ export function TelemetryLiveControl() {
                         <div className="muted">{row.firmware_version ?? 'Firmware not reported'}</div>
                       </td>
                       <td>
-                        <StatusBadge value={online(row.last_seen_at) ? 'online' : 'offline'} tone={online(row.last_seen_at) ? 'success' : 'danger'} />
+                        <StatusBadge
+                          value={row.communication_status}
+                          tone={row.communication_error ? 'danger' : 'success'}
+                        />
+                        {row.communication_error ? <StatusBadge value="error" tone="danger" /> : null}
                         <div className="muted">{connectionDetail(row)}</div>
                       </td>
                       <td>
                         <StatusBadge value={row.machine_status} />
-                        <div className="muted">{row.active_fault_count} active fault(s)</div>
+                        <div className="muted">{row.active_fault_count} machine fault(s)</div>
                       </td>
                       <td>
                         {canControl ? (
@@ -319,7 +330,12 @@ export function TelemetryLiveControl() {
                       </td>
                       <td>
                         {formatDate(row.last_seen_at)}
-                        <div className="muted">Config: {formatDate(row.last_config_at)}</div>
+                        <div className="muted">
+                          Required: every {row.expected_update_minutes} min · Offline after {row.offline_after_minutes} min
+                        </div>
+                        <div className={row.communication_error ? 'error' : 'muted'}>
+                          Deadline: {formatDate(row.update_deadline_at)}
+                        </div>
                       </td>
                     </tr>
                   );
