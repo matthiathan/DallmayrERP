@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
+import { KpiCard } from '@/components/ui/KpiCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
@@ -98,9 +99,12 @@ export function TelemetryLiveControl() {
   const [message, setMessage] = useState<string | null>(null);
 
   const canControl = ['admin', 'operations'].includes(userDetails?.role ?? '');
+  const onlineDevices = devices.filter((row) => online(row.last_seen_at)).length;
+  const offlineDevices = devices.length - onlineDevices;
+  const unassignedDevices = devices.filter((row) => !row.machine_id).length;
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (quiet = false) => {
+    if (!quiet) setLoading(true);
     setError(null);
     const { data, error: loadError } = await getSupabaseClient().rpc('get_telemetry_dashboard', {
       p_period: 'today',
@@ -122,6 +126,10 @@ export function TelemetryLiveControl() {
       setError(loadError instanceof Error ? loadError.message : 'Could not load live telemetry state.');
       setLoading(false);
     });
+    const interval = window.setInterval(() => {
+      load(true).catch(() => undefined);
+    }, 15000);
+    return () => window.clearInterval(interval);
   }, [load]);
 
   async function updateControl(
@@ -159,130 +167,32 @@ export function TelemetryLiveControl() {
     <section className="neo-card spatial-card">
       <div className="page-header">
         <div>
-          <div className="badge">Live device control</div>
-          <h2>Machine telemetry devices</h2>
-          <p>
-            Device state appears here even before the first sale. Live devices pull remote configuration every
-            few minutes and can fail over between Wi-Fi and cellular.
-          </p>
+          <div className="badge">Live health</div>
+          <h2>Device health &amp; active faults</h2>
+          <p>Operational health is shown before configuration. Device controls are available below when an administrator or operations user needs them.</p>
         </div>
-        <button className="button secondary" disabled={loading} onClick={() => load()} type="button">
-          Refresh
-        </button>
+        <button className="button secondary" disabled={loading} onClick={() => load()} type="button">Refresh</button>
       </div>
 
-      {error ? <div className="error">{error}</div> : null}
-      {message ? <div className="success">{message}</div> : null}
+      {error ? <div className="error" role="alert">{error}</div> : null}
+      {message ? <div className="success" role="status">{message}</div> : null}
       {loading && devices.length === 0 ? <HamsterLoader label="Loading live telemetry devices" /> : null}
 
       {!loading && devices.length === 0 ? <p>No active telemetry devices are registered.</p> : null}
 
       {devices.length > 0 ? (
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Machine</th>
-                <th>Device</th>
-                <th>Connection</th>
-                <th>Machine state</th>
-                <th>Mode</th>
-                <th>Preferred network</th>
-                <th>Networks enabled</th>
-                <th>Last seen</th>
-              </tr>
-            </thead>
-            <tbody>
-              {devices.map((row) => {
-                const saving = savingDevice === row.device_id;
-                return (
-                  <tr key={row.device_id}>
-                    <td>
-                      <strong>{machineLabel(row)}</strong>
-                      <div className="muted">{row.serial_number ?? row.branch ?? ''}</div>
-                    </td>
-                    <td>
-                      {row.device_code}
-                      <div className="muted">{row.firmware_version ?? 'Firmware not reported'}</div>
-                    </td>
-                    <td>
-                      <StatusBadge
-                        value={online(row.last_seen_at) ? 'online' : 'offline'}
-                        tone={online(row.last_seen_at) ? 'success' : 'danger'}
-                      />
-                      <div className="muted">{connectionDetail(row)}</div>
-                    </td>
-                    <td>
-                      <StatusBadge value={row.machine_status} />
-                      <div className="muted">{row.active_fault_count} active fault(s)</div>
-                    </td>
-                    <td>
-                      {canControl ? (
-                        <select
-                          aria-label={`Telemetry mode for ${row.device_code}`}
-                          disabled={saving}
-                          value={row.telemetry_mode}
-                          onChange={(event) => updateControl(row, { mode: event.target.value as TelemetryMode })}
-                        >
-                          <option value="live">Live</option>
-                          <option value="daily">Daily</option>
-                          <option value="monthly">Monthly</option>
-                        </select>
-                      ) : row.telemetry_mode}
-                    </td>
-                    <td>
-                      {canControl ? (
-                        <select
-                          aria-label={`Network preference for ${row.device_code}`}
-                          disabled={saving}
-                          value={row.transport_preference}
-                          onChange={(event) => updateControl(row, { transport: event.target.value as TransportPreference })}
-                        >
-                          <option value="auto">Auto: Wi-Fi then SIM</option>
-                          <option value="wifi">Prefer Wi-Fi</option>
-                          <option value="cellular">Prefer SIM</option>
-                        </select>
-                      ) : row.transport_preference}
-                    </td>
-                    <td>
-                      {canControl ? (
-                        <div className="grid">
-                          <label>
-                            <input
-                              checked={row.wifi_enabled}
-                              disabled={saving}
-                              onChange={(event) => updateControl(row, { wifiEnabled: event.target.checked })}
-                              type="checkbox"
-                            />{' '}
-                            Wi-Fi
-                          </label>
-                          <label>
-                            <input
-                              checked={row.cellular_enabled}
-                              disabled={saving}
-                              onChange={(event) => updateControl(row, { cellularEnabled: event.target.checked })}
-                              type="checkbox"
-                            />{' '}
-                            SIM
-                          </label>
-                        </div>
-                      ) : `${row.wifi_enabled ? 'Wi-Fi ' : ''}${row.cellular_enabled ? 'SIM' : ''}`}
-                    </td>
-                    <td>
-                      {formatDate(row.last_seen_at)}
-                      <div className="muted">Config: {formatDate(row.last_config_at)}</div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="grid grid-4 spatial-kpi-grid" aria-label="Live telemetry summary">
+          <KpiCard label="Online devices" value={onlineDevices} helper="Seen within 30 minutes" />
+          <KpiCard label="Offline devices" value={offlineDevices} helper="Needs connectivity attention" />
+          <KpiCard label="Active faults" value={faults.length} helper="Current machine fault events" />
+          <KpiCard label="Unassigned devices" value={unassignedDevices} helper="Needs machine assignment" />
         </div>
       ) : null}
 
       {faults.length > 0 ? (
-        <div style={{ marginTop: 20 }}>
+        <section aria-label="Active machine faults" style={{ marginTop: 20 }}>
           <h3>Active machine faults</h3>
+          <p className="muted">Faults are kept above configuration because they require operational attention first.</p>
           <div className="table-scroll">
             <table>
               <thead>
@@ -307,7 +217,117 @@ export function TelemetryLiveControl() {
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
+      ) : devices.length > 0 && !loading ? (
+        <div className="success" role="status" style={{ marginTop: 16 }}>No active machine faults are currently reported.</div>
+      ) : null}
+
+      {devices.length > 0 ? (
+        <details className="telemetry-device-controls" style={{ marginTop: 20 }}>
+          <summary className="button secondary">
+            {canControl ? 'Device status & remote controls' : 'Device status details'} ({devices.length})
+          </summary>
+          <p className="muted" style={{ marginTop: 12 }}>
+            Open this section when you need firmware details, network preferences or reporting-mode controls.
+          </p>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Machine</th>
+                  <th>Device</th>
+                  <th>Connection</th>
+                  <th>Machine state</th>
+                  <th>Mode</th>
+                  <th>Preferred network</th>
+                  <th>Networks enabled</th>
+                  <th>Last seen</th>
+                </tr>
+              </thead>
+              <tbody>
+                {devices.map((row) => {
+                  const saving = savingDevice === row.device_id;
+                  return (
+                    <tr key={row.device_id}>
+                      <td>
+                        <strong>{machineLabel(row)}</strong>
+                        <div className="muted">{row.serial_number ?? row.branch ?? ''}</div>
+                      </td>
+                      <td>
+                        {row.device_code}
+                        <div className="muted">{row.firmware_version ?? 'Firmware not reported'}</div>
+                      </td>
+                      <td>
+                        <StatusBadge value={online(row.last_seen_at) ? 'online' : 'offline'} tone={online(row.last_seen_at) ? 'success' : 'danger'} />
+                        <div className="muted">{connectionDetail(row)}</div>
+                      </td>
+                      <td>
+                        <StatusBadge value={row.machine_status} />
+                        <div className="muted">{row.active_fault_count} active fault(s)</div>
+                      </td>
+                      <td>
+                        {canControl ? (
+                          <select
+                            aria-label={`Telemetry mode for ${row.device_code}`}
+                            disabled={saving}
+                            value={row.telemetry_mode}
+                            onChange={(event) => updateControl(row, { mode: event.target.value as TelemetryMode })}
+                          >
+                            <option value="live">Live</option>
+                            <option value="daily">Daily</option>
+                            <option value="monthly">Monthly</option>
+                          </select>
+                        ) : row.telemetry_mode}
+                      </td>
+                      <td>
+                        {canControl ? (
+                          <select
+                            aria-label={`Network preference for ${row.device_code}`}
+                            disabled={saving}
+                            value={row.transport_preference}
+                            onChange={(event) => updateControl(row, { transport: event.target.value as TransportPreference })}
+                          >
+                            <option value="auto">Auto: Wi-Fi then SIM</option>
+                            <option value="wifi">Prefer Wi-Fi</option>
+                            <option value="cellular">Prefer SIM</option>
+                          </select>
+                        ) : row.transport_preference}
+                      </td>
+                      <td>
+                        {canControl ? (
+                          <div className="grid">
+                            <label>
+                              <input
+                                checked={row.wifi_enabled}
+                                disabled={saving}
+                                onChange={(event) => updateControl(row, { wifiEnabled: event.target.checked })}
+                                type="checkbox"
+                              />{' '}
+                              Wi-Fi
+                            </label>
+                            <label>
+                              <input
+                                checked={row.cellular_enabled}
+                                disabled={saving}
+                                onChange={(event) => updateControl(row, { cellularEnabled: event.target.checked })}
+                                type="checkbox"
+                              />{' '}
+                              SIM
+                            </label>
+                          </div>
+                        ) : `${row.wifi_enabled ? 'Wi-Fi ' : ''}${row.cellular_enabled ? 'SIM' : ''}`}
+                      </td>
+                      <td>
+                        {formatDate(row.last_seen_at)}
+                        <div className="muted">Config: {formatDate(row.last_config_at)}</div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </details>
       ) : null}
     </section>
   );
