@@ -102,35 +102,49 @@ export default function MarketingDashboardPage() {
 
   return (
     <AppShell>
-      <div className="page-header hero-panel"><div><div className="badge">Marketing</div><h1>Marketing Dashboard</h1><p>Customer intelligence, segmentation, campaign planning and shared marketing documentation.</p></div></div>
-      {error ? <div className="error">{error}</div> : null}
+      <div className="page-header hero-panel" data-ui-priority="identity">
+        <div>
+          <div className="badge">Marketing</div>
+          <h1>Marketing Dashboard</h1>
+          <p>Prioritize renewal follow-up and customer actions, then review audience and campaign analysis.</p>
+        </div>
+      </div>
+      {error ? <div className="error" role="alert">{error}</div> : null}
       {loading ? <HamsterLoader label="Loading marketing data" /> : null}
-      <div className="grid grid-4" style={{ marginBottom: 20 }}>
-        <KpiCard label="Customer base" value={data.customers.toLocaleString()} helper={`${data.contactableCustomers.toLocaleString()} contactable by email`} />
-        <KpiCard label="Contracts" value={data.contracts.toLocaleString()} helper={`${renewalDue} need renewal attention`} />
-        <KpiCard label="Machines" value={data.assets.toLocaleString()} helper={`${data.unmappedCustomers.toLocaleString()} customers still need machine mapping review`} />
-        <KpiCard label="Campaigns" value={data.campaigns.toLocaleString()} helper={`${data.openOpportunities.toLocaleString()} open sales opportunities`} />
+
+      <div className="grid grid-4" style={{ marginBottom: 20 }} data-ui-priority="summary">
+        <KpiCard label="Renewals needing attention" value={renewalDue} helper={`${data.renewalsNoEnd.toLocaleString()} contracts also need end-date cleanup`} />
+        <KpiCard label="Open opportunities" value={data.openOpportunities.toLocaleString()} helper="Active sales opportunities available for follow-up" />
+        <KpiCard label="Contactable customers" value={data.contactableCustomers.toLocaleString()} helper={`${data.customers.toLocaleString()} customers in the current national base`} />
+        <KpiCard label="Campaigns" value={data.campaigns.toLocaleString()} helper="Campaign records in the marketing workspace" />
       </div>
-      <div className="grid grid-2" style={{ marginBottom: 20 }}>
-        <BarChart title="Customer base by branch" data={[{ label: 'JHB', value: data.jhbCustomers }, { label: 'CPT', value: data.cptCustomers }, { label: 'KZN', value: data.kznCustomers }]} />
-        <DonutChart title="Contract records by branch" data={[{ label: 'JHB', value: data.jhbContracts }, { label: 'CPT', value: data.cptContracts }, { label: 'KZN', value: data.kznContracts }]} />
-      </div>
-      <div className="grid grid-4" style={{ marginBottom: 20 }}>
-        <Link className="card" href="/marketing/contract-renewals"><div className="nav-heading">Renewal campaigns</div><div className="kpi-value">{renewalDue}</div><p>Open the live 30/60/90 renewal worklist and export campaign audiences.</p></Link>
-        <Link className="card" href="/marketing/segments"><div className="nav-heading">Customer segments</div><div className="kpi-value">{data.contactableCustomers.toLocaleString()}</div><p>Filter by branch, status, category, salesman, contact readiness and machine mapping.</p></Link>
-        <Link className="card" href="/sales"><div className="nav-heading">Sales opportunities</div><div className="kpi-value">{data.openOpportunities.toLocaleString()}</div><p>Create and manage renewal, upgrade, new-machine and reactivation opportunities.</p></Link>
-        <Link className="card" href="/marketing/campaigns"><div className="nav-heading">Campaign planning</div><div className="kpi-value">{data.campaigns.toLocaleString()}</div><p>Create campaign records, track status and manage the campaign schedule.</p></Link>
-      </div>
-      <div className="card" style={{ marginBottom: 20 }}>
+
+      <section className="card" style={{ marginBottom: 20 }} data-ui-priority="urgent">
         <h2>Marketing action queue</h2>
+        <p>Open the work that needs follow-up before moving into analysis.</p>
         <div className="feature-list">
           <Link className="feature-pill" href="/marketing/contract-renewals">{data.renewalsDue.toLocaleString()} renewal records need follow-up</Link>
           <Link className="feature-pill" href="/marketing/contract-renewals">{data.renewalsNoEnd.toLocaleString()} contracts need end-date cleanup</Link>
           <Link className="feature-pill" href="/marketing/segments">{data.unmappedCustomers.toLocaleString()} customers need machine-mapping review</Link>
           <Link className="feature-pill" href="/marketing/segments">{data.contractLinkedCustomers.toLocaleString()} customers have contract references</Link>
         </div>
-      </div>
-      <DocumentHub department="marketing" branch="all" />
+      </section>
+
+      <section aria-label="Marketing workspaces" className="grid grid-4" style={{ marginBottom: 20 }} data-ui-priority="primary">
+        <Link className="card" href="/marketing/contract-renewals"><div className="nav-heading">Renewal campaigns</div><div className="kpi-value">{renewalDue}</div><p>Open the live 30/60/90 renewal worklist and export campaign audiences.</p></Link>
+        <Link className="card" href="/marketing/segments"><div className="nav-heading">Customer segments</div><div className="kpi-value">{data.contactableCustomers.toLocaleString()}</div><p>Filter by branch, status, category, salesman, contact readiness and machine mapping.</p></Link>
+        <Link className="card" href="/sales"><div className="nav-heading">Sales opportunities</div><div className="kpi-value">{data.openOpportunities.toLocaleString()}</div><p>Create and manage renewal, upgrade, new-machine and reactivation opportunities.</p></Link>
+        <Link className="card" href="/marketing/campaigns"><div className="nav-heading">Campaign planning</div><div className="kpi-value">{data.campaigns.toLocaleString()}</div><p>Create campaign records, track status and manage the campaign schedule.</p></Link>
+      </section>
+
+      <section aria-label="Marketing analysis" className="grid grid-2" style={{ marginBottom: 20 }} data-ui-priority="secondary">
+        <BarChart title="Customer base by branch" data={[{ label: 'JHB', value: data.jhbCustomers }, { label: 'CPT', value: data.cptCustomers }, { label: 'KZN', value: data.kznCustomers }]} />
+        <DonutChart title="Contract records by branch" data={[{ label: 'JHB', value: data.jhbContracts }, { label: 'CPT', value: data.cptContracts }, { label: 'KZN', value: data.kznContracts }]} />
+      </section>
+
+      <section data-ui-priority="supporting">
+        <DocumentHub department="marketing" branch="all" />
+      </section>
     </AppShell>
   );
 }
