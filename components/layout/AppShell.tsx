@@ -2,18 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { ConnectedWorkflowBar } from '@/components/layout/ConnectedWorkflowBar';
 import { DesktopNavigationRail } from '@/components/layout/DesktopNavigationRail';
-import { EnterpriseProductivityHub } from '@/components/layout/EnterpriseProductivityHub';
 import { MobileNavigationDrawer, MobileQuickBar } from '@/components/layout/MobileNavigation';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { canAccessShellPath, deriveAppShellNavigation } from '@/components/layout/appShellNavigation';
 import { useAppShellPreferences } from '@/components/layout/useAppShellPreferences';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
-import { DensityToggle } from '@/components/ui/DensityToggle';
 import { ErpStateBanner } from '@/components/ui/ErpLayout';
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
@@ -162,27 +159,18 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Link>
 
           <div className="application-header-search">
-            <GlobalSearch />
+            <GlobalSearch triggerLabel="Search machine, serial, QR or device ID" />
           </div>
 
           <div className="application-header-actions">
-            <Suspense fallback={null}>
-              <EnterpriseProductivityHub
-                activeTitle={activeTitle}
-                favorites={visibleFavorites}
-                onToggleFavorite={toggleFavorite}
-                pathname={pathname}
-                role={userDetails.role}
-              />
-            </Suspense>
-            <DensityToggle />
-            <div className="desktop-alerts-target" id="desktop-alerts-target" />
+            <div className="telemetry-header-branch"><NavigationIcon kind="pin" /><span>{activeBranch === 'NATIONAL' ? 'South Africa' : activeBranch}</span><span aria-hidden="true">⌄</span></div>
+            <div className="telemetry-sync-state"><i aria-hidden="true" />Synced just now</div>
+            <Link aria-label="Open active alerts" className="telemetry-header-alerts" href="/alerts"><NavigationIcon kind="bell" /><span aria-hidden="true">!</span></Link>
             <div className="desktop-account-menu-target" id="desktop-account-menu-target" />
           </div>
 
-          <div aria-label={`Current area: ${activeArea}`} className="application-page-context">
+          <div aria-label={`Current area: ${activeArea}`} className="application-page-context telemetry-page-context-contract">
             <span>{activeArea}</span>
-            <small>{activeBranch} &middot; {roleLabels[userDetails.role]}</small>
           </div>
 
           <button
@@ -255,9 +243,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         ) : (
           <>
             <Breadcrumbs />
-            <Suspense fallback={null}>
-              <ConnectedWorkflowBar pathname={pathname} role={userDetails.role} />
-            </Suspense>
             {children}
           </>
         )}

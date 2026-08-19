@@ -72,11 +72,11 @@ export function GlobalSearch({
       { href: '/workspace', label: 'Fleet Overview', section: 'Monitoring', description: 'Fleet health, sales, faults and connectivity.' },
       { href: '/machines', label: 'Machines', section: 'Monitoring', description: 'Every machine and connected device.' },
       ...(canReadTelemetry ? [
-        { href: '/alerts', label: 'Active Alerts', section: 'Monitoring', description: 'Current machine faults and offline devices.' },
-        { href: '/telemetry', label: 'Sales & Analytics', section: 'Telemetry', description: 'Item quantities, trends and activity.' },
+        { href: '/alerts', label: 'Alerts', section: 'Monitoring', description: 'Current machine faults and offline devices.' },
+        { href: '/telemetry', label: 'Analytics', section: 'Telemetry', description: 'Item quantities, trends and activity.' },
         { href: '/map', label: 'Machine Map', section: 'Telemetry', description: 'Last known telemetry device positions.' },
       ] : []),
-      ...(userDetails.role === 'admin' ? [{ href: '/telemetry/devices', label: 'Telemetry Devices', section: 'Management', description: 'Assign and manage telemetry controllers.' }] : []),
+      ...(userDetails.role === 'admin' ? [{ href: '/telemetry/devices', label: 'Device Management', section: 'Management', description: 'Assign and manage telemetry controllers.' }] : []),
     ];
     const pages = focusedPages.map((item) => ({
       id: item.href,

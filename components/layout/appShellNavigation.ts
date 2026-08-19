@@ -25,17 +25,17 @@ function getTelemetryFocusedSections(role: BusinessRole, supplementalSections: N
       items: [
         { href: '/workspace', label: 'Fleet Overview', code: 'FLT01', roles: 'all', description: 'Fleet health, sales counters, faults and connectivity.' },
         { href: '/machines', label: 'Machines', code: 'FLT02', roles: 'all', description: 'Every machine and its connected telemetry device.' },
-        ...(canReadTelemetry ? [{ href: '/alerts', label: 'Active Alerts', code: 'FLT03', roles: 'all' as const, description: 'Current machine faults and devices needing attention.' }] : []),
+        ...(canReadTelemetry ? [{ href: '/alerts', label: 'Alerts', code: 'FLT03', roles: 'all' as const, description: 'Current machine faults and devices needing attention.' }] : []),
       ],
     },
     ...(canReadTelemetry ? [{
       heading: 'Telemetry',
       items: [
-        { href: '/telemetry', label: 'Sales & Analytics', code: 'TEL01', roles: 'all' as const, description: 'Item quantities, trends, failures and activity.' },
+        { href: '/telemetry', label: 'Analytics', code: 'TEL01', roles: 'all' as const, description: 'Item quantities, trends, failures and activity.' },
         { href: '/map', label: 'Machine Map', code: 'TEL03', roles: 'all' as const, description: 'Last known device locations and movement.' },
       ],
     }] : []),
-    ...(role === 'admin' && deviceAdministration.length > 0 ? [{ heading: 'Management', items: deviceAdministration }] : []),
+    ...(role === 'admin' && deviceAdministration.length > 0 ? [{ heading: 'Management', items: deviceAdministration.map((item) => ({ ...item, label: 'Device Management' })) }] : []),
   ];
 }
 

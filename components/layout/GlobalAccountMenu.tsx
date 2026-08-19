@@ -24,7 +24,7 @@ export function GlobalAccountMenu() {
   const { authUser, businessProfile, userDetails, loading } = useAuth();
   const { preferences, status: appearanceStatus, error: appearanceError, updatePreferences, resetPreferences } = useAppearance();
   const [portalTarget, setPortalTarget] = useState<Element | null>(null);
-  const [mobilePlacement, setMobilePlacement] = useState(false);
+  const [placement, setPlacement] = useState<'mobile' | 'header' | 'sidebar'>('sidebar');
   const [signingOut, setSigningOut] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -40,7 +40,7 @@ export function GlobalAccountMenu() {
   useEffect(() => {
     if (loading || !authUser) {
       setPortalTarget(null);
-      setMobilePlacement(false);
+      setPlacement('sidebar');
       return;
     }
 
@@ -51,8 +51,8 @@ export function GlobalAccountMenu() {
       const legacyTarget = document.querySelector('.erp-menu-row.notch-menu-row');
       const mobileTarget = document.querySelector('#mobile-account-menu-target');
       const useMobile = mobileMedia.matches && Boolean(mobileTarget);
-      setMobilePlacement(useMobile);
-      setPortalTarget(useMobile ? mobileTarget : sidebarTarget ?? headerTarget ?? legacyTarget ?? mobileTarget);
+      setPlacement(useMobile ? 'mobile' : headerTarget ? 'header' : 'sidebar');
+      setPortalTarget(useMobile ? mobileTarget : headerTarget ?? sidebarTarget ?? legacyTarget ?? mobileTarget);
     }
 
     syncTarget();
@@ -155,14 +155,14 @@ export function GlobalAccountMenu() {
 
   return createPortal(
     <details
-      className={`dallmayr-account-menu ${mobilePlacement ? 'is-mobile' : 'is-sidebar'}`}
+      className={`dallmayr-account-menu is-${placement}`}
       onToggle={(event) => { if (!event.currentTarget.open) setSettingsOpen(false); }}
       ref={detailsRef}
     >
       <summary aria-label={`Open account menu for ${userName}`} className="dallmayr-account-trigger" ref={summaryRef}>
-        <span aria-hidden="true" className="dallmayr-account-avatar">{mobilePlacement ? userInitials : roleLabel.slice(0, 1).toUpperCase()}</span>
+        <span aria-hidden="true" className="dallmayr-account-avatar">{placement === 'sidebar' ? roleLabel.slice(0, 1).toUpperCase() : userInitials}</span>
         <span className="dallmayr-account-identity">
-          {mobilePlacement ? (
+          {placement !== 'sidebar' ? (
             <><strong>{userName}</strong><small>{roleLabel}</small></>
           ) : (
             <><small>Signed in as</small><strong>{roleLabel}</strong><small>Active telemetry account</small></>

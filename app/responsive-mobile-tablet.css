@@ -2476,3 +2476,277 @@ body { background: var(--ops-canvas) !important; color: var(--ops-ink) !importan
   .telemetry-map-selection dl > div { grid-template-columns: 92px minmax(0, 1fr); }
   .telemetry-location-table > header { align-items: flex-start; flex-direction: column; }
 }
+
+/* Generated telemetry console: shared shell and six-page visual authority. */
+@media (min-width: 901px) {
+  .application-shell-v2,
+  .application-shell-v2.desktop-rail-collapsed { --reference-sidebar-width: 258px; }
+  .application-header-inner { grid-template-columns: minmax(360px, 1fr) auto !important; gap: 20px !important; }
+  .application-header-search { width: min(760px, 54vw) !important; margin: 0 !important; }
+  .application-header-search .global-search-trigger {
+    position: relative;
+    width: 100% !important;
+    min-height: 42px !important;
+    padding: 0 14px 0 44px !important;
+    justify-content: space-between !important;
+    color: #667085 !important;
+    background: #fff !important;
+    border: 1px solid #d9dee5 !important;
+    border-radius: 7px !important;
+    box-shadow: none !important;
+    font-size: 12px !important;
+    text-align: left;
+  }
+  .application-header-search .global-search-trigger::before {
+    position: absolute;
+    left: 15px;
+    width: 15px;
+    height: 15px;
+    content: '';
+    border: 1.8px solid #667085;
+    border-radius: 50%;
+  }
+  .application-header-search .global-search-trigger::after {
+    position: absolute;
+    top: 25px;
+    left: 28px;
+    width: 7px;
+    height: 1.5px;
+    content: '';
+    background: #667085;
+    transform: rotate(45deg);
+  }
+  .application-header-search .global-search-trigger kbd { display: none !important; }
+  .application-header-actions { display: flex !important; min-width: 0 !important; align-items: center; gap: 12px; }
+  .application-main > .breadcrumbs { display: none !important; }
+  .dallmayr-sidebar-primary { display: grid; gap: 4px; padding: 20px 0 !important; border: 0 !important; }
+  .dallmayr-sidebar-link { grid-template-columns: 34px minmax(0,1fr) !important; min-height: 52px !important; padding: 8px 22px !important; }
+  .dallmayr-sidebar-link strong { font-size: 13px !important; font-weight: 650 !important; }
+  .dallmayr-sidebar-link svg { width: 21px !important; height: 21px !important; }
+  .dallmayr-sidebar-link[aria-current='page'] { box-shadow: inset 3px 0 0 #e11d2e !important; }
+  .dallmayr-sidebar-pinned-group { display: none !important; }
+}
+
+.telemetry-header-branch,
+.telemetry-sync-state {
+  display: inline-flex;
+  min-height: 40px;
+  padding: 0 13px;
+  align-items: center;
+  gap: 8px;
+  color: #101828;
+  background: #fff;
+  border: 1px solid #dfe3e8;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.telemetry-page-context-contract { display: none !important; }
+.telemetry-header-branch svg { width: 17px; height: 17px; }
+.telemetry-sync-state i { width: 9px; height: 9px; background: #16a34a; border-radius: 50%; }
+.telemetry-header-alerts { position: relative; display: grid; width: 38px; height: 38px; place-items: center; color: #101828; }
+.telemetry-header-alerts svg { width: 21px; height: 21px; }
+.telemetry-header-alerts span { position: absolute; top: -2px; right: -2px; display: grid; width: 18px; height: 18px; place-items: center; color: #fff; background: #d71920; border: 2px solid #fff; border-radius: 50%; font-size: 9px; font-weight: 900; }
+.desktop-account-menu-target { min-width: 150px; }
+.dallmayr-account-menu.is-header > summary.dallmayr-account-trigger { min-width: 150px; max-width: 210px; min-height: 42px; padding: 3px 7px; background: #fff; border: 0; border-radius: 7px; box-shadow: none; }
+.dallmayr-account-menu.is-header .dallmayr-account-avatar { width: 32px; height: 32px; color: #344054; background: #f8fafc; border: 1px solid #98a2b3; }
+.dallmayr-account-menu.is-header .dallmayr-account-identity strong { font-size: 11px; }
+.dallmayr-account-menu.is-header .dallmayr-account-panel { right: 0; }
+.telemetry-country-label { display: flex; min-height: 64px; padding: 16px 22px; align-items: center; gap: 10px; color: #fff; background: var(--ops-navy); border-top: 1px solid rgba(255,255,255,.08); font-size: 11px; }
+.telemetry-sidebar-account-fallback { display: none !important; }
+.telemetry-country-label span { font-size: 18px; }
+.fleet-metric-icon.is-grey { color: #667085; background: #eef0f2; }
+.fleet-table-hidden { display: none !important; }
+
+/* Fleet overview. */
+.fleet-overview-insight-grid { grid-template-columns: minmax(0, 1.35fr) minmax(250px, .86fr) minmax(280px, 1fr); }
+.fleet-overview-insight-grid .fleet-products-panel { grid-column: auto; }
+.fleet-overview-insight-grid .fleet-product-bars { grid-template-columns: 1fr; gap: 12px; }
+.fleet-overview-insight-grid .fleet-trend-panel,
+.fleet-overview-insight-grid .fleet-health-panel,
+.fleet-overview-insight-grid .fleet-products-panel { min-height: 292px; }
+.fleet-overview-lower-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .86fr) minmax(290px, 1fr); gap: 10px; }
+.fleet-overview-lower-grid > .fleet-panel { min-height: 315px; }
+.fleet-compact-table-wrap { max-width: 100%; overflow-x: auto; }
+.fleet-compact-table { width: 100%; min-width: 620px; border-collapse: collapse; }
+.fleet-compact-table th { padding: 9px 10px; color: #667085; border-bottom: 1px solid var(--ops-border); font-size: 8px; text-align: left; text-transform: uppercase; }
+.fleet-compact-table td { height: 48px; padding: 7px 10px; color: #344054; border-bottom: 1px solid #edf0f2; font-size: 9px; }
+.fleet-compact-table td strong,
+.fleet-compact-table td span { display: block; }
+.fleet-compact-table td > span { margin-top: 2px; color: #667085; font-size: 8px; }
+.fleet-compact-table button { min-height: 27px; padding: 4px 8px; color: #d71920; background: #fff; border: 1px solid #efb3b7; border-radius: 5px; font-size: 8px; font-weight: 750; }
+.fleet-alert-severity { display: inline-flex !important; width: max-content; padding: 3px 6px; border-radius: 4px; font-size: 8px !important; font-weight: 800; text-transform: capitalize; }
+.fleet-alert-severity.is-critical,
+.fleet-alert-severity.is-fault { color: #b42318; background: #feeceb; }
+.fleet-alert-severity.is-warning { color: #a35a00; background: #fff2db; }
+.fleet-alert-severity.is-connectivity { color: #1769aa; background: #e8f3fd; }
+.fleet-overview-map-card .telemetry-tracker-map { height: 260px; border: 0; border-radius: 0; }
+.fleet-overview-map-card .telemetry-tracker { gap: 0; }
+.fleet-map-preview-loading { display: grid; min-height: 258px; place-items: center; }
+.fleet-recent-activity-list { display: grid; padding: 0 14px; }
+.fleet-recent-activity-list > div { display: grid; grid-template-columns: 10px minmax(0,1fr) auto; min-height: 49px; padding: 8px 0; align-items: center; gap: 10px; border-bottom: 1px solid #edf0f2; }
+.fleet-recent-activity-list i { width: 8px; height: 8px; border-radius: 50%; }
+.fleet-recent-activity-list i.is-danger { background: #d71920; }
+.fleet-recent-activity-list i.is-success { background: #16a34a; }
+.fleet-recent-activity-list div > div { display: grid; gap: 2px; }
+.fleet-recent-activity-list strong { color: #101828; font-size: 9px; }
+.fleet-recent-activity-list span,
+.fleet-recent-activity-list time { color: #667085; font-size: 8px; }
+
+/* Dedicated alert centre. */
+.fleet-alert-metric-grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
+.fleet-alert-chart-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr); gap: 10px; margin-bottom: 12px; }
+.fleet-alert-chart-grid > article { min-height: 250px; }
+.fleet-alert-bars { display: grid; gap: 18px; padding: 24px 18px; }
+.fleet-alert-bars > div { display: grid; grid-template-columns: 90px minmax(80px, 1fr) 38px; gap: 10px; align-items: center; font-size: 10px; }
+.fleet-alert-bars i { height: 12px; overflow: hidden; background: #edf0f2; border-radius: 3px; }
+.fleet-alert-bars b { display: block; height: 100%; border-radius: inherit; }
+.fleet-alert-bars b.is-critical,
+.fleet-alert-bars b.is-fault { background: #df1922; }
+.fleet-alert-bars b.is-warning { background: #f2a900; }
+.fleet-alert-bars b.is-connectivity { background: #287ec1; }
+.fleet-alert-bars strong { text-align: right; }
+.fleet-category-summary { display: grid; grid-template-columns: 142px minmax(0,1fr); gap: 22px; padding: 22px; align-items: center; }
+.fleet-category-ring { display: grid; width: 132px; height: 132px; place-items: center; background: conic-gradient(#dc1822 0 30%,#f97316 30% 55%,#287ec1 55% 70%,#16a34a 70% 82%,#8b5cf6 82% 92%,#98a2b3 92%); border-radius: 50%; }
+.fleet-category-ring > span { display: grid; width: 78px; height: 78px; place-content: center; color: #667085; background: #fff; border-radius: 50%; font-size: 9px; text-align: center; }
+.fleet-category-ring strong { display: block; color: #101828; font-size: 22px; }
+.fleet-category-summary dl { display: grid; gap: 12px; margin: 0; }
+.fleet-category-summary dl > div { display: flex; justify-content: space-between; gap: 10px; font-size: 10px; }
+.fleet-category-summary dt,
+.fleet-category-summary dd { margin: 0; }
+.fleet-category-summary dt { display: flex; align-items: center; gap: 7px; }
+.fleet-category-summary dt i { width: 8px; height: 8px; background: #dc1822; border-radius: 50%; }
+.fleet-category-summary dt i.is-1 { background: #f97316; }.fleet-category-summary dt i.is-2 { background: #287ec1; }.fleet-category-summary dt i.is-3 { background: #16a34a; }.fleet-category-summary dt i.is-4 { background: #8b5cf6; }
+.fleet-alert-table-panel { overflow: hidden; }
+.fleet-alert-filters { grid-template-columns: minmax(300px,1fr) 150px 150px auto; }
+.fleet-alert-filters > .fleet-button { align-self: end; }
+.fleet-alert-table { min-width: 1120px; }
+.fleet-alert-status { display: inline-flex !important; width: max-content; padding: 4px 7px; color: #b42318 !important; background: #fff5f4; border: 1px solid #f1b9b5; border-radius: 4px; font-size: 8px !important; }
+
+/* Analytics page. */
+.telemetry-analytics-workspace { display: grid; gap: 12px; }
+.analytics-filter-bar { display: grid; grid-template-columns: repeat(3,minmax(160px, 1fr)) auto auto; gap: 9px; align-items: end; }
+.analytics-filter-bar label { display: grid; gap: 4px; }
+.analytics-filter-bar label > span { color: #667085; font-size: 9px; font-weight: 700; }
+.analytics-filter-bar select { min-height: 40px !important; color: #101828 !important; background: #fff !important; border: 1px solid var(--ops-border) !important; border-radius: 7px; font-size: 11px !important; }
+.analytics-updated { align-self: center; color: #667085; font-size: 8px; white-space: nowrap; }
+.analytics-metric-grid { margin: 0; }
+.analytics-metric { min-height: 95px; }
+.analytics-chart-grid { display: grid; grid-template-columns: minmax(0,1.55fr) minmax(280px,.95fr) minmax(300px,1fr); gap: 10px; }
+.analytics-sales-trend { grid-column: span 2; min-height: 300px; }
+.analytics-top-items { grid-column: 3; grid-row: 1 / span 2; }
+.analytics-branch-chart,
+.analytics-top-machines,
+.analytics-connectivity { min-height: 260px; }
+.analytics-line-chart { padding: 12px 16px 8px; }
+.analytics-line-chart svg { display: block; width: 100%; height: 210px; overflow: visible; }
+.analytics-line-chart line { stroke: #e6e9ed; stroke-width: 1; }
+.analytics-line-chart polyline { fill: none; stroke: #06285a; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.analytics-line-chart circle { fill: #fff; stroke: #06285a; stroke-width: 3; }
+.analytics-line-chart > div { display: flex; justify-content: space-between; color: #667085; font-size: 8px; }
+.analytics-horizontal-bars { display: grid; gap: 13px; padding: 17px; }
+.analytics-horizontal-bars > div { display: grid; grid-template-columns: minmax(90px,130px) minmax(70px,1fr) 52px; gap: 9px; align-items: center; font-size: 9px; }
+.analytics-horizontal-bars > div > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.analytics-horizontal-bars i { height: 10px; overflow: hidden; background: #eef1f4; border-radius: 2px; }
+.analytics-horizontal-bars b { display: block; height: 100%; background: #06285a; border-radius: inherit; }
+.analytics-horizontal-bars b.is-green { background: #16a34a; }
+.analytics-horizontal-bars b.is-red { background: #df1922; }
+.analytics-horizontal-bars strong { font-size: 8px; text-align: right; }
+.analytics-donut-summary { display: grid; grid-template-columns: 128px minmax(0,1fr); gap: 18px; padding: 28px 20px; align-items: center; }
+.analytics-donut { display: grid; width: 124px; height: 124px; place-items: center; border-radius: 50%; }
+.analytics-donut > span { display: grid; width: 78px; height: 78px; place-content: center; color: #667085; background: #fff; border-radius: 50%; font-size: 8px; text-align: center; }
+.analytics-donut strong { display: block; color: #101828; font-size: 18px; }
+.analytics-donut-summary dl { display: grid; gap: 14px; margin: 0; }
+.analytics-donut-summary dl > div { display: flex; justify-content: space-between; gap: 8px; font-size: 9px; }
+.analytics-donut-summary dt,
+.analytics-donut-summary dd { margin: 0; }
+.analytics-donut-summary dt { display: flex; align-items: center; gap: 6px; }
+.analytics-donut-summary i { width: 8px; height: 8px; border-radius: 50%; }.analytics-donut-summary i.is-online { background: #16a34a; }.analytics-donut-summary i.is-offline { background: #98a2b3; }
+.analytics-machine-table { overflow: hidden; }
+
+/* Device management. */
+.device-management-workspace { display: grid; grid-template-columns: minmax(0,1fr); gap: 12px; align-items: start; }
+.device-management-workspace.has-device-detail { grid-template-columns: minmax(0,1fr) minmax(340px,380px); }
+.device-management-main { min-width: 0; }
+.device-heading-title { display: flex; align-items: center; gap: 10px; }
+.device-heading-title span { padding: 4px 7px; color: #344054; background: #f2f4f7; border: 1px solid #dfe3e8; border-radius: 4px; font-size: 8px; font-weight: 750; }
+.device-metric-grid { margin-bottom: 12px; }
+.device-register-panel { overflow: hidden; }
+.device-register-filters { grid-template-columns: minmax(250px,1fr) repeat(3,minmax(125px,auto)) auto; }
+.device-register-table { min-width: 1240px; }
+.device-signal { display: inline-flex; height: 18px; align-items: flex-end; gap: 2px; }
+.device-signal i { display: block; width: 3px; background: #16a34a; border-radius: 2px 2px 0 0; }.device-signal i:nth-child(1){height:5px}.device-signal i:nth-child(2){height:8px}.device-signal i:nth-child(3){height:11px}.device-signal i:nth-child(4){height:15px}.device-signal.is-offline i{background:#98a2b3}
+.device-detail-panel { position: sticky; top: 78px; max-height: calc(100dvh - 94px); overflow-y: auto; color: #101828; background: #fff; border: 1px solid var(--ops-border); border-radius: 9px; box-shadow: 0 1px 2px rgba(16,24,40,.04); }
+.device-detail-panel > header { display: flex; min-height: 104px; padding: 16px; align-items: flex-start; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--ops-border); }
+.device-detail-panel > header > div { display: grid; gap: 5px; }.device-detail-panel h2 { margin: 0; color: #101828 !important; font-size: 17px !important; }.device-detail-panel > header strong { color: #344054; font-size: 10px; }.device-detail-panel > header span { display: flex; align-items: center; gap: 6px; color: #667085; font-size: 8px; }.device-detail-panel > header span i { width: 7px; height: 7px; background: #16a34a; border-radius: 50%; }.device-detail-panel > header button { width: 28px; height: 28px; padding: 0; color: #344054; background: transparent; border: 0; font-size: 22px; }
+.device-detail-panel > section { display: grid; gap: 11px; padding: 15px; border-bottom: 1px solid var(--ops-border); }
+.device-detail-panel h3 { margin: 0; color: #101828 !important; font-size: 11px !important; }
+.device-detail-panel label { display: grid; grid-template-columns: 122px minmax(0,1fr); gap: 9px; align-items: center; color: #667085; font-size: 9px; }
+.device-detail-panel :is(input,select) { min-height: 34px !important; color: #101828 !important; background: #fff !important; border: 1px solid var(--ops-border) !important; border-radius: 6px !important; box-shadow: none !important; font-size: 9px !important; }
+.device-assignment-search { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px; }.device-assignment-search button { min-height: 34px; padding: 5px 10px; color: #06285a; background: #fff; border: 1px solid #97a6b9; border-radius: 6px; font-size: 8px; font-weight: 750; }
+.device-radio-row { display: flex; gap: 14px; }.device-radio-row label { display: flex; grid-template-columns: auto auto; gap: 5px; }.device-radio-row input { width: 15px; min-height: 15px !important; }
+.device-detail-panel label.device-toggle-row { display: flex; justify-content: space-between; }.device-toggle-row input { width: 34px; height: 18px; min-height: 18px !important; accent-color: #16a34a; }
+.device-detail-panel dl { display: grid; gap: 8px; margin: 0; }.device-detail-panel dl > div { display: grid; grid-template-columns: 110px minmax(0,1fr); gap: 10px; font-size: 9px; }.device-detail-panel dt { color: #667085; }.device-detail-panel dd { margin: 0; color: #101828; font-weight: 650; }
+.device-detail-panel > footer { padding: 14px; }.device-detail-panel > footer .fleet-button { width: 100%; }
+
+/* Full machine map selection mirrors the generated right-side inspector. */
+.telemetry-map-page .telemetry-location-card { padding: 10px; }
+.telemetry-map-page .telemetry-map-heading { padding: 3px 4px; }
+.telemetry-map-page .telemetry-map-heading h2 { font-size: 13px; }
+.telemetry-map-page .telemetry-map-heading p { font-size: 9px; }
+.telemetry-map-page .telemetry-tracker-map:has(.telemetry-map-selection) { width: calc(100% - 330px); overflow: visible; }
+.telemetry-map-page .telemetry-map-selection { top: 0; bottom: auto; left: calc(100% + 12px); width: 318px; max-height: 100%; overflow-y: auto; }
+
+@media (max-width: 1420px) {
+  .fleet-overview-insight-grid { grid-template-columns: minmax(0,1.35fr) minmax(250px,.9fr); }
+  .fleet-overview-insight-grid .fleet-products-panel { grid-column: 1 / -1; }
+  .fleet-overview-insight-grid .fleet-product-bars { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .fleet-overview-lower-grid { grid-template-columns: minmax(0,1.25fr) minmax(280px,.9fr); }
+  .fleet-recent-activity-card { grid-column: 1 / -1; min-height: auto !important; }
+  .analytics-chart-grid { grid-template-columns: minmax(0,1.4fr) minmax(280px,1fr); }
+  .analytics-top-items { grid-column: auto; grid-row: auto; }
+  .device-management-workspace.has-device-detail { grid-template-columns: minmax(0,1fr) 350px; }
+}
+
+@media (max-width: 1180px) {
+  .telemetry-header-branch { display: none; }
+  .device-management-workspace.has-device-detail { grid-template-columns: 1fr; }
+  .device-detail-panel { position: fixed; top: 64px; right: 0; bottom: 0; z-index: 120; width: min(390px,94vw); max-height: none; border-radius: 0; box-shadow: -12px 0 30px rgba(16,24,40,.2); }
+  .telemetry-map-page .telemetry-tracker-map:has(.telemetry-map-selection) { width: 100%; }
+  .telemetry-map-page .telemetry-map-selection { top: auto; bottom: 30px; left: 14px; width: min(360px,calc(100% - 28px)); }
+}
+
+@media (max-width: 900px) {
+  .telemetry-header-branch,
+  .telemetry-sync-state,
+  .telemetry-header-alerts,
+  .desktop-account-menu-target { display: none; }
+  .fleet-overview-lower-grid,
+  .fleet-alert-chart-grid,
+  .analytics-chart-grid { grid-template-columns: 1fr; }
+  .fleet-priority-alerts,
+  .fleet-overview-map-card,
+  .fleet-recent-activity-card,
+  .analytics-sales-trend,
+  .analytics-top-items { grid-column: auto; grid-row: auto; }
+  .fleet-alert-metric-grid { display: flex; }
+  .analytics-filter-bar { grid-template-columns: 1fr 1fr; }
+  .analytics-filter-bar .analytics-updated { grid-column: 1 / -1; }
+  .device-register-filters { grid-template-columns: 1fr 1fr; }
+  .device-register-filters .fleet-search { grid-column: 1 / -1; }
+}
+
+@media (max-width: 620px) {
+  .fleet-overview-insight-grid .fleet-product-bars { grid-template-columns: 1fr; }
+  .fleet-category-summary,
+  .analytics-donut-summary { grid-template-columns: 1fr; justify-items: center; }
+  .fleet-alert-filters,
+  .analytics-filter-bar,
+  .device-register-filters { grid-template-columns: 1fr; }
+  .fleet-alert-filters .fleet-search,
+  .analytics-filter-bar .analytics-updated,
+  .device-register-filters .fleet-search { grid-column: auto; }
+  .device-detail-panel { width: 100%; }
+  .device-detail-panel label { grid-template-columns: 1fr; }
+}

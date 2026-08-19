@@ -27,6 +27,7 @@ export type NavigationIconKind =
 export function navigationIconKind(label: string, href: string): NavigationIconKind {
   const value = `${label} ${href}`.toLowerCase();
   if (href === '/' || value.includes('dashboard') || value.includes('today') || value.includes('home') || value.includes('command centre')) return 'dashboard';
+  if (href === '/map' || value.includes('machine map') || value.includes('location')) return 'pin';
   if (href === '/work' || value.includes('my work') || value.includes('work order') || value.includes('service job') || value.includes('job') || value.includes('task')) return 'clipboard';
   if (value.includes('message') || value.includes('inbox') || value.includes('communication')) return 'message';
   if (value.includes('alert') || value.includes('notification') || value.includes('exception')) return 'bell';

@@ -15,6 +15,7 @@ import {
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { getSupabaseClient } from '@/lib/supabase/client';
@@ -159,10 +160,12 @@ function TelemetryMapCanvas({
   points,
   selectedDeviceId,
   onSelect,
+  compact = false,
 }: {
   points: MachinePoint[];
   selectedDeviceId: string | null;
   onSelect: (deviceId: string | null) => void;
+  compact?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -340,8 +343,8 @@ function TelemetryMapCanvas({
   }, [ready, selected]);
 
   return (
-    <div className="telemetry-tracker">
-      <div className="telemetry-map-toolbar">
+    <div className={`telemetry-tracker ${compact ? 'is-compact' : ''}`}>
+      {!compact ? <div className="telemetry-map-toolbar">
         <div className="telemetry-map-legend" aria-label="Machine map status legend">
           <span><i className="is-online" />Online</span>
           <span><i className="is-stale" />Stale location</span>
@@ -352,7 +355,7 @@ function TelemetryMapCanvas({
           if (mapRef.current) fitMapToPoints(mapRef.current, points);
           onSelect(null);
         }}>Fit all machines</button>
-      </div>
+      </div> : null}
 
       <div className="telemetry-tracker-map">
         <div
@@ -364,7 +367,7 @@ function TelemetryMapCanvas({
         {!ready && !mapError ? <div className="telemetry-map-loading"><HamsterLoader label="Loading open-source map" /></div> : null}
         {mapError ? <div className="telemetry-map-error" role="alert"><strong>Map unavailable</strong><span>{mapError}</span></div> : null}
 
-        {selected ? (
+        {selected && !compact ? (
           <aside aria-live="polite" className="telemetry-map-selection">
             <header><div><span>{selected.device_code}</span><h3>{machineLabel(selected)}</h3></div><button aria-label="Close machine map details" onClick={() => onSelect(null)} type="button">×</button></header>
             <StatusBadge value={mapHealth(selected)} />
@@ -384,6 +387,28 @@ function TelemetryMapCanvas({
   );
 }
 
+export function TelemetryLocationPreview() {
+  const [points, setPoints] = useState<MachinePoint[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    getSupabaseClient().rpc('get_telemetry_location_map').then(({ data }) => {
+      if (!active) return;
+      const rows = (data ?? []) as LocationRow[];
+      setPoints(rows.filter((row): row is MachinePoint => (
+        row.has_location && typeof row.latitude === 'number' && typeof row.longitude === 'number'
+      )));
+      setLoading(false);
+    });
+    return () => { active = false; };
+  }, []);
+
+  if (loading) return <div className="fleet-map-preview-loading"><HamsterLoader label="Loading machine map" /></div>;
+  if (points.length === 0) return <div className="fleet-empty-state"><strong>No mapped machines yet</strong><p>Locations will appear after a site coordinate or GNSS fix is available.</p></div>;
+  return <TelemetryMapCanvas compact onSelect={() => undefined} points={points} selectedDeviceId={null} />;
+}
+
 export function TelemetryLocationMap() {
   const { userDetails } = useAuth();
   const [rows, setRows] = useState<LocationRow[]>([]);
@@ -398,13 +423,18 @@ export function TelemetryLocationMap() {
   const [tablePage, setTablePage] = useState(1);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [machineCount, setMachineCount] = useState(0);
 
   const canControl = ['admin', 'operations'].includes(userDetails?.role ?? '');
 
   const load = useCallback(async (background = false) => {
     if (background) setRefreshing(true);
     else setLoading(true);
-    const { data, error: loadError } = await getSupabaseClient().rpc('get_telemetry_location_map');
+    const client = getSupabaseClient();
+    const [{ data, error: loadError }, countResult] = await Promise.all([
+      client.rpc('get_telemetry_location_map'),
+      client.from('machines').select('id', { count: 'exact', head: true }),
+    ]);
     if (loadError) {
       setError(loadError.message);
       setLoading(false);
@@ -412,6 +442,7 @@ export function TelemetryLocationMap() {
       return;
     }
     setRows((data ?? []) as LocationRow[]);
+    setMachineCount(countResult.count ?? (data ?? []).length);
     setLastUpdated(new Date());
     setError(null);
     setLoading(false);
@@ -485,10 +516,23 @@ export function TelemetryLocationMap() {
   const locationCount = rows.filter((row) => row.has_location).length;
 
   return (
-    <section className="neo-card spatial-card telemetry-location-card">
+    <section className="fleet-route-page telemetry-map-page">
+      <header className="fleet-page-heading">
+        <div><h1>Machine locations</h1><p>Live machine health, faults and connectivity across South Africa.</p></div>
+        <button className="fleet-button secondary" type="button" disabled={loading || refreshing} onClick={() => load(false)}><NavigationIcon kind="telemetry" />{refreshing ? 'Refreshing…' : 'Refresh map'}</button>
+      </header>
+
+      <section aria-label="Machine location summary" className="fleet-metric-grid">
+        <article className="fleet-metric-card"><span className="fleet-metric-icon is-blue"><NavigationIcon kind="tool" /></span><div><span>Total machines</span><strong>{machineCount.toLocaleString('en-ZA')}</strong></div><small>Complete machine register</small></article>
+        <article className="fleet-metric-card"><span className="fleet-metric-icon is-green"><NavigationIcon kind="pin" /></span><div><span>Located</span><strong>{locationCount.toLocaleString('en-ZA')}</strong></div><small>Site or GNSS position available</small></article>
+        <article className="fleet-metric-card"><span className="fleet-metric-icon is-green"><NavigationIcon kind="telemetry" /></span><div><span>Online</span><strong>{healthCounts.online.toLocaleString('en-ZA')}</strong></div><small>Heartbeat within 30 minutes</small></article>
+        <article className="fleet-metric-card"><span className="fleet-metric-icon is-red"><NavigationIcon kind="bell" /></span><div><span>Faults</span><strong>{healthCounts.fault.toLocaleString('en-ZA')}</strong></div><small>Machines requiring attention</small></article>
+        <article className="fleet-metric-card"><span className="fleet-metric-icon is-grey"><NavigationIcon kind="telemetry" /></span><div><span>Offline</span><strong>{healthCounts.offline.toLocaleString('en-ZA')}</strong></div><small>No recent device contact</small></article>
+      </section>
+
+      <section className="neo-card spatial-card telemetry-location-card">
       <div className="telemetry-map-heading">
         <div>
-          <span className="fleet-eyebrow">Live machine location</span>
           <h2>Fleet tracker</h2>
           <p>Drag, zoom and select status-coloured machine dots. Nearby machines automatically group into numbered clusters.</p>
           <div className="telemetry-map-summary">
@@ -499,7 +543,6 @@ export function TelemetryLocationMap() {
           </div>
           <small>Last refreshed {formatTime(lastUpdated)}{refreshing ? ' · refreshing…' : ''}</small>
         </div>
-        <button className="fleet-button secondary" type="button" disabled={loading || refreshing} onClick={() => load(false)}>Refresh now</button>
       </div>
 
       {error ? <div className="fleet-banner is-error" role="alert"><strong>Location data could not be loaded.</strong><span>{error}</span></div> : null}
@@ -550,6 +593,7 @@ export function TelemetryLocationMap() {
           <footer className="fleet-table-footer"><div className="fleet-table-footer-copy"><strong>Showing {firstTableRow.toLocaleString('en-ZA')}–{lastTableRow.toLocaleString('en-ZA')} of {filtered.length.toLocaleString('en-ZA')}</strong><span>Map data refreshes every 15 seconds.</span></div><div aria-label="Location table pagination" className="fleet-table-pagination"><button disabled={currentTablePage === 1} onClick={() => setTablePage((current) => Math.max(1, current - 1))} type="button">Previous</button><span>Page {currentTablePage} of {tablePageCount}</span><button disabled={currentTablePage === tablePageCount} onClick={() => setTablePage((current) => Math.min(tablePageCount, current + 1))} type="button">Next</button></div></footer>
         </div>
       ) : null}
+      </section>
     </section>
   );
 }

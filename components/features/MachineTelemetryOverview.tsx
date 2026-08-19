@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { TelemetryLocationPreview } from '@/components/features/TelemetryLocationMap';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { displayProfileName } from '@/types/dallmayrerp';
 
 type TelemetryMode = 'live' | 'daily' | 'monthly';
 type Period = 'day' | 'week' | 'month' | 'six_months';
@@ -404,8 +406,132 @@ function ProductBars({ items }: { items: ItemRecord[] }) {
   );
 }
 
+function faultTone(severity: string) {
+  const value = severity.toLowerCase();
+  if (value === 'critical') return 'critical';
+  if (value === 'warning' || value === 'medium') return 'warning';
+  if (value === 'connectivity') return 'connectivity';
+  return 'fault';
+}
+
+function OverviewOperationsGrid({
+  machines,
+  faults,
+  sales,
+  openMachine,
+}: {
+  machines: MachineView[];
+  faults: FaultRecord[];
+  sales: SaleRecord[];
+  openMachine: (machine: MachineView, tab?: DetailTab) => void;
+}) {
+  const machineById = new Map(machines.map((machine) => [machine.id, machine]));
+  const priorityFaults = [...faults].sort((left, right) => new Date(right.last_seen_at).getTime() - new Date(left.last_seen_at).getTime()).slice(0, 5);
+  const recentActivity = [
+    ...faults.map((fault) => ({
+      id: `fault-${fault.id}`,
+      occurredAt: fault.last_seen_at,
+      title: machineById.get(fault.machine_id ?? '') ? machineTitle(machineById.get(fault.machine_id ?? '')!) : fault.fault_code,
+      detail: fault.detail ?? `${fault.fault_code} detected`,
+      tone: 'danger',
+    })),
+    ...sales.map((sale) => ({
+      id: `sale-${sale.id}`,
+      occurredAt: sale.last_received_at,
+      title: machineById.get(sale.machine_id ?? '') ? machineTitle(machineById.get(sale.machine_id ?? '')!) : (sale.product_name ?? sale.selection_code),
+      detail: `${sale.units_sold.toLocaleString('en-ZA')} ${sale.product_name ?? sale.sku ?? 'items'} received`,
+      tone: 'success',
+    })),
+  ].sort((left, right) => new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime()).slice(0, 5);
+
+  return (
+    <section className="fleet-overview-lower-grid">
+      <article className="fleet-panel fleet-priority-alerts">
+        <header><div><span>Priority alerts</span><h2>Machines needing attention</h2></div><Link href="/alerts">View all</Link></header>
+        {priorityFaults.length === 0 ? <EmptyState title="No active alerts" message="No unresolved machine faults require attention." /> : (
+          <div className="fleet-compact-table-wrap"><table className="fleet-compact-table"><thead><tr><th>Severity</th><th>Machine</th><th>Site</th><th>Last contact</th><th>Action</th></tr></thead><tbody>
+            {priorityFaults.map((fault) => {
+              const machine = machineById.get(fault.machine_id ?? '');
+              return <tr key={fault.id}><td><span className={`fleet-alert-severity is-${faultTone(fault.severity)}`}>{fault.severity}</span></td><td><strong>{machine ? machineTitle(machine) : fault.fault_code}</strong><span>{fault.detail ?? fault.fault_code}</span></td><td>{machine?.siteName ?? 'Unassigned'}</td><td>{timeAgo(fault.last_seen_at)}</td><td>{machine ? <button onClick={() => openMachine(machine, 'errors')} type="button">View details</button> : '—'}</td></tr>;
+            })}
+          </tbody></table></div>
+        )}
+      </article>
+
+      <article className="fleet-panel fleet-overview-map-card">
+        <header><div><span>Machines by location</span><h2>South Africa fleet</h2></div><Link href="/map">Open map</Link></header>
+        <TelemetryLocationPreview />
+      </article>
+
+      <article className="fleet-panel fleet-recent-activity-card">
+        <header><div><span>Recent telemetry activity</span><h2>Latest device events</h2></div><Link href="/telemetry">View analytics</Link></header>
+        {recentActivity.length === 0 ? <EmptyState title="No recent activity" message="Device events and counters will appear here as they arrive." /> : <div className="fleet-recent-activity-list">{recentActivity.map((activity) => <div key={activity.id}><i className={`is-${activity.tone}`} /><div><strong>{activity.title}</strong><span>{activity.detail}</span></div><time>{timeAgo(activity.occurredAt)}</time></div>)}</div>}
+      </article>
+    </section>
+  );
+}
+
+function AlertsWorkspace({
+  machines,
+  faults,
+  search,
+  setSearch,
+  branch,
+  setBranch,
+  branches,
+  openMachine,
+}: {
+  machines: MachineView[];
+  faults: FaultRecord[];
+  search: string;
+  setSearch: (value: string) => void;
+  branch: string;
+  setBranch: (value: string) => void;
+  branches: string[];
+  openMachine: (machine: MachineView, tab?: DetailTab) => void;
+}) {
+  const [severity, setSeverity] = useState('all');
+  const machineById = new Map(machines.map((machine) => [machine.id, machine]));
+  const rows = faults.filter((fault) => {
+    const machine = machineById.get(fault.machine_id ?? '');
+    if (branch !== 'all' && machine?.branch !== branch) return false;
+    if (severity !== 'all' && faultTone(fault.severity) !== severity) return false;
+    const term = search.trim().toLowerCase();
+    if (!term) return true;
+    return [fault.fault_code, fault.detail, fault.severity, machine ? machineTitle(machine) : '', machine?.siteName, machine?.location].join(' ').toLowerCase().includes(term);
+  });
+  const severityCounts = rows.reduce((counts, fault) => {
+    const tone = faultTone(fault.severity);
+    counts[tone] = (counts[tone] ?? 0) + 1;
+    return counts;
+  }, {} as Record<string, number>);
+  const categories = Array.from(rows.reduce((counts, fault) => {
+    const category = fault.fault_code.split(/[-_ ]/)[0] || 'Other';
+    counts.set(category, (counts.get(category) ?? 0) + 1);
+    return counts;
+  }, new Map<string, number>()).entries()).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const maxSeverity = Math.max(...Object.values(severityCounts), 1);
+
+  return (
+    <>
+      <section className="fleet-alert-chart-grid">
+        <article className="fleet-panel fleet-alert-severity-panel"><header><div><span>Current workload</span><h2>Alerts by severity</h2></div></header><div className="fleet-alert-bars">{[
+          ['Critical', severityCounts.critical ?? 0, 'critical'], ['Faults', severityCounts.fault ?? 0, 'fault'], ['Warnings', severityCounts.warning ?? 0, 'warning'], ['Connectivity', severityCounts.connectivity ?? 0, 'connectivity'],
+        ].map(([label, count, tone]) => <div key={String(label)}><span>{label}</span><i><b className={`is-${tone}`} style={{ width: `${(Number(count) / maxSeverity) * 100}%` }} /></i><strong>{count}</strong></div>)}</div></article>
+        <article className="fleet-panel fleet-alert-category-panel"><header><div><span>Fault families</span><h2>Alerts by category</h2></div><strong>{rows.length.toLocaleString('en-ZA')}</strong></header>{categories.length ? <div className="fleet-category-summary"><div className="fleet-category-ring"><span><strong>{rows.length}</strong>Total</span></div><dl>{categories.map(([label, count], index) => <div key={label}><dt><i className={`is-${index}`} />{label}</dt><dd>{count}</dd></div>)}</dl></div> : <EmptyState title="No alert categories" message="Fault categories appear when machines report active errors." />}</article>
+      </section>
+
+      <section className="fleet-panel fleet-alert-table-panel">
+        <div className="fleet-filters fleet-alert-filters"><label className="fleet-search"><NavigationIcon kind="search" /><input aria-label="Search active alerts" placeholder="Search alerts, machines, sites or fault codes" value={search} onChange={(event) => setSearch(event.target.value)} /></label><label><span>Branch</span><select value={branch} onChange={(event) => setBranch(event.target.value)}><option value="all">All branches</option>{branches.map((value) => <option key={value} value={value}>{value.toUpperCase()}</option>)}</select></label><label><span>Severity</span><select value={severity} onChange={(event) => setSeverity(event.target.value)}><option value="all">All severities</option><option value="critical">Critical</option><option value="fault">Fault</option><option value="warning">Warning</option><option value="connectivity">Connectivity</option></select></label><button className="fleet-button secondary" onClick={() => { setSearch(''); setBranch('all'); setSeverity('all'); }} type="button">Clear filters</button></div>
+        <div className="fleet-table-scroll"><table className="fleet-machine-table fleet-alert-table"><thead><tr><th>Severity</th><th>Machine</th><th>Fault</th><th>Site</th><th>Started</th><th>Last seen</th><th>Status</th><th>Actions</th></tr></thead><tbody>{rows.map((fault) => { const machine = machineById.get(fault.machine_id ?? ''); return <tr key={fault.id}><td><span className={`fleet-alert-severity is-${faultTone(fault.severity)}`}>{fault.severity}</span></td><td><strong>{machine ? machineTitle(machine) : 'Unassigned machine'}</strong><span>{machine?.device?.device_code ?? fault.device_id}</span></td><td><strong>{fault.detail ?? fault.fault_code}</strong><span>{fault.fault_code}</span></td><td><strong>{machine?.siteName ?? 'Unassigned'}</strong><span>{machine?.location ?? 'No location'}</span></td><td>{formatDateTime(fault.started_at)}</td><td><strong>{timeAgo(fault.last_seen_at)}</strong><span>{formatDateTime(fault.last_seen_at)}</span></td><td><span className="fleet-alert-status">Unacknowledged</span></td><td>{machine ? <button className="fleet-row-action" aria-label={`View ${machineTitle(machine)} alert`} onClick={() => openMachine(machine, 'errors')} type="button"><NavigationIcon kind="chevron-right" /></button> : '—'}</td></tr>; })}</tbody></table></div>
+        <footer className="fleet-table-footer"><div className="fleet-table-footer-copy"><strong>{rows.length.toLocaleString('en-ZA')} active alerts</strong><span>Open a row to review machine context and fault history.</span></div></footer>
+      </section>
+    </>
+  );
+}
+
 export function MachineTelemetryOverview({ initialMachineId, initialStatus = 'all', machinesOnly = false }: MachineTelemetryOverviewProps) {
-  const { userDetails } = useAuth();
+  const { businessProfile, userDetails } = useAuth();
   const [machines, setMachines] = useState<MachineRecord[]>([]);
   const [sites, setSites] = useState<Record<string, SiteRecord>>({});
   const [devices, setDevices] = useState<DeviceState[]>([]);
@@ -430,6 +556,7 @@ export function MachineTelemetryOverview({ initialMachineId, initialStatus = 'al
   const machineRegisterLoaded = useRef(false);
 
   const canControl = ['admin', 'operations'].includes(userDetails?.role ?? '');
+  const firstName = displayProfileName(businessProfile).split(/\s+/)[0] || 'there';
 
   const load = useCallback(async (quiet = false, refreshRegister = false) => {
     if (quiet) setRefreshing(true);
@@ -630,9 +757,8 @@ export function MachineTelemetryOverview({ initialMachineId, initialStatus = 'al
       <div className="fleet-main-column">
         <header className="fleet-page-heading">
           <div>
-            <span className="fleet-eyebrow">Machine &amp; telemetry monitoring</span>
-            <h1>{machinesOnly ? 'Machines' : initialStatus === 'fault' ? 'Active alerts' : 'Fleet overview'}</h1>
-            <p>{machinesOnly ? 'Every machine and its connected telemetry controller.' : 'Machine health, sales counters, faults and connectivity in one focused workspace.'}</p>
+            <h1>{machinesOnly ? 'Machines' : initialStatus === 'fault' ? 'Active alerts' : `Good morning, ${firstName}`}</h1>
+            <p>{machinesOnly ? 'Every machine and its connected telemetry controller.' : initialStatus === 'fault' ? 'Faults, missed heartbeats and telemetry exceptions requiring attention.' : "Here's what needs attention across the machine fleet."}</p>
           </div>
           <div className="fleet-heading-actions">
             <label>Reporting period<select value={period} onChange={(event) => setPeriod(event.target.value as Period)}>{periods.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
@@ -647,16 +773,25 @@ export function MachineTelemetryOverview({ initialMachineId, initialStatus = 'al
 
         {!loading ? (
           <>
-            <section aria-label="Fleet status summary" className="fleet-metric-grid">
-              <MetricCard helper={`${machineRows.length - statusCounts.unlinked} with telemetry`} icon="tool" label="Total machines" tone="blue" value={machineRows.length} />
-              <MetricCard helper={`${machineRows.length ? Math.round((statusCounts.online / machineRows.length) * 100) : 0}% of the fleet`} icon="telemetry" label="Online" tone="green" value={statusCounts.online} />
-              <MetricCard helper={`${statusCounts.delayed} delayed · ${statusCounts.never} never seen`} icon="bell" label="Offline" tone="red" value={statusCounts.offline} />
-              <MetricCard helper={`${machineRows.filter((row) => row.failedVends > 0).length} machines with failed vends`} icon="bell" label="Active errors" tone="amber" value={totalFaults} />
-              <MetricCard helper={periods.find((item) => item.value === period)?.label ?? period} icon="chart" label="Items sold" tone="green" value={totalUnits} />
-            </section>
+            {initialStatus === 'fault' ? (
+              <section aria-label="Alert status summary" className="fleet-metric-grid fleet-alert-metric-grid">
+                <MetricCard helper="Immediate attention required" icon="bell" label="Critical" tone="red" value={faults.filter((fault) => faultTone(fault.severity) === 'critical').length} />
+                <MetricCard helper="Active machine faults" icon="bell" label="Faults" tone="red" value={faults.filter((fault) => faultTone(fault.severity) === 'fault').length} />
+                <MetricCard helper="Degraded machine conditions" icon="bell" label="Warnings" tone="amber" value={faults.filter((fault) => faultTone(fault.severity) === 'warning').length} />
+                <MetricCard helper="Offline and delayed devices" icon="telemetry" label="Connectivity" tone="blue" value={statusCounts.offline + statusCounts.delayed} />
+              </section>
+            ) : (
+              <section aria-label="Fleet status summary" className="fleet-metric-grid">
+                <MetricCard helper={`${machineRows.length - statusCounts.unlinked} with telemetry`} icon="tool" label="Total machines" tone="blue" value={machineRows.length} />
+                <MetricCard helper={`${machineRows.length ? Math.round((statusCounts.online / machineRows.length) * 100) : 0}% of the fleet`} icon="telemetry" label={machinesOnly ? 'Connected devices' : 'Online'} tone="green" value={statusCounts.online} />
+                <MetricCard helper={machinesOnly ? 'Machines awaiting a device' : `${statusCounts.delayed} delayed · ${statusCounts.never} never seen`} icon={machinesOnly ? 'settings' : 'telemetry'} label={machinesOnly ? 'Unlinked machines' : 'Offline'} tone={machinesOnly ? 'amber' : 'grey'} value={machinesOnly ? statusCounts.unlinked : statusCounts.offline} />
+                <MetricCard helper={`${machineRows.filter((row) => row.failedVends > 0).length} machines with failed vends`} icon="bell" label={machinesOnly ? 'Online' : 'Active faults'} tone={machinesOnly ? 'green' : 'red'} value={machinesOnly ? statusCounts.online : totalFaults} />
+                <MetricCard helper={periods.find((item) => item.value === period)?.label ?? period} icon={machinesOnly ? 'bell' : 'sales'} label={machinesOnly ? 'Faults' : 'Items sold'} tone={machinesOnly ? 'red' : 'blue'} value={machinesOnly ? totalFaults : totalUnits} />
+              </section>
+            )}
 
             {!machinesOnly && initialStatus !== 'fault' ? (
-              <section className="fleet-insight-grid">
+              <section className="fleet-insight-grid fleet-overview-insight-grid">
                 <article className="fleet-panel fleet-trend-panel">
                   <header><div><span>Sales activity</span><h2>Quantity sold over time</h2></div><strong>{totalUnits.toLocaleString('en-ZA')} units</strong></header>
                   <TrendChart rows={trend} />
@@ -680,7 +815,11 @@ export function MachineTelemetryOverview({ initialMachineId, initialStatus = 'al
               </section>
             ) : null}
 
-            <section className="fleet-panel fleet-table-panel">
+            {!machinesOnly && initialStatus !== 'fault' ? <OverviewOperationsGrid faults={faults} machines={machineRows} openMachine={openMachine} sales={sales} /> : null}
+
+            {initialStatus === 'fault' ? <AlertsWorkspace branch={branch} branches={branches} faults={faults} machines={machineRows} openMachine={openMachine} search={search} setBranch={setBranch} setSearch={setSearch} /> : null}
+
+            <section className={`fleet-panel fleet-table-panel ${machinesOnly ? '' : 'fleet-table-hidden'}`}>
               <header className="fleet-table-heading">
                 <div><span>Fleet register</span><h2>Machines and connected devices</h2></div>
                 <span>{filteredMachines.length.toLocaleString('en-ZA')} of {machineRows.length.toLocaleString('en-ZA')} machines</span>

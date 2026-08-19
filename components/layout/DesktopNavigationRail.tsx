@@ -29,18 +29,16 @@ function isPinnedPathActive(pathname: string, href: string, activeHref: string |
   return isActivePath(pathname, pinnedPath);
 }
 
-function groupedSections(sections: NavSection[], homePath: string) {
+function navigationItems(sections: NavSection[], homePath: string) {
   const seen = new Set<string>();
-  return sections
-    .map((section) => ({
-      ...section,
-      items: section.items.filter((item) => {
-        if (item.href === homePath || item.href === '/work' || seen.has(item.href)) return false;
-        seen.add(item.href);
-        return true;
-      }),
-    }))
-    .filter((section) => section.items.length > 0);
+  return sections.flatMap((section) => section.items).filter((item) => {
+    if (item.href === '/work' || seen.has(item.href)) return false;
+    seen.add(item.href);
+    return true;
+  }).sort((left, right) => {
+    const order = [homePath, '/machines', '/alerts', '/telemetry', '/map', '/telemetry/devices'];
+    return order.indexOf(left.href) - order.indexOf(right.href);
+  });
 }
 
 export function DesktopNavigationRail({
@@ -53,12 +51,12 @@ export function DesktopNavigationRail({
   roleLabel,
   sections,
 }: DesktopNavigationRailProps) {
-  const visibleSections = groupedSections(sections, homePath);
+  const visibleItems = navigationItems(sections, homePath);
 
   return (
     <aside aria-label="Application navigation" className={`dallmayr-sidebar ${collapsed ? 'is-collapsed' : ''}`}>
       <div className="dallmayr-sidebar-brand">
-        <Link href={homePath} aria-label={TODAY_OPEN_LABEL}>
+        <Link href={homePath} aria-label={TODAY_OPEN_LABEL} title={TODAY_LABEL}>
           <span aria-hidden="true" className="dallmayr-crest"><Image alt="" height={42} src="/icons/dallmayr-app.svg" width={35} /></span>
           {!collapsed ? <span><strong>Dallmayr</strong><small>Vending &amp; coffee solutions</small></span> : null}
         </Link>
@@ -69,12 +67,18 @@ export function DesktopNavigationRail({
 
       <nav className="dallmayr-sidebar-nav" aria-label="Machine telemetry navigation">
         <div className="dallmayr-sidebar-primary">
-          <Link aria-label={TODAY_LABEL} className="dallmayr-sidebar-link" aria-current={activeHref === homePath ? 'page' : undefined} href={homePath} title={TODAY_LABEL}>
-            <span aria-hidden="true"><NavigationIcon kind="dashboard" /></span>{!collapsed ? <strong>{TODAY_LABEL}</strong> : null}
-          </Link>
-          <Link aria-label="Machines" className="dallmayr-sidebar-link" aria-current={activeHref === '/machines' ? 'page' : undefined} href="/machines" title="Machines">
-            <span aria-hidden="true"><NavigationIcon kind="tool" /></span>{!collapsed ? <strong>Machines</strong> : null}
-          </Link>
+          {visibleItems.map((item) => (
+            <Link
+              aria-current={activeHref === item.href ? 'page' : undefined}
+              className="dallmayr-sidebar-link"
+              href={item.href}
+              key={item.href}
+              title={item.label}
+            >
+              <span aria-hidden="true"><NavigationIcon kind={navigationIconKind(item.label, item.href)} /></span>
+              {!collapsed ? <strong>{item.label}</strong> : null}
+            </Link>
+          ))}
         </div>
 
         {pinnedItems.length > 0 ? (
@@ -100,32 +104,10 @@ export function DesktopNavigationRail({
           </section>
         ) : null}
 
-        {visibleSections.map((section) => (
-          <section className="dallmayr-sidebar-group" key={section.heading} aria-label={section.heading}>
-            {!collapsed ? <h2>{section.heading}</h2> : <div className="dallmayr-sidebar-group-divider" aria-hidden="true" />}
-            <div>
-              {section.items.map((item) => (
-                <Link
-                  aria-current={activeHref === item.href ? 'page' : undefined}
-                  className="dallmayr-sidebar-link"
-                  href={item.href}
-                  key={item.href}
-                  title={item.label}
-                >
-                  <span aria-hidden="true"><NavigationIcon kind={navigationIconKind(item.label, item.href)} /></span>
-                  {!collapsed ? <strong>{item.label}</strong> : null}
-                </Link>
-              ))}
-            </div>
-          </section>
-        ))}
       </nav>
 
-      <div
-        aria-label={`Account menu for ${roleLabel}`}
-        className="dallmayr-sidebar-account dallmayr-sidebar-account-menu-target"
-        title={collapsed ? `${roleLabel} account menu` : undefined}
-      />
+      <div className="dallmayr-sidebar-account dallmayr-sidebar-account-menu-target telemetry-sidebar-account-fallback" />
+      <div className="telemetry-country-label" title={`South Africa · ${roleLabel}`}><span aria-hidden="true">🇿🇦</span>{!collapsed ? <strong>South Africa</strong> : null}</div>
     </aside>
   );
 }

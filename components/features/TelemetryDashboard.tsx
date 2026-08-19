@@ -1,11 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { EnterpriseDataTable, type EnterpriseColumn } from '@/components/ui/EnterpriseDataTable';
+import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
-import { KpiCard } from '@/components/ui/KpiCard';
-import { BarChart, DonutChart } from '@/components/ui/MiniCharts';
-import { PageToolbar } from '@/components/ui/PageToolbar';
 import { formatLocalDate } from '@/lib/dates/local-date';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
@@ -211,8 +208,38 @@ function sixMonthTrend(rows: DailyTrend[]) {
   }));
 }
 
+function AnalyticsMetric({ icon, label, value, helper, tone = 'blue' }: { icon: Parameters<typeof NavigationIcon>[0]['kind']; label: string; value: string; helper: string; tone?: string }) {
+  return <article className="fleet-metric-card analytics-metric"><span className={`fleet-metric-icon is-${tone}`}><NavigationIcon kind={icon} /></span><div><span>{label}</span><strong>{value}</strong></div><small>{helper}</small></article>;
+}
+
+function AnalyticsLineChart({ rows }: { rows: Array<{ label: string; value: number }> }) {
+  if (!rows.length) return <div className="fleet-empty-state"><strong>No trend data</strong><p>Sales history will appear after telemetry counters are received.</p></div>;
+  const width = 760;
+  const height = 220;
+  const max = Math.max(...rows.map((row) => row.value), 1);
+  const points = rows.map((row, index) => ({
+    ...row,
+    x: 28 + (index / Math.max(rows.length - 1, 1)) * (width - 56),
+    y: height - 30 - (row.value / max) * (height - 62),
+  }));
+  return <div className="analytics-line-chart"><svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label="Items sold over time">{[0,1,2,3].map((line) => <line key={line} x1="28" x2={width - 28} y1={30 + line * 48} y2={30 + line * 48} />)}<polyline points={points.map((point) => `${point.x},${point.y}`).join(' ')} />{points.map((point) => <circle cx={point.x} cy={point.y} key={`${point.label}-${point.x}`} r="4" />)}</svg><div>{points.filter((_, index) => index === 0 || index === points.length - 1 || index % Math.max(1, Math.ceil(points.length / 6)) === 0).map((point) => <span key={point.label}>{point.label}</span>)}</div></div>;
+}
+
+function AnalyticsBars({ rows, colour = 'navy' }: { rows: Array<{ label: string; value: number }>; colour?: 'navy' | 'green' | 'red' }) {
+  const visible = rows.slice(0, 8);
+  const max = Math.max(...visible.map((row) => row.value), 1);
+  if (!visible.length) return <div className="fleet-empty-state"><strong>No comparison data</strong><p>Results will appear when telemetry has been processed.</p></div>;
+  return <div className="analytics-horizontal-bars">{visible.map((row) => <div key={row.label}><span title={row.label}>{row.label}</span><i><b className={`is-${colour}`} style={{ width: `${Math.max(2, (row.value / max) * 100)}%` }} /></i><strong>{row.value.toLocaleString('en-ZA')}</strong></div>)}</div>;
+}
+
+function AnalyticsDonut({ online, offline }: { online: number; offline: number }) {
+  const total = Math.max(online + offline, 1);
+  const onlinePercent = (online / total) * 100;
+  return <div className="analytics-donut-summary"><div className="analytics-donut" style={{ background: `conic-gradient(#16a34a 0 ${onlinePercent}%, #98a2b3 ${onlinePercent}% 100%)` }}><span><strong>{onlinePercent.toFixed(1)}%</strong>Online</span></div><dl><div><dt><i className="is-online" />Online</dt><dd>{online.toLocaleString('en-ZA')}</dd></div><div><dt><i className="is-offline" />Offline</dt><dd>{offline.toLocaleString('en-ZA')}</dd></div></dl></div>;
+}
+
 export function TelemetryDashboard() {
-  const [period, setPeriod] = useState<TelemetryPeriod>('day');
+  const [period, setPeriod] = useState<TelemetryPeriod>('month');
   const [dataset, setDataset] = useState<TelemetryDataset>('production');
   const [branch, setBranch] = useState<TelemetryBranch>('all');
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
@@ -259,19 +286,6 @@ export function TelemetryDashboard() {
     });
   }, [loadDashboard]);
 
-  const recentColumns = useMemo<EnterpriseColumn<RecentSale>[]>(() => [
-    { id: 'sales_date', header: 'Date', value: (row) => row.sales_date, render: (row) => shortDate(row.sales_date), sortable: true, defaultWidth: 110, mobilePriority: 2 },
-    { id: 'machine_name', header: 'Machine', value: (row) => row.machine_name ?? row.serial_number ?? 'Unassigned', sortable: true, filterable: true, defaultWidth: 190, mobileTitle: true },
-    { id: 'serial_number', header: 'S/N', value: (row) => row.serial_number ?? '', sortable: true, filterable: true, defaultWidth: 150, mobilePriority: 1 },
-    { id: 'location', header: 'Location', value: (row) => row.location ?? '', sortable: true, filterable: true, defaultWidth: 220, mobilePriority: 3 },
-    { id: 'product_name', header: 'Item', value: (row) => row.product_name ?? row.sku ?? row.selection_code, sortable: true, filterable: true, defaultWidth: 190, mobilePriority: 1 },
-    { id: 'brand', header: 'Source/brand', value: (row) => row.brand ?? '', sortable: true, filterable: true, defaultWidth: 140, mobileHidden: true },
-    { id: 'units_sold', header: 'Sold', value: (row) => row.units_sold, sortable: true, defaultWidth: 90, mobilePriority: 1 },
-    { id: 'failed_vends', header: 'Failed', value: (row) => row.failed_vends, sortable: true, defaultWidth: 90, mobileHidden: true },
-    { id: 'revenue_cents', header: 'Revenue', value: (row) => row.revenue_cents, render: (row) => money(row.revenue_cents), sortable: true, defaultWidth: 130, mobilePriority: 2 },
-    { id: 'last_received_at', header: 'Last update', value: (row) => row.last_received_at, render: (row) => dateTime(row.last_received_at), sortable: true, defaultWidth: 170, mobileHidden: true },
-  ], []);
-
   const dailyChart = useMemo(() => {
     const rows = dashboard?.daily_trend ?? [];
     if (period === 'six_months') return sixMonthTrend(rows);
@@ -283,95 +297,40 @@ export function TelemetryDashboard() {
   const machineChart = (dashboard?.top_machines ?? []).map((row) => ({ label: row.machine_name ?? row.serial_number ?? 'Unassigned', value: row.units_sold }));
   const summary = dashboard?.summary;
 
+  function exportReport() {
+    if (!dashboard) return;
+    const header = ['Date', 'Machine', 'Serial', 'Location', 'Item', 'Units sold', 'Failed vends', 'Revenue'];
+    const rows = dashboard.recent_sales.map((row) => [row.sales_date, row.machine_name ?? '', row.serial_number ?? '', row.location ?? '', row.product_name ?? row.sku ?? row.selection_code, row.units_sold, row.failed_vends, money(row.revenue_cents)]);
+    const csv = [header, ...rows].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `dallmayr-telemetry-${dashboard.date_from}-${dashboard.date_to}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
-    <div className="grid spatial-stage spatial-dashboard">
-      <PageToolbar
-        title="Telemetry reporting"
-        description="Review isolated production or POC telemetry over 1 day, 7 days, 30 days or 6 months. Counter snapshots are converted into daily deltas instead of storing every vend as a separate row."
-        lastUpdated={lastUpdated}
-        actions={<button className="button secondary" disabled={loading} onClick={() => loadDashboard()} type="button">Refresh</button>}
-      >
-        <label>
-          <span>Period</span>
-          <select value={period} onChange={(event) => setPeriod(event.target.value as TelemetryPeriod)}>
-            {(Object.keys(periodLabels) as TelemetryPeriod[]).map((value) => <option key={value} value={value}>{periodLabels[value]}</option>)}
-          </select>
-        </label>
-        <label>
-          <span>Dataset</span>
-          <select value={dataset} onChange={(event) => { setAutoSelectedPoc(true); setDataset(event.target.value as TelemetryDataset); }}>
-            {(Object.keys(datasetLabels) as TelemetryDataset[]).map((value) => <option key={value} value={value}>{datasetLabels[value]}</option>)}
-          </select>
-        </label>
-        <label>
-          <span>Branch</span>
-          <select value={branch} onChange={(event) => setBranch(event.target.value as TelemetryBranch)}>
-            {(Object.keys(branchLabels) as TelemetryBranch[]).map((value) => <option key={value} value={value}>{branchLabels[value]}</option>)}
-          </select>
-        </label>
-      </PageToolbar>
+    <section className="fleet-route-page telemetry-analytics-workspace">
+      <header className="fleet-page-heading"><div><h1>Telemetry analytics</h1><p>Sales, reliability and connectivity trends across the fleet.</p></div><button className="fleet-button secondary" disabled={!dashboard} onClick={exportReport} type="button"><NavigationIcon kind="chart" />Export report</button></header>
+
+      <div className="analytics-filter-bar"><label><span>Date range</span><select value={period} onChange={(event) => setPeriod(event.target.value as TelemetryPeriod)}>{(Object.keys(periodLabels) as TelemetryPeriod[]).map((value) => <option key={value} value={value}>{periodLabels[value]}</option>)}</select></label><label><span>Branch</span><select value={branch} onChange={(event) => setBranch(event.target.value as TelemetryBranch)}>{(Object.keys(branchLabels) as TelemetryBranch[]).map((value) => <option key={value} value={value}>{branchLabels[value]}</option>)}</select></label><label><span>Dataset</span><select value={dataset} onChange={(event) => { setAutoSelectedPoc(true); setDataset(event.target.value as TelemetryDataset); }}>{(Object.keys(datasetLabels) as TelemetryDataset[]).map((value) => <option key={value} value={value}>{datasetLabels[value]}</option>)}</select></label><button className="fleet-button secondary" disabled={loading} onClick={() => loadDashboard()} type="button">{loading ? 'Refreshing…' : 'Refresh data'}</button><span className="analytics-updated">Updated {lastUpdated ? dateTime(lastUpdated.toISOString()) : 'never'}</span></div>
 
       {error ? <div className="error">{error}</div> : null}
       {dataset === 'simulation' ? (
         <div className="success">POC simulation history is stored separately and never contributes to production telemetry totals.</div>
       ) : null}
-      {loading && !dashboard ? <div className="neo-card spatial-card"><HamsterLoader label="Loading telemetry dashboard" /></div> : null}
+      {loading && !dashboard ? <div className="fleet-panel"><HamsterLoader label="Loading telemetry dashboard" /></div> : null}
 
       {dashboard ? (
         <>
-          {dashboard.recent_sales.length === 0 ? (
-            <div className="neo-card spatial-card">
-              <strong>No {datasetLabels[dataset].toLowerCase()} history is recorded for this period yet.</strong>
-              <p className="muted">
-                {dataset === 'simulation'
-                  ? 'The current POC counters will start building daily history as new cumulative snapshots arrive.'
-                  : 'Production history begins when a machine interface starts providing real cumulative counter snapshots.'}
-              </p>
-            </div>
-          ) : null}
+          <section className="fleet-metric-grid analytics-metric-grid"><AnalyticsMetric helper={`${dashboard.date_from} to ${dashboard.date_to}`} icon="sales" label="Items sold" value={(summary?.units_sold ?? 0).toLocaleString('en-ZA')} /><AnalyticsMetric helper={`${summary?.online_devices ?? 0} devices online`} icon="telemetry" label="Fleet availability" tone="green" value={`${((summary?.online_devices ?? 0) / Math.max(summary?.reporting_devices ?? 0, 1) * 100).toFixed(1)}%`} /><AnalyticsMetric helper="Failed items as a share of sales" icon="bell" label="Failed vend rate" tone="red" value={`${((summary?.failed_vends ?? 0) / Math.max(summary?.units_sold ?? 0, 1) * 100).toFixed(1)}%`} /><AnalyticsMetric helper="Machines sending counters" icon="tool" label="Machines reporting" tone="amber" value={(summary?.active_machines ?? 0).toLocaleString('en-ZA')} /><AnalyticsMetric helper={`${summary?.unassigned_devices ?? 0} unassigned devices`} icon="clipboard" label="Reporting compliance" tone="blue" value={`${((summary?.reporting_devices ?? 0) / Math.max((summary?.reporting_devices ?? 0) + (summary?.unassigned_devices ?? 0), 1) * 100).toFixed(0)}%`} /></section>
 
-          <div className="grid grid-3 spatial-kpi-grid">
-            <KpiCard label="Items sold" value={summary?.units_sold ?? 0} helper={`${dashboard.date_from} to ${dashboard.date_to}`} />
-            <KpiCard label="Revenue" value={money(summary?.revenue_cents ?? 0)} helper={periodLabels[period]} />
-            <KpiCard label="Failed vends" value={summary?.failed_vends ?? 0} helper="Reported machine failures" />
-            <KpiCard label="Selling machines" value={summary?.active_machines ?? 0} helper="Machines with data in period" />
-            <KpiCard label="Online devices" value={summary?.online_devices ?? 0} helper="Seen within 30 minutes" />
-            <KpiCard label="Offline devices" value={summary?.offline_devices ?? 0} helper="No recent device contact" />
-            <KpiCard label="Registered devices" value={summary?.reporting_devices ?? 0} helper="Active telemetry devices" />
-            <KpiCard label="Unassigned devices" value={summary?.unassigned_devices ?? 0} helper="Needs machine assignment" />
-          </div>
+          <section className="analytics-chart-grid"><article className="fleet-panel analytics-sales-trend"><header><div><span>Sales trend</span><h2>Items sold</h2></div><strong>{(summary?.units_sold ?? 0).toLocaleString('en-ZA')}</strong></header><AnalyticsLineChart rows={dailyChart} /></article><article className="fleet-panel analytics-branch-chart"><header><div><span>Branch performance</span><h2>Items sold by branch</h2></div></header><AnalyticsBars colour="green" rows={branchChart} /></article><article className="fleet-panel analytics-top-items"><header><div><span>Product mix</span><h2>Top items</h2></div></header><AnalyticsBars rows={itemChart} /></article><article className="fleet-panel analytics-top-machines"><header><div><span>Machine performance</span><h2>Top machines</h2></div></header><AnalyticsBars colour="red" rows={machineChart} /></article><article className="fleet-panel analytics-connectivity"><header><div><span>Device health</span><h2>Connectivity distribution</h2></div></header><AnalyticsDonut offline={summary?.offline_devices ?? 0} online={summary?.online_devices ?? 0} /></article></section>
 
-          <div className="grid grid-2">
-            <BarChart title={period === 'six_months' ? 'Monthly units sold' : 'Daily units sold'} data={dailyChart} />
-            <BarChart title="Units sold by branch" data={branchChart} />
-            <BarChart title="Top items" data={itemChart} />
-            <BarChart title="Top machines" data={machineChart} />
-            <DonutChart title="Device connectivity" data={[
-              { label: 'Online', value: summary?.online_devices ?? 0 },
-              { label: 'Offline', value: summary?.offline_devices ?? 0 },
-            ]} />
-            <DonutChart title="Vend outcomes" data={[
-              { label: 'Successful', value: summary?.units_sold ?? 0 },
-              { label: 'Failed', value: summary?.failed_vends ?? 0 },
-            ]} />
-          </div>
-
-          <div className="neo-card spatial-card">
-            <h2>Machine and item detail</h2>
-            <p>One row represents the aggregated total for a machine, item and day—not an individual sale.</p>
-            <EnterpriseDataTable
-              rows={dashboard.recent_sales}
-              columns={recentColumns}
-              rowKey={(row) => row.id}
-              searchPlaceholder="Search machine, serial number, location, item or brand"
-              emptyMessage="No telemetry data was recorded for this period."
-              defaultPageSize={50}
-              pageSizeOptions={[25, 50, 100, 250]}
-              tableId="telemetry-sales"
-            />
-          </div>
+          <section className="fleet-panel analytics-machine-table"><header><div><span>Attention list</span><h2>Machines with failed vends</h2></div><span>{dashboard.top_machines.filter((row) => row.failed_vends > 0).length} machines</span></header><div className="fleet-table-scroll"><table className="fleet-machine-table"><thead><tr><th>Status</th><th>Machine</th><th>Serial</th><th>Location</th><th>Branch</th><th>Items sold</th><th>Failed vends</th><th>Failure rate</th></tr></thead><tbody>{[...dashboard.top_machines].sort((left, right) => (right.failed_vends / Math.max(right.units_sold, 1)) - (left.failed_vends / Math.max(left.units_sold, 1))).slice(0, 25).map((row) => <tr key={row.machine_id ?? `${row.machine_name}-${row.serial_number}`}><td><span className={`fleet-status-pill ${row.failed_vends ? 'is-danger' : 'is-success'}`}><i />{row.failed_vends ? 'Attention' : 'Healthy'}</span></td><td><strong>{row.machine_name ?? 'Unnamed machine'}</strong></td><td>{row.serial_number ?? 'Not recorded'}</td><td>{row.location ?? 'Not recorded'}</td><td>{row.branch.toUpperCase()}</td><td>{row.units_sold.toLocaleString('en-ZA')}</td><td>{row.failed_vends.toLocaleString('en-ZA')}</td><td>{((row.failed_vends / Math.max(row.units_sold, 1)) * 100).toFixed(1)}%</td></tr>)}</tbody></table></div></section>
         </>
       ) : null}
-    </div>
+    </section>
   );
 }
