@@ -8,18 +8,20 @@ import { AppShell } from '@/components/layout/AppShell';
 export default function TelemetryPage() {
   return (
     <AppShell>
-      <div className="page-header hero-panel spatial-card">
-        <div>
-          <div className="badge">Admin &amp; Executive</div>
-          <h1>Machine Telemetry</h1>
-          <p>Monitor live device connectivity, current machine location, faults and counters, remotely control telemetry mode and network preference, and review sortable sales and error history.</p>
+      <div className="telemetry-workspace">
+        <div className="page-header hero-panel spatial-card">
+          <div>
+            <div className="badge">Admin &amp; Executive</div>
+            <h1>Machine Telemetry</h1>
+            <p>Monitor live device connectivity, current machine location, faults and counters, remotely control telemetry mode and network preference, and review sortable sales and error history.</p>
+          </div>
         </div>
+        <TelemetryLiveControl />
+        <TelemetryLocationMap />
+        <TelemetryPocPanel />
+        <TelemetryActivityLog />
+        <TelemetryDashboard />
       </div>
-      <TelemetryLiveControl />
-      <TelemetryLocationMap />
-      <TelemetryPocPanel />
-      <TelemetryActivityLog />
-      <TelemetryDashboard />
     </AppShell>
   );
 }
