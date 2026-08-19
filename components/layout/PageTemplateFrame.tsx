@@ -62,19 +62,24 @@ function detectLegacyTemplate(root: HTMLElement): PageTemplate {
   return 'default';
 }
 
+function setRuntimePriority(element: HTMLElement, priority: string) {
+  if (element.dataset.uiPriority) return;
+  element.dataset.uiPriority = priority;
+  element.dataset.uiPrioritySource = 'runtime';
+}
+
 function markPriority(root: HTMLElement, selectors: string[], priority: string, firstOnly = false) {
   const matches = selectors.flatMap((selector) => Array.from(root.querySelectorAll<HTMLElement>(selector)));
   const unique = Array.from(new Set(matches));
-  (firstOnly ? unique.slice(0, 1) : unique).forEach((element) => {
-    if (!element.dataset.uiPriority) element.dataset.uiPriority = priority;
-  });
+  (firstOnly ? unique.slice(0, 1) : unique).forEach((element) => setRuntimePriority(element, priority));
 }
 
 function applyUserFirstHierarchy(root: HTMLElement) {
   root.dataset.userFirstHierarchy = 'true';
 
-  root.querySelectorAll<HTMLElement>('[data-ui-priority]').forEach((element) => {
-    if (!element.closest('.telemetry-workspace')) delete element.dataset.uiPriority;
+  root.querySelectorAll<HTMLElement>('[data-ui-priority-source="runtime"]').forEach((element) => {
+    delete element.dataset.uiPriority;
+    delete element.dataset.uiPrioritySource;
   });
 
   markPriority(root, pageIdentitySelectors, 'identity', true);
@@ -82,11 +87,11 @@ function applyUserFirstHierarchy(root: HTMLElement) {
   markPriority(root, summarySelectors, 'summary');
 
   root.querySelectorAll<HTMLElement>('.erp-toolbar, .page-toolbar, .erp-command-bar').forEach((element) => {
-    if (!element.dataset.uiPriority) element.dataset.uiPriority = 'action';
+    setRuntimePriority(element, 'action');
   });
 
   root.querySelectorAll<HTMLElement>('.enterprise-table-shell, .erp-table-shell, .remote-table-shell').forEach((element) => {
-    if (!element.dataset.uiPriority) element.dataset.uiPriority = 'detail';
+    setRuntimePriority(element, 'detail');
   });
 }
 
