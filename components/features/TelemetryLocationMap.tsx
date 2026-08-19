@@ -1,7 +1,19 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { FeatureCollection, Point as GeoJsonPoint } from 'geojson';
+import {
+  AttributionControl,
+  FullscreenControl,
+  GeoJSONSource,
+  LngLatBounds,
+  Map as MapLibreMap,
+  NavigationControl,
+  ScaleControl,
+  setWorkerUrl,
+} from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -37,18 +49,33 @@ type LocationRow = {
   has_location: boolean;
 };
 
-type Point = LocationRow & { latitude: number; longitude: number };
-type WorldPoint = { x: number; y: number };
+type MachinePoint = LocationRow & { latitude: number; longitude: number };
+type MapHealth = 'online' | 'stale' | 'fault' | 'offline';
+type MachineProperties = {
+  deviceId: string;
+  machineId: string;
+  label: string;
+  health: MapHealth;
+  faults: number;
+  moved: number;
+};
 
-const TILE_SIZE = 256;
-const MAP_HEIGHT = 520;
-const MAP_REFRESH_MS = 15000;
-const SOUTH_AFRICA_CENTER = { latitude: -30.5595, longitude: 22.9375 };
+const MAP_REFRESH_MS = 15_000;
+const TABLE_PAGE_SIZE = 100;
+const OPEN_FREE_MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
+const SOUTH_AFRICA_CENTER: [number, number] = [22.9375, -30.5595];
+
+setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
 
 function formatDate(value: string | null) {
   if (!value) return 'Never';
   return new Date(value).toLocaleString('en-ZA', {
-    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
   });
 }
 
@@ -61,24 +88,11 @@ function online(lastSeen: string | null) {
   return Boolean(lastSeen && Date.now() - new Date(lastSeen).getTime() <= 30 * 60 * 1000);
 }
 
-function clampLatitude(latitude: number) {
-  return Math.max(-85.05112878, Math.min(85.05112878, latitude));
-}
-
-function worldPoint(latitude: number, longitude: number, zoom: number): WorldPoint {
-  const lat = clampLatitude(latitude) * Math.PI / 180;
-  const worldSize = TILE_SIZE * (2 ** zoom);
-  return {
-    x: ((longitude + 180) / 360) * worldSize,
-    y: (1 - Math.log(Math.tan(lat) + (1 / Math.cos(lat))) / Math.PI) / 2 * worldSize,
-  };
-}
-
-function markerColor(row: LocationRow) {
-  if (!online(row.last_seen_at)) return '#6b7280';
-  if (row.active_fault_count > 0 || ['fault', 'critical'].includes(row.machine_status)) return '#dc2626';
-  if (row.location_stale) return '#d97706';
-  return '#16a34a';
+function mapHealth(row: LocationRow): MapHealth {
+  if (row.active_fault_count > 0 || ['fault', 'critical'].includes(row.machine_status)) return 'fault';
+  if (!online(row.last_seen_at)) return 'offline';
+  if (row.location_stale) return 'stale';
+  return 'online';
 }
 
 function machineLabel(row: LocationRow) {
@@ -98,163 +112,273 @@ function locationAge(row: LocationRow) {
   const value = row.location_fix_at ?? row.location_received_at;
   if (!value) return 'No fix';
   const ageMs = Math.max(0, Date.now() - new Date(value).getTime());
-  if (ageMs < 60000) return `${Math.floor(ageMs / 1000)} sec ago`;
-  if (ageMs < 3600000) return `${Math.floor(ageMs / 60000)} min ago`;
-  if (ageMs < 86400000) return `${Math.floor(ageMs / 3600000)} hr ago`;
-  return `${Math.floor(ageMs / 86400000)} day(s) ago`;
+  if (ageMs < 60_000) return `${Math.floor(ageMs / 1000)} sec ago`;
+  if (ageMs < 3_600_000) return `${Math.floor(ageMs / 60_000)} min ago`;
+  if (ageMs < 86_400_000) return `${Math.floor(ageMs / 3_600_000)} hr ago`;
+  return `${Math.floor(ageMs / 86_400_000)} day(s) ago`;
 }
 
-function TelemetryMapCanvas({ points }: { points: Point[] }) {
+function pointCollection(points: MachinePoint[]): FeatureCollection<GeoJsonPoint, MachineProperties> {
+  return {
+    type: 'FeatureCollection',
+    features: points.map((point) => ({
+      type: 'Feature',
+      id: point.device_id,
+      geometry: {
+        type: 'Point',
+        coordinates: [point.longitude, point.latitude],
+      },
+      properties: {
+        deviceId: point.device_id,
+        machineId: point.machine_id ?? '',
+        label: machineLabel(point),
+        health: mapHealth(point),
+        faults: point.active_fault_count,
+        moved: point.movement_detected ? 1 : 0,
+      },
+    })),
+  };
+}
+
+function fitMapToPoints(map: MapLibreMap, points: MachinePoint[]) {
+  if (points.length === 0) {
+    map.easeTo({ center: SOUTH_AFRICA_CENTER, zoom: 4.3, duration: 600 });
+    return;
+  }
+  if (points.length === 1) {
+    map.easeTo({ center: [points[0].longitude, points[0].latitude], zoom: 15, duration: 700 });
+    return;
+  }
+
+  const bounds = new LngLatBounds();
+  points.forEach((point) => bounds.extend([point.longitude, point.latitude]));
+  map.fitBounds(bounds, { padding: 64, maxZoom: 15, duration: 700 });
+}
+
+function TelemetryMapCanvas({
+  points,
+  selectedDeviceId,
+  onSelect,
+}: {
+  points: MachinePoint[];
+  selectedDeviceId: string | null;
+  onSelect: (deviceId: string | null) => void;
+}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<MapLibreMap | null>(null);
+  const pointsRef = useRef(points);
+  const onSelectRef = useRef(onSelect);
   const fittedDevicesRef = useRef('');
-  const [width, setWidth] = useState(900);
-  const [zoom, setZoom] = useState(5);
-  const [center, setCenter] = useState(SOUTH_AFRICA_CENTER);
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const element = containerRef.current;
-    if (!element) return;
-    const observer = new ResizeObserver(() => setWidth(Math.max(320, element.clientWidth)));
-    observer.observe(element);
-    setWidth(Math.max(320, element.clientWidth));
-    return () => observer.disconnect();
-  }, []);
-
-  const fitPoints = useCallback(() => {
-    if (!points.length) return;
-    setCenter({
-      latitude: points.reduce((sum, point) => sum + point.latitude, 0) / points.length,
-      longitude: points.reduce((sum, point) => sum + point.longitude, 0) / points.length,
-    });
-    setZoom(points.length === 1 ? 15 : 5);
-  }, [points]);
-
-  useEffect(() => {
-    const signature = points.map((point) => point.device_id).sort().join('|');
-    if (!signature) return;
-    if (fittedDevicesRef.current !== signature) {
-      fittedDevicesRef.current = signature;
-      fitPoints();
-    }
-  }, [fitPoints, points]);
+  pointsRef.current = points;
+  onSelectRef.current = onSelect;
 
   const selected = useMemo(
     () => points.find((point) => point.device_id === selectedDeviceId) ?? null,
     [points, selectedDeviceId],
   );
 
-  const map = useMemo(() => {
-    const centerWorld = worldPoint(center.latitude, center.longitude, zoom);
-    const minTileX = Math.floor((centerWorld.x - width / 2) / TILE_SIZE) - 1;
-    const maxTileX = Math.floor((centerWorld.x + width / 2) / TILE_SIZE) + 1;
-    const minTileY = Math.floor((centerWorld.y - MAP_HEIGHT / 2) / TILE_SIZE) - 1;
-    const maxTileY = Math.floor((centerWorld.y + MAP_HEIGHT / 2) / TILE_SIZE) + 1;
-    const tiles: Array<{ x: number; y: number; key: string; left: number; top: number }> = [];
-    const tileCount = 2 ** zoom;
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
 
-    for (let tileY = minTileY; tileY <= maxTileY; tileY += 1) {
-      if (tileY < 0 || tileY >= tileCount) continue;
-      for (let tileX = minTileX; tileX <= maxTileX; tileX += 1) {
-        const wrappedX = ((tileX % tileCount) + tileCount) % tileCount;
-        tiles.push({
-          x: wrappedX,
-          y: tileY,
-          key: `${zoom}-${tileX}-${tileY}`,
-          left: tileX * TILE_SIZE - centerWorld.x + width / 2,
-          top: tileY * TILE_SIZE - centerWorld.y + MAP_HEIGHT / 2,
+    const map = new MapLibreMap({
+      container: containerRef.current,
+      style: OPEN_FREE_MAP_STYLE,
+      center: SOUTH_AFRICA_CENTER,
+      zoom: 4.3,
+      minZoom: 2,
+      maxZoom: 19,
+      attributionControl: false,
+      dragRotate: false,
+      touchPitch: false,
+      fadeDuration: 0,
+    });
+    mapRef.current = map;
+    let initialLoadComplete = false;
+
+    map.addControl(new NavigationControl({ showCompass: false }), 'top-right');
+    map.addControl(new FullscreenControl(), 'top-right');
+    map.addControl(new ScaleControl({ unit: 'metric', maxWidth: 120 }), 'bottom-left');
+    map.addControl(new AttributionControl({
+      compact: true,
+      customAttribution: '<a href="https://openfreemap.org/" target="_blank" rel="noreferrer">OpenFreeMap</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>',
+    }));
+
+    map.once('load', () => {
+      initialLoadComplete = true;
+      map.addSource('machine-locations', {
+        type: 'geojson',
+        data: pointCollection(pointsRef.current),
+        cluster: true,
+        clusterMaxZoom: 14,
+        clusterRadius: 48,
+      });
+
+      map.addLayer({
+        id: 'machine-clusters',
+        type: 'circle',
+        source: 'machine-locations',
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': ['step', ['get', 'point_count'], '#1b6ca8', 25, '#0b486b', 100, '#0b2638'],
+          'circle-radius': ['step', ['get', 'point_count'], 19, 25, 25, 100, 33],
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 2,
+          'circle-opacity': 0.94,
+        },
+      });
+
+      map.addLayer({
+        id: 'machine-cluster-count',
+        type: 'symbol',
+        source: 'machine-locations',
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': '{point_count_abbreviated}',
+          'text-size': 12,
+        },
+        paint: {
+          'text-color': '#ffffff',
+          'text-halo-color': 'rgba(0,0,0,.25)',
+          'text-halo-width': 1,
+        },
+      });
+
+      map.addLayer({
+        id: 'machine-movement-halo',
+        type: 'circle',
+        source: 'machine-locations',
+        filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'moved'], 1]],
+        paint: {
+          'circle-color': '#2684d9',
+          'circle-radius': 13,
+          'circle-opacity': 0.22,
+        },
+      });
+
+      map.addLayer({
+        id: 'machine-points',
+        type: 'circle',
+        source: 'machine-locations',
+        filter: ['!', ['has', 'point_count']],
+        paint: {
+          'circle-color': [
+            'match',
+            ['get', 'health'],
+            'fault', '#d71920',
+            'offline', '#667085',
+            'stale', '#f2a900',
+            '#20a35a',
+          ],
+          'circle-radius': ['case', ['==', ['get', 'moved'], 1], 8, 6],
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 2,
+        },
+      });
+
+      map.on('click', 'machine-clusters', async (event) => {
+        const feature = map.queryRenderedFeatures(event.point, { layers: ['machine-clusters'] })[0];
+        if (!feature || feature.geometry.type !== 'Point') return;
+        const clusterId = Number(feature.properties?.cluster_id);
+        const source = map.getSource('machine-locations') as GeoJSONSource;
+        const zoom = await source.getClusterExpansionZoom(clusterId);
+        map.easeTo({ center: feature.geometry.coordinates as [number, number], zoom });
+      });
+
+      map.on('click', 'machine-points', (event) => {
+        const deviceId = String(event.features?.[0]?.properties?.deviceId ?? '');
+        if (deviceId) onSelectRef.current(deviceId);
+      });
+
+      for (const layer of ['machine-clusters', 'machine-points']) {
+        map.on('mouseenter', layer, () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', layer, () => {
+          map.getCanvas().style.cursor = '';
         });
       }
-    }
 
-    const markers = points.map((point) => {
-      const projected = worldPoint(point.latitude, point.longitude, zoom);
-      return {
-        point,
-        left: projected.x - centerWorld.x + width / 2,
-        top: projected.y - centerWorld.y + MAP_HEIGHT / 2,
-      };
+      setReady(true);
+      setMapError(null);
+      fittedDevicesRef.current = pointsRef.current.map((point) => point.device_id).sort().join('|');
+      fitMapToPoints(map, pointsRef.current);
     });
 
-    return { tiles, markers };
-  }, [center, points, width, zoom]);
+    map.on('error', (event) => {
+      if (!initialLoadComplete) setMapError(event.error?.message ?? 'The map tiles could not be loaded.');
+    });
 
-  function focus(point: Point) {
-    setCenter({ latitude: point.latitude, longitude: point.longitude });
-    setZoom(16);
-    setSelectedDeviceId(point.device_id);
-  }
+    return () => {
+      setReady(false);
+      map.remove();
+      mapRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!ready || !mapRef.current) return;
+    const source = mapRef.current.getSource('machine-locations') as GeoJSONSource | undefined;
+    source?.setData(pointCollection(points));
+
+    const signature = points.map((point) => point.device_id).sort().join('|');
+    if (signature !== fittedDevicesRef.current) {
+      fittedDevicesRef.current = signature;
+      fitMapToPoints(mapRef.current, points);
+    }
+  }, [points, ready]);
+
+  useEffect(() => {
+    if (!ready || !mapRef.current || !selected) return;
+    mapRef.current.easeTo({
+      center: [selected.longitude, selected.latitude],
+      zoom: Math.max(mapRef.current.getZoom(), 14),
+      duration: 650,
+    });
+  }, [ready, selected]);
 
   return (
-    <div>
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginBottom: 8, flexWrap: 'wrap' }}>
-        <button className="button secondary" type="button" onClick={() => setZoom((value) => Math.min(18, value + 1))}>Zoom +</button>
-        <button className="button secondary" type="button" onClick={() => setZoom((value) => Math.max(3, value - 1))}>Zoom −</button>
-        <button className="button secondary" type="button" onClick={() => { fitPoints(); setSelectedDeviceId(null); }}>Fit machines</button>
+    <div className="telemetry-tracker">
+      <div className="telemetry-map-toolbar">
+        <div className="telemetry-map-legend" aria-label="Machine map status legend">
+          <span><i className="is-online" />Online</span>
+          <span><i className="is-stale" />Stale location</span>
+          <span><i className="is-fault" />Fault</span>
+          <span><i className="is-offline" />Offline</span>
+        </div>
+        <button className="fleet-button secondary" type="button" onClick={() => {
+          if (mapRef.current) fitMapToPoints(mapRef.current, points);
+          onSelect(null);
+        }}>Fit all machines</button>
       </div>
 
-      <div
-        ref={containerRef}
-        style={{
-          height: MAP_HEIGHT,
-          position: 'relative',
-          overflow: 'hidden',
-          borderRadius: 16,
-          border: '1px solid var(--border, #d1d5db)',
-          background: '#e5e7eb',
-        }}
-        aria-label="Live telemetry machine location map"
-      >
-        {map.tiles.map((tile) => (
-          <img
-            alt=""
-            aria-hidden="true"
-            key={tile.key}
-            src={`https://tile.openstreetmap.org/${zoom}/${tile.x}/${tile.y}.png`}
-            style={{ position: 'absolute', width: TILE_SIZE, height: TILE_SIZE, left: tile.left, top: tile.top, userSelect: 'none' }}
-          />
-        ))}
-
-        {map.markers.map(({ point, left, top }) => (
-          <button
-            key={point.device_id}
-            type="button"
-            title={`${machineLabel(point)} · ${point.latitude.toFixed(6)}, ${point.longitude.toFixed(6)}`}
-            onClick={() => focus(point)}
-            style={{
-              position: 'absolute',
-              left: left - 9,
-              top: top - 18,
-              width: 18,
-              height: 18,
-              borderRadius: '50% 50% 50% 0',
-              transform: 'rotate(-45deg)',
-              background: markerColor(point),
-              border: '2px solid white',
-              boxShadow: '0 1px 5px rgba(0,0,0,.35)',
-              cursor: 'pointer',
-              zIndex: selectedDeviceId === point.device_id ? 6 : 4,
-            }}
-            aria-label={`Locate ${machineLabel(point)}`}
-          />
-        ))}
+      <div className="telemetry-tracker-map">
+        <div
+          aria-label="Interactive machine tracker map. Use the controls to zoom and drag the map. The table below provides the same locations in text."
+          className="telemetry-tracker-canvas"
+          ref={containerRef}
+          role="application"
+        />
+        {!ready && !mapError ? <div className="telemetry-map-loading"><HamsterLoader label="Loading open-source map" /></div> : null}
+        {mapError ? <div className="telemetry-map-error" role="alert"><strong>Map unavailable</strong><span>{mapError}</span></div> : null}
 
         {selected ? (
-          <div style={{ position: 'absolute', left: 12, bottom: 34, zIndex: 8, maxWidth: 400, padding: 14, borderRadius: 12, background: 'rgba(255,255,255,.96)', color: '#111827', boxShadow: '0 8px 24px rgba(0,0,0,.22)' }}>
-            <strong>{machineLabel(selected)}</strong>
-            <div>{selected.device_code}</div>
-            <div>{selected.latitude.toFixed(6)}, {selected.longitude.toFixed(6)}</div>
-            <div>{sourceLabel(selected.location_source)} · Accuracy {selected.accuracy_m === null ? 'n/a' : `${Math.round(selected.accuracy_m)} m`}</div>
-            <div>{selected.satellites === null ? 'Satellites n/a' : `${selected.satellites} satellites`} · {locationAge(selected)}</div>
-            <div>Last fix: {formatDate(selected.location_fix_at ?? selected.location_received_at)}</div>
-            <div>{selected.active_fault_count} active fault(s) · {selected.last_transport ?? 'no network yet'}</div>
-            <button className="button secondary" type="button" style={{ marginTop: 8 }} onClick={() => setSelectedDeviceId(null)}>Close</button>
-          </div>
+          <aside aria-live="polite" className="telemetry-map-selection">
+            <header><div><span>{selected.device_code}</span><h3>{machineLabel(selected)}</h3></div><button aria-label="Close machine map details" onClick={() => onSelect(null)} type="button">×</button></header>
+            <StatusBadge value={mapHealth(selected)} />
+            <dl>
+              <div><dt>Coordinates</dt><dd>{selected.latitude.toFixed(6)}, {selected.longitude.toFixed(6)}</dd></div>
+              <div><dt>Location source</dt><dd>{sourceLabel(selected.location_source)}</dd></div>
+              <div><dt>Accuracy</dt><dd>{selected.accuracy_m === null ? 'Not reported' : `±${Math.round(selected.accuracy_m)} m`}</dd></div>
+              <div><dt>Last fix</dt><dd>{formatDate(selected.location_fix_at ?? selected.location_received_at)}</dd></div>
+              <div><dt>Movement</dt><dd>{selected.movement_detected ? `Moved ${Math.round(selected.distance_from_previous_m ?? 0)} m` : 'Stationary'}</dd></div>
+              <div><dt>Active faults</dt><dd>{selected.active_fault_count}</dd></div>
+            </dl>
+            {selected.machine_id ? <Link className="fleet-button" href={`/machines/${selected.machine_id}`}>Open machine details</Link> : null}
+          </aside>
         ) : null}
-
-        <div style={{ position: 'absolute', right: 8, bottom: 5, zIndex: 7, fontSize: 11, background: 'rgba(255,255,255,.85)', padding: '2px 5px', color: '#111827' }}>
-          © OpenStreetMap contributors
-        </div>
       </div>
     </div>
   );
@@ -270,6 +394,9 @@ export function TelemetryLocationMap() {
   const [message, setMessage] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [movedOnly, setMovedOnly] = useState(false);
+  const [health, setHealth] = useState<'all' | MapHealth>('all');
+  const [tablePage, setTablePage] = useState(1);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const canControl = ['admin', 'operations'].includes(userDetails?.role ?? '');
@@ -325,148 +452,102 @@ export function TelemetryLocationMap() {
     const needle = search.trim().toLowerCase();
     return rows.filter((row) => {
       if (movedOnly && !row.movement_detected) return false;
+      if (health !== 'all' && mapHealth(row) !== health) return false;
       if (!needle) return true;
       return [row.device_code, row.machine_name, row.serial_number, row.branch]
         .some((value) => value?.toLowerCase().includes(needle));
     });
-  }, [movedOnly, rows, search]);
+  }, [health, movedOnly, rows, search]);
 
-  const points = useMemo(() => filtered.filter((row): row is Point => (
+  const points = useMemo(() => filtered.filter((row): row is MachinePoint => (
     row.has_location && typeof row.latitude === 'number' && typeof row.longitude === 'number'
   )), [filtered]);
 
+  const tablePageCount = Math.max(1, Math.ceil(filtered.length / TABLE_PAGE_SIZE));
+  const currentTablePage = Math.min(tablePage, tablePageCount);
+  const visibleRows = filtered.slice((currentTablePage - 1) * TABLE_PAGE_SIZE, currentTablePage * TABLE_PAGE_SIZE);
+  const firstTableRow = filtered.length === 0 ? 0 : (currentTablePage - 1) * TABLE_PAGE_SIZE + 1;
+  const lastTableRow = Math.min(currentTablePage * TABLE_PAGE_SIZE, filtered.length);
+
+  useEffect(() => {
+    setTablePage(1);
+  }, [health, movedOnly, search]);
+
+  useEffect(() => {
+    setTablePage((current) => Math.min(current, tablePageCount));
+  }, [tablePageCount]);
+
+  const healthCounts = useMemo(() => rows.reduce((counts, row) => {
+    counts[mapHealth(row)] += 1;
+    return counts;
+  }, { online: 0, stale: 0, fault: 0, offline: 0 } as Record<MapHealth, number>), [rows]);
   const liveGpsCount = rows.filter((row) => row.location_source === 'gnss' && row.has_location && !row.location_stale).length;
   const locationCount = rows.filter((row) => row.has_location).length;
 
   return (
-    <section className="neo-card spatial-card">
-      <div className="page-header">
+    <section className="neo-card spatial-card telemetry-location-card">
+      <div className="telemetry-map-heading">
         <div>
-          <div className="badge">Live machine location</div>
-          <h2>Telemetry device map</h2>
-          <p>
-            The map refreshes every 15 seconds. Fresh GNSS fixes are shown as live GPS; ERP site coordinates remain clearly labelled fallbacks.
-          </p>
-          <div className="muted">
-            {liveGpsCount} live GNSS · {locationCount}/{rows.length} devices located · Last map refresh {formatTime(lastUpdated)}{refreshing ? ' · refreshing…' : ''}
+          <span className="fleet-eyebrow">Live machine location</span>
+          <h2>Fleet tracker</h2>
+          <p>Drag, zoom and select status-coloured machine dots. Nearby machines automatically group into numbered clusters.</p>
+          <div className="telemetry-map-summary">
+            <strong>{locationCount.toLocaleString('en-ZA')}</strong><span>located</span>
+            <strong>{liveGpsCount.toLocaleString('en-ZA')}</strong><span>live GPS</span>
+            <strong>{healthCounts.online.toLocaleString('en-ZA')}</strong><span>online</span>
+            <strong>{healthCounts.fault.toLocaleString('en-ZA')}</strong><span>faults</span>
           </div>
+          <small>Last refreshed {formatTime(lastUpdated)}{refreshing ? ' · refreshing…' : ''}</small>
         </div>
-        <button className="button secondary" type="button" disabled={loading || refreshing} onClick={() => load(false)}>Refresh now</button>
+        <button className="fleet-button secondary" type="button" disabled={loading || refreshing} onClick={() => load(false)}>Refresh now</button>
       </div>
 
-      {error ? <div className="error">{error}</div> : null}
-      {message ? <div className="success">{message}</div> : null}
+      {error ? <div className="fleet-banner is-error" role="alert"><strong>Location data could not be loaded.</strong><span>{error}</span></div> : null}
+      {message ? <div className="fleet-banner is-success" role="status"><strong>Location control saved.</strong><span>{message}</span></div> : null}
       {loading && rows.length === 0 ? <HamsterLoader label="Loading live telemetry locations" /> : null}
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
-        <input
-          aria-label="Search machine locations"
-          placeholder="Search machine, S/N, device or branch"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          style={{ minWidth: 280 }}
-        />
-        <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <input type="checkbox" checked={movedOnly} onChange={(event) => setMovedOnly(event.target.checked)} />
-          Moved machines only
-        </label>
+      <div className="telemetry-map-filters">
+        <label className="fleet-search"><input aria-label="Search machine locations" placeholder="Search machine, serial, device or branch" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
+        <label><span>Connection health</span><select value={health} onChange={(event) => setHealth(event.target.value as typeof health)}><option value="all">All statuses</option><option value="online">Online</option><option value="stale">Stale location</option><option value="fault">Fault</option><option value="offline">Offline</option></select></label>
+        <label className="telemetry-map-checkbox"><input type="checkbox" checked={movedOnly} onChange={(event) => setMovedOnly(event.target.checked)} /><span>Moved machines only</span></label>
       </div>
 
-      {!loading && rows.length === 0 ? <p>No active telemetry devices are registered.</p> : null}
-      {!loading && rows.length > 0 && points.length === 0 ? (
-        <div className="error">No telemetry device has supplied a GNSS fix yet and no assigned ERP site has coordinates. The map will populate automatically when the first location update arrives.</div>
-      ) : null}
-
-      {points.length > 0 ? <TelemetryMapCanvas points={points} /> : null}
+      {!loading && rows.length === 0 ? <div className="fleet-empty-state"><strong>No telemetry devices</strong><p>No active telemetry devices are registered.</p></div> : null}
+      {!loading && rows.length > 0 && points.length === 0 ? <div className="fleet-banner is-error"><strong>No mapped machines match the filters.</strong><span>Add coordinates to the ERP site or wait for a GNSS fix from the telemetry device.</span></div> : null}
+      {points.length > 0 ? <TelemetryMapCanvas points={points} selectedDeviceId={selectedDeviceId} onSelect={setSelectedDeviceId} /> : null}
 
       {filtered.length > 0 ? (
-        <div className="table-scroll" style={{ marginTop: 18 }}>
-          <table>
-            <thead>
-              <tr>
-                <th>Machine</th>
-                <th>Live location</th>
-                <th>Source</th>
-                <th>Movement</th>
-                <th>GPS/location control</th>
-                <th>Last fix</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((row) => {
-                const rowSaving = saving === row.device_id;
-                return (
-                  <tr key={row.device_id}>
-                    <td>
-                      <strong>{machineLabel(row)}</strong>
-                      <div className="muted">{row.serial_number ?? row.device_code}</div>
-                    </td>
-                    <td>
-                      {row.has_location && row.latitude !== null && row.longitude !== null
-                        ? `${row.latitude.toFixed(6)}, ${row.longitude.toFixed(6)}`
-                        : 'No location yet'}
-                      <div className="muted">{row.branch}</div>
-                    </td>
-                    <td>
-                      <StatusBadge value={row.location_stale ? 'stale' : (row.location_source ?? 'unknown')} />
-                      <div className="muted">{sourceLabel(row.location_source)}</div>
-                      {row.accuracy_m !== null ? <div className="muted">±{Math.round(row.accuracy_m)} m · {row.satellites ?? '?'} satellites</div> : null}
-                    </td>
-                    <td>
-                      <StatusBadge value={row.movement_detected ? 'moved' : 'stationary'} />
-                      {row.distance_from_previous_m !== null ? <div className="muted">{Math.round(row.distance_from_previous_m)} m since prior fix</div> : null}
-                    </td>
-                    <td>
-                      {canControl ? (
-                        <div className="grid">
-                          <label>
-                            <input
-                              type="checkbox"
-                              checked={row.location_enabled}
-                              disabled={rowSaving}
-                              onChange={(event) => updateLocationControl(row, { enabled: event.target.checked })}
-                            />{' '}
-                            Location enabled
-                          </label>
-                          <select
-                            aria-label={`Location interval for ${row.device_code}`}
-                            disabled={rowSaving}
-                            value={row.location_interval_minutes}
-                            onChange={(event) => updateLocationControl(row, { interval: Number(event.target.value) })}
-                          >
-                            <option value={1}>Every 1 min</option>
-                            <option value={5}>Every 5 min</option>
-                            <option value={15}>Every 15 min</option>
-                            <option value={30}>Every 30 min</option>
-                            <option value={60}>Every hour</option>
-                            <option value={240}>Every 4 hours</option>
-                            <option value={1440}>Daily</option>
-                          </select>
-                          <select
-                            aria-label={`Movement threshold for ${row.device_code}`}
-                            disabled={rowSaving}
-                            value={row.location_min_move_m}
-                            onChange={(event) => updateLocationControl(row, { minMove: Number(event.target.value) })}
-                          >
-                            <option value={25}>Movement: 25 m</option>
-                            <option value={50}>Movement: 50 m</option>
-                            <option value={100}>Movement: 100 m</option>
-                            <option value={250}>Movement: 250 m</option>
-                            <option value={500}>Movement: 500 m</option>
-                          </select>
-                        </div>
-                      ) : `${row.location_enabled ? 'Enabled' : 'Disabled'} · ${row.location_interval_minutes} min`}
-                    </td>
-                    <td>
-                      {formatDate(row.location_fix_at ?? row.location_received_at)}
-                      <div className="muted">{locationAge(row)}</div>
-                      <div className="muted">Device: {online(row.last_seen_at) ? 'online' : 'offline'} · {row.last_transport ?? 'no transport'}</div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="telemetry-location-table">
+          <header><div><span>Location register</span><h3>Machines and telemetry positions</h3></div><span>{filtered.length.toLocaleString('en-ZA')} of {rows.length.toLocaleString('en-ZA')} devices</span></header>
+          <div className="fleet-table-scroll">
+            <table className="fleet-machine-table">
+              <thead><tr><th>Machine</th><th>Location</th><th>Source</th><th>Movement</th><th>GPS/location control</th><th>Last fix</th></tr></thead>
+              <tbody>
+                {visibleRows.map((row) => {
+                  const rowSaving = saving === row.device_id;
+                  return (
+                    <tr key={row.device_id}>
+                      <td><button className="fleet-machine-link" disabled={!row.has_location} onClick={() => setSelectedDeviceId(row.device_id)} type="button"><strong>{machineLabel(row)}</strong><span>{row.serial_number ?? row.device_code}</span></button></td>
+                      <td>{row.has_location && row.latitude !== null && row.longitude !== null ? <><strong>{row.latitude.toFixed(6)}, {row.longitude.toFixed(6)}</strong><span>{row.branch}</span></> : <><strong>No location yet</strong><span>{row.branch}</span></>}</td>
+                      <td><StatusBadge value={row.location_stale ? 'stale' : (row.location_source ?? 'unknown')} /><span>{sourceLabel(row.location_source)}{row.accuracy_m !== null ? ` · ±${Math.round(row.accuracy_m)} m` : ''}</span></td>
+                      <td><StatusBadge value={row.movement_detected ? 'moved' : 'stationary'} />{row.distance_from_previous_m !== null ? <span>{Math.round(row.distance_from_previous_m)} m since prior fix</span> : null}</td>
+                      <td>
+                        {canControl ? (
+                          <div className="telemetry-location-controls">
+                            <label><input type="checkbox" checked={row.location_enabled} disabled={rowSaving} onChange={(event) => updateLocationControl(row, { enabled: event.target.checked })} />Enabled</label>
+                            <select aria-label={`Location interval for ${row.device_code}`} disabled={rowSaving} value={row.location_interval_minutes} onChange={(event) => updateLocationControl(row, { interval: Number(event.target.value) })}><option value={1}>Every 1 min</option><option value={5}>Every 5 min</option><option value={15}>Every 15 min</option><option value={30}>Every 30 min</option><option value={60}>Every hour</option><option value={240}>Every 4 hours</option><option value={1440}>Daily</option></select>
+                            <select aria-label={`Movement threshold for ${row.device_code}`} disabled={rowSaving} value={row.location_min_move_m} onChange={(event) => updateLocationControl(row, { minMove: Number(event.target.value) })}><option value={25}>Movement: 25 m</option><option value={50}>Movement: 50 m</option><option value={100}>Movement: 100 m</option><option value={250}>Movement: 250 m</option><option value={500}>Movement: 500 m</option></select>
+                          </div>
+                        ) : <><strong>{row.location_enabled ? 'Enabled' : 'Disabled'}</strong><span>{row.location_interval_minutes} min interval</span></>}
+                      </td>
+                      <td><strong>{locationAge(row)}</strong><span>{formatDate(row.location_fix_at ?? row.location_received_at)} · Device {online(row.last_seen_at) ? 'online' : 'offline'}</span></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <footer className="fleet-table-footer"><div className="fleet-table-footer-copy"><strong>Showing {firstTableRow.toLocaleString('en-ZA')}–{lastTableRow.toLocaleString('en-ZA')} of {filtered.length.toLocaleString('en-ZA')}</strong><span>Map data refreshes every 15 seconds.</span></div><div aria-label="Location table pagination" className="fleet-table-pagination"><button disabled={currentTablePage === 1} onClick={() => setTablePage((current) => Math.max(1, current - 1))} type="button">Previous</button><span>Page {currentTablePage} of {tablePageCount}</span><button disabled={currentTablePage === tablePageCount} onClick={() => setTablePage((current) => Math.min(tablePageCount, current + 1))} type="button">Next</button></div></footer>
         </div>
       ) : null}
     </section>

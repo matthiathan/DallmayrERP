@@ -15,6 +15,7 @@ const connectSources = [
   "'self'",
   supabaseOrigin,
   supabaseOrigin.replace('https://', 'wss://'),
+  'https://tiles.openfreemap.org',
   ...(isDevelopment ? ['ws://localhost:*', 'http://localhost:*'] : []),
 ];
 
@@ -30,7 +31,7 @@ const securityHeaders = [
       `connect-src ${connectSources.join(' ')}`,
       `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ''}`,
       "style-src 'self' 'unsafe-inline'",
-      `img-src 'self' data: blob: ${supabaseOrigin}`,
+      `img-src 'self' data: blob: ${supabaseOrigin} https://tiles.openfreemap.org`,
       "font-src 'self' data:",
       `media-src 'self' data: blob: ${supabaseOrigin}`,
       "worker-src 'self' blob:",

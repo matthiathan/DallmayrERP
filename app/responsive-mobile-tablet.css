@@ -1742,6 +1742,337 @@ body { background: var(--ops-canvas) !important; color: var(--ops-ink) !importan
   opacity: .45;
 }
 
+/* Open-source MapLibre fleet tracker. */
+.telemetry-location-card {
+  display: grid;
+  width: 100%;
+  gap: 14px;
+  padding: 16px;
+  color: var(--ops-ink) !important;
+  background: #fff !important;
+  border: 1px solid var(--ops-border) !important;
+  border-radius: 10px;
+}
+
+.telemetry-map-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.telemetry-map-heading h2,
+.telemetry-location-table h3 {
+  margin: 3px 0 4px;
+  color: var(--ops-ink) !important;
+  font-size: 18px;
+}
+
+.telemetry-map-heading p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--ops-muted) !important;
+  font-size: 11px;
+}
+
+.telemetry-map-heading small {
+  display: block;
+  margin-top: 7px;
+  color: var(--ops-muted) !important;
+  font-size: 9px;
+}
+
+.telemetry-map-summary {
+  display: flex;
+  margin-top: 10px;
+  align-items: baseline;
+  gap: 5px 12px;
+  flex-wrap: wrap;
+}
+
+.telemetry-map-summary strong {
+  color: var(--ops-ink) !important;
+  font-size: 15px;
+}
+
+.telemetry-map-summary span {
+  color: var(--ops-muted) !important;
+  font-size: 9px;
+}
+
+.telemetry-map-filters {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(160px, 220px) auto;
+  gap: 9px;
+  padding: 10px;
+  align-items: end;
+  background: #f8fafb;
+  border: 1px solid var(--ops-border);
+  border-radius: 8px;
+}
+
+.telemetry-map-filters .fleet-search {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.telemetry-map-filters > label:not(.fleet-search) {
+  display: grid;
+  gap: 4px;
+}
+
+.telemetry-map-filters label > span {
+  color: var(--ops-muted) !important;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.telemetry-map-filters select {
+  min-height: 38px !important;
+  color: var(--ops-ink) !important;
+  background: #fff !important;
+  border: 1px solid var(--ops-border) !important;
+  border-radius: 7px;
+}
+
+.telemetry-map-checkbox {
+  display: flex !important;
+  min-height: 38px;
+  padding: 0 12px;
+  align-items: center;
+  grid-template-columns: auto 1fr;
+  background: #fff;
+  border: 1px solid var(--ops-border);
+  border-radius: 7px;
+  white-space: nowrap;
+}
+
+.telemetry-map-checkbox input {
+  width: 16px;
+  height: 16px;
+  margin: 0 7px 0 0;
+}
+
+.telemetry-tracker {
+  display: grid;
+  gap: 8px;
+}
+
+.telemetry-map-toolbar {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.telemetry-map-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px 14px;
+  flex-wrap: wrap;
+}
+
+.telemetry-map-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ops-muted) !important;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.telemetry-map-legend i {
+  width: 9px;
+  height: 9px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(16,24,40,.18);
+}
+
+.telemetry-map-legend .is-online { background: #20a35a; }
+.telemetry-map-legend .is-stale { background: #f2a900; }
+.telemetry-map-legend .is-fault { background: #d71920; }
+.telemetry-map-legend .is-offline { background: #667085; }
+
+.telemetry-tracker-map {
+  position: relative;
+  width: 100%;
+  height: clamp(520px, 66vh, 720px);
+  overflow: hidden;
+  background: #e5e7eb;
+  border: 1px solid var(--ops-border);
+  border-radius: 10px;
+}
+
+.telemetry-tracker-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.telemetry-tracker-canvas .maplibregl-canvas {
+  outline: none;
+}
+
+.telemetry-tracker-canvas .maplibregl-ctrl-group {
+  overflow: hidden;
+  background: #fff !important;
+  border: 1px solid rgba(11,38,56,.14);
+  border-radius: 7px;
+  box-shadow: 0 3px 12px rgba(11,38,56,.16);
+}
+
+.telemetry-tracker-canvas .maplibregl-ctrl-attrib {
+  color: #344054 !important;
+  background: rgba(255,255,255,.88) !important;
+  font-size: 9px;
+}
+
+.telemetry-map-loading,
+.telemetry-map-error {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  padding: 24px;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+  background: rgba(245,246,248,.88);
+}
+
+.telemetry-map-error strong,
+.telemetry-map-error span {
+  display: block;
+}
+
+.telemetry-map-error strong { color: #b42318 !important; }
+.telemetry-map-error span { margin-top: 5px; color: var(--ops-muted) !important; font-size: 10px; }
+
+.telemetry-map-selection {
+  position: absolute;
+  left: 14px;
+  bottom: 32px;
+  z-index: 5;
+  width: min(360px, calc(100% - 28px));
+  padding: 14px;
+  color: var(--ops-ink) !important;
+  background: rgba(255,255,255,.97);
+  border: 1px solid rgba(11,38,56,.12);
+  border-radius: 10px;
+  box-shadow: 0 14px 34px rgba(11,38,56,.24);
+  backdrop-filter: blur(8px);
+}
+
+.telemetry-map-selection header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.telemetry-map-selection header span {
+  color: var(--ops-muted) !important;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.telemetry-map-selection h3 {
+  margin: 2px 0 8px;
+  color: var(--ops-ink) !important;
+  font-size: 16px;
+}
+
+.telemetry-map-selection header button {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--ops-ink) !important;
+  background: #f2f4f7 !important;
+  border: 1px solid var(--ops-border) !important;
+  border-radius: 6px;
+  font-size: 18px;
+}
+
+.telemetry-map-selection dl {
+  display: grid;
+  margin: 10px 0;
+  gap: 0;
+}
+
+.telemetry-map-selection dl > div {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr);
+  padding: 5px 0;
+  gap: 10px;
+  border-bottom: 1px solid #edf0f2;
+}
+
+.telemetry-map-selection dt,
+.telemetry-map-selection dd {
+  margin: 0;
+  font-size: 9px;
+}
+
+.telemetry-map-selection dt { color: var(--ops-muted) !important; }
+.telemetry-map-selection dd { color: var(--ops-ink) !important; font-weight: 700; }
+
+.telemetry-location-table {
+  overflow: hidden;
+  border: 1px solid var(--ops-border);
+  border-radius: 9px;
+}
+
+.telemetry-location-table > header {
+  display: flex;
+  min-height: 54px;
+  padding: 9px 13px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--ops-border);
+}
+
+.telemetry-location-table > header span {
+  color: var(--ops-muted) !important;
+  font-size: 9px;
+}
+
+.telemetry-location-table > header h3 {
+  margin: 2px 0 0;
+  font-size: 13px;
+}
+
+.telemetry-location-controls {
+  display: grid;
+  min-width: 150px;
+  gap: 5px;
+}
+
+.telemetry-location-controls label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ops-ink) !important;
+  font-size: 9px;
+}
+
+.telemetry-location-controls input {
+  width: 14px;
+  height: 14px;
+}
+
+.telemetry-location-controls select {
+  width: 100%;
+  min-height: 30px !important;
+  color: var(--ops-ink) !important;
+  background: #fff !important;
+  border: 1px solid var(--ops-border) !important;
+  border-radius: 5px;
+  font-size: 9px !important;
+}
+
 .fleet-empty-state {
   display: grid;
   min-height: 150px;
@@ -2116,6 +2447,10 @@ body { background: var(--ops-canvas) !important; color: var(--ops-ink) !importan
   .fleet-search { grid-column: 1 / -1; }
   .fleet-table-footer { align-items: flex-start; flex-direction: column; }
   .fleet-table-pagination { width: 100%; justify-content: space-between; }
+  .telemetry-location-card { padding: 12px; }
+  .telemetry-map-filters { grid-template-columns: 1fr 1fr; }
+  .telemetry-map-filters .fleet-search { grid-column: 1 / -1; }
+  .telemetry-tracker-map { height: 560px; }
 }
 
 @media (max-width: 620px) {
@@ -2130,4 +2465,14 @@ body { background: var(--ops-canvas) !important; color: var(--ops-ink) !importan
   .fleet-detail-panel { top: var(--responsive-header, 62px); width: 100%; }
   .fleet-detail-stats { grid-template-columns: 1fr; }
   .fleet-detail-grid > div { grid-template-columns: 96px minmax(0, 1fr); }
+  .telemetry-map-heading { display: grid; }
+  .telemetry-map-heading > .fleet-button { width: 100%; }
+  .telemetry-map-filters { grid-template-columns: 1fr; }
+  .telemetry-map-filters .fleet-search { grid-column: auto; }
+  .telemetry-map-toolbar { align-items: flex-start; flex-direction: column-reverse; }
+  .telemetry-map-toolbar > .fleet-button { width: 100%; }
+  .telemetry-tracker-map { height: 500px; }
+  .telemetry-map-selection { right: 8px; bottom: 28px; left: 8px; width: auto; max-height: 64%; overflow-y: auto; }
+  .telemetry-map-selection dl > div { grid-template-columns: 92px minmax(0, 1fr); }
+  .telemetry-location-table > header { align-items: flex-start; flex-direction: column; }
 }

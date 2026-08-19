@@ -7,7 +7,9 @@
     "node": "22.x"
   },
   "scripts": {
+    "predev": "node scripts/copy-maplibre-worker.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/copy-maplibre-worker.mjs",
     "build": "next build",
     "start": "node scripts/start-next.mjs",
     "desktop:dev": "electron .",
@@ -52,6 +54,7 @@
     "@capacitor/ios": "8.5.0",
     "@supabase/supabase-js": "2.112.0",
     "html5-qrcode": "2.3.8",
+    "maplibre-gl": "6.4.1",
     "next": "15.5.22",
     "react": "19.1.0",
     "react-dom": "19.1.0"
