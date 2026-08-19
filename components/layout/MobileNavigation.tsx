@@ -4,23 +4,21 @@ import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { useEffect, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { NavigationIcon, navigationIconKind, type NavigationIconKind } from '@/components/layout/NavigationIcon';
+import { NavigationIcon, navigationIconKind } from '@/components/layout/NavigationIcon';
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import type { NavSection } from '@/lib/auth/permissions';
 import { favoritePathname, MAX_FAVORITES, type FavoriteEntry } from '@/lib/navigation/favorites';
-import { TODAY_LABEL } from '@/lib/navigation/terminology';
-import type { BusinessRole } from '@/types/dallmayrerp';
+import { FLEET_OVERVIEW_LABEL } from '@/lib/navigation/terminology';
 
 type MobileNavigationDrawerProps = {
   activeHref: string | null;
   activeTitle: string;
+  accountLabel: string;
   favorites: FavoriteEntry[];
   homePath: string;
   onToggleFavorite: (href: string, label?: string) => void;
   open: boolean;
   pathname: string;
-  profileComplete: boolean;
-  roleLabel: string;
   sections: NavSection[];
   setOpen: Dispatch<SetStateAction<boolean>>;
   userName: string;
@@ -30,8 +28,6 @@ type MobileQuickBarProps = {
   homePath: string;
   menuOpen: boolean;
   pathname: string;
-  role: BusinessRole;
-  scanPath: string;
   setMenuOpen: Dispatch<SetStateAction<boolean>>;
   taskPath: string;
 };
@@ -72,13 +68,12 @@ function initials(name: string) {
 export function MobileNavigationDrawer({
   activeHref,
   activeTitle,
+  accountLabel,
   favorites,
   homePath,
   onToggleFavorite,
   open,
   pathname,
-  profileComplete,
-  roleLabel,
   sections,
   setOpen,
   userName,
@@ -166,8 +161,8 @@ export function MobileNavigationDrawer({
           </div>
           <div className="mobile-menu-v2-identity">
             <h2 id="mobile-navigation-title">{userName}</h2>
-            <strong>{roleLabel}</strong>
-            {!profileComplete ? <small>Profile setup required</small> : null}
+            <strong>{accountLabel}</strong>
+            <small>Secure Supabase session</small>
           </div>
           <button aria-label="Close navigation menu" className="mobile-menu-v2-close" onClick={() => setOpen(false)} ref={closeButtonRef} type="button"><NavigationIcon kind="close" /></button>
         </header>
@@ -175,7 +170,7 @@ export function MobileNavigationDrawer({
         <nav aria-label="Mobile navigation" className="mobile-menu-v2-nav">
           <Link aria-current={activeHref === homePath ? 'page' : undefined} className="mobile-menu-v2-link mobile-menu-v2-home" href={homePath} onClick={() => setOpen(false)}>
             <span className="mobile-menu-v2-icon" aria-hidden="true"><NavigationIcon kind="dashboard" /></span>
-            <span className="mobile-menu-v2-copy"><strong>{TODAY_LABEL}</strong></span>
+            <span className="mobile-menu-v2-copy"><strong>{FLEET_OVERVIEW_LABEL}</strong></span>
           </Link>
 
           <Link aria-current={activeHref === '/machines' ? 'page' : undefined} className="mobile-menu-v2-link" href="/machines" onClick={() => setOpen(false)}>
@@ -247,32 +242,15 @@ export function MobileNavigationDrawer({
   );
 }
 
-const quickLabels: Record<BusinessRole, { label: string; kind: NavigationIconKind }> = {
-  admin: { label: 'Machines', kind: 'tool' },
-  operations: { label: 'Machines', kind: 'tool' },
-  sales: { label: 'Machines', kind: 'tool' },
-  finance: { label: 'Machines', kind: 'tool' },
-  marketing: { label: 'Machines', kind: 'tool' },
-  executive: { label: 'Machines', kind: 'tool' },
-  warehouse_staff: { label: 'Machines', kind: 'tool' },
-  technician: { label: 'Machines', kind: 'tool' },
-  road_technician: { label: 'Machines', kind: 'tool' },
-};
-
-export function MobileQuickBar({ homePath, menuOpen, pathname, role, scanPath, setMenuOpen, taskPath }: MobileQuickBarProps) {
-  const primary = quickLabels[role];
-
+export function MobileQuickBar({ homePath, menuOpen, pathname, setMenuOpen, taskPath }: MobileQuickBarProps) {
   function openSearch() { setMenuOpen(false); window.dispatchEvent(new Event(OPEN_SEARCH_EVENT)); }
-  function openQueue() { setMenuOpen(false); window.dispatchEvent(new Event('dallmayr-open-field-queue')); }
-  void openQueue;
-  void scanPath;
 
   return (
     <nav aria-label="Mobile quick actions" className="mobile-quick-bar">
-      <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} href={homePath}><span aria-hidden="true"><NavigationIcon kind="dashboard" /></span><strong>{TODAY_LABEL}</strong></Link>
-      <Link aria-current={isActivePath(pathname, taskPath) ? 'page' : undefined} href={taskPath}><span aria-hidden="true"><NavigationIcon kind={primary.kind} /></span><strong>{primary.label}</strong></Link>
+      <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} href={homePath}><span aria-hidden="true"><NavigationIcon kind="dashboard" /></span><strong>Fleet</strong></Link>
+      <Link aria-current={isActivePath(pathname, taskPath) ? 'page' : undefined} href={taskPath}><span aria-hidden="true"><NavigationIcon kind="tool" /></span><strong>Machines</strong></Link>
       <button aria-label="Open global search" onClick={openSearch} type="button"><span aria-hidden="true"><NavigationIcon kind="search" /></span><strong>Search</strong></button>
-      {role === 'admin' || role === 'executive' ? <Link aria-current={isActivePath(pathname, '/alerts') ? 'page' : undefined} href="/alerts"><span aria-hidden="true"><NavigationIcon kind="bell" /></span><strong>Alerts</strong></Link> : <Link aria-current={isActivePath(pathname, '/workspace') ? 'page' : undefined} href="/workspace"><span aria-hidden="true"><NavigationIcon kind="telemetry" /></span><strong>Fleet</strong></Link>}
+      <Link aria-current={isActivePath(pathname, '/alerts') ? 'page' : undefined} href="/alerts"><span aria-hidden="true"><NavigationIcon kind="bell" /></span><strong>Alerts</strong></Link>
       <button aria-controls="mobile-navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen((current) => !current)} type="button"><span aria-hidden="true"><NavigationIcon kind="menu" /></span><strong>Menu</strong></button>
     </nav>
   );

@@ -14,7 +14,6 @@ import {
   setWorkerUrl,
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useAuth } from '@/components/auth/AuthProvider';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -410,7 +409,6 @@ export function TelemetryLocationPreview() {
 }
 
 export function TelemetryLocationMap() {
-  const { userDetails } = useAuth();
   const [rows, setRows] = useState<LocationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -424,8 +422,6 @@ export function TelemetryLocationMap() {
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [machineCount, setMachineCount] = useState(0);
-
-  const canControl = ['admin', 'operations'].includes(userDetails?.role ?? '');
 
   const load = useCallback(async (background = false) => {
     if (background) setRefreshing(true);
@@ -575,13 +571,11 @@ export function TelemetryLocationMap() {
                       <td><StatusBadge value={row.location_stale ? 'stale' : (row.location_source ?? 'unknown')} /><span>{sourceLabel(row.location_source)}{row.accuracy_m !== null ? ` · ±${Math.round(row.accuracy_m)} m` : ''}</span></td>
                       <td><StatusBadge value={row.movement_detected ? 'moved' : 'stationary'} />{row.distance_from_previous_m !== null ? <span>{Math.round(row.distance_from_previous_m)} m since prior fix</span> : null}</td>
                       <td>
-                        {canControl ? (
-                          <div className="telemetry-location-controls">
-                            <label><input type="checkbox" checked={row.location_enabled} disabled={rowSaving} onChange={(event) => updateLocationControl(row, { enabled: event.target.checked })} />Enabled</label>
-                            <select aria-label={`Location interval for ${row.device_code}`} disabled={rowSaving} value={row.location_interval_minutes} onChange={(event) => updateLocationControl(row, { interval: Number(event.target.value) })}><option value={1}>Every 1 min</option><option value={5}>Every 5 min</option><option value={15}>Every 15 min</option><option value={30}>Every 30 min</option><option value={60}>Every hour</option><option value={240}>Every 4 hours</option><option value={1440}>Daily</option></select>
-                            <select aria-label={`Movement threshold for ${row.device_code}`} disabled={rowSaving} value={row.location_min_move_m} onChange={(event) => updateLocationControl(row, { minMove: Number(event.target.value) })}><option value={25}>Movement: 25 m</option><option value={50}>Movement: 50 m</option><option value={100}>Movement: 100 m</option><option value={250}>Movement: 250 m</option><option value={500}>Movement: 500 m</option></select>
-                          </div>
-                        ) : <><strong>{row.location_enabled ? 'Enabled' : 'Disabled'}</strong><span>{row.location_interval_minutes} min interval</span></>}
+                        <div className="telemetry-location-controls">
+                          <label><input type="checkbox" checked={row.location_enabled} disabled={rowSaving} onChange={(event) => updateLocationControl(row, { enabled: event.target.checked })} />Enabled</label>
+                          <select aria-label={`Location interval for ${row.device_code}`} disabled={rowSaving} value={row.location_interval_minutes} onChange={(event) => updateLocationControl(row, { interval: Number(event.target.value) })}><option value={1}>Every 1 min</option><option value={5}>Every 5 min</option><option value={15}>Every 15 min</option><option value={30}>Every 30 min</option><option value={60}>Every hour</option><option value={240}>Every 4 hours</option><option value={1440}>Daily</option></select>
+                          <select aria-label={`Movement threshold for ${row.device_code}`} disabled={rowSaving} value={row.location_min_move_m} onChange={(event) => updateLocationControl(row, { minMove: Number(event.target.value) })}><option value={25}>Movement: 25 m</option><option value={50}>Movement: 50 m</option><option value={100}>Movement: 100 m</option><option value={250}>Movement: 250 m</option><option value={500}>Movement: 500 m</option></select>
+                        </div>
                       </td>
                       <td><strong>{locationAge(row)}</strong><span>{formatDate(row.location_fix_at ?? row.location_received_at)} · Device {online(row.last_seen_at) ? 'online' : 'offline'}</span></td>
                     </tr>

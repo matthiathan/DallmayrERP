@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Viewport } from 'next';
 import './styles/index.css';
-import { AccessStatusGuard } from '@/components/auth/AccessStatusGuard';
+import { AuthenticationGate } from '@/components/auth/AuthenticationGate';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { AppearanceProvider } from '@/components/appearance/AppearanceProvider';
 import { RenderedSurfaceContrastSync } from '@/components/appearance/RenderedSurfaceContrastSync';
@@ -131,12 +131,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <AppearanceProvider>
             <RenderedSurfaceContrastSync />
             <MobileBrowserHygiene />
-            <AccessStatusGuard>
+            <AuthenticationGate>
               <PageTemplateFrame />
               <AuthenticatedMobileRuntime />
               <GlobalAccountMenu />
               {children}
-            </AccessStatusGuard>
+            </AuthenticationGate>
           </AppearanceProvider>
         </AuthProvider>
       </body>

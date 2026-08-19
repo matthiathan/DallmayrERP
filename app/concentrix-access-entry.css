@@ -560,3 +560,23 @@
     grid-template-columns: minmax(250px, .8fr) minmax(0, 1.2fr) !important;
   }
 }
+
+.login-secondary-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px !important;
+}
+
+.login-secondary-actions > :only-child {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 560px) {
+  .login-secondary-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .login-secondary-actions > :only-child {
+    grid-column: auto;
+  }
+}

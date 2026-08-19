@@ -9,7 +9,6 @@ import {
   useAppearance,
 } from '@/components/appearance/AppearanceProvider';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { roleLabels } from '@/lib/auth/permissions';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { displayProfileName } from '@/types/dallmayrerp';
 
@@ -21,7 +20,7 @@ function initialsFor(name: string) {
 }
 
 export function GlobalAccountMenu() {
-  const { authUser, businessProfile, userDetails, loading } = useAuth();
+  const { authUser, businessProfile, loading } = useAuth();
   const { preferences, status: appearanceStatus, error: appearanceError, updatePreferences, resetPreferences } = useAppearance();
   const [portalTarget, setPortalTarget] = useState<Element | null>(null);
   const [placement, setPlacement] = useState<'mobile' | 'header' | 'sidebar'>('sidebar');
@@ -33,6 +32,10 @@ export function GlobalAccountMenu() {
   const [passwordBusy, setPasswordBusy] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState('');
+  const [profileBusy, setProfileBusy] = useState(false);
+  const [profileMessage, setProfileMessage] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const summaryRef = useRef<HTMLElement | null>(null);
   const settingsToggleRef = useRef<HTMLButtonElement | null>(null);
@@ -94,12 +97,17 @@ export function GlobalAccountMenu() {
     };
   }, [settingsOpen]);
 
-  const userName = displayProfileName(businessProfile);
+  const metadataName = typeof authUser?.user_metadata?.full_name === 'string'
+    ? authUser.user_metadata.full_name.trim()
+    : '';
+  const legacyProfileName = businessProfile ? displayProfileName(businessProfile) : '';
+  const userName = metadataName || legacyProfileName || authUser?.email?.split('@')[0] || 'Telemetry user';
   const userInitials = useMemo(() => initialsFor(userName), [userName]);
-  if (loading || !authUser || !businessProfile || !userDetails || !portalTarget) return null;
+  useEffect(() => setDisplayName(userName), [userName]);
 
-  const userEmail = businessProfile.user.email;
-  const roleLabel = roleLabels[userDetails.role];
+  if (loading || !authUser || !portalTarget) return null;
+
+  const userEmail = authUser.email ?? businessProfile?.user.email ?? '';
   const selectedTheme = CURATED_APPEARANCE_THEMES.find((theme) => theme.themeTone === preferences.themeTone) ?? CURATED_APPEARANCE_THEMES[0];
   const selectedAccent = ACCENT_PRESETS.find((accent) => accent.value.toLowerCase() === preferences.accentColor.toLowerCase());
   const appearanceStatusText = appearanceStatus === 'loading'
@@ -107,7 +115,7 @@ export function GlobalAccountMenu() {
     : appearanceStatus === 'saving'
       ? 'Saving settings…'
       : appearanceStatus === 'saved'
-        ? 'Saved for your account'
+        ? businessProfile ? 'Saved for your account' : 'Saved on this device'
         : appearanceStatus === 'error'
           ? 'Saved locally; cloud sync needs attention'
           : 'Changes preview instantly';
@@ -153,6 +161,28 @@ export function GlobalAccountMenu() {
     }
   }
 
+  async function saveProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (profileBusy) return;
+    const cleanName = displayName.trim();
+    setProfileMessage(null);
+    setProfileError(null);
+    if (!cleanName) return setProfileError('Enter the name you want shown in the app.');
+
+    setProfileBusy(true);
+    try {
+      const { error: updateError } = await getSupabaseClient().auth.updateUser({
+        data: { full_name: cleanName },
+      });
+      if (updateError) return setProfileError(updateError.message || 'Your account name could not be updated.');
+      setProfileMessage('Account name updated.');
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : 'Your account name could not be updated.');
+    } finally {
+      setProfileBusy(false);
+    }
+  }
+
   return createPortal(
     <details
       className={`dallmayr-account-menu is-${placement}`}
@@ -160,12 +190,12 @@ export function GlobalAccountMenu() {
       ref={detailsRef}
     >
       <summary aria-label={`Open account menu for ${userName}`} className="dallmayr-account-trigger" ref={summaryRef}>
-        <span aria-hidden="true" className="dallmayr-account-avatar">{placement === 'sidebar' ? roleLabel.slice(0, 1).toUpperCase() : userInitials}</span>
+        <span aria-hidden="true" className="dallmayr-account-avatar">{userInitials}</span>
         <span className="dallmayr-account-identity">
           {placement !== 'sidebar' ? (
-            <><strong>{userName}</strong><small>{roleLabel}</small></>
+            <><strong>{userName}</strong><small>Telemetry account</small></>
           ) : (
-            <><small>Signed in as</small><strong>{roleLabel}</strong><small>Active telemetry account</small></>
+            <><small>Signed in as</small><strong>{userName}</strong><small>Telemetry account</small></>
           )}
         </span>
         <span aria-hidden="true" className="dallmayr-account-chevron">▾</span>
@@ -191,6 +221,17 @@ export function GlobalAccountMenu() {
               <div><strong>Personal settings</strong><small>These changes apply only to your account.</small></div>
               <span aria-live="polite" className={`appearance-save-state is-${appearanceStatus}`} role="status">{appearanceStatusText}</span>
             </div>
+
+            <form className="account-profile-form" onSubmit={saveProfile}>
+              <div className="account-profile-copy">
+                <strong>Account</strong>
+                <small>{userEmail}</small>
+              </div>
+              <label><span>Display name</span><input autoComplete="name" onChange={(event) => setDisplayName(event.target.value)} required value={displayName} /></label>
+              {profileError ? <div className="appearance-sync-error" role="alert">{profileError}</div> : null}
+              {profileMessage ? <div className="account-settings-success" role="status">{profileMessage}</div> : null}
+              <button className="appearance-reset" disabled={profileBusy} type="submit">{profileBusy ? 'Saving…' : 'Save account name'}</button>
+            </form>
 
             <div aria-label="Available visual themes" className="appearance-theme-choice-grid" role="group">
               {CURATED_APPEARANCE_THEMES.map((theme) => {

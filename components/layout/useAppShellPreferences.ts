@@ -11,26 +11,23 @@ import {
   toggleFavoriteEntry,
   type FavoriteEntry,
 } from '@/lib/navigation/favorites';
-import type { BusinessRole } from '@/types/dallmayrerp';
 
 const FAVORITES_KEY = 'dallmayr-mobile-favorites-v1';
 const RAIL_COLLAPSED_KEY = 'dallmayr-desktop-rail-collapsed-v1';
 
-export function useAppShellPreferences(role?: BusinessRole) {
+export function useAppShellPreferences() {
   const [favoriteEntries, setFavoriteEntries] = useState<FavoriteEntry[]>([]);
   const [railCollapsed, setRailCollapsed] = useState(false);
 
   useEffect(() => {
     const parsed = parseFavoriteEntries(safeLocalStorageGet(FAVORITES_KEY));
-    const accessible = role
-      ? retainFavoriteEntries(parsed, (entry) => canAccessShellPath(role, favoritePathname(entry.href)))
-      : parsed;
+    const accessible = retainFavoriteEntries(parsed, (entry) => canAccessShellPath(favoritePathname(entry.href)));
     setFavoriteEntries(accessible);
     if (parsed.length > 0 || accessible.length > 0) {
       safeLocalStorageSet(FAVORITES_KEY, JSON.stringify(accessible));
     }
     setRailCollapsed(safeLocalStorageGet(RAIL_COLLAPSED_KEY) === 'true');
-  }, [role]);
+  }, []);
 
   function toggleFavorite(href: string, label?: string) {
     setFavoriteEntries((current) => {

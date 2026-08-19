@@ -531,7 +531,7 @@ function AlertsWorkspace({
 }
 
 export function MachineTelemetryOverview({ initialMachineId, initialStatus = 'all', machinesOnly = false }: MachineTelemetryOverviewProps) {
-  const { businessProfile, userDetails } = useAuth();
+  const { authUser, businessProfile } = useAuth();
   const [machines, setMachines] = useState<MachineRecord[]>([]);
   const [sites, setSites] = useState<Record<string, SiteRecord>>({});
   const [devices, setDevices] = useState<DeviceState[]>([]);
@@ -555,8 +555,9 @@ export function MachineTelemetryOverview({ initialMachineId, initialStatus = 'al
   const [message, setMessage] = useState<string | null>(null);
   const machineRegisterLoaded = useRef(false);
 
-  const canControl = ['admin', 'operations'].includes(userDetails?.role ?? '');
-  const firstName = displayProfileName(businessProfile).split(/\s+/)[0] || 'there';
+  const metadataName = typeof authUser?.user_metadata?.full_name === 'string' ? authUser.user_metadata.full_name.trim() : '';
+  const profileName = businessProfile ? displayProfileName(businessProfile) : '';
+  const firstName = (metadataName || profileName).split(/\s+/)[0] || 'there';
 
   const load = useCallback(async (quiet = false, refreshRegister = false) => {
     if (quiet) setRefreshing(true);
@@ -727,7 +728,7 @@ export function MachineTelemetryOverview({ initialMachineId, initialStatus = 'al
   const branches = Array.from(new Set(machineRows.map((machine) => machine.branch))).sort();
 
   async function changeMode(machine: MachineView, nextMode: TelemetryMode) {
-    if (!machine.device || !canControl) return;
+    if (!machine.device) return;
     setSavingDevice(machine.device.device_id);
     setError(null);
     setMessage(null);
@@ -843,7 +844,7 @@ export function MachineTelemetryOverview({ initialMachineId, initialStatus = 'al
                           <td><strong>{machine.serial_number ?? 'No serial'}</strong><span>QR {machine.machine_barcode ?? machine.asset_tag ?? 'not recorded'}</span></td>
                           <td><strong>{machine.siteName}</strong><span>{machine.location}</span></td>
                           <td>{machine.device ? <><strong>{machine.device.device_code}</strong><span>{machine.protocol} · machine {machine.device.machine_status} · {machine.device.last_transport ?? 'No network yet'}</span></> : <><strong>Not connected</strong><span>Assign a telemetry device</span></>}</td>
-                          <td>{machine.device && canControl ? <select aria-label={`Update mode for ${machineTitle(machine)}`} disabled={savingDevice === machine.device.device_id} onChange={(event) => changeMode(machine, event.target.value as TelemetryMode)} value={machine.device.telemetry_mode}><option value="live">Live</option><option value="daily">Daily</option><option value="monthly">Monthly</option></select> : <span className="fleet-mode-label">{machine.device?.telemetry_mode ?? '—'}</span>}</td>
+                          <td>{machine.device ? <select aria-label={`Update mode for ${machineTitle(machine)}`} disabled={savingDevice === machine.device.device_id} onChange={(event) => changeMode(machine, event.target.value as TelemetryMode)} value={machine.device.telemetry_mode}><option value="live">Live</option><option value="daily">Daily</option><option value="monthly">Monthly</option></select> : <span className="fleet-mode-label">—</span>}</td>
                           <td><strong className="fleet-number">{machine.unitsSold.toLocaleString('en-ZA')}</strong><span>{machine.failedVends} failed</span></td>
                           <td><button className={`fleet-error-count ${machine.faults.length ? 'has-errors' : ''}`} onClick={() => openMachine(machine, 'errors')} type="button">{machine.faults.length}</button></td>
                           <td><strong>{timeAgo(machine.lastContact)}</strong><span>{formatDateTime(machine.lastContact)}</span></td>
@@ -905,7 +906,7 @@ export function MachineTelemetryOverview({ initialMachineId, initialStatus = 'al
 
             {detailTab === 'configuration' ? (
               <DetailSection title="Remote configuration">
-                {selectedMachine.device ? <div className="fleet-config-panel"><label>Device update mode<select disabled={!canControl || savingDevice === selectedMachine.device.device_id} value={selectedMachine.device.telemetry_mode} onChange={(event) => changeMode(selectedMachine, event.target.value as TelemetryMode)}><option value="live">Live telemetry</option><option value="daily">Daily summary</option><option value="monthly">Monthly summary</option></select></label><div className="fleet-config-status"><span>Requested mode</span><strong>{selectedMachine.device.telemetry_mode}</strong><small>Last device configuration sync: {formatDateTime(selectedMachine.device.last_config_at)}</small></div><p>Heartbeats and critical errors continue independently of the detailed sales reporting schedule.</p>{!canControl ? <small>Your role has read-only access to device configuration.</small> : null}</div> : <EmptyState title="Configuration unavailable" message="This machine does not have an assigned telemetry device." />}
+                {selectedMachine.device ? <div className="fleet-config-panel"><label>Device update mode<select disabled={savingDevice === selectedMachine.device.device_id} value={selectedMachine.device.telemetry_mode} onChange={(event) => changeMode(selectedMachine, event.target.value as TelemetryMode)}><option value="live">Live telemetry</option><option value="daily">Daily summary</option><option value="monthly">Monthly summary</option></select></label><div className="fleet-config-status"><span>Requested mode</span><strong>{selectedMachine.device.telemetry_mode}</strong><small>Last device configuration sync: {formatDateTime(selectedMachine.device.last_config_at)}</small></div><p>Heartbeats and critical errors continue independently of the detailed sales reporting schedule.</p></div> : <EmptyState title="Configuration unavailable" message="This machine does not have an assigned telemetry device." />}
               </DetailSection>
             ) : null}
           </div>

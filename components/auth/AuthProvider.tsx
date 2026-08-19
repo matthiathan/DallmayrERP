@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { getSupabaseClient } from '@/lib/supabase/client';
@@ -41,25 +41,55 @@ async function loadDetails(userId: string): Promise<UserDetails | null> {
 async function loadBusinessProfile(authUser: User | null): Promise<BusinessProfile | null> {
   if (!authUser?.id) return null;
 
+  try {
+    const client = getSupabaseClient();
+
+    // Older DallmayrERP accounts may still have a matching profile row. Claim
+    // and load it when available so names and saved appearance preferences keep
+    // working, but never make that legacy record a condition of authentication.
+    await client.rpc('claim_current_app_user');
+
+    const { data: userRecord, error: userError } = await client
+      .from('users')
+      .select('*')
+      .eq('auth_user_id', authUser.id)
+      .maybeSingle();
+
+    if (userError || !userRecord) return null;
+
+    let details: UserDetails | null = null;
+    try {
+      details = await loadDetails(userRecord.id);
+    } catch {
+      details = null;
+    }
+
+    return {
+      user: userRecord as BusinessUser,
+      details,
+    };
+  } catch {
+    // Supabase Auth is the access authority for the telemetry-only app. A
+    // missing ERP profile or role must not turn a valid session into a logout.
+    return null;
+  }
+}
+
+async function loadFromSession() {
   const client = getSupabaseClient();
-  const { error: claimError } = await client.rpc('claim_current_app_user');
-  if (claimError) throw claimError;
+  const { data, error: sessionError } = await withTimeout(
+    client.auth.getSession(),
+    'Timed out while checking your secure session. Please refresh the page or sign in again.',
+  );
 
-  const { data: userRecord, error: userError } = await client
-    .from('users')
-    .select('*')
-    .eq('auth_user_id', authUser.id)
-    .maybeSingle();
+  if (sessionError) throw sessionError;
 
-  if (userError) throw userError;
-  if (!userRecord) return null;
+  const currentUser = data.session?.user ?? null;
+  const profile = currentUser
+    ? await withTimeout(loadBusinessProfile(currentUser), 'Optional account details timed out.').catch(() => null)
+    : null;
 
-  const details = await loadDetails(userRecord.id);
-
-  return {
-    user: userRecord as BusinessUser,
-    details,
-  };
+  return { currentUser, profile };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -68,27 +98,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadFromSession() {
-    const client = getSupabaseClient();
-    const { data, error: sessionError } = await client.auth.getSession();
-
-    if (sessionError) {
-      throw sessionError;
-    }
-
-    const currentUser = data.session?.user ?? null;
-    const profile = await loadBusinessProfile(currentUser);
-
-    return { currentUser, profile };
-  }
-
-  async function refreshProfile() {
+  const refreshProfile = useCallback(async () => {
     setLoading(true);
     try {
-      const { currentUser, profile } = await withTimeout(
-        loadFromSession(),
-        'Timed out while checking your session and ERP profile. Please refresh the page or sign in again.',
-      );
+      const { currentUser, profile } = await loadFromSession();
       setAuthUser(currentUser);
       setBusinessProfile(profile);
       setError(null);
@@ -99,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -118,15 +131,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             try {
               const profile = await withTimeout(
                 loadBusinessProfile(session?.user ?? null),
-                'Timed out while checking your ERP role and user details. Please refresh the page or sign in again.',
+                'Timed out while loading optional account details.',
               );
               if (!mounted) return;
               setBusinessProfile(profile);
               setError(null);
-            } catch (err) {
+            } catch {
               if (!mounted) return;
               setBusinessProfile(null);
-              setError(err instanceof Error ? err.message : 'Could not load user profile.');
+              setError(null);
             } finally {
               if (mounted) setLoading(false);
             }
@@ -134,10 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         unsubscribe = () => subscription.subscription.unsubscribe();
 
-        const { currentUser, profile } = await withTimeout(
-          loadFromSession(),
-          'Timed out while checking your session and ERP profile. Please refresh the page or sign in again.',
-        );
+        const { currentUser, profile } = await loadFromSession();
         if (!mounted) return;
         setAuthUser(currentUser);
         setBusinessProfile(profile);
@@ -165,7 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({ authUser, businessUser, userDetails, businessProfile, loading, error, refreshProfile }),
-    [authUser, businessUser, userDetails, businessProfile, loading, error],
+    [authUser, businessUser, userDetails, businessProfile, loading, error, refreshProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -22,7 +22,7 @@ const connectedWorkflowStyles = read('app/styles/connected-workflow-strip.css');
 requireText(
   'application shell',
   shell,
-  'const activeArea = activeSection?.heading ?? roleLabels[userDetails.role];',
+  "const activeArea = activeSection?.heading ?? 'Telemetry';",
   'the desktop shell must derive an area-level context separately from the route title.',
 );
 requireText(

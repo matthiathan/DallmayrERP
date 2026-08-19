@@ -1,5 +1,5 @@
 import { navSections } from '@/lib/auth/permissions';
-import { TODAY_LABEL } from '@/lib/navigation/terminology';
+import { FLEET_OVERVIEW_LABEL } from '@/lib/navigation/terminology';
 
 export type PageNavigationSection = {
   id: string;
@@ -92,7 +92,7 @@ function defaultBackTarget(pathname: string) {
 
   return parent
     ? { href: parent.href, label: parent.label }
-    : { href: '/workspace', label: TODAY_LABEL };
+    : { href: '/', label: FLEET_OVERVIEW_LABEL };
 }
 
 function dynamicRecordRule(pathname: string) {
@@ -124,7 +124,7 @@ export function buildPageNavigation(pathname: string, metadata?: PageNavigationM
   const currentLabel = explicitCurrentLabel
     ?? dynamicRule?.currentLabel
     ?? findNavLabel(pathname)
-    ?? (segments.at(-1) ? titleCase(segments.at(-1) as string) : TODAY_LABEL);
+    ?? (segments.at(-1) ? titleCase(segments.at(-1) as string) : FLEET_OVERVIEW_LABEL);
 
   const crumbs = segments.map((segment, index) => {
     const href = `/${segments.slice(0, index + 1).join('/')}`;

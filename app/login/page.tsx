@@ -3,27 +3,51 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { getDefaultPathForRole } from '@/lib/auth/permissions';
 import { safeLocalStorageGet, safeLocalStorageRemove, safeLocalStorageSet } from '@/lib/browserStorage';
 import {
   getAuthRememberMePreference,
   getSupabaseClient,
   setAuthRememberMePreference,
 } from '@/lib/supabase/client';
-import { isProfileComplete } from '@/types/dallmayrerp';
 
 const REMEMBERED_EMAIL_KEY = 'dallmayrerp-remembered-email';
+type LoginMode = 'login' | 'signup' | 'forgot';
+
+function modeCopy(mode: LoginMode) {
+  if (mode === 'signup') {
+    return {
+      title: 'Create your telemetry account',
+      description: 'Create one secure account for the shared machine and telemetry workspace.',
+      submit: 'Create account',
+    };
+  }
+  if (mode === 'forgot') {
+    return {
+      title: 'Reset your password',
+      description: 'Enter your email and we will send you a secure password-reset link.',
+      submit: 'Send reset link',
+    };
+  }
+  return {
+    title: 'Sign in',
+    description: 'Use your Dallmayr telemetry account to continue.',
+    submit: 'Sign in',
+  };
+}
 
 export default function LoginPage() {
   const router = useRouter();
-  const { authUser, businessUser, userDetails, loading } = useAuth();
-  const [mode, setMode] = useState<'login' | 'activate'>('login');
+  const { authUser, loading } = useAuth();
+  const [mode, setMode] = useState<LoginMode>('login');
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const copy = modeCopy(mode);
 
   useEffect(() => {
     const remembered = getAuthRememberMePreference();
@@ -32,12 +56,18 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
-    if (!loading && authUser && businessUser && userDetails) {
-      router.replace(isProfileComplete(userDetails) ? getDefaultPathForRole(userDetails.role) : '/onboarding');
-    }
-  }, [authUser, businessUser, userDetails, loading, router]);
+    if (!loading && authUser) router.replace('/');
+  }, [authUser, loading, router]);
 
-  async function login(event: FormEvent<HTMLFormElement>) {
+  function switchMode(nextMode: LoginMode) {
+    setMode(nextMode);
+    setPassword('');
+    setConfirmPassword('');
+    setError(null);
+    setSuccess(null);
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setSuccess(null);
@@ -45,69 +75,56 @@ export default function LoginPage() {
 
     try {
       const cleanEmail = email.trim().toLowerCase();
-      setAuthRememberMePreference(rememberMe);
+      const client = getSupabaseClient();
 
+      if (mode === 'forgot') {
+        const { error: resetError } = await client.auth.resetPasswordForEmail(cleanEmail, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (resetError) return setError(resetError.message || 'The password reset email could not be sent.');
+        setSuccess('Check your email for the secure password-reset link.');
+        return;
+      }
+
+      if (mode === 'signup') {
+        const cleanName = fullName.trim();
+        if (!cleanName) return setError('Enter your full name.');
+        if (password.length < 8) return setError('Your password must contain at least 8 characters.');
+        if (password !== confirmPassword) return setError('The passwords do not match.');
+
+        const { data, error: signUpError } = await client.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: { data: { full_name: cleanName } },
+        });
+        if (signUpError) return setError(signUpError.message);
+        if (data.session) {
+          router.replace('/');
+          return;
+        }
+        setSuccess('Account created. Check your email to confirm it, then sign in.');
+        setMode('login');
+        setPassword('');
+        setConfirmPassword('');
+        return;
+      }
+
+      setAuthRememberMePreference(rememberMe);
       if (rememberMe) safeLocalStorageSet(REMEMBERED_EMAIL_KEY, cleanEmail);
       else safeLocalStorageRemove(REMEMBERED_EMAIL_KEY);
 
-      const client = getSupabaseClient();
       const { error: loginError } = await client.auth.signInWithPassword({
         email: cleanEmail,
         password,
       });
-
-      if (loginError) {
-        setError('Login failed. Check that your account is activated and that the password is correct.');
-        return;
-      }
-
+      if (loginError) return setError('Sign in failed. Check your email and password, then try again.');
       router.replace('/');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login could not start.');
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Authentication could not start.');
     } finally {
       setSubmitting(false);
     }
   }
-
-  async function activate(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    setSuccess(null);
-    setSubmitting(true);
-
-    try {
-      const client = getSupabaseClient();
-      const cleanEmail = email.trim().toLowerCase();
-      const { error: signUpError } = await client.auth.signUp({
-        email: cleanEmail,
-        password,
-      });
-
-      if (signUpError) {
-        setError(signUpError.message);
-        return;
-      }
-
-      const { error: loginError } = await client.auth.signInWithPassword({
-        email: cleanEmail,
-        password,
-      });
-
-      if (loginError) {
-        setSuccess('Account activation started. Check your email if Supabase requires confirmation, then sign in. Your email must still be invited by an administrator before telemetry access unlocks.');
-        setMode('login');
-        return;
-      }
-
-      router.replace('/');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Account activation could not start.');
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  const isActivate = mode === 'activate';
 
   return (
     <main className="login-page dynamics-login-page">
@@ -130,54 +147,58 @@ export default function LoginPage() {
       </section>
 
       <div className="login-card neo-card dynamics-login-card">
-        <div className="orb" />
         <div className="badge">Secure workspace</div>
-        <h1>{isActivate ? 'Activate your Dallmayr Telemetry account' : 'Sign in'}</h1>
-        <p>
-          {isActivate
-            ? 'Create your secure login account. Access unlocks after an administrator has invited the same email address.'
-            : 'Use your Supabase Auth account to open the machine and telemetry workspace.'}
-        </p>
+        <h1>{copy.title}</h1>
+        <p>{copy.description}</p>
         {error ? <div className="error" role="alert">{error}</div> : null}
         {success ? <div aria-live="polite" className="success" role="status">{success}</div> : null}
-        <form onSubmit={isActivate ? activate : login} className="grid" style={{ marginTop: 20 }}>
+
+        <form className="grid" onSubmit={submit}>
+          {mode === 'signup' ? (
+            <label>
+              Full name
+              <input autoComplete="name" onChange={(event) => setFullName(event.target.value)} required value={fullName} />
+            </label>
+          ) : null}
           <label>
             Email
-            <input autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} type="email" required />
+            <input autoComplete="email" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} />
           </label>
-          <label>
-            Password
-            <input autoComplete={isActivate ? 'new-password' : 'current-password'} value={password} onChange={(event) => setPassword(event.target.value)} type="password" minLength={6} required />
-          </label>
-          {!isActivate ? (
+          {mode !== 'forgot' ? (
+            <label>
+              Password
+              <input autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} minLength={8} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />
+            </label>
+          ) : null}
+          {mode === 'signup' ? (
+            <label>
+              Confirm password
+              <input autoComplete="new-password" minLength={8} onChange={(event) => setConfirmPassword(event.target.value)} required type="password" value={confirmPassword} />
+            </label>
+          ) : null}
+          {mode === 'login' ? (
             <label className="login-remember-me">
-              <input
-                checked={rememberMe}
-                onChange={(event) => setRememberMe(event.target.checked)}
-                type="checkbox"
-              />
+              <input checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} type="checkbox" />
               <span>
                 <strong>Remember me on this device</strong>
-                <small>Stay signed in on this device until you choose Sign out. Your password is never stored by Dallmayr Telemetry.</small>
+                <small>Stay signed in until you choose Sign out. Your password is never stored by Dallmayr Telemetry.</small>
               </span>
             </label>
           ) : null}
           <button className="button pulse-button" disabled={submitting} type="submit">
-            {submitting ? 'Please wait...' : isActivate ? 'Activate account' : 'Sign in'}
+            {submitting ? 'Please wait…' : copy.submit}
           </button>
         </form>
-        <div className="action-row">
-          <button
-            className="button secondary"
-            type="button"
-            onClick={() => {
-              setMode(isActivate ? 'login' : 'activate');
-              setError(null);
-              setSuccess(null);
-            }}
-          >
-            {isActivate ? 'I already have an account' : 'First login? Activate account'}
-          </button>
+
+        <div className="action-row login-secondary-actions">
+          {mode === 'login' ? (
+            <>
+              <button className="button secondary" onClick={() => switchMode('forgot')} type="button">Forgot password</button>
+              <button className="button secondary" onClick={() => switchMode('signup')} type="button">Create account</button>
+            </>
+          ) : (
+            <button className="button secondary" onClick={() => switchMode('login')} type="button">Back to sign in</button>
+          )}
         </div>
       </div>
     </main>

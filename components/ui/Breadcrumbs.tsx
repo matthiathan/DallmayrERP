@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 import { usePageNavigationMetadata } from '@/components/layout/PageNavigationMetadata';
 import { buildPageNavigation } from '@/lib/navigation/pageNavigation';
-import { TODAY_LABEL } from '@/lib/navigation/terminology';
+import { FLEET_OVERVIEW_LABEL } from '@/lib/navigation/terminology';
 
 export function Breadcrumbs() {
   const pathname = usePathname();
@@ -43,7 +43,7 @@ export function Breadcrumbs() {
 
       {!isRoot && !isWorkspace ? (
         <nav aria-label="Breadcrumb" className="breadcrumbs">
-          <Link href="/workspace">{TODAY_LABEL}</Link>
+          <Link href="/">{FLEET_OVERVIEW_LABEL}</Link>
           {navigation.crumbs.map((crumb) => (
             <span className="breadcrumb-item" key={crumb.href}>
               <span aria-hidden="true">/</span>

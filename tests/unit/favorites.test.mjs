@@ -60,25 +60,26 @@ test('module and record-level favorites can coexist and the ninth pin is rejecte
   assert.equal(removed.some((entry) => entry.href === '/operations/service-jobs?job=service-1'), false);
 });
 
-test('shell access keeps telemetry favorites visible only to their authorized roles', () => {
-  assert.equal(canAccessShellPath('admin', '/telemetry'), true);
-  assert.equal(canAccessShellPath('executive', '/telemetry'), true);
-  assert.equal(canAccessShellPath('operations', '/telemetry'), false);
-  assert.equal(canAccessShellPath('admin', '/telemetry/devices'), true);
-  assert.equal(canAccessShellPath('executive', '/telemetry/devices'), false);
+test('shell access gives every signed-in account the same telemetry pages', () => {
+  assert.equal(canAccessShellPath('/'), true);
+  assert.equal(canAccessShellPath('/machines'), true);
+  assert.equal(canAccessShellPath('/alerts'), true);
+  assert.equal(canAccessShellPath('/telemetry'), true);
+  assert.equal(canAccessShellPath('/telemetry/devices'), true);
+  assert.equal(canAccessShellPath('/admin/users'), false);
 });
 
-test('role changes remove inaccessible favorites so hidden pins cannot consume the shared capacity', () => {
+test('retired ERP favorites are removed so they cannot consume telemetry pin capacity', () => {
   const stored = [
     { href: '/admin/users', label: 'Users & Roles' },
     { href: '/work', label: 'My Work' },
     { href: '/customers/customer-1', label: 'Customer 1' },
   ];
-  const salesEntries = retainFavoriteEntries(
+  const telemetryEntries = retainFavoriteEntries(
     stored,
-    (entry) => canAccessShellPath('sales', favoritePathname(entry.href)),
+    (entry) => canAccessShellPath(favoritePathname(entry.href)),
   );
 
-  assert.deepEqual(salesEntries.map((entry) => entry.href), ['/work', '/customers/customer-1']);
-  assert.equal(toggleFavoriteEntry(salesEntries, { href: '/sales', label: 'Sales Workspace' }).length, 3);
+  assert.deepEqual(telemetryEntries, []);
+  assert.equal(toggleFavoriteEntry(telemetryEntries, { href: '/machines', label: 'Machines' }).length, 1);
 });

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { NavigationIcon, navigationIconKind } from '@/components/layout/NavigationIcon';
 import type { NavSection } from '@/lib/auth/permissions';
 import { favoritePathname, type FavoriteEntry } from '@/lib/navigation/favorites';
-import { TODAY_LABEL, TODAY_OPEN_LABEL } from '@/lib/navigation/terminology';
+import { FLEET_OVERVIEW_LABEL, FLEET_OVERVIEW_OPEN_LABEL } from '@/lib/navigation/terminology';
 
 type DesktopNavigationRailProps = {
   activeHref: string | null;
@@ -14,7 +14,6 @@ type DesktopNavigationRailProps = {
   onToggleCollapse: () => void;
   pathname: string;
   pinnedItems: FavoriteEntry[];
-  roleLabel: string;
   sections: NavSection[];
 };
 
@@ -48,7 +47,6 @@ export function DesktopNavigationRail({
   onToggleCollapse,
   pathname,
   pinnedItems,
-  roleLabel,
   sections,
 }: DesktopNavigationRailProps) {
   const visibleItems = navigationItems(sections, homePath);
@@ -56,7 +54,7 @@ export function DesktopNavigationRail({
   return (
     <aside aria-label="Application navigation" className={`dallmayr-sidebar ${collapsed ? 'is-collapsed' : ''}`}>
       <div className="dallmayr-sidebar-brand">
-        <Link href={homePath} aria-label={TODAY_OPEN_LABEL} title={TODAY_LABEL}>
+        <Link href={homePath} aria-label={FLEET_OVERVIEW_OPEN_LABEL} title={FLEET_OVERVIEW_LABEL}>
           <span aria-hidden="true" className="dallmayr-crest"><Image alt="" height={42} src="/icons/dallmayr-app.svg" width={35} /></span>
           {!collapsed ? <span><strong>Dallmayr</strong><small>Vending &amp; coffee solutions</small></span> : null}
         </Link>
@@ -107,7 +105,7 @@ export function DesktopNavigationRail({
       </nav>
 
       <div className="dallmayr-sidebar-account dallmayr-sidebar-account-menu-target telemetry-sidebar-account-fallback" />
-      <div className="telemetry-country-label" title={`South Africa · ${roleLabel}`}><span aria-hidden="true">🇿🇦</span>{!collapsed ? <strong>South Africa</strong> : null}</div>
+      <div className="telemetry-country-label" title="South Africa telemetry"><span aria-hidden="true">🇿🇦</span>{!collapsed ? <strong>South Africa</strong> : null}</div>
     </aside>
   );
 }

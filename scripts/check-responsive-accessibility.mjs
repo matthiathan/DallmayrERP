@@ -51,7 +51,8 @@ requireContracts('Mobile navigation', mobileNavigation, [
   "if (event.key !== 'Tab' || !panelRef.current) return",
   'restoreTarget?.focus()',
   'aria-controls="mobile-navigation" aria-expanded={menuOpen}',
-  "window.dispatchEvent(new Event('dallmayr-open-field-queue'))",
+  'aria-label="Open global search"',
+  'href="/alerts"',
 ]);
 
 const notifications = await source('components/features/MobileAppExperience.tsx');
@@ -150,7 +151,7 @@ requireContracts('Login', login, [
   'className="error" role="alert"',
   'aria-live="polite" className="success" role="status"',
   'autoComplete="email"',
-  "autoComplete={isActivate ? 'new-password' : 'current-password'}",
+  "autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}",
 ]);
 
 const applicationFailureScreen = await source('components/system/ApplicationFailureScreen.tsx');

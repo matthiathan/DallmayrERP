@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 
 const RESPONSIVE_QUERY = '(max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse)';
-const PUBLIC_RESPONSIVE_ROUTES = ['/login', '/onboarding'];
+const PUBLIC_RESPONSIVE_ROUTES = ['/login', '/reset-password'];
 const TRANSIENT_CLASSES = [
   'mobile-navigation-dialog-open',
   'mobile-workflow-detail-open',

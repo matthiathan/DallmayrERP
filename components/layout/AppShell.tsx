@@ -14,10 +14,8 @@ import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { ErpStateBanner } from '@/components/ui/ErpLayout';
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
-import { getDefaultPathForRole, roleLabels } from '@/lib/auth/permissions';
 import { favoritePathname } from '@/lib/navigation/favorites';
-import { getSupabaseClient } from '@/lib/supabase/client';
-import { displayProfileName, isProfileComplete } from '@/types/dallmayrerp';
+import { displayProfileName } from '@/types/dallmayrerp';
 
 function StatusScreen({
   title,
@@ -46,31 +44,13 @@ function StatusScreen({
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { authUser, businessProfile, businessUser, userDetails, loading, error } = useAuth();
+  const { authUser, businessProfile, loading, error } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const profileComplete = isProfileComplete(userDetails);
-  const role = userDetails?.role;
-  const { favoriteEntries, railCollapsed, toggleFavorite, toggleRail } = useAppShellPreferences(role);
+  const { favoriteEntries, railCollapsed, toggleFavorite, toggleRail } = useAppShellPreferences();
 
   useEffect(() => {
     if (!loading && !authUser) router.replace('/login');
   }, [authUser, loading, router]);
-
-  useEffect(() => {
-    if (loading || !businessUser || !role) return;
-
-    if (!profileComplete && pathname !== '/onboarding') {
-      router.replace('/onboarding');
-      return;
-    }
-
-    if (profileComplete && pathname === '/onboarding') {
-      router.replace(getDefaultPathForRole(role));
-      return;
-    }
-
-    if (pathname === '/' && role !== 'admin') router.replace(getDefaultPathForRole(role));
-  }, [businessUser, loading, pathname, profileComplete, role, router]);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -92,13 +72,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     };
   }, [menuOpen]);
 
-  const signOut = async () => {
-    await getSupabaseClient().auth.signOut();
-    window.location.href = '/login';
-  };
-
   if (loading) {
-    return <StatusScreen title="Loading secure workspace" message="Checking your Supabase session, access invite and user details." loading />;
+    return <StatusScreen title="Loading secure workspace" message="Checking your Supabase session." loading />;
   }
 
   if (!authUser) {
@@ -106,27 +81,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   if (error) {
-    return <StatusScreen title="Profile check failed" message={error} />;
-  }
-
-  if (!businessUser) {
-    return (
-      <StatusScreen
-        title="Access pending"
-        message="Your login exists in Supabase Auth, but no matching access invite was found in public.users. Ask an administrator to invite your email address first."
-        action={<button className="button secondary" onClick={signOut} type="button">Sign out</button>}
-      />
-    );
-  }
-
-  if (!userDetails) {
-    return (
-      <StatusScreen
-        title="Role assignment pending"
-        message="Your email exists in public.users, but no corresponding user_details record was found. Ask an administrator to assign your role and branch."
-        action={<button className="button secondary" onClick={signOut} type="button">Sign out</button>}
-      />
-    );
+    return <StatusScreen title="Session check failed" message={error} />;
   }
 
   const {
@@ -135,15 +90,17 @@ export function AppShell({ children }: { children: ReactNode }) {
     activeTitle,
     allowedPath,
     homePath,
-    mobileScanPath,
     mobileTaskPath,
     navigationSections,
     statusQuickLinks,
-  } = deriveAppShellNavigation(userDetails.role, pathname);
-  const activeBranch = userDetails.branch.toUpperCase();
-  const activeArea = activeSection?.heading ?? roleLabels[userDetails.role];
-  const userName = displayProfileName(businessProfile);
-  const visibleFavorites = favoriteEntries.filter((entry) => canAccessShellPath(userDetails.role, favoritePathname(entry.href)));
+  } = deriveAppShellNavigation(pathname);
+  const metadataName = typeof authUser.user_metadata?.full_name === 'string'
+    ? authUser.user_metadata.full_name.trim()
+    : '';
+  const legacyProfileName = businessProfile ? displayProfileName(businessProfile) : '';
+  const userName = metadataName || legacyProfileName || authUser.email?.split('@')[0] || 'Telemetry user';
+  const activeArea = activeSection?.heading ?? 'Telemetry';
+  const visibleFavorites = favoriteEntries.filter((entry) => canAccessShellPath(favoritePathname(entry.href)));
 
   return (
     <div className={`app-shell top-shell application-shell-v2 ${railCollapsed ? 'desktop-rail-collapsed' : ''} ${menuOpen ? 'mobile-menu-open' : ''}`}>
@@ -153,7 +110,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <header className="application-header">
         <div className="application-header-inner">
-          <Link aria-label="Open Today workspace" className="application-brand" href={homePath}>
+          <Link aria-label="Open Fleet Overview" className="application-brand" href={homePath}>
             <span aria-hidden="true" className="application-brand-mark">D</span>
             <span>Dallmayr Telemetry</span>
           </Link>
@@ -163,7 +120,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="application-header-actions">
-            <div className="telemetry-header-branch"><NavigationIcon kind="pin" /><span>{activeBranch === 'NATIONAL' ? 'South Africa' : activeBranch}</span><span aria-hidden="true">⌄</span></div>
+            <div className="telemetry-header-branch"><NavigationIcon kind="pin" /><span>South Africa</span><span aria-hidden="true">⌄</span></div>
             <div className="telemetry-sync-state"><i aria-hidden="true" />Synced just now</div>
             <Link aria-label="Open active alerts" className="telemetry-header-alerts" href="/alerts"><NavigationIcon kind="bell" /><span aria-hidden="true">!</span></Link>
             <div className="desktop-account-menu-target" id="desktop-account-menu-target" />
@@ -186,9 +143,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <div aria-label="Workspace status" className="application-status-strip">
-          <span><strong>{activeBranch}</strong>&nbsp;branch</span>
-          <span>{roleLabels[userDetails.role]}</span>
-          <span>{profileComplete ? 'Profile ready' : 'Profile setup'}</span>
+          <span><strong>South Africa</strong></span>
+          <span>Telemetry access</span>
+          <span>{authUser.email}</span>
           {statusQuickLinks.map((item) => (
             <Link href={item.href} key={item.href}>{item.label}</Link>
           ))}
@@ -202,8 +159,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           onToggleFavorite={toggleFavorite}
           open={menuOpen}
           pathname={pathname}
-          profileComplete={profileComplete}
-          roleLabel={roleLabels[userDetails.role]}
+          accountLabel="Telemetry account"
           sections={navigationSections}
           setOpen={setMenuOpen}
           userName={userName}
@@ -217,7 +173,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         onToggleCollapse={toggleRail}
         pathname={pathname}
         pinnedItems={visibleFavorites}
-        roleLabel={roleLabels[userDetails.role]}
         sections={navigationSections}
       />
 
@@ -225,8 +180,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         homePath={homePath}
         menuOpen={menuOpen}
         pathname={pathname}
-        role={userDetails.role}
-        scanPath={mobileScanPath}
         setMenuOpen={setMenuOpen}
         taskPath={mobileTaskPath}
       />
@@ -234,10 +187,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="main top-main application-main" id="main-content" tabIndex={-1}>
         {!allowedPath ? (
           <ErpStateBanner
-            action={<Link className="button" href={homePath}>Go to Today</Link>}
+            action={<Link className="button" href={homePath}>Open Fleet Overview</Link>}
             className="access-denied"
-            message={<>Your current role is <strong>{roleLabels[userDetails.role]}</strong>. Use the navigation menu to open your assigned pages.</>}
-            title="This page is not assigned to your role."
+            message="This application contains machine and telemetry pages only. Use the navigation menu to return to the active workspace."
+            title="This page is outside the telemetry workspace."
             tone="danger"
           />
         ) : (

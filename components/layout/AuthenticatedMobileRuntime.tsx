@@ -6,7 +6,7 @@ import { FieldServiceOfflineManager } from '@/components/features/FieldServiceOf
 import { MobileAppExperience } from '@/components/features/MobileAppExperience';
 import { MobileWorkflowEnhancer } from '@/components/ui/MobileWorkflowEnhancer';
 
-const PUBLIC_ROUTES = ['/login', '/onboarding'];
+const PUBLIC_ROUTES = ['/login', '/reset-password'];
 
 function isPublicRoute(pathname: string) {
   return PUBLIC_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`));

@@ -18,7 +18,8 @@ function requireSource(source, pattern, message) {
 }
 
 requireSource(search, /type:\s*'Page'/, 'Global Search must support page/module results.');
-requireSource(search, /isNavItemAllowed\(userDetails\.role, item\)/, 'Page results must remain role-filtered.');
+requireSource(search, /client\.from\('telemetry_devices'\)/, 'Global Search must search telemetry devices for every authenticated account.');
+if (/userDetails\?\.role|isNavItemAllowed/.test(search)) failures.push('Global Search must not reintroduce role filtering.');
 requireSource(search, /dallmayr-open-global-search/, 'Global Search must expose a direct responsive open event.');
 requireSource(search, /createPortal\(/, 'Global Search must render outside page stacking contexts.');
 

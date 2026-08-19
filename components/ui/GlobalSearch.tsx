@@ -3,10 +3,6 @@
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useAuth } from '@/components/auth/AuthProvider';
-import { isNavItemAllowed, navSections } from '@/lib/auth/permissions';
-import { groupEnterpriseNavigationSections } from '@/lib/navigation/enterpriseNavigation';
-import { getSupplementalNavigationSections } from '@/lib/navigation/supplementalNavigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type SearchResult = {
@@ -25,7 +21,6 @@ type GlobalSearchProps = {
 };
 
 const OPEN_SEARCH_EVENT = 'dallmayr-open-global-search';
-const MESSAGING_ENABLED = process.env.NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED === 'true';
 const GLOBAL_SEARCH_DIALOG_ID = 'global-search-dialog';
 
 function safeFilterTerm(value: string) {
@@ -42,7 +37,6 @@ export function GlobalSearch({
   triggerClassName = '',
   triggerLabel = 'Search machines or devices',
 }: GlobalSearchProps = {}) {
-  const { userDetails } = useAuth();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [recordResults, setRecordResults] = useState<SearchResult[]>([]);
@@ -55,46 +49,22 @@ export function GlobalSearch({
   const requestRef = useRef(0);
 
   const availablePages = useMemo<SearchResult[]>(() => {
-    if (!userDetails?.role) return [];
-    const seen = new Set<string>();
-    const roleSections = navSections
-      .map((section) => ({
-        ...section,
-        items: section.items.filter((item) => isNavItemAllowed(userDetails.role, item)),
-      }))
-      .filter((section) => section.items.length > 0);
-    const searchSections = groupEnterpriseNavigationSections(userDetails.role, [
-      ...getSupplementalNavigationSections(userDetails.role, MESSAGING_ENABLED),
-      ...roleSections,
-    ]);
-    const canReadTelemetry = userDetails.role === 'admin' || userDetails.role === 'executive';
     const focusedPages = [
-      { href: '/workspace', label: 'Fleet Overview', section: 'Monitoring', description: 'Fleet health, sales, faults and connectivity.' },
+      { href: '/', label: 'Fleet Overview', section: 'Monitoring', description: 'Fleet health, sales, faults and connectivity.' },
       { href: '/machines', label: 'Machines', section: 'Monitoring', description: 'Every machine and connected device.' },
-      ...(canReadTelemetry ? [
-        { href: '/alerts', label: 'Alerts', section: 'Monitoring', description: 'Current machine faults and offline devices.' },
-        { href: '/telemetry', label: 'Analytics', section: 'Telemetry', description: 'Item quantities, trends and activity.' },
-        { href: '/map', label: 'Machine Map', section: 'Telemetry', description: 'Last known telemetry device positions.' },
-      ] : []),
-      ...(userDetails.role === 'admin' ? [{ href: '/telemetry/devices', label: 'Device Management', section: 'Management', description: 'Assign and manage telemetry controllers.' }] : []),
+      { href: '/alerts', label: 'Alerts', section: 'Monitoring', description: 'Current machine faults and offline devices.' },
+      { href: '/telemetry', label: 'Analytics', section: 'Telemetry', description: 'Item quantities, trends and activity.' },
+      { href: '/map', label: 'Machine Map', section: 'Telemetry', description: 'Last known telemetry device positions.' },
+      { href: '/telemetry/devices', label: 'Device Management', section: 'Management', description: 'Assign and manage telemetry controllers.' },
     ];
-    const pages = focusedPages.map((item) => ({
+    return focusedPages.map((item) => ({
       id: item.href,
       type: 'Page' as const,
       title: item.label,
       subtitle: `${item.section} • ${item.description}`,
       href: item.href,
     }));
-
-    // Keep navigation discovery centralized even though search intentionally exposes only telemetry scope.
-    void searchSections;
-
-    return pages.filter((page) => {
-      if (seen.has(page.href)) return false;
-      seen.add(page.href);
-      return true;
-    });
-  }, [userDetails?.role]);
+  }, []);
 
   const pageResults = useMemo(() => {
     const term = safeFilterTerm(query);
@@ -191,9 +161,7 @@ export function GlobalSearch({
       try {
         const [machines, devices] = await Promise.all([
           client.from('machines').select('id,machine_name,serial_number,machine_barcode,asset_tag,branch,model,status').or(`machine_name.ilike.${pattern},serial_number.ilike.${pattern},machine_barcode.ilike.${pattern},asset_tag.ilike.${pattern},model.ilike.${pattern}`).limit(15),
-          userDetails?.role === 'admin' || userDetails?.role === 'executive'
-            ? client.from('telemetry_devices').select('id,device_code,machine_id,status,firmware_version,last_seen_at').ilike('device_code', pattern).limit(10)
-            : Promise.resolve({ data: [], error: null }),
+          client.from('telemetry_devices').select('id,device_code,machine_id,status,firmware_version,last_seen_at').ilike('device_code', pattern).limit(10),
         ]);
         const queryError = machines.error ?? devices.error;
         if (queryError) throw queryError;
@@ -225,7 +193,7 @@ export function GlobalSearch({
       }
     }, 260);
     return () => window.clearTimeout(timeout);
-  }, [open, query, userDetails?.role]);
+  }, [open, query]);
 
   function closeSearch() {
     setOpen(false);
@@ -243,8 +211,10 @@ export function GlobalSearch({
         </div>
         <div className="global-search-quick-actions">
           <Link href="/machines" onClick={closeSearch}>Find a machine</Link>
-          {userDetails?.role === 'admin' || userDetails?.role === 'executive' ? <><Link href="/alerts" onClick={closeSearch}>Active alerts</Link><Link href="/telemetry" onClick={closeSearch}>Sales analytics</Link><Link href="/map" onClick={closeSearch}>Machine map</Link></> : null}
-          {userDetails?.role === 'admin' ? <Link href="/telemetry/devices" onClick={closeSearch}>Manage devices</Link> : null}
+          <Link href="/alerts" onClick={closeSearch}>Active alerts</Link>
+          <Link href="/telemetry" onClick={closeSearch}>Sales analytics</Link>
+          <Link href="/map" onClick={closeSearch}>Machine map</Link>
+          <Link href="/telemetry/devices" onClick={closeSearch}>Manage devices</Link>
         </div>
         <div aria-live="polite" className="global-search-results">
           {loading ? <div className="global-search-state">Searching records…</div> : null}
