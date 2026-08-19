@@ -117,6 +117,8 @@ export default function MarketingDashboardPage() {
         <KpiCard label="Open opportunities" value={data.openOpportunities.toLocaleString()} helper="Active sales opportunities available for follow-up" />
         <KpiCard label="Contactable customers" value={data.contactableCustomers.toLocaleString()} helper={`${data.customers.toLocaleString()} customers in the current national base`} />
         <KpiCard label="Campaigns" value={data.campaigns.toLocaleString()} helper="Campaign records in the marketing workspace" />
+        <KpiCard label="Contracts" value={data.contracts.toLocaleString()} helper="Agreement records available for audience and renewal planning" />
+        <KpiCard label="Machines" value={data.assets.toLocaleString()} helper={`${data.unmappedCustomers.toLocaleString()} customers still need machine-mapping review`} />
       </div>
 
       <section className="card" style={{ marginBottom: 20 }} data-ui-priority="urgent">
