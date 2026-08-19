@@ -33,6 +33,8 @@ const connectedWorkflowStyles = read('app/styles/connected-workflow-strip.css');
 const telemetryPage = read('app/telemetry/page.tsx');
 const telemetryLive = read('components/features/TelemetryLiveControl.tsx');
 const telemetryActivity = read('components/features/TelemetryActivityLog.tsx');
+const operationsManager = read('components/features/OperationsManagerDashboard.tsx');
+const marketingPage = read('app/marketing/page.tsx');
 const pageTemplates = read('lib/layout/page-templates.ts');
 
 requireText(
@@ -162,6 +164,18 @@ requireOrder(
   telemetryActivity,
   ['aria-label="Sales and error summary"', 'aria-label="Activity filters and sorting"', '<div className="table-scroll"'],
   'sales/error summary must precede filters and detailed activity rows.',
+);
+requireOrder(
+  'operations manager',
+  operationsManager,
+  ['aria-label="Operations workload"', '<PageToolbar', 'data-ui-priority="primary"'],
+  'operational workload must appear before secondary controls and the primary service-pressure workspace.',
+);
+requireOrder(
+  'marketing dashboard',
+  marketingPage,
+  ['label="Renewals needing attention"', '<h2>Marketing action queue</h2>', 'aria-label="Marketing workspaces"', 'aria-label="Marketing analysis"', '<DocumentHub'],
+  'marketing actions must remain above analysis and document support.',
 );
 requireText(
   'page templates',
