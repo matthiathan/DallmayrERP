@@ -9,7 +9,8 @@ import { PageToolbar } from '@/components/ui/PageToolbar';
 import { formatLocalDate } from '@/lib/dates/local-date';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
-type TelemetryPeriod = 'today' | 'week' | 'month' | 'six_months';
+type TelemetryPeriod = 'day' | 'week' | 'month' | 'six_months';
+type TelemetryDataset = 'production' | 'simulation';
 type TelemetryBranch = 'all' | 'jhb' | 'cpt' | 'kzn' | 'national';
 
 type Summary = {
@@ -21,6 +22,12 @@ type Summary = {
   online_devices: number;
   offline_devices: number;
   unassigned_devices: number;
+};
+
+type Availability = {
+  production_rows: number;
+  simulation_rows: number;
+  active_simulation_devices: number;
 };
 
 type DailyTrend = {
@@ -50,7 +57,7 @@ type TopItem = {
 type TopMachine = {
   machine_id: string | null;
   machine_name: string | null;
-  serial_number: string;
+  serial_number: string | null;
   location: string | null;
   branch: string;
   units_sold: number;
@@ -63,7 +70,7 @@ type RecentSale = {
   sales_date: string;
   machine_id: string | null;
   machine_name: string | null;
-  serial_number: string;
+  serial_number: string | null;
   location: string | null;
   branch: string;
   selection_code: string;
@@ -78,8 +85,10 @@ type RecentSale = {
 
 type DashboardData = {
   period: TelemetryPeriod;
+  dataset: TelemetryDataset;
   date_from: string;
   date_to: string;
+  availability: Availability;
   summary: Summary;
   daily_trend: DailyTrend[];
   by_branch: BranchTotal[];
@@ -89,10 +98,15 @@ type DashboardData = {
 };
 
 const periodLabels: Record<TelemetryPeriod, string> = {
-  today: 'Today',
-  week: 'Last 7 days',
-  month: 'Current month',
-  six_months: 'Last 6 months',
+  day: '1 day',
+  week: '7 days',
+  month: '30 days',
+  six_months: '6 months',
+};
+
+const datasetLabels: Record<TelemetryDataset, string> = {
+  production: 'Production telemetry',
+  simulation: 'POC simulation',
 };
 
 const branchLabels: Record<TelemetryBranch, string> = {
@@ -118,28 +132,30 @@ function money(cents: number) {
 
 function shortDate(value: string) {
   return new Date(`${value}T00:00:00`).toLocaleDateString('en-ZA', {
-    day: '2-digit',
-    month: 'short',
+    day: '2-digit', month: 'short',
   });
 }
 
 function dateTime(value: string) {
   return new Date(value).toLocaleString('en-ZA', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 }
 
 function normaliseDashboard(value: unknown): DashboardData {
   const source = (value ?? {}) as Partial<DashboardData>;
   const summary = (source.summary ?? {}) as Partial<Summary>;
+  const availability = (source.availability ?? {}) as Partial<Availability>;
   return {
-    period: source.period ?? 'today',
+    period: source.period ?? 'day',
+    dataset: source.dataset ?? 'production',
     date_from: source.date_from ?? formatLocalDate(),
     date_to: source.date_to ?? formatLocalDate(),
+    availability: {
+      production_rows: numberValue(availability.production_rows),
+      simulation_rows: numberValue(availability.simulation_rows),
+      active_simulation_devices: numberValue(availability.active_simulation_devices),
+    },
     summary: {
       units_sold: numberValue(summary.units_sold),
       revenue_cents: numberValue(summary.revenue_cents),
@@ -183,20 +199,35 @@ function normaliseDashboard(value: unknown): DashboardData {
   };
 }
 
+function sixMonthTrend(rows: DailyTrend[]) {
+  const buckets = new Map<string, number>();
+  rows.forEach((row) => {
+    const key = row.date.slice(0, 7);
+    buckets.set(key, (buckets.get(key) ?? 0) + row.units_sold);
+  });
+  return Array.from(buckets.entries()).map(([month, value]) => ({
+    label: new Date(`${month}-01T00:00:00`).toLocaleDateString('en-ZA', { month: 'short', year: '2-digit' }),
+    value,
+  }));
+}
+
 export function TelemetryDashboard() {
-  const [period, setPeriod] = useState<TelemetryPeriod>('today');
+  const [period, setPeriod] = useState<TelemetryPeriod>('day');
+  const [dataset, setDataset] = useState<TelemetryDataset>('production');
   const [branch, setBranch] = useState<TelemetryBranch>('all');
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [autoSelectedPoc, setAutoSelectedPoc] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const { data, error: loadError } = await getSupabaseClient().rpc('get_telemetry_dashboard', {
+    const { data, error: loadError } = await getSupabaseClient().rpc('get_telemetry_reporting', {
       p_period: period,
       p_branch: branch,
+      p_dataset: dataset,
     });
 
     if (loadError) {
@@ -205,10 +236,21 @@ export function TelemetryDashboard() {
       return;
     }
 
-    setDashboard(normaliseDashboard(data));
+    const next = normaliseDashboard(data);
+    setDashboard(next);
     setLastUpdated(new Date());
     setLoading(false);
-  }, [branch, period]);
+
+    if (
+      dataset === 'production' &&
+      !autoSelectedPoc &&
+      next.availability.production_rows === 0 &&
+      next.availability.active_simulation_devices > 0
+    ) {
+      setAutoSelectedPoc(true);
+      setDataset('simulation');
+    }
+  }, [autoSelectedPoc, branch, dataset, period]);
 
   useEffect(() => {
     loadDashboard().catch((loadError) => {
@@ -219,40 +261,33 @@ export function TelemetryDashboard() {
 
   const recentColumns = useMemo<EnterpriseColumn<RecentSale>[]>(() => [
     { id: 'sales_date', header: 'Date', value: (row) => row.sales_date, render: (row) => shortDate(row.sales_date), sortable: true, defaultWidth: 110, mobilePriority: 2 },
-    { id: 'machine_name', header: 'Machine', value: (row) => row.machine_name ?? row.serial_number, sortable: true, filterable: true, defaultWidth: 190, mobileTitle: true },
-    { id: 'serial_number', header: 'S/N', value: (row) => row.serial_number, sortable: true, filterable: true, defaultWidth: 150, mobilePriority: 1 },
+    { id: 'machine_name', header: 'Machine', value: (row) => row.machine_name ?? row.serial_number ?? 'Unassigned', sortable: true, filterable: true, defaultWidth: 190, mobileTitle: true },
+    { id: 'serial_number', header: 'S/N', value: (row) => row.serial_number ?? '', sortable: true, filterable: true, defaultWidth: 150, mobilePriority: 1 },
     { id: 'location', header: 'Location', value: (row) => row.location ?? '', sortable: true, filterable: true, defaultWidth: 220, mobilePriority: 3 },
     { id: 'product_name', header: 'Item', value: (row) => row.product_name ?? row.sku ?? row.selection_code, sortable: true, filterable: true, defaultWidth: 190, mobilePriority: 1 },
-    { id: 'brand', header: 'Brand', value: (row) => row.brand ?? '', sortable: true, filterable: true, defaultWidth: 130, mobileHidden: true },
+    { id: 'brand', header: 'Source/brand', value: (row) => row.brand ?? '', sortable: true, filterable: true, defaultWidth: 140, mobileHidden: true },
     { id: 'units_sold', header: 'Sold', value: (row) => row.units_sold, sortable: true, defaultWidth: 90, mobilePriority: 1 },
     { id: 'failed_vends', header: 'Failed', value: (row) => row.failed_vends, sortable: true, defaultWidth: 90, mobileHidden: true },
     { id: 'revenue_cents', header: 'Revenue', value: (row) => row.revenue_cents, render: (row) => money(row.revenue_cents), sortable: true, defaultWidth: 130, mobilePriority: 2 },
     { id: 'last_received_at', header: 'Last update', value: (row) => row.last_received_at, render: (row) => dateTime(row.last_received_at), sortable: true, defaultWidth: 170, mobileHidden: true },
   ], []);
 
-  const dailyChart = (dashboard?.daily_trend ?? []).slice(-14).map((row) => ({
-    label: shortDate(row.date),
-    value: row.units_sold,
-  }));
-  const branchChart = (dashboard?.by_branch ?? []).map((row) => ({
-    label: row.branch.toUpperCase(),
-    value: row.units_sold,
-  }));
-  const itemChart = (dashboard?.top_items ?? []).map((row) => ({
-    label: row.product_name ?? row.sku ?? row.product_key,
-    value: row.units_sold,
-  }));
-  const machineChart = (dashboard?.top_machines ?? []).map((row) => ({
-    label: row.machine_name ?? row.serial_number,
-    value: row.units_sold,
-  }));
+  const dailyChart = useMemo(() => {
+    const rows = dashboard?.daily_trend ?? [];
+    if (period === 'six_months') return sixMonthTrend(rows);
+    return rows.map((row) => ({ label: shortDate(row.date), value: row.units_sold }));
+  }, [dashboard?.daily_trend, period]);
+
+  const branchChart = (dashboard?.by_branch ?? []).map((row) => ({ label: row.branch.toUpperCase(), value: row.units_sold }));
+  const itemChart = (dashboard?.top_items ?? []).map((row) => ({ label: row.product_name ?? row.sku ?? row.product_key, value: row.units_sold }));
+  const machineChart = (dashboard?.top_machines ?? []).map((row) => ({ label: row.machine_name ?? row.serial_number ?? 'Unassigned', value: row.units_sold }));
   const summary = dashboard?.summary;
 
   return (
     <div className="grid spatial-stage spatial-dashboard">
       <PageToolbar
         title="Telemetry reporting"
-        description="Daily, weekly, monthly and six-month machine sales from aggregated counter snapshots."
+        description="Review isolated production or POC telemetry over 1 day, 7 days, 30 days or 6 months. Counter snapshots are converted into daily deltas instead of storing every vend as a separate row."
         lastUpdated={lastUpdated}
         actions={<button className="button secondary" disabled={loading} onClick={() => loadDashboard()} type="button">Refresh</button>}
       >
@@ -260,6 +295,12 @@ export function TelemetryDashboard() {
           <span>Period</span>
           <select value={period} onChange={(event) => setPeriod(event.target.value as TelemetryPeriod)}>
             {(Object.keys(periodLabels) as TelemetryPeriod[]).map((value) => <option key={value} value={value}>{periodLabels[value]}</option>)}
+          </select>
+        </label>
+        <label>
+          <span>Dataset</span>
+          <select value={dataset} onChange={(event) => { setAutoSelectedPoc(true); setDataset(event.target.value as TelemetryDataset); }}>
+            {(Object.keys(datasetLabels) as TelemetryDataset[]).map((value) => <option key={value} value={value}>{datasetLabels[value]}</option>)}
           </select>
         </label>
         <label>
@@ -271,23 +312,37 @@ export function TelemetryDashboard() {
       </PageToolbar>
 
       {error ? <div className="error">{error}</div> : null}
+      {dataset === 'simulation' ? (
+        <div className="success">POC simulation history is stored separately and never contributes to production telemetry totals.</div>
+      ) : null}
       {loading && !dashboard ? <div className="neo-card spatial-card"><HamsterLoader label="Loading telemetry dashboard" /></div> : null}
 
       {dashboard ? (
         <>
+          {dashboard.recent_sales.length === 0 ? (
+            <div className="neo-card spatial-card">
+              <strong>No {datasetLabels[dataset].toLowerCase()} history is recorded for this period yet.</strong>
+              <p className="muted">
+                {dataset === 'simulation'
+                  ? 'The current POC counters will start building daily history as new cumulative snapshots arrive.'
+                  : 'Production history begins when a machine interface starts providing real cumulative counter snapshots.'}
+              </p>
+            </div>
+          ) : null}
+
           <div className="grid grid-3 spatial-kpi-grid">
             <KpiCard label="Items sold" value={summary?.units_sold ?? 0} helper={`${dashboard.date_from} to ${dashboard.date_to}`} />
             <KpiCard label="Revenue" value={money(summary?.revenue_cents ?? 0)} helper={periodLabels[period]} />
             <KpiCard label="Failed vends" value={summary?.failed_vends ?? 0} helper="Reported machine failures" />
-            <KpiCard label="Selling machines" value={summary?.active_machines ?? 0} helper="Machines with sales in period" />
+            <KpiCard label="Selling machines" value={summary?.active_machines ?? 0} helper="Machines with data in period" />
             <KpiCard label="Online devices" value={summary?.online_devices ?? 0} helper="Seen within 30 minutes" />
-            <KpiCard label="Offline devices" value={summary?.offline_devices ?? 0} helper="No recent heartbeat" />
+            <KpiCard label="Offline devices" value={summary?.offline_devices ?? 0} helper="No recent device contact" />
             <KpiCard label="Registered devices" value={summary?.reporting_devices ?? 0} helper="Active telemetry devices" />
             <KpiCard label="Unassigned devices" value={summary?.unassigned_devices ?? 0} helper="Needs machine assignment" />
           </div>
 
           <div className="grid grid-2">
-            <BarChart title="Recent daily units sold" data={dailyChart} />
+            <BarChart title={period === 'six_months' ? 'Monthly units sold' : 'Daily units sold'} data={dailyChart} />
             <BarChart title="Units sold by branch" data={branchChart} />
             <BarChart title="Top items" data={itemChart} />
             <BarChart title="Top machines" data={machineChart} />
@@ -309,7 +364,7 @@ export function TelemetryDashboard() {
               columns={recentColumns}
               rowKey={(row) => row.id}
               searchPlaceholder="Search machine, serial number, location, item or brand"
-              emptyMessage="No telemetry sales were recorded for this period."
+              emptyMessage="No telemetry data was recorded for this period."
               defaultPageSize={50}
               pageSizeOptions={[25, 50, 100, 250]}
               tableId="telemetry-sales"

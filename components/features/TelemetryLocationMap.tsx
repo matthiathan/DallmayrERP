@@ -38,18 +38,23 @@ type LocationRow = {
 };
 
 type Point = LocationRow & { latitude: number; longitude: number };
-
 type WorldPoint = { x: number; y: number };
 
 const TILE_SIZE = 256;
 const MAP_HEIGHT = 520;
+const MAP_REFRESH_MS = 15000;
 const SOUTH_AFRICA_CENTER = { latitude: -30.5595, longitude: 22.9375 };
 
 function formatDate(value: string | null) {
   if (!value) return 'Never';
   return new Date(value).toLocaleString('en-ZA', {
-    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit',
   });
+}
+
+function formatTime(value: Date | null) {
+  if (!value) return 'Not yet';
+  return value.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 function online(lastSeen: string | null) {
@@ -85,17 +90,27 @@ function sourceLabel(source: string | null) {
   if (source === 'gnss') return 'GNSS/GPS';
   if (source === 'site') return 'ERP site fallback';
   if (source === 'last_known') return 'Last known';
+  if (source === 'manual') return 'Manual fallback';
   return source.charAt(0).toUpperCase() + source.slice(1);
+}
+
+function locationAge(row: LocationRow) {
+  const value = row.location_fix_at ?? row.location_received_at;
+  if (!value) return 'No fix';
+  const ageMs = Math.max(0, Date.now() - new Date(value).getTime());
+  if (ageMs < 60000) return `${Math.floor(ageMs / 1000)} sec ago`;
+  if (ageMs < 3600000) return `${Math.floor(ageMs / 60000)} min ago`;
+  if (ageMs < 86400000) return `${Math.floor(ageMs / 3600000)} hr ago`;
+  return `${Math.floor(ageMs / 86400000)} day(s) ago`;
 }
 
 function TelemetryMapCanvas({ points }: { points: Point[] }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const fittedDevicesRef = useRef('');
   const [width, setWidth] = useState(900);
-  const [zoom, setZoom] = useState(points.length === 1 ? 13 : 5);
-  const [center, setCenter] = useState(() => points.length
-    ? { latitude: points.reduce((sum, point) => sum + point.latitude, 0) / points.length, longitude: points.reduce((sum, point) => sum + point.longitude, 0) / points.length }
-    : SOUTH_AFRICA_CENTER);
-  const [selected, setSelected] = useState<Point | null>(null);
+  const [zoom, setZoom] = useState(5);
+  const [center, setCenter] = useState(SOUTH_AFRICA_CENTER);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
 
   useEffect(() => {
     const element = containerRef.current;
@@ -106,14 +121,28 @@ function TelemetryMapCanvas({ points }: { points: Point[] }) {
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
+  const fitPoints = useCallback(() => {
     if (!points.length) return;
     setCenter({
       latitude: points.reduce((sum, point) => sum + point.latitude, 0) / points.length,
       longitude: points.reduce((sum, point) => sum + point.longitude, 0) / points.length,
     });
-    setZoom(points.length === 1 ? 13 : 5);
+    setZoom(points.length === 1 ? 15 : 5);
   }, [points]);
+
+  useEffect(() => {
+    const signature = points.map((point) => point.device_id).sort().join('|');
+    if (!signature) return;
+    if (fittedDevicesRef.current !== signature) {
+      fittedDevicesRef.current = signature;
+      fitPoints();
+    }
+  }, [fitPoints, points]);
+
+  const selected = useMemo(
+    () => points.find((point) => point.device_id === selectedDeviceId) ?? null,
+    [points, selectedDeviceId],
+  );
 
   const map = useMemo(() => {
     const centerWorld = worldPoint(center.latitude, center.longitude, zoom);
@@ -152,8 +181,8 @@ function TelemetryMapCanvas({ points }: { points: Point[] }) {
 
   function focus(point: Point) {
     setCenter({ latitude: point.latitude, longitude: point.longitude });
-    setZoom(15);
-    setSelected(point);
+    setZoom(16);
+    setSelectedDeviceId(point.device_id);
   }
 
   return (
@@ -161,21 +190,7 @@ function TelemetryMapCanvas({ points }: { points: Point[] }) {
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginBottom: 8, flexWrap: 'wrap' }}>
         <button className="button secondary" type="button" onClick={() => setZoom((value) => Math.min(18, value + 1))}>Zoom +</button>
         <button className="button secondary" type="button" onClick={() => setZoom((value) => Math.max(3, value - 1))}>Zoom −</button>
-        <button
-          className="button secondary"
-          type="button"
-          onClick={() => {
-            if (!points.length) return;
-            setCenter({
-              latitude: points.reduce((sum, point) => sum + point.latitude, 0) / points.length,
-              longitude: points.reduce((sum, point) => sum + point.longitude, 0) / points.length,
-            });
-            setZoom(points.length === 1 ? 13 : 5);
-            setSelected(null);
-          }}
-        >
-          Fit machines
-        </button>
+        <button className="button secondary" type="button" onClick={() => { fitPoints(); setSelectedDeviceId(null); }}>Fit machines</button>
       </div>
 
       <div
@@ -188,7 +203,7 @@ function TelemetryMapCanvas({ points }: { points: Point[] }) {
           border: '1px solid var(--border, #d1d5db)',
           background: '#e5e7eb',
         }}
-        aria-label="Telemetry machine location map"
+        aria-label="Live telemetry machine location map"
       >
         {map.tiles.map((tile) => (
           <img
@@ -218,34 +233,22 @@ function TelemetryMapCanvas({ points }: { points: Point[] }) {
               border: '2px solid white',
               boxShadow: '0 1px 5px rgba(0,0,0,.35)',
               cursor: 'pointer',
-              zIndex: selected?.device_id === point.device_id ? 6 : 4,
+              zIndex: selectedDeviceId === point.device_id ? 6 : 4,
             }}
             aria-label={`Locate ${machineLabel(point)}`}
           />
         ))}
 
         {selected ? (
-          <div
-            style={{
-              position: 'absolute',
-              left: 12,
-              bottom: 34,
-              zIndex: 8,
-              maxWidth: 380,
-              padding: 14,
-              borderRadius: 12,
-              background: 'rgba(255,255,255,.96)',
-              color: '#111827',
-              boxShadow: '0 8px 24px rgba(0,0,0,.22)',
-            }}
-          >
+          <div style={{ position: 'absolute', left: 12, bottom: 34, zIndex: 8, maxWidth: 400, padding: 14, borderRadius: 12, background: 'rgba(255,255,255,.96)', color: '#111827', boxShadow: '0 8px 24px rgba(0,0,0,.22)' }}>
             <strong>{machineLabel(selected)}</strong>
             <div>{selected.device_code}</div>
             <div>{selected.latitude.toFixed(6)}, {selected.longitude.toFixed(6)}</div>
             <div>{sourceLabel(selected.location_source)} · Accuracy {selected.accuracy_m === null ? 'n/a' : `${Math.round(selected.accuracy_m)} m`}</div>
+            <div>{selected.satellites === null ? 'Satellites n/a' : `${selected.satellites} satellites`} · {locationAge(selected)}</div>
             <div>Last fix: {formatDate(selected.location_fix_at ?? selected.location_received_at)}</div>
             <div>{selected.active_fault_count} active fault(s) · {selected.last_transport ?? 'no network yet'}</div>
-            <button className="button secondary" type="button" style={{ marginTop: 8 }} onClick={() => setSelected(null)}>Close</button>
+            <button className="button secondary" type="button" style={{ marginTop: 8 }} onClick={() => setSelectedDeviceId(null)}>Close</button>
           </div>
         ) : null}
 
@@ -261,32 +264,42 @@ export function TelemetryLocationMap() {
   const { userDetails } = useAuth();
   const [rows, setRows] = useState<LocationRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [movedOnly, setMovedOnly] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const canControl = ['admin', 'operations'].includes(userDetails?.role ?? '');
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const load = useCallback(async (background = false) => {
+    if (background) setRefreshing(true);
+    else setLoading(true);
     const { data, error: loadError } = await getSupabaseClient().rpc('get_telemetry_location_map');
     if (loadError) {
       setError(loadError.message);
       setLoading(false);
+      setRefreshing(false);
       return;
     }
     setRows((data ?? []) as LocationRow[]);
+    setLastUpdated(new Date());
+    setError(null);
     setLoading(false);
+    setRefreshing(false);
   }, []);
 
   useEffect(() => {
-    load().catch((loadError) => {
+    load(false).catch((loadError) => {
       setError(loadError instanceof Error ? loadError.message : 'Could not load machine locations.');
       setLoading(false);
     });
+    const interval = window.setInterval(() => {
+      load(true).catch(() => undefined);
+    }, MAP_REFRESH_MS);
+    return () => window.clearInterval(interval);
   }, [load]);
 
   async function updateLocationControl(row: LocationRow, changes: { enabled?: boolean; interval?: number; minMove?: number }) {
@@ -305,7 +318,7 @@ export function TelemetryLocationMap() {
       return;
     }
     setMessage(`${row.device_code} location control updated. The device will apply it on its next config sync.`);
-    await load();
+    await load(true);
   }
 
   const filtered = useMemo(() => {
@@ -322,22 +335,28 @@ export function TelemetryLocationMap() {
     row.has_location && typeof row.latitude === 'number' && typeof row.longitude === 'number'
   )), [filtered]);
 
+  const liveGpsCount = rows.filter((row) => row.location_source === 'gnss' && row.has_location && !row.location_stale).length;
+  const locationCount = rows.filter((row) => row.has_location).length;
+
   return (
     <section className="neo-card spatial-card">
       <div className="page-header">
         <div>
-          <div className="badge">Machine location</div>
+          <div className="badge">Live machine location</div>
           <h2>Telemetry device map</h2>
           <p>
-            Fresh GNSS fixes are used when available. Assigned ERP site coordinates are shown as a clearly labelled fallback; they are not presented as live GPS.
+            The map refreshes every 15 seconds. Fresh GNSS fixes are shown as live GPS; ERP site coordinates remain clearly labelled fallbacks.
           </p>
+          <div className="muted">
+            {liveGpsCount} live GNSS · {locationCount}/{rows.length} devices located · Last map refresh {formatTime(lastUpdated)}{refreshing ? ' · refreshing…' : ''}
+          </div>
         </div>
-        <button className="button secondary" type="button" disabled={loading} onClick={() => load()}>Refresh</button>
+        <button className="button secondary" type="button" disabled={loading || refreshing} onClick={() => load(false)}>Refresh now</button>
       </div>
 
       {error ? <div className="error">{error}</div> : null}
       {message ? <div className="success">{message}</div> : null}
-      {loading && rows.length === 0 ? <HamsterLoader label="Loading telemetry locations" /> : null}
+      {loading && rows.length === 0 ? <HamsterLoader label="Loading live telemetry locations" /> : null}
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
         <input
@@ -355,7 +374,7 @@ export function TelemetryLocationMap() {
 
       {!loading && rows.length === 0 ? <p>No active telemetry devices are registered.</p> : null}
       {!loading && rows.length > 0 && points.length === 0 ? (
-        <div className="error">No telemetry devices currently have GNSS coordinates or ERP site coordinates. Devices will appear on the map as soon as a valid location is received.</div>
+        <div className="error">No telemetry device has supplied a GNSS fix yet and no assigned ERP site has coordinates. The map will populate automatically when the first location update arrives.</div>
       ) : null}
 
       {points.length > 0 ? <TelemetryMapCanvas points={points} /> : null}
@@ -366,7 +385,7 @@ export function TelemetryLocationMap() {
             <thead>
               <tr>
                 <th>Machine</th>
-                <th>Location</th>
+                <th>Live location</th>
                 <th>Source</th>
                 <th>Movement</th>
                 <th>GPS/location control</th>
@@ -436,12 +455,11 @@ export function TelemetryLocationMap() {
                             <option value={500}>Movement: 500 m</option>
                           </select>
                         </div>
-                      ) : (
-                        `${row.location_enabled ? 'Enabled' : 'Disabled'} · ${row.location_interval_minutes} min`
-                      )}
+                      ) : `${row.location_enabled ? 'Enabled' : 'Disabled'} · ${row.location_interval_minutes} min`}
                     </td>
                     <td>
                       {formatDate(row.location_fix_at ?? row.location_received_at)}
+                      <div className="muted">{locationAge(row)}</div>
                       <div className="muted">Device: {online(row.last_seen_at) ? 'online' : 'offline'} · {row.last_transport ?? 'no transport'}</div>
                     </td>
                   </tr>
