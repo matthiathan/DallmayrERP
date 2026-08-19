@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
@@ -136,6 +136,17 @@ type MachineTelemetryOverviewProps = {
   machinesOnly?: boolean;
 };
 
+type QueryError = { message: string };
+type QueryPage = { data: unknown[] | null; error: QueryError | null };
+
+const DATABASE_PAGE_SIZE = 1000;
+const TABLE_PAGE_SIZE = 100;
+const SITE_BATCH_SIZE = 100;
+const SITE_BATCH_CONCURRENCY = 4;
+const MACHINE_COLUMNS = 'id,branch,site_id,serial_number,machine_barcode,asset_tag,machine_name,model,status,current_custodian';
+const MACHINE_ENRICHMENT_COLUMNS = 'id,manufacturer,machine_type,telemetry_protocol';
+const FALLBACK_DEVICE_COLUMNS = 'id,device_code,machine_id,status,firmware_version,wifi_rssi,last_seen_at,last_upload_at,last_sequence,updated_at';
+
 const periods: Array<{ value: Period; label: string }> = [
   { value: 'day', label: 'Today' },
   { value: 'week', label: '7 days' },
@@ -150,6 +161,88 @@ const detailTabs: Array<{ value: DetailTab; label: string }> = [
   { value: 'telemetry', label: 'Telemetry' },
   { value: 'configuration', label: 'Configuration' },
 ];
+
+async function loadAllPages<T>(
+  loadPage: (from: number, to: number) => PromiseLike<QueryPage>,
+  expectedCount: number | null = null,
+) {
+  const rows: T[] = [];
+
+  for (let from = 0; expectedCount === null || from < expectedCount; from += DATABASE_PAGE_SIZE) {
+    const result = await loadPage(from, from + DATABASE_PAGE_SIZE - 1);
+    if (result.error) return { data: rows, error: result.error };
+
+    const page = (result.data ?? []) as T[];
+    rows.push(...page);
+
+    if (page.length < DATABASE_PAGE_SIZE) break;
+  }
+
+  return { data: rows, error: null };
+}
+
+async function loadMachineRegister(client: ReturnType<typeof getSupabaseClient>) {
+  const countResult = await client.from('machines').select('id', { count: 'exact', head: true });
+  if (countResult.error) return { data: [] as MachineRecord[], count: 0, error: countResult.error };
+
+  const result = await loadAllPages<MachineRecord>(
+    (from, to) => client
+      .from('machines')
+      .select(MACHINE_COLUMNS)
+      .order('machine_name', { ascending: true, nullsFirst: false })
+      .order('id', { ascending: true })
+      .range(from, to),
+    countResult.count,
+  );
+
+  return { ...result, count: countResult.count ?? result.data.length };
+}
+
+async function loadMachineEnrichment(client: ReturnType<typeof getSupabaseClient>, machineCount: number) {
+  return loadAllPages<Pick<MachineRecord, 'id' | 'manufacturer' | 'machine_type' | 'telemetry_protocol'>>(
+    (from, to) => client
+      .from('machines')
+      .select(MACHINE_ENRICHMENT_COLUMNS)
+      .order('id', { ascending: true })
+      .range(from, to),
+    machineCount,
+  );
+}
+
+async function loadSites(client: ReturnType<typeof getSupabaseClient>, siteIds: string[]) {
+  const rows: SiteRecord[] = [];
+  const batches: string[][] = [];
+
+  for (let from = 0; from < siteIds.length; from += SITE_BATCH_SIZE) {
+    batches.push(siteIds.slice(from, from + SITE_BATCH_SIZE));
+  }
+
+  for (let from = 0; from < batches.length; from += SITE_BATCH_CONCURRENCY) {
+    const results = await Promise.all(batches.slice(from, from + SITE_BATCH_CONCURRENCY).map((ids) => (
+      client.from('customer_sites').select('id,site_name,address').in('id', ids)
+    )));
+    const failed = results.find((result) => result.error);
+    if (failed?.error) return { data: rows, error: failed.error };
+    results.forEach((result) => rows.push(...((result.data ?? []) as SiteRecord[])));
+  }
+
+  return { data: rows, error: null };
+}
+
+async function loadFallbackDevices(client: ReturnType<typeof getSupabaseClient>) {
+  const countResult = await client.from('telemetry_devices').select('id', { count: 'exact', head: true }).eq('status', 'active');
+  if (countResult.error) return { data: [], error: countResult.error };
+
+  return loadAllPages<Partial<DeviceState> & { id: string; status?: string; last_upload_at?: string | null }>(
+    (from, to) => client
+      .from('telemetry_devices')
+      .select(FALLBACK_DEVICE_COLUMNS)
+      .eq('status', 'active')
+      .order('id', { ascending: true })
+      .range(from, to),
+    countResult.count,
+  );
+}
 
 function numberValue(value: unknown) {
   const parsed = Number(value ?? 0);
@@ -325,6 +418,7 @@ export function MachineTelemetryOverview({ initialMachineId, initialStatus = 'al
   const [branch, setBranch] = useState('all');
   const [status, setStatus] = useState<'all' | ConnectionStatus | 'fault'>(initialStatus);
   const [mode, setMode] = useState<'all' | TelemetryMode>('all');
+  const [tablePage, setTablePage] = useState(1);
   const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
   const [detailTab, setDetailTab] = useState<DetailTab>('overview');
   const [loading, setLoading] = useState(true);
@@ -333,53 +427,56 @@ export function MachineTelemetryOverview({ initialMachineId, initialStatus = 'al
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const machineRegisterLoaded = useRef(false);
 
   const canControl = ['admin', 'operations'].includes(userDetails?.role ?? '');
 
-  const load = useCallback(async (quiet = false) => {
+  const load = useCallback(async (quiet = false, refreshRegister = false) => {
     if (quiet) setRefreshing(true);
     else setLoading(true);
     setError(null);
     const client = getSupabaseClient();
 
+    const shouldLoadRegister = refreshRegister || !machineRegisterLoaded.current;
     const [machineResult, overviewResult, reportResult] = await Promise.all([
-      client.from('machines').select('id,branch,site_id,serial_number,machine_barcode,asset_tag,machine_name,model,status,current_custodian').order('machine_name').limit(5000),
+      shouldLoadRegister ? loadMachineRegister(client) : Promise.resolve(null),
       client.rpc('get_telemetry_dashboard', { p_period: 'today', p_branch: 'all' }),
       client.rpc('get_telemetry_reporting', { p_period: period, p_branch: 'all', p_dataset: 'production' }),
     ]);
 
-    if (machineResult.error) {
+    if (machineResult?.error) {
       setError(`Machines could not be loaded: ${machineResult.error.message}`);
       setLoading(false);
       setRefreshing(false);
       return;
     }
 
-    const machineRows = (machineResult.data ?? []) as MachineRecord[];
-    const siteIds = Array.from(new Set(machineRows.map((row) => row.site_id).filter((value): value is string => Boolean(value))));
-    const [siteResult, enrichedMachineResult] = await Promise.all([
-      siteIds.length
-        ? client.from('customer_sites').select('id,site_name,address').in('id', siteIds)
-        : Promise.resolve({ data: [], error: null }),
-      client.from('machines').select('id,manufacturer,machine_type,telemetry_protocol').limit(5000),
-    ]);
+    if (machineResult) {
+      const machineRows = machineResult.data as MachineRecord[];
+      const siteIds = Array.from(new Set(machineRows.map((row) => row.site_id).filter((value): value is string => Boolean(value))));
+      const [siteResult, enrichedMachineResult] = await Promise.all([
+        loadSites(client, siteIds),
+        loadMachineEnrichment(client, machineResult.count),
+      ]);
 
-    if (!enrichedMachineResult.error) {
-      const enrichment = new Map(((enrichedMachineResult.data ?? []) as Array<Pick<MachineRecord, 'id' | 'manufacturer' | 'machine_type' | 'telemetry_protocol'>>).map((row) => [row.id, row]));
-      machineRows.forEach((row) => Object.assign(row, enrichment.get(row.id) ?? {}));
+      if (!enrichedMachineResult.error) {
+        const enrichment = new Map(enrichedMachineResult.data.map((row) => [row.id, row]));
+        machineRows.forEach((row) => Object.assign(row, enrichment.get(row.id) ?? {}));
+      }
+
+      setMachines(machineRows);
+      setSites(Object.fromEntries(siteResult.data.map((site) => [site.id, site])));
+      machineRegisterLoaded.current = true;
     }
-
-    setMachines(machineRows);
-    setSites(Object.fromEntries(((siteResult.data ?? []) as SiteRecord[]).map((site) => [site.id, site])));
 
     if (!overviewResult.error) {
       const overview = (overviewResult.data ?? {}) as OverviewPayload;
       setDevices((overview.device_states ?? []).map((row) => normaliseDevice(row)));
       setFaults(overview.active_faults ?? []);
     } else {
-      const fallback = await client.from('telemetry_devices').select('id,device_code,machine_id,status,firmware_version,wifi_rssi,last_seen_at,last_upload_at,last_sequence,updated_at').eq('status', 'active').limit(5000);
+      const fallback = await loadFallbackDevices(client);
       if (!fallback.error) {
-        setDevices(((fallback.data ?? []) as Array<Partial<DeviceState> & { id: string; status?: string; last_upload_at?: string | null }>).map((row) => normaliseDevice({
+        setDevices(fallback.data.map((row) => normaliseDevice({
           ...row,
           device_status: row.status ?? 'active',
           last_counter_at: row.last_upload_at ?? null,
@@ -478,6 +575,20 @@ export function MachineTelemetryOverview({ initialMachineId, initialStatus = 'al
     });
   }, [branch, machineRows, mode, search, status]);
 
+  const tablePageCount = Math.max(1, Math.ceil(filteredMachines.length / TABLE_PAGE_SIZE));
+  const currentTablePage = Math.min(tablePage, tablePageCount);
+  const visibleMachines = filteredMachines.slice((currentTablePage - 1) * TABLE_PAGE_SIZE, currentTablePage * TABLE_PAGE_SIZE);
+  const tableFirstRow = filteredMachines.length === 0 ? 0 : (currentTablePage - 1) * TABLE_PAGE_SIZE + 1;
+  const tableLastRow = Math.min(currentTablePage * TABLE_PAGE_SIZE, filteredMachines.length);
+
+  useEffect(() => {
+    setTablePage(1);
+  }, [branch, mode, search, status]);
+
+  useEffect(() => {
+    setTablePage((current) => Math.min(current, tablePageCount));
+  }, [tablePageCount]);
+
   const selectedMachine = selectedMachineId ? machineRows.find((row) => row.id === selectedMachineId) ?? null : null;
   const selectedSales = selectedMachine ? sales.filter((sale) => sale.machine_id === selectedMachine.id) : [];
   const statusCounts = useMemo(() => machineRows.reduce((counts, machine) => {
@@ -525,7 +636,7 @@ export function MachineTelemetryOverview({ initialMachineId, initialStatus = 'al
           </div>
           <div className="fleet-heading-actions">
             <label>Reporting period<select value={period} onChange={(event) => setPeriod(event.target.value as Period)}>{periods.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
-            <button className="fleet-button secondary" disabled={refreshing || loading} onClick={() => load(true)} type="button"><NavigationIcon kind="telemetry" />{refreshing ? 'Refreshing…' : 'Refresh data'}</button>
+            <button className="fleet-button secondary" disabled={refreshing || loading} onClick={() => load(true, true)} type="button"><NavigationIcon kind="telemetry" />{refreshing ? 'Refreshing…' : 'Refresh data'}</button>
             <Link className="fleet-button" href="/telemetry/devices"><NavigationIcon kind="settings" />Manage devices</Link>
           </div>
         </header>
@@ -586,7 +697,7 @@ export function MachineTelemetryOverview({ initialMachineId, initialStatus = 'al
                   <table className="fleet-machine-table">
                     <thead><tr><th>Status</th><th>Machine</th><th>Identifiers</th><th>Location</th><th>Telemetry device</th><th>Update mode</th><th>Items sold</th><th>Errors</th><th>Last contact</th><th><span className="sr-only">Actions</span></th></tr></thead>
                     <tbody>
-                      {filteredMachines.map((machine) => (
+                      {visibleMachines.map((machine) => (
                         <tr className={selectedMachineId === machine.id ? 'is-selected' : undefined} key={machine.id}>
                           <td><StatusPill value={machine.connectionStatus} /></td>
                           <td><button className="fleet-machine-link" onClick={() => openMachine(machine)} type="button"><strong>{machineTitle(machine)}</strong><span>{machine.type} · {machine.brand} · {machine.status}</span></button></td>
@@ -604,7 +715,10 @@ export function MachineTelemetryOverview({ initialMachineId, initialStatus = 'al
                   </table>
                 </div>
               )}
-              <footer className="fleet-table-footer"><span>Updated {lastUpdated ? timeAgo(lastUpdated.toISOString()) : 'never'}</span><span>Online uses the independent device heartbeat, not the sales upload schedule.</span></footer>
+              <footer className="fleet-table-footer">
+                <div className="fleet-table-footer-copy"><strong>Showing {tableFirstRow.toLocaleString('en-ZA')}–{tableLastRow.toLocaleString('en-ZA')} of {filteredMachines.length.toLocaleString('en-ZA')}</strong><span>Updated {lastUpdated ? timeAgo(lastUpdated.toISOString()) : 'never'} · Online uses the independent device heartbeat.</span></div>
+                <div aria-label="Machine table pagination" className="fleet-table-pagination"><button disabled={currentTablePage === 1} onClick={() => setTablePage((current) => Math.max(1, current - 1))} type="button">Previous</button><span>Page {currentTablePage} of {tablePageCount}</span><button disabled={currentTablePage === tablePageCount} onClick={() => setTablePage((current) => Math.min(tablePageCount, current + 1))} type="button">Next</button></div>
+              </footer>
             </section>
           </>
         ) : null}
