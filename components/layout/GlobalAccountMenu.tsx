@@ -165,7 +165,7 @@ export function GlobalAccountMenu() {
           {mobilePlacement ? (
             <><strong>{userName}</strong><small>{roleLabel}</small></>
           ) : (
-            <><small>Signed in as</small><strong>{roleLabel}</strong><small>Active ERP account</small></>
+            <><small>Signed in as</small><strong>{roleLabel}</strong><small>Active telemetry account</small></>
           )}
         </span>
         <span aria-hidden="true" className="dallmayr-account-chevron">▾</span>

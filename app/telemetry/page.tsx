@@ -1,25 +1,21 @@
 import { TelemetryActivityLog } from '@/components/features/TelemetryActivityLog';
 import { TelemetryDashboard } from '@/components/features/TelemetryDashboard';
-import { TelemetryLiveControl } from '@/components/features/TelemetryLiveControl';
-import { TelemetryLocationMap } from '@/components/features/TelemetryLocationMap';
-import { TelemetryPocPanel } from '@/components/features/TelemetryPocPanel';
 import { AppShell } from '@/components/layout/AppShell';
 
 export default function TelemetryPage() {
   return (
     <AppShell>
-      <div className="page-header hero-panel spatial-card">
-        <div>
-          <div className="badge">Admin &amp; Executive</div>
-          <h1>Machine Telemetry</h1>
-          <p>Monitor live device connectivity, current machine location, faults and counters, remotely control telemetry mode and network preference, and review sortable sales and error history.</p>
-        </div>
-      </div>
-      <TelemetryLiveControl />
-      <TelemetryLocationMap />
-      <TelemetryPocPanel />
-      <TelemetryActivityLog />
-      <TelemetryDashboard />
+      <section className="fleet-route-page">
+        <header className="fleet-page-heading">
+          <div>
+            <span className="fleet-eyebrow">Machine &amp; telemetry monitoring</span>
+            <h1>Telemetry analytics</h1>
+            <p>Explore item quantities, vend failures, reporting trends and complete telemetry activity.</p>
+          </div>
+        </header>
+        <TelemetryDashboard />
+        <TelemetryActivityLog />
+      </section>
     </AppShell>
   );
 }

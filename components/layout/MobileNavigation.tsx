@@ -8,7 +8,7 @@ import { NavigationIcon, navigationIconKind, type NavigationIconKind } from '@/c
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import type { NavSection } from '@/lib/auth/permissions';
 import { favoritePathname, MAX_FAVORITES, type FavoriteEntry } from '@/lib/navigation/favorites';
-import { MY_WORK_LABEL, TODAY_LABEL } from '@/lib/navigation/terminology';
+import { TODAY_LABEL } from '@/lib/navigation/terminology';
 import type { BusinessRole } from '@/types/dallmayrerp';
 
 type MobileNavigationDrawerProps = {
@@ -89,6 +89,7 @@ export function MobileNavigationDrawer({
   const [mounted, setMounted] = useState(false);
   const favoriteHrefs = favorites.map((entry) => entry.href);
   const visibleSections = groupedSections(sections, homePath);
+  const canSeeAlerts = sections.some((section) => section.items.some((item) => item.href === '/alerts'));
 
   useEffect(() => setMounted(true), []);
 
@@ -177,17 +178,17 @@ export function MobileNavigationDrawer({
             <span className="mobile-menu-v2-copy"><strong>{TODAY_LABEL}</strong></span>
           </Link>
 
-          <Link aria-current={activeHref === '/work' ? 'page' : undefined} className="mobile-menu-v2-link" href="/work" onClick={() => setOpen(false)}>
-            <span className="mobile-menu-v2-icon" aria-hidden="true"><NavigationIcon kind="clipboard" /></span>
-            <span className="mobile-menu-v2-copy"><strong>{MY_WORK_LABEL}</strong></span>
+          <Link aria-current={activeHref === '/machines' ? 'page' : undefined} className="mobile-menu-v2-link" href="/machines" onClick={() => setOpen(false)}>
+            <span className="mobile-menu-v2-icon" aria-hidden="true"><NavigationIcon kind="tool" /></span>
+            <span className="mobile-menu-v2-copy"><strong>Machines</strong></span>
             <span className="mobile-menu-v2-chevron" aria-hidden="true"><NavigationIcon kind="chevron-right" /></span>
           </Link>
 
-          <button className="mobile-menu-v2-link mobile-menu-v2-button" onClick={() => { setOpen(false); window.dispatchEvent(new Event('dallmayr-open-alerts')); }} type="button">
+          {canSeeAlerts ? <Link className="mobile-menu-v2-link" href="/alerts" onClick={() => setOpen(false)}>
             <span className="mobile-menu-v2-icon" aria-hidden="true"><NavigationIcon kind="bell" /></span>
-            <span className="mobile-menu-v2-copy"><strong>Inbox & Alerts</strong></span>
+            <span className="mobile-menu-v2-copy"><strong>Active Alerts</strong></span>
             <span className="mobile-menu-v2-chevron" aria-hidden="true"><NavigationIcon kind="chevron-right" /></span>
-          </button>
+          </Link> : null}
 
           <div className="mobile-menu-v2-search-row">
             <span className="mobile-menu-v2-icon" aria-hidden="true"><NavigationIcon kind="search" /></span>
@@ -247,32 +248,31 @@ export function MobileNavigationDrawer({
 }
 
 const quickLabels: Record<BusinessRole, { label: string; kind: NavigationIconKind }> = {
-  admin: { label: 'Work', kind: 'clipboard' },
-  operations: { label: 'Dispatch', kind: 'truck' },
-  sales: { label: 'Sales', kind: 'sales' },
-  finance: { label: 'Finance', kind: 'finance' },
-  marketing: { label: 'Marketing', kind: 'marketing' },
-  executive: { label: 'Overview', kind: 'chart' },
-  warehouse_staff: { label: 'Stock', kind: 'box' },
-  technician: { label: 'Jobs', kind: 'clipboard' },
-  road_technician: { label: 'Routes', kind: 'truck' },
+  admin: { label: 'Machines', kind: 'tool' },
+  operations: { label: 'Machines', kind: 'tool' },
+  sales: { label: 'Machines', kind: 'tool' },
+  finance: { label: 'Machines', kind: 'tool' },
+  marketing: { label: 'Machines', kind: 'tool' },
+  executive: { label: 'Machines', kind: 'tool' },
+  warehouse_staff: { label: 'Machines', kind: 'tool' },
+  technician: { label: 'Machines', kind: 'tool' },
+  road_technician: { label: 'Machines', kind: 'tool' },
 };
 
 export function MobileQuickBar({ homePath, menuOpen, pathname, role, scanPath, setMenuOpen, taskPath }: MobileQuickBarProps) {
-  const fieldRole = role === 'technician' || role === 'road_technician';
-  const warehouseRole = role === 'warehouse_staff';
   const primary = quickLabels[role];
 
   function openSearch() { setMenuOpen(false); window.dispatchEvent(new Event(OPEN_SEARCH_EVENT)); }
-  function openAlerts() { setMenuOpen(false); window.dispatchEvent(new Event('dallmayr-open-alerts')); }
   function openQueue() { setMenuOpen(false); window.dispatchEvent(new Event('dallmayr-open-field-queue')); }
+  void openQueue;
+  void scanPath;
 
   return (
     <nav aria-label="Mobile quick actions" className="mobile-quick-bar">
       <Link aria-current={isActivePath(pathname, homePath) ? 'page' : undefined} href={homePath}><span aria-hidden="true"><NavigationIcon kind="dashboard" /></span><strong>{TODAY_LABEL}</strong></Link>
       <Link aria-current={isActivePath(pathname, taskPath) ? 'page' : undefined} href={taskPath}><span aria-hidden="true"><NavigationIcon kind={primary.kind} /></span><strong>{primary.label}</strong></Link>
-      {fieldRole || warehouseRole ? <Link aria-current={isActivePath(pathname, scanPath) ? 'page' : undefined} href={scanPath}><span aria-hidden="true"><NavigationIcon kind="scan" /></span><strong>Scan</strong></Link> : <button aria-label="Open global search" onClick={openSearch} type="button"><span aria-hidden="true"><NavigationIcon kind="search" /></span><strong>Search</strong></button>}
-      {fieldRole ? <button aria-label="Open offline work queue" onClick={openQueue} type="button"><span aria-hidden="true"><NavigationIcon kind="queue" /></span><strong>Queue</strong></button> : <button aria-label="Open notifications" onClick={openAlerts} type="button"><span aria-hidden="true"><NavigationIcon kind="bell" /></span><strong>Alerts</strong></button>}
+      <button aria-label="Open global search" onClick={openSearch} type="button"><span aria-hidden="true"><NavigationIcon kind="search" /></span><strong>Search</strong></button>
+      {role === 'admin' || role === 'executive' ? <Link aria-current={isActivePath(pathname, '/alerts') ? 'page' : undefined} href="/alerts"><span aria-hidden="true"><NavigationIcon kind="bell" /></span><strong>Alerts</strong></Link> : <Link aria-current={isActivePath(pathname, '/workspace') ? 'page' : undefined} href="/workspace"><span aria-hidden="true"><NavigationIcon kind="telemetry" /></span><strong>Fleet</strong></Link>}
       <button aria-controls="mobile-navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen((current) => !current)} type="button"><span aria-hidden="true"><NavigationIcon kind="menu" /></span><strong>Menu</strong></button>
     </nav>
   );

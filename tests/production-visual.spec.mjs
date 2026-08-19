@@ -85,7 +85,7 @@ async function waitForLoginHydration(page) {
   const activateToggle = page.getByRole('button', { name: 'First login? Activate account', exact: true });
   await expect(activateToggle).toBeVisible({ timeout: 45_000 });
   await activateToggle.click();
-  await expect(page.getByRole('heading', { name: 'Activate your DallmayrERP account', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Activate your Dallmayr Telemetry account', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'I already have an account', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible();
 }

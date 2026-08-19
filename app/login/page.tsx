@@ -94,7 +94,7 @@ export default function LoginPage() {
       });
 
       if (loginError) {
-        setSuccess('Account activation started. Check your email if Supabase requires confirmation, then sign in. Your email must still be invited by admin before ERP access unlocks.');
+        setSuccess('Account activation started. Check your email if Supabase requires confirmation, then sign in. Your email must still be invited by an administrator before telemetry access unlocks.');
         setMode('login');
         return;
       }
@@ -111,32 +111,32 @@ export default function LoginPage() {
 
   return (
     <main className="login-page dynamics-login-page">
-      <section aria-label="DallmayrERP overview" className="dynamics-login-intro">
+      <section aria-label="Dallmayr Machine Telemetry overview" className="dynamics-login-intro">
         <div className="dynamics-login-brand">
           <span aria-hidden="true">D</span>
-          <strong>DallmayrERP</strong>
+          <strong>Dallmayr Telemetry</strong>
         </div>
         <div className="dynamics-login-copy">
-          <span>Business applications</span>
-          <h1>Run service, stock, finance and customer work from one workspace.</h1>
-          <p>Role-based dashboards, searchable records, operational queues and approvals built for daily branch execution.</p>
+          <span>Machine intelligence</span>
+          <h1>See every machine, telemetry device, sale and fault in one place.</h1>
+          <p>Live device health, flexible reporting schedules and actionable fleet monitoring for Dallmayr South Africa.</p>
         </div>
         <div className="dynamics-login-modules" aria-label="Core modules">
-          <span>Operations</span>
-          <span>Warehouse</span>
-          <span>Finance</span>
-          <span>Sales</span>
+          <span>Machines</span>
+          <span>Telemetry</span>
+          <span>Faults</span>
+          <span>Analytics</span>
         </div>
       </section>
 
       <div className="login-card neo-card dynamics-login-card">
         <div className="orb" />
         <div className="badge">Secure workspace</div>
-        <h1>{isActivate ? 'Activate your DallmayrERP account' : 'Sign in'}</h1>
+        <h1>{isActivate ? 'Activate your Dallmayr Telemetry account' : 'Sign in'}</h1>
         <p>
           {isActivate
-            ? 'Create your Supabase login account. ERP access only unlocks when admin has invited the same email in Users & Roles.'
-            : 'Use your Supabase Auth account. New users complete their personal profile once before their role workspace unlocks.'}
+            ? 'Create your secure login account. Access unlocks after an administrator has invited the same email address.'
+            : 'Use your Supabase Auth account to open the machine and telemetry workspace.'}
         </p>
         {error ? <div className="error" role="alert">{error}</div> : null}
         {success ? <div aria-live="polite" className="success" role="status">{success}</div> : null}
@@ -158,7 +158,7 @@ export default function LoginPage() {
               />
               <span>
                 <strong>Remember me on this device</strong>
-                <small>Stay signed in on this device until you choose Sign out. Your password is never stored by DallmayrERP.</small>
+                <small>Stay signed in on this device until you choose Sign out. Your password is never stored by Dallmayr Telemetry.</small>
               </span>
             </label>
           ) : null}

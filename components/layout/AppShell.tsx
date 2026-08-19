@@ -105,7 +105,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   if (!authUser) {
-    return <StatusScreen title="Redirecting to sign in" message="You need to sign in before opening DallmayrERP." />;
+    return <StatusScreen title="Redirecting to sign in" message="You need to sign in before opening Dallmayr Machine Telemetry." />;
   }
 
   if (error) {
@@ -158,7 +158,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="application-header-inner">
           <Link aria-label="Open Today workspace" className="application-brand" href={homePath}>
             <span aria-hidden="true" className="application-brand-mark">D</span>
-            <span>DallmayrERP</span>
+            <span>Dallmayr Telemetry</span>
           </Link>
 
           <div className="application-header-search">

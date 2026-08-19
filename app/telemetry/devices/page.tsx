@@ -4,11 +4,11 @@ import { AppShell } from '@/components/layout/AppShell';
 export default function TelemetryDevicesPage() {
   return (
     <AppShell>
-      <div className="page-header hero-panel spatial-card">
+      <div className="fleet-page-heading">
         <div>
-          <div className="badge">Administrator only</div>
-          <h1>Telemetry Devices</h1>
-          <p>Assign telemetry controllers to ERP machines, verify connectivity and disable devices that must no longer send data.</p>
+          <span className="fleet-eyebrow">Administrator only</span>
+          <h1>Telemetry devices</h1>
+          <p>Assign controllers to machines, verify connectivity and manage device access.</p>
         </div>
       </div>
       <AdminTelemetryDevices />

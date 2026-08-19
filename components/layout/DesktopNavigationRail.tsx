@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { NavigationIcon, navigationIconKind } from '@/components/layout/NavigationIcon';
 import type { NavSection } from '@/lib/auth/permissions';
 import { favoritePathname, type FavoriteEntry } from '@/lib/navigation/favorites';
-import { MY_WORK_LABEL, TODAY_LABEL, TODAY_OPEN_LABEL } from '@/lib/navigation/terminology';
+import { TODAY_LABEL, TODAY_OPEN_LABEL } from '@/lib/navigation/terminology';
 
 type DesktopNavigationRailProps = {
   activeHref: string | null;
@@ -67,13 +67,13 @@ export function DesktopNavigationRail({
         </button>
       </div>
 
-      <nav className="dallmayr-sidebar-nav" aria-label="ERP navigation">
+      <nav className="dallmayr-sidebar-nav" aria-label="Machine telemetry navigation">
         <div className="dallmayr-sidebar-primary">
           <Link aria-label={TODAY_LABEL} className="dallmayr-sidebar-link" aria-current={activeHref === homePath ? 'page' : undefined} href={homePath} title={TODAY_LABEL}>
             <span aria-hidden="true"><NavigationIcon kind="dashboard" /></span>{!collapsed ? <strong>{TODAY_LABEL}</strong> : null}
           </Link>
-          <Link aria-label={MY_WORK_LABEL} className="dallmayr-sidebar-link" aria-current={activeHref === '/work' ? 'page' : undefined} href="/work" title={MY_WORK_LABEL}>
-            <span aria-hidden="true"><NavigationIcon kind="clipboard" /></span>{!collapsed ? <strong>{MY_WORK_LABEL}</strong> : null}
+          <Link aria-label="Machines" className="dallmayr-sidebar-link" aria-current={activeHref === '/machines' ? 'page' : undefined} href="/machines" title="Machines">
+            <span aria-hidden="true"><NavigationIcon kind="tool" /></span>{!collapsed ? <strong>Machines</strong> : null}
           </Link>
         </div>
 

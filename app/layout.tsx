@@ -92,13 +92,13 @@ const APPEARANCE_BOOT_SCRIPT = `
 })();`;
 
 export const metadata = {
-  title: 'DallmayrERP',
-  description: 'Dallmayr South Africa internal operations ERP',
-  applicationName: 'DallmayrERP',
+  title: 'Dallmayr Machine Telemetry',
+  description: 'Dallmayr South Africa machine and telemetry monitoring',
+  applicationName: 'Dallmayr Machine Telemetry',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent' as const,
-    title: 'DallmayrERP',
+    title: 'Dallmayr Telemetry',
   },
   icons: {
     icon: '/icons/dallmayr-app.svg',

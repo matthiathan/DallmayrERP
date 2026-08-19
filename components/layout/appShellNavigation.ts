@@ -13,6 +13,32 @@ import type { BusinessRole } from '@/types/dallmayrerp';
 
 const MESSAGING_ENABLED = process.env.NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED === 'true';
 
+function getTelemetryFocusedSections(role: BusinessRole, supplementalSections: NavSection[]): NavSection[] {
+  const canReadTelemetry = role === 'admin' || role === 'executive';
+  const deviceAdministration = supplementalSections
+    .flatMap((section) => section.items)
+    .filter((item) => item.href === '/telemetry/devices');
+
+  return [
+    {
+      heading: 'Monitoring',
+      items: [
+        { href: '/workspace', label: 'Fleet Overview', code: 'FLT01', roles: 'all', description: 'Fleet health, sales counters, faults and connectivity.' },
+        { href: '/machines', label: 'Machines', code: 'FLT02', roles: 'all', description: 'Every machine and its connected telemetry device.' },
+        ...(canReadTelemetry ? [{ href: '/alerts', label: 'Active Alerts', code: 'FLT03', roles: 'all' as const, description: 'Current machine faults and devices needing attention.' }] : []),
+      ],
+    },
+    ...(canReadTelemetry ? [{
+      heading: 'Telemetry',
+      items: [
+        { href: '/telemetry', label: 'Sales & Analytics', code: 'TEL01', roles: 'all' as const, description: 'Item quantities, trends, failures and activity.' },
+        { href: '/map', label: 'Machine Map', code: 'TEL03', roles: 'all' as const, description: 'Last known device locations and movement.' },
+      ],
+    }] : []),
+    ...(role === 'admin' && deviceAdministration.length > 0 ? [{ heading: 'Management', items: deviceAdministration }] : []),
+  ];
+}
+
 const sectionOrderByRole: Record<BusinessRole, string[]> = {
   admin: ['System', 'Telemetry', 'Communications', 'Transactions', 'Masters', 'Fixed Assets', 'Sales', 'Reports', 'Batch Reports', 'Utilities'],
   operations: ['Communications', 'Operations', 'Assets & Maintenance', 'Inventory', 'Reports'],
@@ -57,6 +83,8 @@ function orderNavigationSections(role: BusinessRole, sections: NavSection[]) {
 }
 
 export function canAccessShellPath(role: BusinessRole, pathname: string) {
+  if (pathname === '/workspace' || pathname === '/machines' || pathname.startsWith('/machines/')) return true;
+  if (pathname === '/alerts' || pathname === '/map') return role === 'admin' || role === 'executive';
   const telemetryPathAllowed = pathname === '/telemetry'
     ? role === 'admin' || role === 'executive'
     : pathname.startsWith('/telemetry/devices') && role === 'admin';
@@ -66,18 +94,12 @@ export function canAccessShellPath(role: BusinessRole, pathname: string) {
 export function deriveAppShellNavigation(role: BusinessRole, pathname: string) {
   const homePath = getDefaultPathForRole(role);
   const allowedPath = canAccessShellPath(role, pathname);
-  const roleSections = navSections
-    .map((section) => ({
-      ...section,
-      items: section.items.filter((item) => isNavItemAllowed(role, item)),
-    }))
-    .filter((section) => section.items.length > 0);
   const supplementalSections = getSupplementalNavigationSections(role, MESSAGING_ENABLED);
-  const orderedNavigationSections = orderNavigationSections(role, [
-    ...supplementalSections,
-    ...roleSections,
-  ]);
-  const navigationSections = groupEnterpriseNavigationSections(role, orderedNavigationSections);
+  const focusedSections = getTelemetryFocusedSections(role, supplementalSections);
+  const orderedNavigationSections = orderNavigationSections(role, focusedSections);
+  const navigationSections = role === 'admin' || role === 'executive'
+    ? orderedNavigationSections
+    : groupEnterpriseNavigationSections(role, orderedNavigationSections);
   const allNavigationItems = navigationSections.flatMap((section) => section.items);
   const activeHref = selectActiveNavigationHref(pathname, allNavigationItems.map((item) => item.href));
   const activeSection = activeHref
@@ -89,14 +111,12 @@ export function deriveAppShellNavigation(role: BusinessRole, pathname: string) {
   const activeTitle = activeItem?.label ?? TODAY_LABEL;
   const visibleHrefs = new Set(allNavigationItems.map((item) => item.href));
   const statusQuickLinks = [
-    ...(MESSAGING_ENABLED ? [{ href: '/work/messages', label: 'Messages' }] : []),
-    { href: '/work', label: 'My Work' },
-    { href: '/operations/exceptions', label: 'Exceptions' },
-    { href: '/operations/dispatch', label: 'Dispatch' },
-    { href: '/warehouse/stock', label: 'Stock' },
-  ].filter((item) => item.href === '/work' || visibleHrefs.has(item.href)).slice(0, 3);
-  const mobileTaskPath = primaryPathCandidates[role].find((href) => visibleHrefs.has(href)) ?? homePath;
-  const mobileScanPath = role === 'warehouse_staff' ? '/warehouse/stock/scan' : '/operations/assets/scan';
+    { href: '/machines', label: 'Machines' },
+    { href: '/alerts', label: 'Alerts' },
+    { href: '/telemetry', label: 'Analytics' },
+  ].filter((item) => visibleHrefs.has(item.href));
+  const mobileTaskPath = '/machines';
+  const mobileScanPath = '/machines';
 
   return {
     activeHref,

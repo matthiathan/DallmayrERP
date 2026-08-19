@@ -11,7 +11,7 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 
 type SearchResult = {
   id: string;
-  type: 'Page' | 'Work' | 'Customer' | 'Machine' | 'Stock' | 'Delivery' | 'Service';
+  type: 'Page' | 'Machine' | 'Device';
   title: string;
   subtitle: string;
   href: string;
@@ -40,7 +40,7 @@ export function GlobalSearch({
   enableShortcut = true,
   showShortcut = true,
   triggerClassName = '',
-  triggerLabel = 'Search records',
+  triggerLabel = 'Search machines or devices',
 }: GlobalSearchProps = {}) {
   const { userDetails } = useAuth();
   const [open, setOpen] = useState(false);
@@ -67,13 +67,27 @@ export function GlobalSearch({
       ...getSupplementalNavigationSections(userDetails.role, MESSAGING_ENABLED),
       ...roleSections,
     ]);
-    const pages = searchSections.flatMap((section) => section.items.map((item) => ({
+    const canReadTelemetry = userDetails.role === 'admin' || userDetails.role === 'executive';
+    const focusedPages = [
+      { href: '/workspace', label: 'Fleet Overview', section: 'Monitoring', description: 'Fleet health, sales, faults and connectivity.' },
+      { href: '/machines', label: 'Machines', section: 'Monitoring', description: 'Every machine and connected device.' },
+      ...(canReadTelemetry ? [
+        { href: '/alerts', label: 'Active Alerts', section: 'Monitoring', description: 'Current machine faults and offline devices.' },
+        { href: '/telemetry', label: 'Sales & Analytics', section: 'Telemetry', description: 'Item quantities, trends and activity.' },
+        { href: '/map', label: 'Machine Map', section: 'Telemetry', description: 'Last known telemetry device positions.' },
+      ] : []),
+      ...(userDetails.role === 'admin' ? [{ href: '/telemetry/devices', label: 'Telemetry Devices', section: 'Management', description: 'Assign and manage telemetry controllers.' }] : []),
+    ];
+    const pages = focusedPages.map((item) => ({
       id: item.href,
       type: 'Page' as const,
       title: item.label,
-      subtitle: `${section.heading}${item.description ? ` • ${item.description}` : ''}`,
+      subtitle: `${item.section} • ${item.description}`,
       href: item.href,
-    })));
+    }));
+
+    // Keep navigation discovery centralized even though search intentionally exposes only telemetry scope.
+    void searchSections;
 
     return pages.filter((page) => {
       if (seen.has(page.href)) return false;
@@ -175,60 +189,30 @@ export function GlobalSearch({
       const pattern = `%${term}%`;
       const client = getSupabaseClient();
       try {
-        const [work, customers, machines, stock, deliveries, services] = await Promise.all([
-          client.from('work_items').select('id, work_number, title, department, branch, priority, status').or(`work_number.ilike.${pattern},title.ilike.${pattern},department.ilike.${pattern}`).limit(6),
-          client.from('customers').select('id, customer_name, customer_code, branch, address').or(`customer_name.ilike.${pattern},customer_code.ilike.${pattern}`).limit(6),
-          client.from('machines').select('id, machine_name, serial_number, machine_barcode, branch, model, condition').or(`machine_name.ilike.${pattern},serial_number.ilike.${pattern},machine_barcode.ilike.${pattern}`).limit(6),
-          client.from('stock_items').select('id, stock_name, item_barcode, box_barcode, item_quantity, warehouse_location').or(`stock_name.ilike.${pattern},item_barcode.ilike.${pattern},box_barcode.ilike.${pattern}`).limit(6),
-          client.from('delivery_orders').select('id, order_number, customer_name, branch, status').or(`order_number.ilike.${pattern},customer_name.ilike.${pattern}`).limit(6),
-          client.from('service_jobs').select('id, job_number, summary, branch, status').or(`job_number.ilike.${pattern},summary.ilike.${pattern}`).limit(6),
+        const [machines, devices] = await Promise.all([
+          client.from('machines').select('id,machine_name,serial_number,machine_barcode,asset_tag,branch,model,status').or(`machine_name.ilike.${pattern},serial_number.ilike.${pattern},machine_barcode.ilike.${pattern},asset_tag.ilike.${pattern},model.ilike.${pattern}`).limit(15),
+          userDetails?.role === 'admin' || userDetails?.role === 'executive'
+            ? client.from('telemetry_devices').select('id,device_code,machine_id,status,firmware_version,last_seen_at').ilike('device_code', pattern).limit(10)
+            : Promise.resolve({ data: [], error: null }),
         ]);
-        const queryError = work.error ?? customers.error ?? machines.error ?? stock.error ?? deliveries.error ?? services.error;
+        const queryError = machines.error ?? devices.error;
         if (queryError) throw queryError;
         if (requestId !== requestRef.current) return;
 
         const nextResults: SearchResult[] = [
-          ...((work.data ?? []) as Array<{ id: string; work_number: string; title: string; department: string; branch: string; priority: string; status: string }>).map((row) => ({
-            id: row.id,
-            type: 'Work' as const,
-            title: `${row.work_number} — ${row.title}`,
-            subtitle: `${row.department} • ${row.branch.toUpperCase()} • ${row.priority} • ${row.status.replace(/_/g, ' ')}`,
-            href: `/work/${row.id}`,
-          })),
-          ...((customers.data ?? []) as Array<{ id: string; customer_name: string; customer_code: string | null; branch: string; address: string | null }>).map((row) => ({
-            id: row.id,
-            type: 'Customer' as const,
-            title: row.customer_name,
-            subtitle: `${row.customer_code ?? 'No account code'} • ${row.branch.toUpperCase()}${row.address ? ` • ${row.address}` : ''}`,
-            href: `/customers/${row.id}`,
-          })),
-          ...((machines.data ?? []) as Array<{ id: string; machine_name: string | null; serial_number: string | null; machine_barcode: string | null; branch: string; model: string | null; condition: string }>).map((row) => ({
+          ...((machines.data ?? []) as Array<{ id: string; machine_name: string | null; serial_number: string | null; machine_barcode: string | null; asset_tag: string | null; branch: string; model: string | null; status: string }>).map((row) => ({
             id: row.id,
             type: 'Machine' as const,
-            title: row.machine_name ?? row.serial_number ?? row.machine_barcode ?? 'Unnamed machine',
-            subtitle: `${row.model ?? 'Model not set'} • ${row.serial_number ?? 'No serial'} • ${row.branch.toUpperCase()} • ${row.condition}`,
-            href: `/operations/assets/${row.id}`,
+            title: row.machine_name ?? row.serial_number ?? row.machine_barcode ?? row.asset_tag ?? 'Unnamed machine',
+            subtitle: `${row.model ?? 'Type not recorded'} • ${row.serial_number ?? 'No serial'} • QR ${row.machine_barcode ?? row.asset_tag ?? 'not recorded'} • ${row.branch.toUpperCase()} • ${row.status}`,
+            href: `/machines/${row.id}`,
           })),
-          ...((stock.data ?? []) as Array<{ id: string; stock_name: string; item_barcode: string; item_quantity: number; warehouse_location: string | null }>).map((row) => ({
+          ...((devices.data ?? []) as Array<{ id: string; device_code: string; machine_id: string | null; status: string; firmware_version: string | null; last_seen_at: string | null }>).map((row) => ({
             id: row.id,
-            type: 'Stock' as const,
-            title: row.stock_name,
-            subtitle: `${row.item_barcode} • ${row.item_quantity} item(s)${row.warehouse_location ? ` • ${row.warehouse_location}` : ''}`,
-            href: `/warehouse/stock/${row.id}`,
-          })),
-          ...((deliveries.data ?? []) as Array<{ id: string; order_number: string; customer_name: string; branch: string; status: string }>).map((row) => ({
-            id: row.id,
-            type: 'Delivery' as const,
-            title: row.order_number,
-            subtitle: `${row.customer_name} • ${row.branch.toUpperCase()} • ${row.status.replace(/_/g, ' ')}`,
-            href: `/operations/deliveries?order=${row.id}`,
-          })),
-          ...((services.data ?? []) as Array<{ id: string; job_number: string; summary: string; branch: string; status: string }>).map((row) => ({
-            id: row.id,
-            type: 'Service' as const,
-            title: row.job_number,
-            subtitle: `${row.summary} • ${row.branch.toUpperCase()} • ${row.status.replace(/_/g, ' ')}`,
-            href: `/operations/service-jobs?job=${row.id}`,
+            type: 'Device' as const,
+            title: row.device_code,
+            subtitle: `${row.status} • ${row.firmware_version ?? 'Firmware not reported'} • ${row.last_seen_at ? `Last seen ${new Date(row.last_seen_at).toLocaleString('en-ZA')}` : 'Never connected'}`,
+            href: row.machine_id ? `/machines/${row.machine_id}` : '/telemetry/devices',
           })),
         ];
         setRecordResults(nextResults);
@@ -241,7 +225,7 @@ export function GlobalSearch({
       }
     }, 260);
     return () => window.clearTimeout(timeout);
-  }, [open, query]);
+  }, [open, query, userDetails?.role]);
 
   function closeSearch() {
     setOpen(false);
@@ -252,16 +236,20 @@ export function GlobalSearch({
 
   const dialog = open ? createPortal(
     <div className="global-search-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeSearch(); }}>
-      <section aria-label="Find a page, record or task" aria-modal="true" className="global-search-dialog" id={GLOBAL_SEARCH_DIALOG_ID} ref={dialogRef} role="dialog">
+      <section aria-label="Find a machine, telemetry device or monitoring page" aria-modal="true" className="global-search-dialog" id={GLOBAL_SEARCH_DIALOG_ID} ref={dialogRef} role="dialog">
         <div className="global-search-input-row">
-          <input aria-label="Search pages, customers, work numbers, machines, barcodes, orders or service jobs" onChange={(event) => setQuery(event.target.value)} placeholder="Search pages, customers, jobs, serials, barcodes or orders..." ref={inputRef} type="search" value={query} />
+          <input aria-label="Search machines, serial numbers, QR numbers or telemetry devices" onChange={(event) => setQuery(event.target.value)} placeholder="Search machine, serial, QR number or device ID..." ref={inputRef} type="search" value={query} />
           <button aria-label="Close search" className="button secondary" onClick={closeSearch} type="button">Close</button>
         </div>
-        <div className="global-search-quick-actions"><Link href="/work" onClick={closeSearch}>Review actions</Link><Link href="/customers" onClick={closeSearch}>Find a customer</Link><Link href="/operations/service-jobs" onClick={closeSearch}>Find a service job</Link><Link href="/warehouse/stock" onClick={closeSearch}>Check stock</Link><Link href="/operations/assets" onClick={closeSearch}>Find a machine</Link></div>
+        <div className="global-search-quick-actions">
+          <Link href="/machines" onClick={closeSearch}>Find a machine</Link>
+          {userDetails?.role === 'admin' || userDetails?.role === 'executive' ? <><Link href="/alerts" onClick={closeSearch}>Active alerts</Link><Link href="/telemetry" onClick={closeSearch}>Sales analytics</Link><Link href="/map" onClick={closeSearch}>Machine map</Link></> : null}
+          {userDetails?.role === 'admin' ? <Link href="/telemetry/devices" onClick={closeSearch}>Manage devices</Link> : null}
+        </div>
         <div aria-live="polite" className="global-search-results">
           {loading ? <div className="global-search-state">Searching records…</div> : null}
           {error ? <div className="error" role="alert">{error}</div> : null}
-          {!loading && !error && query.trim().length < 2 ? <div className="global-search-state">Type at least two characters. You can search for a page such as Assets or a record identifier.</div> : null}
+          {!loading && !error && query.trim().length < 2 ? <div className="global-search-state">Type at least two characters to search by machine name, serial number, QR number or device ID.</div> : null}
           {!loading && query.trim().length >= 2 && results.length === 0 ? <div className="global-search-state">No matching pages or records found. Check the spelling or try a different identifier.</div> : null}
           {results.map((result) => <Link className="global-search-result" href={result.href} key={`${result.type}-${result.id}`} onClick={closeSearch}><span className="global-search-result-type">{result.type}</span><strong>{result.title}</strong><span>{result.subtitle}</span></Link>)}
         </div>

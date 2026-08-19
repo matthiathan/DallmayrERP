@@ -76,7 +76,7 @@ export default function OnboardingPage() {
         <div className="page-header hero-panel">
           <div>
             <div className="badge">First login setup</div>
-            <h1>Complete your DallmayrERP profile</h1>
+            <h1>Complete your Dallmayr Telemetry profile</h1>
             <p>
               Your administrator has already assigned your role and branch. Complete your personal details once to unlock your assigned workspace.
             </p>

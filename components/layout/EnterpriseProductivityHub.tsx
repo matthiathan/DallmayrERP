@@ -305,7 +305,7 @@ export function EnterpriseProductivityHub({
 
         <div className="card spatial-card">
           <h3>Notification preferences</h3>
-          <p>Choose which ERP signals should surface as personal alerts. Server-side permission checks remain authoritative.</p>
+          <p>Choose which machine and telemetry signals should surface as personal alerts. Server-side permission checks remain authoritative.</p>
           <div className="grid grid-3">
             {NOTIFICATION_TOGGLES.map(([key, label]) => (
               <label className="quick-access-toggle" key={key}>

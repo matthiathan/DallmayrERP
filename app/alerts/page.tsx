@@ -1,10 +1,10 @@
 import { MachineTelemetryOverview } from '@/components/features/MachineTelemetryOverview';
 import { AppShell } from '@/components/layout/AppShell';
 
-export default function WorkspacePage() {
+export default function AlertsPage() {
   return (
     <AppShell>
-      <MachineTelemetryOverview />
+      <MachineTelemetryOverview initialStatus="fault" />
     </AppShell>
   );
 }

@@ -242,7 +242,7 @@ export function AdminTelemetryDevices() {
     <div className="grid spatial-stage">
       <PageToolbar
         title="Telemetry devices"
-        description="Assign telemetry devices to existing ERP machines and control their ingestion status."
+        description="Assign telemetry devices to machines and control their ingestion status."
         lastUpdated={lastUpdated}
         actions={<button className="button secondary" disabled={loading} onClick={() => loadDevices()} type="button">Refresh</button>}
       />
