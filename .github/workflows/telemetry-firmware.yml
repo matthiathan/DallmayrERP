@@ -1,0 +1,39 @@
+name: Telemetry firmware
+
+on:
+  push:
+    paths:
+      - 'firmware/**'
+      - '.github/workflows/telemetry-firmware.yml'
+  pull_request:
+    paths:
+      - 'firmware/**'
+      - '.github/workflows/telemetry-firmware.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile-esp32-s3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Install ESP32 core and ArduinoJson
+        run: |
+          arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core install esp32:esp32 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli lib install ArduinoJson
+
+      - name: Compile ESP32-S3 telemetry firmware
+        run: >-
+          arduino-cli compile
+          --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=opi
+          --warnings all
+          firmware/DallmayrTelemetryV6_1
