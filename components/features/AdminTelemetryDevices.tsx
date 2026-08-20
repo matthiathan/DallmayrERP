@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
+import { AccessibleDialog } from '@/components/ui/AccessibleDialog';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
@@ -80,6 +81,9 @@ export function AdminTelemetryDevices() {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -244,6 +248,53 @@ export function AdminTelemetryDevices() {
     setSaving(false);
   }
 
+  function openDeleteDialog() {
+    if (!selectedDevice) return;
+    setDeleteConfirmation('');
+    setDeleteDialogOpen(true);
+    setMessage(null);
+    setError(null);
+  }
+
+  function closeDeleteDialog() {
+    if (deleting) return;
+    setDeleteDialogOpen(false);
+    setDeleteConfirmation('');
+  }
+
+  async function deleteDevice() {
+    if (!selectedDevice || deleteConfirmation.trim() !== selectedDevice.device_code) return;
+
+    const deletedDevice = selectedDevice;
+    setDeleting(true);
+    setError(null);
+    setMessage(null);
+
+    const { error: deleteError } = await getSupabaseClient().rpc('delete_telemetry_device', {
+      p_device_id: deletedDevice.id,
+      p_device_code: deleteConfirmation.trim(),
+    });
+
+    if (deleteError) {
+      setError(deleteError.message);
+      setDeleting(false);
+      return;
+    }
+
+    setDevices((current) => current.filter((device) => device.id !== deletedDevice.id));
+    setDeviceModes((current) => {
+      const next = { ...current };
+      delete next[deletedDevice.id];
+      return next;
+    });
+    setSelectedDeviceId(null);
+    setDeleteDialogOpen(false);
+    setDeleteConfirmation('');
+    setMessage(`${deletedDevice.device_code} and its telemetry history were permanently deleted.`);
+    setDeleting(false);
+    await loadDevices();
+  }
+
   function manageDevice(device: TelemetryDevice) {
     setSelectedDeviceId(device.id);
     setMessage(null);
@@ -287,10 +338,10 @@ export function AdminTelemetryDevices() {
   return (
     <section className={`fleet-route-page device-management-workspace ${selectedDevice ? 'has-device-detail' : ''}`}>
       <div className="device-management-main">
-        <header className="fleet-page-heading"><div><div className="device-heading-title"><h1>Telemetry devices</h1><span>Administrator only</span></div><p>Provision, assign and remotely configure fleet controllers.</p></div><button className="fleet-button secondary" disabled={loading} onClick={() => loadDevices()} type="button"><NavigationIcon kind="telemetry" />Refresh</button></header>
+        <header className="fleet-page-heading"><div><div className="device-heading-title"><h1>Telemetry devices</h1></div><p>Provision, assign and remotely configure fleet controllers.</p></div><button className="fleet-button secondary" disabled={loading} onClick={() => loadDevices()} type="button"><NavigationIcon kind="telemetry" />Refresh</button></header>
 
         {error ? <div className="fleet-banner is-error" role="alert"><strong>Device update failed.</strong><span>{error}</span></div> : null}
-        {message ? <div className="fleet-banner is-success" role="status"><strong>Configuration saved.</strong><span>{message}</span></div> : null}
+        {message ? <div className="fleet-banner is-success" role="status"><strong>Device management updated.</strong><span>{message}</span></div> : null}
 
         <section className="fleet-metric-grid device-metric-grid">
           <article className="fleet-metric-card"><span className="fleet-metric-icon is-blue"><NavigationIcon kind="settings" /></span><div><span>Active devices</span><strong>{metrics.total.toLocaleString('en-ZA')}</strong></div><small>Provisioned fleet controllers</small></article>
@@ -320,8 +371,36 @@ export function AdminTelemetryDevices() {
         <section><h3>Device information</h3><dl><div><dt>Firmware</dt><dd>{selectedDevice.firmware_version ?? 'Not reported'}</dd></div><div><dt>Network</dt><dd>{selectedDevice.last_transport ?? 'Not reported'}</dd></div><div><dt>Signal</dt><dd>{selectedDevice.wifi_rssi !== null ? `${selectedDevice.wifi_rssi} dBm` : selectedDevice.cellular_csq !== null ? `CSQ ${selectedDevice.cellular_csq}` : 'Not reported'}</dd></div><div><dt>Last upload</dt><dd>{formatDate(selectedDevice.last_upload_at)}</dd></div><div><dt>Sequence</dt><dd>{selectedDevice.last_sequence.toLocaleString('en-ZA')}</dd></div></dl></section>
 
         <section><h3>Location override</h3><label><span>Optional location text</span><input value={locationOverride} onChange={(event) => setLocationOverride(event.target.value)} placeholder="Use the machine site by default" /></label></section>
+        <section className="device-danger-zone"><h3>Delete device</h3><p>Permanently remove this device and all of its sales, errors, counters and location history.</p><button className="fleet-button device-delete-button" disabled={saving || deleting} onClick={openDeleteDialog} type="button">Delete telemetry device</button></section>
         <footer><button className="fleet-button" disabled={saving} onClick={saveDevice} type="button">{saving ? 'Sending configuration…' : 'Save and send configuration'}</button></footer>
       </aside> : null}
+
+      <AccessibleDialog
+        ariaLabel="Confirm telemetry device deletion"
+        className="device-delete-dialog"
+        closeOnBackdrop={!deleting}
+        id="delete-telemetry-device-dialog"
+        onClose={closeDeleteDialog}
+        open={deleteDialogOpen && Boolean(selectedDevice)}
+      >
+        {selectedDevice ? <>
+          <header><div><span className="device-delete-dialog-icon" aria-hidden="true">!</span><div><h2>Delete {selectedDevice.device_code}?</h2><p>This action cannot be undone.</p></div></div><button aria-label="Close deletion confirmation" disabled={deleting} onClick={closeDeleteDialog} type="button">×</button></header>
+          <div className="device-delete-dialog-body">
+            <div className="fleet-banner is-error"><strong>All associated telemetry will be deleted.</strong><span>This includes item sales, machine errors, counters, readings and location history. The assigned machine itself will not be deleted.</span></div>
+            <label htmlFor="delete-device-confirmation">Type <strong>{selectedDevice.device_code}</strong> to confirm</label>
+            <input
+              autoComplete="off"
+              data-dialog-initial-focus
+              disabled={deleting}
+              id="delete-device-confirmation"
+              onChange={(event) => setDeleteConfirmation(event.target.value)}
+              spellCheck={false}
+              value={deleteConfirmation}
+            />
+          </div>
+          <footer><button className="fleet-button secondary" disabled={deleting} onClick={closeDeleteDialog} type="button">Cancel</button><button className="fleet-button device-delete-button" disabled={deleting || deleteConfirmation.trim() !== selectedDevice.device_code} onClick={deleteDevice} type="button">{deleting ? 'Deleting device…' : 'Permanently delete device'}</button></footer>
+        </> : null}
+      </AccessibleDialog>
     </section>
   );
 }

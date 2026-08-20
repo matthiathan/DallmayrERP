@@ -2670,7 +2670,6 @@ body { background: var(--ops-canvas) !important; color: var(--ops-ink) !importan
 .device-management-workspace.has-device-detail { grid-template-columns: minmax(0,1fr) minmax(340px,380px); }
 .device-management-main { min-width: 0; }
 .device-heading-title { display: flex; align-items: center; gap: 10px; }
-.device-heading-title span { padding: 4px 7px; color: #344054; background: #f2f4f7; border: 1px solid #dfe3e8; border-radius: 4px; font-size: 8px; font-weight: 750; }
 .device-metric-grid { margin-bottom: 12px; }
 .device-register-panel { overflow: hidden; }
 .device-register-filters { grid-template-columns: minmax(250px,1fr) repeat(3,minmax(125px,auto)) auto; }
@@ -2689,6 +2688,21 @@ body { background: var(--ops-canvas) !important; color: var(--ops-ink) !importan
 .device-detail-panel label.device-toggle-row { display: flex; justify-content: space-between; }.device-toggle-row input { width: 34px; height: 18px; min-height: 18px !important; accent-color: #16a34a; }
 .device-detail-panel dl { display: grid; gap: 8px; margin: 0; }.device-detail-panel dl > div { display: grid; grid-template-columns: 110px minmax(0,1fr); gap: 10px; font-size: 9px; }.device-detail-panel dt { color: #667085; }.device-detail-panel dd { margin: 0; color: #101828; font-weight: 650; }
 .device-detail-panel > footer { padding: 14px; }.device-detail-panel > footer .fleet-button { width: 100%; }
+.device-detail-panel > section.device-danger-zone { background: #fff8f7; }
+.device-danger-zone p { margin: 0; color: #667085; font-size: 9px; line-height: 1.5; }
+.fleet-button.device-delete-button { color: #fff; background: #b42318; border-color: #912018; }
+.fleet-button.device-delete-button:hover:not(:disabled) { background: #912018; border-color: #7a1b14; }
+.device-delete-dialog { width: min(520px,96vw); color: #101828; background: #fff; border-color: #d0d5dd; }
+.device-delete-dialog > header { display: flex; padding: 20px; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid #eaecf0; }
+.device-delete-dialog > header > div { display: flex; align-items: flex-start; gap: 12px; }
+.device-delete-dialog > header h2 { margin: 0 0 4px; color: #101828 !important; font-size: 18px !important; }
+.device-delete-dialog > header p { margin: 0; color: #667085; font-size: 12px; }
+.device-delete-dialog > header > button { width: 32px; height: 32px; padding: 0; color: #667085; background: transparent; border: 0; font-size: 24px; }
+.device-delete-dialog-icon { display: grid; width: 36px; height: 36px; flex: 0 0 auto; place-items: center; color: #b42318; background: #fee4e2; border-radius: 50%; font-size: 18px; font-weight: 800; }
+.device-delete-dialog-body { display: grid; gap: 16px; padding: 20px; }
+.device-delete-dialog-body label { display: grid; gap: 6px; color: #344054; font-size: 12px; }
+.device-delete-dialog-body input { width: 100%; min-height: 42px; padding: 8px 10px; color: #101828; background: #fff; border: 1px solid #98a2b3; border-radius: 6px; font: inherit; }
+.device-delete-dialog > footer { display: flex; padding: 16px 20px 20px; justify-content: flex-end; gap: 10px; }
 
 /* Full machine map selection mirrors the generated right-side inspector. */
 .telemetry-map-page .telemetry-location-card { padding: 10px; }
