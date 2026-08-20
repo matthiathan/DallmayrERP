@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { AccessibleDialog } from '@/components/ui/AccessibleDialog';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
+import { TelemetryEnrollmentWindowControl } from '@/components/features/TelemetryEnrollmentWindowControl';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type DeviceStatus = 'active' | 'disabled';
@@ -411,6 +412,8 @@ export function AdminTelemetryDevices() {
 
         {error ? <div className="fleet-banner is-error" role="alert"><strong>Device update failed.</strong><span>{error}</span></div> : null}
         {message ? <div className="fleet-banner is-success" role="status"><strong>Device management updated.</strong><span>{message}</span></div> : null}
+
+        <TelemetryEnrollmentWindowControl onDeviceEnrolled={loadDevices} />
 
         <section className="fleet-metric-grid device-metric-grid">
           <article className="fleet-metric-card"><span className="fleet-metric-icon is-blue"><NavigationIcon kind="settings" /></span><div><span>Active devices</span><strong>{metrics.total.toLocaleString('en-ZA')}</strong></div><small>Provisioned fleet controllers</small></article>
