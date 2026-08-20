@@ -2670,6 +2670,19 @@ body { background: var(--ops-canvas) !important; color: var(--ops-ink) !importan
 .device-management-workspace.has-device-detail { grid-template-columns: minmax(0,1fr) minmax(340px,380px); }
 .device-management-main { min-width: 0; }
 .device-heading-title { display: flex; align-items: center; gap: 10px; }
+.device-enrollment-panel { display: grid; gap: 13px; margin-bottom: 12px; padding: 16px; }
+.device-enrollment-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.device-enrollment-heading > div { display: grid; gap: 3px; }
+.device-enrollment-heading > div > span { color: #d71920; font-size: 9px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.device-enrollment-heading h2 { margin: 0; color: #101828 !important; font-size: 15px !important; }
+.device-enrollment-heading p { max-width: 720px; margin: 2px 0 0; color: #667085; font-size: 9px; line-height: 1.5; }
+.device-enrollment-status { display: flex; min-height: 42px; padding: 11px 13px; align-items: center; flex-wrap: wrap; gap: 8px 20px; color: #344054; background: #f8fafc; border: 1px solid #eaecf0; border-radius: 7px; font-size: 9px; }
+.device-enrollment-status strong { color: #101828; }
+.device-enrollment-form { display: flex; align-items: end; gap: 10px; }
+.device-enrollment-form > label { display: grid; min-width: min(100%,340px); gap: 5px; color: #344054; font-size: 9px; font-weight: 700; }
+.device-enrollment-form label small { margin-left: 4px; color: #667085; font-size: 8px; font-weight: 500; }
+.device-enrollment-form input { width: 100%; min-height: 38px; padding: 7px 10px; color: #101828; background: #fff; border: 1px solid var(--ops-border); border-radius: 6px; font: inherit; text-transform: uppercase; }
+.device-enrollment-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .device-metric-grid { margin-bottom: 12px; }
 .device-fleet-usage-panel { margin-bottom: 12px; padding: 16px; }
 .device-fleet-usage-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
@@ -2763,6 +2776,8 @@ body { background: var(--ops-canvas) !important; color: var(--ops-ink) !importan
   .fleet-recent-activity-card,
   .analytics-sales-trend,
   .analytics-top-items { grid-column: auto; grid-row: auto; }
+  .device-enrollment-heading,
+  .device-enrollment-form { align-items: stretch; flex-direction: column; }
   .fleet-alert-metric-grid { display: flex; }
   .analytics-filter-bar { grid-template-columns: 1fr 1fr; }
   .analytics-filter-bar .analytics-updated { grid-column: 1 / -1; }
