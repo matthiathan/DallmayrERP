@@ -10,7 +10,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'content-type, x-device-id, x-device-key, x-firmware-version',
+  'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-device-id, x-device-key, x-firmware-version',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
@@ -124,6 +124,15 @@ Deno.serve(async (request: Request) => {
       transport_preference: device.transport_preference ?? 'auto',
       wifi_enabled: Boolean(device.wifi_enabled),
       cellular_enabled: Boolean(device.cellular_enabled),
+      cellular_profile: {
+        carrier: 'Vodacom South Africa',
+        apn: 'internet',
+        username: 'guest',
+        password: '',
+        authentication: 'pap',
+        mcc: '655',
+        mnc: '01',
+      },
       location: {
         enabled: Boolean(device.location_enabled),
         interval_minutes: locationIntervalMinutes,
@@ -134,6 +143,17 @@ Deno.serve(async (request: Request) => {
       counter_due: counterDue(mode, counterIntervalMinutes, device.last_counter_at),
       heartbeat_due: intervalDue(heartbeatIntervalMinutes, device.last_heartbeat_at),
       location_due: Boolean(device.location_enabled) && intervalDue(locationIntervalMinutes, device.last_location_at),
+    },
+    test_environment: {
+      safe_payload_type: 'simulation_snapshot',
+      production_totals_affected: false,
+      usage_reporting: {
+        counter_epoch: 'data_usage.counter_epoch',
+        application_transmit_total: 'data_usage.application_tx_bytes_total',
+        application_receive_total: 'data_usage.application_rx_bytes_total',
+        modem_transmit_total: 'data_usage.modem_tx_bytes_total',
+        modem_receive_total: 'data_usage.modem_rx_bytes_total',
+      },
     },
   });
 });

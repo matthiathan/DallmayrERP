@@ -1,2 +1,8 @@
 [functions.telemetry-ingest]
-verify_jwt = false
+verify_jwt = true
+
+[functions.telemetry-config]
+verify_jwt = true
+
+[functions.telemetry-enroll]
+verify_jwt = true

@@ -14,6 +14,7 @@ The application links Dallmayr machine records to their installed telemetry cont
 - Item quantities, failed vends, product rankings and reporting trends.
 - Active fault codes with severity and first/last detection times.
 - Telemetry connection details, firmware, Wi-Fi and cellular signal information.
+- Per-device and fleet-wide application/modem mobile-data usage with 30-day projections.
 - Last-known machine locations and movement monitoring.
 - Detailed per-machine overview, sales, errors, telemetry and configuration views.
 
@@ -52,5 +53,7 @@ npm run typecheck
 npm test
 npm run build
 ```
+
+For the safe Vodacom cellular test, Air780E firmware commands, APN profile and data-usage counter contract, see [Vodacom telemetry test environment](docs/VODACOM_TELEMETRY_TEST_ENVIRONMENT.md).
 
 The GitHub Actions workflow runs the locked install and production build for pushes and pull requests to `main`.

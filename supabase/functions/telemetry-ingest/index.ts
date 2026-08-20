@@ -12,7 +12,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'content-type, x-device-id, x-device-key, x-firmware-version',
+  'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-device-id, x-device-key, x-firmware-version',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
@@ -38,6 +38,11 @@ function constantTimeEqual(left: string, right: string) {
 function intOrNull(value: unknown) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.trunc(parsed) : null;
+}
+
+function nonNegativeIntegerOrNull(value: unknown) {
+  const parsed = intOrNull(value);
+  return parsed !== null && parsed >= 0 ? parsed : null;
 }
 
 function numberOrNull(value: unknown) {
@@ -181,5 +186,26 @@ Deno.serve(async (request: Request) => {
     ? { ...(result as Record<string, unknown>), machine_link: machineLink, location: locationResult }
     : { accepted: true, result, machine_link: machineLink, location: locationResult };
 
-  return jsonResponse(responseBody);
+  const usagePayload = payload.data_usage && typeof payload.data_usage === 'object' && !Array.isArray(payload.data_usage)
+    ? payload.data_usage as Record<string, unknown>
+    : {};
+  const responseBytes = new TextEncoder().encode(JSON.stringify(responseBody)).byteLength;
+  const { data: usageResult, error: usageError } = await supabase.rpc('record_telemetry_data_usage', {
+    p_device_id: device.id,
+    p_transport: transport ?? 'unknown',
+    p_request_bytes: new TextEncoder().encode(bodyText).byteLength,
+    p_response_bytes: responseBytes,
+    p_counter_epoch: typeof usagePayload.counter_epoch === 'string' ? usagePayload.counter_epoch.slice(0, 120) : null,
+    p_application_tx_bytes_total: nonNegativeIntegerOrNull(usagePayload.application_tx_bytes_total),
+    p_application_rx_bytes_total: nonNegativeIntegerOrNull(usagePayload.application_rx_bytes_total),
+    p_modem_tx_bytes_total: nonNegativeIntegerOrNull(usagePayload.tx_bytes_total ?? usagePayload.modem_tx_bytes_total),
+    p_modem_rx_bytes_total: nonNegativeIntegerOrNull(usagePayload.rx_bytes_total ?? usagePayload.modem_rx_bytes_total),
+  });
+
+  return jsonResponse({
+    ...responseBody,
+    data_usage: usageError
+      ? { recorded: false, message: 'Data-usage recording is temporarily unavailable.' }
+      : usageResult,
+  });
 });
