@@ -68,6 +68,12 @@ type DataUsageSummary = {
   projected_monthly_modem_bytes: number | null;
 };
 
+type DevicePolicyState = {
+  device_id: string;
+  telemetry_mode?: TelemetryMode;
+  heartbeat_interval_minutes?: number;
+};
+
 function formatDate(value: string | null) {
   if (!value) return 'Never';
   return new Date(value).toLocaleString('en-ZA', {
@@ -79,8 +85,10 @@ function formatDate(value: string | null) {
   });
 }
 
-function isOnline(value: string | null) {
-  return Boolean(value && Date.now() - new Date(value).getTime() <= 30 * 60 * 1000);
+function isOnline(value: string | null, heartbeatIntervalMinutes: number, nowMs = Date.now()) {
+  if (!value) return false;
+  const heartbeatMinutes = Math.max(1, Number(heartbeatIntervalMinutes) || 1);
+  return nowMs - new Date(value).getTime() <= heartbeatMinutes * 2 * 60 * 1000;
 }
 
 function formatBytes(value: number | null | undefined) {
@@ -121,6 +129,8 @@ export function AdminTelemetryDevices() {
   const [message, setMessage] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [deviceModes, setDeviceModes] = useState<Record<string, TelemetryMode>>({});
+  const [deviceHeartbeatIntervals, setDeviceHeartbeatIntervals] = useState<Record<string, number>>({});
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const [transportPreference, setTransportPreference] = useState<TransportPreference>('auto');
   const [wifiEnabled, setWifiEnabled] = useState(true);
   const [cellularEnabled, setCellularEnabled] = useState(true);
@@ -160,12 +170,15 @@ export function AdminTelemetryDevices() {
 
     const rows = (data ?? []) as TelemetryDevice[];
     setDevices(rows);
-    const overview = (overviewData ?? {}) as { device_states?: Array<{ device_id: string; telemetry_mode?: TelemetryMode }> };
-    setDeviceModes(Object.fromEntries((overview.device_states ?? []).map((row) => [row.device_id, row.telemetry_mode ?? 'live'])));
+    const overview = (overviewData ?? {}) as { device_states?: DevicePolicyState[] };
+    const states = overview.device_states ?? [];
+    setDeviceModes(Object.fromEntries(states.map((row) => [row.device_id, row.telemetry_mode ?? 'live'])));
+    setDeviceHeartbeatIntervals(Object.fromEntries(states.map((row) => [row.device_id, Math.max(1, Number(row.heartbeat_interval_minutes ?? 1))])));
     const usageRows = usageError ? [] : (usageData ?? []) as DataUsageSummary[];
     setDataUsageByDevice(Object.fromEntries(usageRows.map((row) => [row.device_id, row])));
     setDataUsageAvailable(!usageError);
     setSelectedDeviceId((current) => current && rows.some((row) => row.id === current) ? current : null);
+    setNowMs(Date.now());
 
     const machineIds = Array.from(new Set(rows.map((row) => row.machine_id).filter((value): value is string => Boolean(value))));
     if (machineIds.length > 0) {
@@ -194,6 +207,11 @@ export function AdminTelemetryDevices() {
       setLoading(false);
     });
   }, [loadDevices]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!selectedDevice) return;
@@ -325,6 +343,11 @@ export function AdminTelemetryDevices() {
       delete next[deletedDevice.id];
       return next;
     });
+    setDeviceHeartbeatIntervals((current) => {
+      const next = { ...current };
+      delete next[deletedDevice.id];
+      return next;
+    });
     setSelectedDeviceId(null);
     setDeleteDialogOpen(false);
     setDeleteConfirmation('');
@@ -339,13 +362,17 @@ export function AdminTelemetryDevices() {
     setError(null);
   }
 
+  const deviceIsOnline = useCallback((device: TelemetryDevice) => (
+    isOnline(device.last_seen_at, deviceHeartbeatIntervals[device.id] ?? 1, nowMs)
+  ), [deviceHeartbeatIntervals, nowMs]);
+
   const metrics = useMemo(() => ({
     total: devices.filter((device) => device.status === 'active').length,
-    online: devices.filter((device) => device.status === 'active' && isOnline(device.last_seen_at)).length,
-    offline: devices.filter((device) => device.status === 'active' && !isOnline(device.last_seen_at)).length,
+    online: devices.filter((device) => device.status === 'active' && deviceIsOnline(device)).length,
+    offline: devices.filter((device) => device.status === 'active' && !deviceIsOnline(device)).length,
     unassigned: devices.filter((device) => !device.machine_id).length,
     pending: devices.filter((device) => device.status === 'active' && (!device.last_seen_at || new Date(device.updated_at).getTime() > new Date(device.last_seen_at).getTime())).length,
-  }), [devices]);
+  }), [deviceIsOnline, devices]);
 
   const fleetUsage = useMemo(() => Object.values(dataUsageByDevice).reduce((total, usage) => {
     const hasDeviceApplication = Number(usage.device_application_sample_count ?? 0) > 0;
@@ -380,8 +407,8 @@ export function AdminTelemetryDevices() {
   }), [dataUsageByDevice]);
 
   const filteredDevices = useMemo(() => devices.filter((device) => {
-    if (statusFilter === 'online' && !isOnline(device.last_seen_at)) return false;
-    if (statusFilter === 'offline' && isOnline(device.last_seen_at)) return false;
+    if (statusFilter === 'online' && !deviceIsOnline(device)) return false;
+    if (statusFilter === 'offline' && deviceIsOnline(device)) return false;
     if (statusFilter === 'unassigned' && device.machine_id) return false;
     if (networkFilter !== 'all' && device.last_transport !== networkFilter) return false;
     if (modeFilter !== 'all' && deviceModes[device.id] !== modeFilter) return false;
@@ -389,7 +416,7 @@ export function AdminTelemetryDevices() {
     if (!term) return true;
     const machine = device.machine_id ? assignedMachines[device.machine_id] : null;
     return [device.device_code, device.firmware_version, device.profile_id, device.cellular_operator, machine ? machineLabel(machine) : 'unassigned'].join(' ').toLowerCase().includes(term);
-  }), [assignedMachines, deviceModes, deviceSearch, devices, modeFilter, networkFilter, statusFilter]);
+  }), [assignedMachines, deviceIsOnline, deviceModes, deviceSearch, devices, modeFilter, networkFilter, statusFilter]);
   const pageSize = 50;
   const pageCount = Math.max(1, Math.ceil(filteredDevices.length / pageSize));
   const currentPage = Math.min(page, pageCount);
@@ -418,8 +445,8 @@ export function AdminTelemetryDevices() {
         <section className="fleet-metric-grid device-metric-grid">
           <article className="fleet-metric-card"><span className="fleet-metric-icon is-blue"><NavigationIcon kind="settings" /></span><div><span>Active devices</span><strong>{metrics.total.toLocaleString('en-ZA')}</strong></div><small>Provisioned fleet controllers</small></article>
           <article className="fleet-metric-card"><span className="fleet-metric-icon is-amber"><NavigationIcon kind="users" /></span><div><span>Unassigned</span><strong>{metrics.unassigned.toLocaleString('en-ZA')}</strong></div><small>Needs a machine assignment</small></article>
-          <article className="fleet-metric-card"><span className="fleet-metric-icon is-green"><NavigationIcon kind="telemetry" /></span><div><span>Online</span><strong>{metrics.online.toLocaleString('en-ZA')}</strong></div><small>Seen within 30 minutes</small></article>
-          <article className="fleet-metric-card"><span className="fleet-metric-icon is-grey"><NavigationIcon kind="telemetry" /></span><div><span>Offline</span><strong>{metrics.offline.toLocaleString('en-ZA')}</strong></div><small>No recent heartbeat</small></article>
+          <article className="fleet-metric-card"><span className="fleet-metric-icon is-green"><NavigationIcon kind="telemetry" /></span><div><span>Online</span><strong>{metrics.online.toLocaleString('en-ZA')}</strong></div><small>Within 2× the DB heartbeat interval</small></article>
+          <article className="fleet-metric-card"><span className="fleet-metric-icon is-grey"><NavigationIcon kind="telemetry" /></span><div><span>Offline</span><strong>{metrics.offline.toLocaleString('en-ZA')}</strong></div><small>Missed two heartbeat windows</small></article>
           <article className="fleet-metric-card"><span className="fleet-metric-icon is-red"><NavigationIcon kind="queue" /></span><div><span>Updates pending</span><strong>{metrics.pending.toLocaleString('en-ZA')}</strong></div><small>Awaiting device sync</small></article>
         </section>
 
@@ -438,7 +465,7 @@ export function AdminTelemetryDevices() {
         <section className="fleet-panel device-register-panel">
           <div className="fleet-filters device-register-filters"><label className="fleet-search"><NavigationIcon kind="search" /><input aria-label="Search telemetry devices" placeholder="Search devices or assigned machines" value={deviceSearch} onChange={(event) => setDeviceSearch(event.target.value)} /></label><label><span>Status</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">All</option><option value="online">Online</option><option value="offline">Offline</option><option value="unassigned">Unassigned</option></select></label><label><span>Network</span><select value={networkFilter} onChange={(event) => setNetworkFilter(event.target.value)}><option value="all">All</option><option value="wifi">Wi-Fi</option><option value="cellular">Cellular</option></select></label><label><span>Reporting mode</span><select value={modeFilter} onChange={(event) => setModeFilter(event.target.value)}><option value="all">All</option><option value="live">Live</option><option value="daily">Daily</option><option value="monthly">Monthly</option></select></label><button className="fleet-button secondary" onClick={() => { setDeviceSearch(''); setStatusFilter('all'); setNetworkFilter('all'); setModeFilter('all'); }} type="button">Clear filters</button></div>
 
-          {loading && devices.length === 0 ? <HamsterLoader label="Loading telemetry devices" /> : <div className="fleet-table-scroll"><table className="fleet-machine-table device-register-table"><thead><tr><th>Device ID</th><th>Assigned machine</th><th>Protocol</th><th>Firmware</th><th>Network</th><th>Signal</th><th>30-day data</th><th>Reporting mode</th><th>Last config sync</th><th>Status</th><th>Actions</th></tr></thead><tbody>{visibleDevices.map((device) => { const machine = device.machine_id ? assignedMachines[device.machine_id] : null; const online = isOnline(device.last_seen_at); const usage = dataUsageByDevice[device.id]; const modemMeasured = Number(usage?.modem_sample_count ?? 0) > 0; const applicationMinimum = Math.max(Number(usage?.application_bytes ?? 0), Number(usage?.device_application_bytes ?? 0)); return <tr className={selectedDeviceId === device.id ? 'is-selected' : undefined} key={device.id}><td><button className="fleet-machine-link" onClick={() => manageDevice(device)} type="button"><strong>{device.device_code}</strong></button></td><td><strong>{machine ? (machine.machine_name ?? machine.model ?? machine.serial_number ?? device.machine_id) : 'Unassigned'}</strong><span>{machine?.serial_number ?? 'No machine linked'}</span></td><td>{device.profile_id ?? 'MDB'}</td><td>{device.firmware_version ?? 'Unknown'}</td><td><strong>{device.last_transport === 'cellular' ? 'Cellular' : device.last_transport === 'wifi' ? 'Wi-Fi' : 'Not reported'}</strong><span>{device.cellular_operator ?? ''}</span></td><td><span className={`device-signal is-${online ? 'good' : 'offline'}`} aria-label={device.wifi_rssi === null ? 'Signal not reported' : `${device.wifi_rssi} dBm`}><i /><i /><i /><i /></span></td><td><strong>{modemMeasured ? formatBytes(usage.measured_modem_bytes) : `≥ ${formatBytes(applicationMinimum)}`}</strong><span>{modemMeasured ? 'Modem measured' : 'Application minimum'}</span></td><td><span className="fleet-mode-label">{deviceModes[device.id] ?? 'live'}</span></td><td><strong>{formatDate(device.last_seen_at)}</strong></td><td><span className={`fleet-status-pill ${online ? 'is-success' : 'is-neutral'}`}><i />{online ? 'Online' : 'Offline'}</span></td><td><button aria-label={`Manage ${device.device_code}`} className="fleet-row-action" onClick={() => manageDevice(device)} type="button">•••</button></td></tr>; })}</tbody></table></div>}
+          {loading && devices.length === 0 ? <HamsterLoader label="Loading telemetry devices" /> : <div className="fleet-table-scroll"><table className="fleet-machine-table device-register-table"><thead><tr><th>Device ID</th><th>Assigned machine</th><th>Protocol</th><th>Firmware</th><th>Network</th><th>Signal</th><th>30-day data</th><th>Reporting mode</th><th>Last config sync</th><th>Status</th><th>Actions</th></tr></thead><tbody>{visibleDevices.map((device) => { const machine = device.machine_id ? assignedMachines[device.machine_id] : null; const online = deviceIsOnline(device); const usage = dataUsageByDevice[device.id]; const modemMeasured = Number(usage?.modem_sample_count ?? 0) > 0; const applicationMinimum = Math.max(Number(usage?.application_bytes ?? 0), Number(usage?.device_application_bytes ?? 0)); return <tr className={selectedDeviceId === device.id ? 'is-selected' : undefined} key={device.id}><td><button className="fleet-machine-link" onClick={() => manageDevice(device)} type="button"><strong>{device.device_code}</strong></button></td><td><strong>{machine ? (machine.machine_name ?? machine.model ?? machine.serial_number ?? device.machine_id) : 'Unassigned'}</strong><span>{machine?.serial_number ?? 'No machine linked'}</span></td><td>{device.profile_id ?? 'MDB'}</td><td>{device.firmware_version ?? 'Unknown'}</td><td><strong>{device.last_transport === 'cellular' ? 'Cellular' : device.last_transport === 'wifi' ? 'Wi-Fi' : 'Not reported'}</strong><span>{device.cellular_operator ?? ''}</span></td><td><span className={`device-signal is-${online ? 'good' : 'offline'}`} aria-label={device.wifi_rssi === null ? 'Signal not reported' : `${device.wifi_rssi} dBm`}><i /><i /><i /><i /></span></td><td><strong>{modemMeasured ? formatBytes(usage.measured_modem_bytes) : `≥ ${formatBytes(applicationMinimum)}`}</strong><span>{modemMeasured ? 'Modem measured' : 'Application minimum'}</span></td><td><span className="fleet-mode-label">{deviceModes[device.id] ?? 'live'}</span></td><td><strong>{formatDate(device.last_seen_at)}</strong><span>Heartbeat: {deviceHeartbeatIntervals[device.id] ?? 1} min</span></td><td><span className={`fleet-status-pill ${online ? 'is-success' : 'is-neutral'}`}><i />{online ? 'Online' : 'Offline'}</span></td><td><button aria-label={`Manage ${device.device_code}`} className="fleet-row-action" onClick={() => manageDevice(device)} type="button">•••</button></td></tr>; })}</tbody></table></div>}
           <footer className="fleet-table-footer"><div className="fleet-table-footer-copy"><strong>Showing {filteredDevices.length ? (currentPage - 1) * pageSize + 1 : 0}–{Math.min(currentPage * pageSize, filteredDevices.length)} of {filteredDevices.length.toLocaleString('en-ZA')}</strong><span>Last refreshed {lastUpdated ? formatDate(lastUpdated.toISOString()) : 'never'}</span></div><div className="fleet-table-pagination"><button disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} type="button">Previous</button><span>Page {currentPage} of {pageCount}</span><button disabled={currentPage === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} type="button">Next</button></div></footer>
         </section>
       </div>
@@ -454,7 +481,7 @@ export function AdminTelemetryDevices() {
 
         <section><h3>Reporting</h3><label><span>Reporting mode</span><select value={reportingMode} onChange={(event) => setReportingMode(event.target.value as TelemetryMode)}><option value="live">Live</option><option value="daily">Daily</option><option value="monthly">Monthly</option></select></label><label><span>Location update interval</span><select value={locationInterval} onChange={(event) => setLocationInterval(Number(event.target.value))}><option value={1}>1 minute</option><option value={5}>5 minutes</option><option value={15}>15 minutes</option><option value={30}>30 minutes</option><option value={60}>1 hour</option><option value={1440}>Daily</option></select></label><label><span>Movement threshold</span><select value={movementThreshold} onChange={(event) => setMovementThreshold(Number(event.target.value))}><option value={25}>±25 m</option><option value={50}>±50 m</option><option value={100}>±100 m</option><option value={250}>±250 m</option><option value={500}>±500 m</option></select></label></section>
 
-        <section><h3>Device information</h3><dl><div><dt>Firmware</dt><dd>{selectedDevice.firmware_version ?? 'Not reported'}</dd></div><div><dt>Network</dt><dd>{selectedDevice.last_transport ?? 'Not reported'}</dd></div><div><dt>Signal</dt><dd>{selectedDevice.wifi_rssi !== null ? `${selectedDevice.wifi_rssi} dBm` : selectedDevice.cellular_csq !== null ? `CSQ ${selectedDevice.cellular_csq}` : 'Not reported'}</dd></div><div><dt>Last upload</dt><dd>{formatDate(selectedDevice.last_upload_at)}</dd></div><div><dt>Sequence</dt><dd>{selectedDevice.last_sequence.toLocaleString('en-ZA')}</dd></div></dl></section>
+        <section><h3>Device information</h3><dl><div><dt>Firmware</dt><dd>{selectedDevice.firmware_version ?? 'Not reported'}</dd></div><div><dt>Network</dt><dd>{selectedDevice.last_transport ?? 'Not reported'}</dd></div><div><dt>Signal</dt><dd>{selectedDevice.wifi_rssi !== null ? `${selectedDevice.wifi_rssi} dBm` : selectedDevice.cellular_csq !== null ? `CSQ ${selectedDevice.cellular_csq}` : 'Not reported'}</dd></div><div><dt>Last upload</dt><dd>{formatDate(selectedDevice.last_upload_at)}</dd></div><div><dt>Heartbeat policy</dt><dd>{deviceHeartbeatIntervals[selectedDevice.id] ?? 1} minute(s)</dd></div><div><dt>Sequence</dt><dd>{selectedDevice.last_sequence.toLocaleString('en-ZA')}</dd></div></dl></section>
 
         <section className="device-data-usage"><h3>Mobile data usage · last 30 days</h3>{selectedUsage ? <dl><div><dt>Upload requests</dt><dd>{Number(selectedUsage.request_count).toLocaleString('en-ZA')}</dd></div><div><dt>Telemetry payload</dt><dd>{formatBytes(selectedUsage.application_bytes)}</dd></div><div><dt>Device-reported transfer</dt><dd>{Number(selectedUsage.device_application_sample_count) > 0 ? formatBytes(selectedUsage.device_application_bytes) : 'Awaiting V6.1 firmware'}</dd></div><div><dt>Modem measured</dt><dd>{Number(selectedUsage.modem_sample_count) > 0 ? formatBytes(selectedUsage.measured_modem_bytes) : 'Awaiting modem counters'}</dd></div><div><dt>Monthly projection</dt><dd>{formatBytes(selectedUsage.projected_monthly_modem_bytes ?? selectedUsage.projected_monthly_device_application_bytes ?? selectedUsage.projected_monthly_application_bytes)}</dd></div><div><dt>Last measured</dt><dd>{formatDate(selectedUsage.last_reported_at)}</dd></div></dl> : <p>{dataUsageAvailable ? 'No accepted uploads have been recorded in this period.' : 'Data-usage reporting will appear after the database migration is deployed.'}</p>}<p className="device-usage-note">Telemetry payload is counted at the server. V6.1 device counters also include configuration and enrollment JSON bodies. Neither includes TLS, TCP/IP or radio overhead; Vodacom billing remains the final source of truth.</p></section>
 
@@ -477,6 +504,8 @@ export function AdminTelemetryDevices() {
             <div className="fleet-banner is-error"><strong>All associated telemetry will be deleted.</strong><span>This includes item sales, machine errors, counters, readings and location history. The assigned machine itself will not be deleted.</span></div>
             <label htmlFor="delete-device-confirmation">Type <strong>{selectedDevice.device_code}</strong> to confirm</label>
             <input
+              aria-describedby="delete-device-warning"
+              autoCapitalize="off"
               autoComplete="off"
               data-dialog-initial-focus
               disabled={deleting}
