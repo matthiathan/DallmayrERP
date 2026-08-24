@@ -2683,6 +2683,13 @@ body { background: var(--ops-canvas) !important; color: var(--ops-ink) !importan
 .device-enrollment-form label small { margin-left: 4px; color: #667085; font-size: 8px; font-weight: 500; }
 .device-enrollment-form input { width: 100%; min-height: 38px; padding: 7px 10px; color: #101828; background: #fff; border: 1px solid var(--ops-border); border-radius: 6px; font: inherit; text-transform: uppercase; }
 .device-enrollment-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.device-manual-token { display: grid; grid-template-columns: minmax(0,1fr) minmax(210px,.7fr) auto; gap: 14px; padding: 13px; align-items: center; color: #344054; background: #f0fdf4; border: 1px solid #a6e7bd; border-radius: 8px; }
+.device-manual-token > div:first-child { display: grid; min-width: 0; gap: 5px; }
+.device-manual-token span { color: #087443; font-size: 8px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.device-manual-token code { display: block; overflow-x: auto; padding: 9px 10px; color: #101828; background: #fff; border: 1px solid #b7dfc5; border-radius: 6px; font-family: ui-monospace,SFMono-Regular,Consolas,monospace; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.device-manual-token small { color: #475467; font-size: 8px; }
+.device-manual-token p { margin: 0; color: #475467; font-size: 8px; line-height: 1.5; }
+.device-manual-token .device-enrollment-actions { justify-content: flex-end; }
 .device-metric-grid { margin-bottom: 12px; }
 .device-fleet-usage-panel { margin-bottom: 12px; padding: 16px; }
 .device-fleet-usage-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
@@ -2778,6 +2785,8 @@ body { background: var(--ops-canvas) !important; color: var(--ops-ink) !importan
   .analytics-top-items { grid-column: auto; grid-row: auto; }
   .device-enrollment-heading,
   .device-enrollment-form { align-items: stretch; flex-direction: column; }
+  .device-manual-token { grid-template-columns: 1fr; align-items: stretch; }
+  .device-manual-token .device-enrollment-actions { justify-content: flex-start; }
   .fleet-alert-metric-grid { display: flex; }
   .analytics-filter-bar { grid-template-columns: 1fr 1fr; }
   .analytics-filter-bar .analytics-updated { grid-column: 1 / -1; }

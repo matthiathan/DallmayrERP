@@ -53,3 +53,6 @@ $$;
 
 revoke all on function public.delete_telemetry_device(uuid, text) from public;
 grant execute on function public.delete_telemetry_device(uuid, text) to authenticated;
+
+-- Make the new RPC signature immediately visible to the Data API.
+notify pgrst, 'reload schema';

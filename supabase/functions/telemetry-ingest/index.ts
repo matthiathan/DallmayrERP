@@ -150,6 +150,13 @@ Deno.serve(async (request: Request) => {
     });
     result = response.data;
     ingestError = response.error;
+  } else if (payload.type === 'config_ack') {
+    const response = await supabase.rpc('record_telemetry_config_ack', {
+      p_device_id: device.id,
+      p_payload: payload,
+    });
+    result = response.data;
+    ingestError = response.error;
   } else {
     const response = await supabase.rpc('ingest_telemetry_payload_v3', {
       p_device_id: device.id,
