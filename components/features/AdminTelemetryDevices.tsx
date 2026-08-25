@@ -450,6 +450,21 @@ export function AdminTelemetryDevices() {
     projectedMonthlyBytes: 0,
   }), [dataUsageByDevice]);
 
+  const fleetPrepaid = useMemo(() => {
+    const reportedBalances = Object.values(prepaidByDevice).filter((balance) => balance.remaining_bytes !== null && balance.remaining_bytes !== undefined);
+    return {
+      remainingBytes: reportedBalances.reduce((total, balance) => total + Number(balance.remaining_bytes ?? 0), 0),
+      reportingDevices: reportedBalances.length,
+      needsTopUp: reportedBalances.filter((balance) => ['low', 'critical', 'depleted'].includes(balance.alert_level)).length,
+    };
+  }, [prepaidByDevice]);
+
+  const selectedUsageBytes = selectedUsage
+    ? Number(selectedUsage.modem_sample_count ?? 0) > 0
+      ? Number(selectedUsage.measured_modem_bytes ?? 0)
+      : Math.max(Number(selectedUsage.application_bytes ?? 0), Number(selectedUsage.device_application_bytes ?? 0))
+    : null;
+
   const filteredDevices = useMemo(() => devices.filter((device) => {
     if (statusFilter === 'online' && !isOnline(device.last_seen_at)) return false;
     if (statusFilter === 'offline' && isOnline(device.last_seen_at)) return false;
@@ -496,11 +511,12 @@ export function AdminTelemetryDevices() {
         </section>
 
         <section className="fleet-panel device-fleet-usage-panel">
-          <div className="device-fleet-usage-heading"><div><span>Mobile data usage</span><h2>Fleet total · last 30 days</h2></div><small>{fleetUsage.reportingDevices.toLocaleString('en-ZA')} devices reporting</small></div>
+          <div className="device-fleet-usage-heading"><div><span>Mobile data usage and balance</span><h2>Fleet total · last 30 days</h2></div><small>{fleetUsage.reportingDevices.toLocaleString('en-ZA')} devices reporting</small></div>
           <dl>
             <div><dt>Application minimum</dt><dd>{formatBytes(fleetUsage.applicationMinimum)}</dd><span>Largest exact body count per device</span></div>
             <div><dt>Device-reported transfer</dt><dd>{fleetUsage.deviceApplicationDevices ? formatBytes(fleetUsage.deviceApplicationBytes) : 'Awaiting firmware'}</dd><span>{fleetUsage.deviceApplicationDevices.toLocaleString('en-ZA')} of {fleetUsage.reportingDevices.toLocaleString('en-ZA')} reporting counters</span></div>
             <div><dt>Modem measured</dt><dd>{fleetUsage.modemMeasuredDevices ? formatBytes(fleetUsage.measuredModemBytes) : 'Awaiting counters'}</dd><span>{fleetUsage.modemMeasuredDevices.toLocaleString('en-ZA')} of {fleetUsage.reportingDevices.toLocaleString('en-ZA')} devices</span></div>
+            <div className="device-fleet-prepaid-total"><dt>Prepaid remaining</dt><dd className={fleetPrepaid.needsTopUp > 0 ? 'is-warning' : undefined}>{fleetPrepaid.reportingDevices ? formatBytes(fleetPrepaid.remainingBytes) : 'Awaiting balance'}</dd><span>{fleetPrepaid.reportingDevices.toLocaleString('en-ZA')} of {metrics.total.toLocaleString('en-ZA')} active devices · {fleetPrepaid.needsTopUp ? `${fleetPrepaid.needsTopUp.toLocaleString('en-ZA')} need top-up` : 'No top-ups required'}</span></div>
             <div><dt>Upload requests</dt><dd>{fleetUsage.requestCount.toLocaleString('en-ZA')}</dd><span>Accepted telemetry uploads</span></div>
             <div><dt>Monthly projection</dt><dd>{formatBytes(fleetUsage.projectedMonthlyBytes)}</dd><span>Best available measure per device</span></div>
           </dl>
@@ -540,7 +556,15 @@ export function AdminTelemetryDevices() {
 
         <section><h3>Device information</h3><dl><div><dt>Firmware</dt><dd>{selectedDevice.firmware_version ?? 'Not reported'}</dd></div><div><dt>Network</dt><dd>{selectedDevice.last_transport ?? 'Not reported'}</dd></div><div><dt>Signal</dt><dd>{selectedDevice.wifi_rssi !== null ? `${selectedDevice.wifi_rssi} dBm` : selectedDevice.cellular_csq !== null ? `CSQ ${selectedDevice.cellular_csq}` : 'Not reported'}</dd></div><div><dt>Last upload</dt><dd>{formatDate(selectedDevice.last_upload_at)}</dd></div><div><dt>Sequence</dt><dd>{selectedDevice.last_sequence.toLocaleString('en-ZA')}</dd></div></dl></section>
 
-        <section className="device-data-usage"><h3>Mobile data usage · last 30 days</h3>{selectedUsage ? <dl><div><dt>Upload requests</dt><dd>{Number(selectedUsage.request_count).toLocaleString('en-ZA')}</dd></div><div><dt>Telemetry payload</dt><dd>{formatBytes(selectedUsage.application_bytes)}</dd></div><div><dt>Device-reported transfer</dt><dd>{Number(selectedUsage.device_application_sample_count) > 0 ? formatBytes(selectedUsage.device_application_bytes) : 'Awaiting V6.1 firmware'}</dd></div><div><dt>Modem measured</dt><dd>{Number(selectedUsage.modem_sample_count) > 0 ? formatBytes(selectedUsage.measured_modem_bytes) : 'Awaiting modem counters'}</dd></div><div><dt>Monthly projection</dt><dd>{formatBytes(selectedUsage.projected_monthly_modem_bytes ?? selectedUsage.projected_monthly_device_application_bytes ?? selectedUsage.projected_monthly_application_bytes)}</dd></div><div><dt>Last measured</dt><dd>{formatDate(selectedUsage.last_reported_at)}</dd></div></dl> : <p>{dataUsageAvailable ? 'No accepted uploads have been recorded in this period.' : 'Data-usage reporting will appear after the database migration is deployed.'}</p>}<p className="device-usage-note">Telemetry payload is counted at the server. V6.1 device counters also include configuration and enrollment JSON bodies. Neither includes TLS, TCP/IP or radio overhead; Vodacom billing remains the final source of truth.</p></section>
+        <section className="device-data-usage">
+          <h3>Mobile data · usage and balance</h3>
+          <div className="device-data-usage-summary">
+            <div><span>Used · last 30 days</span><strong>{selectedUsageBytes === null ? 'No usage reported' : formatBytes(selectedUsageBytes)}</strong><small>{selectedUsage ? Number(selectedUsage.modem_sample_count ?? 0) > 0 ? 'Modem measured' : 'Application minimum' : 'Awaiting accepted uploads'}</small></div>
+            <div className={`is-${selectedPrepaid?.alert_level ?? 'unknown'}`}><span>Prepaid remaining</span><strong>{selectedPrepaid?.remaining_bytes === null || selectedPrepaid?.remaining_bytes === undefined ? 'Awaiting check' : formatBytes(selectedPrepaid.remaining_bytes)}</strong><small>{selectedPrepaid?.request_pending ? 'Check queued' : selectedPrepaid?.checked_at ? `Checked ${formatDate(selectedPrepaid.checked_at)}` : 'No balance received yet'}</small></div>
+          </div>
+          {selectedUsage ? <dl><div><dt>Upload requests</dt><dd>{Number(selectedUsage.request_count).toLocaleString('en-ZA')}</dd></div><div><dt>Telemetry payload</dt><dd>{formatBytes(selectedUsage.application_bytes)}</dd></div><div><dt>Device-reported transfer</dt><dd>{Number(selectedUsage.device_application_sample_count) > 0 ? formatBytes(selectedUsage.device_application_bytes) : 'Awaiting V6.1 firmware'}</dd></div><div><dt>Modem measured</dt><dd>{Number(selectedUsage.modem_sample_count) > 0 ? formatBytes(selectedUsage.measured_modem_bytes) : 'Awaiting modem counters'}</dd></div><div><dt>Monthly projection</dt><dd>{formatBytes(selectedUsage.projected_monthly_modem_bytes ?? selectedUsage.projected_monthly_device_application_bytes ?? selectedUsage.projected_monthly_application_bytes)}</dd></div><div><dt>Last measured</dt><dd>{formatDate(selectedUsage.last_reported_at)}</dd></div></dl> : <p>{dataUsageAvailable ? 'No accepted uploads have been recorded in this period.' : 'Data-usage reporting will appear after the database migration is deployed.'}</p>}
+          <p className="device-usage-note">Telemetry payload is counted at the server. V6.1 device counters also include configuration and enrollment JSON bodies. Neither includes TLS, TCP/IP or radio overhead; Vodacom billing remains the final source of truth.</p>
+        </section>
 
         <section><h3>Location override</h3><label><span>Optional location text</span><input value={locationOverride} onChange={(event) => setLocationOverride(event.target.value)} placeholder="Use the machine site by default" /></label></section>
         <section className="device-danger-zone"><h3>Delete device</h3><p>Permanently remove this device and all of its sales, errors, counters and location history.</p><button className="fleet-button device-delete-button" disabled={saving || deleting} onClick={openDeleteDialog} type="button">Delete telemetry device</button></section>

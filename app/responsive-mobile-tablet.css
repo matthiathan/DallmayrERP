@@ -2696,11 +2696,12 @@ body { background: var(--ops-canvas) !important; color: var(--ops-ink) !importan
 .device-fleet-usage-heading span { display: block; margin-bottom: 3px; color: #d71920; font-size: 9px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
 .device-fleet-usage-heading h2 { margin: 0; color: #101828 !important; font-size: 15px !important; }
 .device-fleet-usage-heading small { color: #667085; font-size: 9px; }
-.device-fleet-usage-panel dl { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); margin: 0; border: 1px solid #eaecf0; border-radius: 8px; overflow: hidden; }
+.device-fleet-usage-panel dl { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); margin: 0; border: 1px solid #eaecf0; border-radius: 8px; overflow: hidden; }
 .device-fleet-usage-panel dl > div { display: grid; gap: 4px; min-width: 0; padding: 13px 14px; border-right: 1px solid #eaecf0; }
 .device-fleet-usage-panel dl > div:last-child { border-right: 0; }
 .device-fleet-usage-panel dt { color: #667085; font-size: 9px; }
 .device-fleet-usage-panel dd { margin: 0; color: #101828; font-size: 18px; font-weight: 780; }
+.device-fleet-usage-panel dd.is-warning { color: #b42318; }
 .device-fleet-usage-panel dl span { color: #667085; font-size: 8px; line-height: 1.4; }
 .device-fleet-usage-panel > p { margin: 11px 0 0; color: #667085; font-size: 8px; line-height: 1.5; }
 .device-register-panel { overflow: hidden; }
@@ -2738,6 +2739,16 @@ body { background: var(--ops-canvas) !important; color: var(--ops-ink) !importan
 .device-cellular-profile p,
 .device-data-usage p,
 .device-prepaid-balance p { margin: 0; color: #667085; font-size: 9px; line-height: 1.5; }
+.device-data-usage-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.device-data-usage-summary > div { display: grid; min-width: 0; gap: 4px; padding: 11px; background: #f8fafc; border: 1px solid #eaecf0; border-radius: 7px; }
+.device-data-usage-summary span { color: #667085; font-size: 8px; font-weight: 750; text-transform: uppercase; }
+.device-data-usage-summary strong { color: #101828; font-size: 15px; line-height: 1.2; }
+.device-data-usage-summary small { color: #667085; font-size: 7px; line-height: 1.35; }
+.device-data-usage-summary > div.is-ok { background: #f0fdf4; border-color: #a6e7bd; }
+.device-data-usage-summary > div:is(.is-low,.is-stale,.is-failed,.is-parse_failed) { background: #fffaeb; border-color: #fedf89; }
+.device-data-usage-summary > div:is(.is-critical,.is-depleted) { background: #fff1f0; border-color: #fda29b; }
+.device-data-usage-summary > div:is(.is-low,.is-stale,.is-failed,.is-parse_failed) strong { color: #b54708; }
+.device-data-usage-summary > div:is(.is-critical,.is-depleted) strong { color: #b42318; }
 .device-data-usage .device-usage-note { padding-top: 9px; border-top: 1px solid #eaecf0; }
 .device-detail-panel > section.device-danger-zone { background: #fff8f7; }
 .device-danger-zone p { margin: 0; color: #667085; font-size: 9px; line-height: 1.5; }
@@ -2810,7 +2821,7 @@ body { background: var(--ops-canvas) !important; color: var(--ops-ink) !importan
   .device-fleet-usage-panel dl { grid-template-columns: 1fr 1fr; }
   .device-fleet-usage-panel dl > div { border-right: 1px solid #eaecf0; border-bottom: 1px solid #eaecf0; }
   .device-fleet-usage-panel dl > div:nth-child(even) { border-right: 0; }
-  .device-fleet-usage-panel dl > div:last-child { border-bottom: 0; }
+  .device-fleet-usage-panel dl > div:nth-last-child(-n+2) { border-bottom: 0; }
 }
 
 @media (max-width: 620px) {

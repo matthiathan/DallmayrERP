@@ -28,8 +28,11 @@ test('accepted telemetry records server, device-application and optional modem b
   assert.match(ingestFunction, /usagePayload\.rx_bytes_total/);
   assert.match(migration, /create table if not exists public\.telemetry_data_usage_daily/);
   assert.match(migration, /create or replace function public\.get_telemetry_data_usage/);
-  assert.match(deviceManagement, /Mobile data usage · last 30 days/);
   assert.match(deviceManagement, /Fleet total · last 30 days/);
+  assert.match(deviceManagement, /Mobile data usage and balance/);
+  assert.match(deviceManagement, /Mobile data · usage and balance/);
+  assert.match(deviceManagement, /Used · last 30 days/);
+  assert.match(deviceManagement, /Prepaid remaining/);
   assert.match(deviceManagement, /Device-reported transfer/);
   assert.match(deviceManagement, /Modem measured/);
   assert.match(deviceManagement, /Telemetry payload/);
