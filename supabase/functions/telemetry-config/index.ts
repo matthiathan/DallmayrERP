@@ -152,7 +152,7 @@ Deno.serve(async (request: Request) => {
       prepaid_balance: {
         enabled: true,
         carrier: prepaidBalance?.carrier ?? 'Vodacom South Africa',
-        ussd_code: prepaidBalance?.ussd_code ?? '*135*500#',
+        ussd_code: prepaidBalance?.ussd_code ?? '*111*502#',
         check_interval_minutes: prepaidCheckIntervalMinutes,
         stale_after_minutes: prepaidStaleAfterMinutes,
         last_query_status: prepaidBalance?.query_status ?? 'unknown',
