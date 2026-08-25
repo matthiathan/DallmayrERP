@@ -23,6 +23,7 @@ const telemetryNavigationSections: NavSection[] = [
     heading: 'Management',
     items: [
       { href: '/telemetry/devices', label: 'Device Management', code: 'TEL02', roles: 'all', description: 'Device assignment, reporting frequency and connectivity settings.' },
+      { href: '/telemetry/intervals', label: 'Telemetry Intervals', code: 'TEL04', roles: 'all', description: 'Database-driven counter, heartbeat and configuration refresh intervals.' },
     ],
   },
 ];
