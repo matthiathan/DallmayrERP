@@ -35,6 +35,28 @@ type TelemetryDevice = {
   location_min_move_m: number;
 };
 
+type PrepaidBalanceSummary = {
+  device_id: string;
+  device_code: string;
+  carrier: string;
+  ussd_code: string;
+  remaining_bytes: number | null;
+  balance_text: string | null;
+  query_status: string;
+  last_error: string | null;
+  checked_at: string | null;
+  received_at: string | null;
+  request_pending: boolean;
+  requested_at: string | null;
+  warning_threshold_bytes: number;
+  critical_threshold_bytes: number;
+  check_interval_minutes: number;
+  stale_after_minutes: number;
+  next_check_at: string | null;
+  is_stale: boolean;
+  alert_level: 'unknown' | 'stale' | 'failed' | 'unsupported' | 'parse_failed' | 'depleted' | 'critical' | 'low' | 'ok';
+};
+
 type MachineOption = {
   id: string;
   branch: string;
@@ -104,6 +126,8 @@ export function AdminTelemetryDevices() {
   const [devices, setDevices] = useState<TelemetryDevice[]>([]);
   const [dataUsageByDevice, setDataUsageByDevice] = useState<Record<string, DataUsageSummary>>({});
   const [dataUsageAvailable, setDataUsageAvailable] = useState(true);
+  const [prepaidByDevice, setPrepaidByDevice] = useState<Record<string, PrepaidBalanceSummary>>({});
+  const [prepaidAvailable, setPrepaidAvailable] = useState(true);
   const [assignedMachines, setAssignedMachines] = useState<Record<string, MachineOption>>({});
   const [machineResults, setMachineResults] = useState<MachineOption[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
@@ -114,6 +138,7 @@ export function AdminTelemetryDevices() {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [checkingBalance, setCheckingBalance] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
@@ -127,6 +152,9 @@ export function AdminTelemetryDevices() {
   const [reportingMode, setReportingMode] = useState<TelemetryMode>('live');
   const [locationInterval, setLocationInterval] = useState(15);
   const [movementThreshold, setMovementThreshold] = useState(50);
+  const [prepaidWarningMb, setPrepaidWarningMb] = useState(100);
+  const [prepaidCriticalMb, setPrepaidCriticalMb] = useState(25);
+  const [prepaidCheckInterval, setPrepaidCheckInterval] = useState(360);
   const [deviceSearch, setDeviceSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [networkFilter, setNetworkFilter] = useState('all');
@@ -138,18 +166,20 @@ export function AdminTelemetryDevices() {
     [devices, selectedDeviceId],
   );
   const selectedUsage = selectedDevice ? dataUsageByDevice[selectedDevice.id] ?? null : null;
+  const selectedPrepaid = selectedDevice ? prepaidByDevice[selectedDevice.id] ?? null : null;
 
   const loadDevices = useCallback(async () => {
     setLoading(true);
     setError(null);
     const client = getSupabaseClient();
-    const [{ data, error: loadError }, { data: overviewData }, { data: usageData, error: usageError }] = await Promise.all([
+    const [{ data, error: loadError }, { data: overviewData }, { data: usageData, error: usageError }, { data: prepaidData, error: prepaidError }] = await Promise.all([
       client
         .from('telemetry_devices')
         .select('id,device_code,machine_id,site_id,status,profile_id,location_override,firmware_version,wifi_rssi,last_seen_at,last_upload_at,last_sequence,updated_at,transport_preference,wifi_enabled,cellular_enabled,last_transport,cellular_csq,cellular_operator,location_interval_minutes,location_min_move_m')
         .order('device_code'),
       client.rpc('get_telemetry_dashboard', { p_period: 'today', p_branch: 'all' }),
       client.rpc('get_telemetry_data_usage', { p_days: 30 }),
+      client.rpc('get_telemetry_prepaid_balances'),
     ]);
 
     if (loadError) {
@@ -165,6 +195,9 @@ export function AdminTelemetryDevices() {
     const usageRows = usageError ? [] : (usageData ?? []) as DataUsageSummary[];
     setDataUsageByDevice(Object.fromEntries(usageRows.map((row) => [row.device_id, row])));
     setDataUsageAvailable(!usageError);
+    const prepaidRows = prepaidError ? [] : (prepaidData ?? []) as PrepaidBalanceSummary[];
+    setPrepaidByDevice(Object.fromEntries(prepaidRows.map((row) => [row.device_id, row])));
+    setPrepaidAvailable(!prepaidError);
     setSelectedDeviceId((current) => current && rows.some((row) => row.id === current) ? current : null);
 
     const machineIds = Array.from(new Set(rows.map((row) => row.machine_id).filter((value): value is string => Boolean(value))));
@@ -206,9 +239,13 @@ export function AdminTelemetryDevices() {
     setReportingMode(deviceModes[selectedDevice.id] ?? 'live');
     setLocationInterval(selectedDevice.location_interval_minutes ?? 15);
     setMovementThreshold(selectedDevice.location_min_move_m ?? 50);
+    const prepaid = prepaidByDevice[selectedDevice.id];
+    setPrepaidWarningMb(Math.round(Number(prepaid?.warning_threshold_bytes ?? 104857600) / 1048576));
+    setPrepaidCriticalMb(Math.round(Number(prepaid?.critical_threshold_bytes ?? 26214400) / 1048576));
+    setPrepaidCheckInterval(Number(prepaid?.check_interval_minutes ?? 360));
     setMachineSearch('');
     setMachineResults([]);
-  }, [deviceModes, selectedDevice]);
+  }, [deviceModes, prepaidByDevice, selectedDevice]);
 
   async function searchMachines(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -233,6 +270,10 @@ export function AdminTelemetryDevices() {
 
   async function saveDevice() {
     if (!selectedDevice) return;
+    if (prepaidCriticalMb < 0 || prepaidWarningMb <= prepaidCriticalMb) {
+      setError('The prepaid warning threshold must be greater than the critical threshold.');
+      return;
+    }
     const selectedMachine = machineResults.find((machine) => machine.id === selectedMachineId)
       ?? assignedMachines[selectedMachineId]
       ?? null;
@@ -280,10 +321,39 @@ export function AdminTelemetryDevices() {
       setSaving(false);
       return;
     }
+    const { error: prepaidControlError } = await client.rpc('set_telemetry_prepaid_balance_control', {
+      p_device_code: selectedDevice.device_code,
+      p_warning_megabytes: prepaidWarningMb,
+      p_critical_megabytes: prepaidCriticalMb,
+      p_check_interval_minutes: prepaidCheckInterval,
+      p_stale_after_minutes: Math.max(prepaidCheckInterval * 2, prepaidCheckInterval),
+    });
+    if (prepaidControlError) {
+      setError(prepaidControlError.message);
+      setSaving(false);
+      return;
+    }
 
     setMessage(`${selectedDevice.device_code} was updated successfully.`);
     await loadDevices();
     setSaving(false);
+  }
+
+  async function requestBalanceCheck() {
+    if (!selectedDevice) return;
+    setCheckingBalance(true);
+    setError(null);
+    setMessage(null);
+    const { error: requestError } = await getSupabaseClient().rpc('request_telemetry_prepaid_balance', {
+      p_device_code: selectedDevice.device_code,
+    });
+    if (requestError) {
+      setError(requestError.message);
+    } else {
+      setMessage(`A Vodacom balance check was queued for ${selectedDevice.device_code}. The device will run it at its next configuration sync.`);
+      await loadDevices();
+    }
+    setCheckingBalance(false);
   }
 
   function openDeleteDialog() {
@@ -345,7 +415,8 @@ export function AdminTelemetryDevices() {
     offline: devices.filter((device) => device.status === 'active' && !isOnline(device.last_seen_at)).length,
     unassigned: devices.filter((device) => !device.machine_id).length,
     pending: devices.filter((device) => device.status === 'active' && (!device.last_seen_at || new Date(device.updated_at).getTime() > new Date(device.last_seen_at).getTime())).length,
-  }), [devices]);
+    lowBalance: Object.values(prepaidByDevice).filter((balance) => ['low', 'critical', 'depleted'].includes(balance.alert_level)).length,
+  }), [devices, prepaidByDevice]);
 
   const fleetUsage = useMemo(() => Object.values(dataUsageByDevice).reduce((total, usage) => {
     const hasDeviceApplication = Number(usage.device_application_sample_count ?? 0) > 0;
@@ -421,6 +492,7 @@ export function AdminTelemetryDevices() {
           <article className="fleet-metric-card"><span className="fleet-metric-icon is-green"><NavigationIcon kind="telemetry" /></span><div><span>Online</span><strong>{metrics.online.toLocaleString('en-ZA')}</strong></div><small>Seen within 30 minutes</small></article>
           <article className="fleet-metric-card"><span className="fleet-metric-icon is-grey"><NavigationIcon kind="telemetry" /></span><div><span>Offline</span><strong>{metrics.offline.toLocaleString('en-ZA')}</strong></div><small>No recent heartbeat</small></article>
           <article className="fleet-metric-card"><span className="fleet-metric-icon is-red"><NavigationIcon kind="queue" /></span><div><span>Updates pending</span><strong>{metrics.pending.toLocaleString('en-ZA')}</strong></div><small>Awaiting device sync</small></article>
+          <article className="fleet-metric-card"><span className="fleet-metric-icon is-amber"><NavigationIcon kind="bell" /></span><div><span>Top-ups required</span><strong>{metrics.lowBalance.toLocaleString('en-ZA')}</strong></div><small>Low, critical or depleted data</small></article>
         </section>
 
         <section className="fleet-panel device-fleet-usage-panel">
@@ -438,7 +510,7 @@ export function AdminTelemetryDevices() {
         <section className="fleet-panel device-register-panel">
           <div className="fleet-filters device-register-filters"><label className="fleet-search"><NavigationIcon kind="search" /><input aria-label="Search telemetry devices" placeholder="Search devices or assigned machines" value={deviceSearch} onChange={(event) => setDeviceSearch(event.target.value)} /></label><label><span>Status</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">All</option><option value="online">Online</option><option value="offline">Offline</option><option value="unassigned">Unassigned</option></select></label><label><span>Network</span><select value={networkFilter} onChange={(event) => setNetworkFilter(event.target.value)}><option value="all">All</option><option value="wifi">Wi-Fi</option><option value="cellular">Cellular</option></select></label><label><span>Reporting mode</span><select value={modeFilter} onChange={(event) => setModeFilter(event.target.value)}><option value="all">All</option><option value="live">Live</option><option value="daily">Daily</option><option value="monthly">Monthly</option></select></label><button className="fleet-button secondary" onClick={() => { setDeviceSearch(''); setStatusFilter('all'); setNetworkFilter('all'); setModeFilter('all'); }} type="button">Clear filters</button></div>
 
-          {loading && devices.length === 0 ? <HamsterLoader label="Loading telemetry devices" /> : <div className="fleet-table-scroll"><table className="fleet-machine-table device-register-table"><thead><tr><th>Device ID</th><th>Assigned machine</th><th>Protocol</th><th>Firmware</th><th>Network</th><th>Signal</th><th>30-day data</th><th>Reporting mode</th><th>Last config sync</th><th>Status</th><th>Actions</th></tr></thead><tbody>{visibleDevices.map((device) => { const machine = device.machine_id ? assignedMachines[device.machine_id] : null; const online = isOnline(device.last_seen_at); const usage = dataUsageByDevice[device.id]; const modemMeasured = Number(usage?.modem_sample_count ?? 0) > 0; const applicationMinimum = Math.max(Number(usage?.application_bytes ?? 0), Number(usage?.device_application_bytes ?? 0)); return <tr className={selectedDeviceId === device.id ? 'is-selected' : undefined} key={device.id}><td><button className="fleet-machine-link" onClick={() => manageDevice(device)} type="button"><strong>{device.device_code}</strong></button></td><td><strong>{machine ? (machine.machine_name ?? machine.model ?? machine.serial_number ?? device.machine_id) : 'Unassigned'}</strong><span>{machine?.serial_number ?? 'No machine linked'}</span></td><td>{device.profile_id ?? 'MDB'}</td><td>{device.firmware_version ?? 'Unknown'}</td><td><strong>{device.last_transport === 'cellular' ? 'Cellular' : device.last_transport === 'wifi' ? 'Wi-Fi' : 'Not reported'}</strong><span>{device.cellular_operator ?? ''}</span></td><td><span className={`device-signal is-${online ? 'good' : 'offline'}`} aria-label={device.wifi_rssi === null ? 'Signal not reported' : `${device.wifi_rssi} dBm`}><i /><i /><i /><i /></span></td><td><strong>{modemMeasured ? formatBytes(usage.measured_modem_bytes) : `≥ ${formatBytes(applicationMinimum)}`}</strong><span>{modemMeasured ? 'Modem measured' : 'Application minimum'}</span></td><td><span className="fleet-mode-label">{deviceModes[device.id] ?? 'live'}</span></td><td><strong>{formatDate(device.last_seen_at)}</strong></td><td><span className={`fleet-status-pill ${online ? 'is-success' : 'is-neutral'}`}><i />{online ? 'Online' : 'Offline'}</span></td><td><button aria-label={`Manage ${device.device_code}`} className="fleet-row-action" onClick={() => manageDevice(device)} type="button">•••</button></td></tr>; })}</tbody></table></div>}
+          {loading && devices.length === 0 ? <HamsterLoader label="Loading telemetry devices" /> : <div className="fleet-table-scroll"><table className="fleet-machine-table device-register-table"><thead><tr><th>Device ID</th><th>Assigned machine</th><th>Protocol</th><th>Firmware</th><th>Network</th><th>Signal</th><th>30-day data</th><th>Prepaid remaining</th><th>Reporting mode</th><th>Last config sync</th><th>Status</th><th>Actions</th></tr></thead><tbody>{visibleDevices.map((device) => { const machine = device.machine_id ? assignedMachines[device.machine_id] : null; const online = isOnline(device.last_seen_at); const usage = dataUsageByDevice[device.id]; const balance = prepaidByDevice[device.id]; const modemMeasured = Number(usage?.modem_sample_count ?? 0) > 0; const applicationMinimum = Math.max(Number(usage?.application_bytes ?? 0), Number(usage?.device_application_bytes ?? 0)); return <tr className={selectedDeviceId === device.id ? 'is-selected' : undefined} key={device.id}><td><button className="fleet-machine-link" onClick={() => manageDevice(device)} type="button"><strong>{device.device_code}</strong></button></td><td><strong>{machine ? (machine.machine_name ?? machine.model ?? machine.serial_number ?? device.machine_id) : 'Unassigned'}</strong><span>{machine?.serial_number ?? 'No machine linked'}</span></td><td>{device.profile_id ?? 'MDB'}</td><td>{device.firmware_version ?? 'Unknown'}</td><td><strong>{device.last_transport === 'cellular' ? 'Cellular' : device.last_transport === 'wifi' ? 'Wi-Fi' : 'Not reported'}</strong><span>{device.cellular_operator ?? ''}</span></td><td><span className={`device-signal is-${online ? 'good' : 'offline'}`} aria-label={device.wifi_rssi === null ? 'Signal not reported' : `${device.wifi_rssi} dBm`}><i /><i /><i /><i /></span></td><td><strong>{modemMeasured ? formatBytes(usage.measured_modem_bytes) : `≥ ${formatBytes(applicationMinimum)}`}</strong><span>{modemMeasured ? 'Modem measured' : 'Application minimum'}</span></td><td><strong className={`device-balance-value is-${balance?.alert_level ?? 'unknown'}`}>{balance?.remaining_bytes === null || balance?.remaining_bytes === undefined ? 'Awaiting check' : formatBytes(balance.remaining_bytes)}</strong><span>{balance?.request_pending ? 'Check queued' : (balance?.alert_level ?? 'unknown').replace(/_/g, ' ')}</span></td><td><span className="fleet-mode-label">{deviceModes[device.id] ?? 'live'}</span></td><td><strong>{formatDate(device.last_seen_at)}</strong></td><td><span className={`fleet-status-pill ${online ? 'is-success' : 'is-neutral'}`}><i />{online ? 'Online' : 'Offline'}</span></td><td><button aria-label={`Manage ${device.device_code}`} className="fleet-row-action" onClick={() => manageDevice(device)} type="button">•••</button></td></tr>; })}</tbody></table></div>}
           <footer className="fleet-table-footer"><div className="fleet-table-footer-copy"><strong>Showing {filteredDevices.length ? (currentPage - 1) * pageSize + 1 : 0}–{Math.min(currentPage * pageSize, filteredDevices.length)} of {filteredDevices.length.toLocaleString('en-ZA')}</strong><span>Last refreshed {lastUpdated ? formatDate(lastUpdated.toISOString()) : 'never'}</span></div><div className="fleet-table-pagination"><button disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} type="button">Previous</button><span>Page {currentPage} of {pageCount}</span><button disabled={currentPage === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} type="button">Next</button></div></footer>
         </section>
       </div>
@@ -451,6 +523,18 @@ export function AdminTelemetryDevices() {
         <section><h3>Transport preference</h3><div className="device-radio-row">{(['auto','wifi','cellular'] as TransportPreference[]).map((value) => <label key={value}><input checked={transportPreference === value} onChange={() => setTransportPreference(value)} type="radio" /><span>{value === 'wifi' ? 'Wi-Fi' : value.charAt(0).toUpperCase() + value.slice(1)}</span></label>)}</div><label className="device-toggle-row"><span>Wi-Fi</span><input checked={wifiEnabled} onChange={(event) => setWifiEnabled(event.target.checked)} type="checkbox" /></label><label className="device-toggle-row"><span>Cellular</span><input checked={cellularEnabled} onChange={(event) => setCellularEnabled(event.target.checked)} type="checkbox" /></label></section>
 
         <section className="device-cellular-profile"><h3>Vodacom cellular test profile</h3><dl><div><dt>APN</dt><dd>internet</dd></div><div><dt>Username</dt><dd>guest</dd></div><div><dt>Password</dt><dd>Blank</dd></div><div><dt>Authentication</dt><dd>PAP</dd></div><div><dt>Network</dt><dd>MCC 655 · MNC 01</dd></div></dl><p>For a conclusive test, disable Wi-Fi and use a normal Vodacom mobile-data, IoT or M2M SIM.</p></section>
+
+        <section className={`device-prepaid-balance is-${selectedPrepaid?.alert_level ?? 'unknown'}`}>
+          <div className="device-prepaid-heading"><div><h3>Prepaid data balance</h3><span>{selectedPrepaid?.request_pending ? 'Check queued' : (selectedPrepaid?.alert_level ?? 'unknown').replace(/_/g, ' ')}</span></div><strong>{selectedPrepaid?.remaining_bytes === null || selectedPrepaid?.remaining_bytes === undefined ? 'Awaiting first check' : formatBytes(selectedPrepaid.remaining_bytes)}</strong></div>
+          {selectedPrepaid ? <dl><div><dt>Last checked</dt><dd>{formatDate(selectedPrepaid.checked_at)}</dd></div><div><dt>Next scheduled</dt><dd>{formatDate(selectedPrepaid.next_check_at)}</dd></div><div><dt>Carrier query</dt><dd>{selectedPrepaid.ussd_code}</dd></div><div><dt>Query status</dt><dd>{selectedPrepaid.query_status.replace(/_/g, ' ')}</dd></div></dl> : <p>{prepaidAvailable ? 'The device has not reported a Vodacom balance yet.' : 'Prepaid balance monitoring will appear after its database migration is deployed.'}</p>}
+          {selectedPrepaid?.balance_text ? <p className="device-prepaid-response">{selectedPrepaid.balance_text}</p> : null}
+          {selectedPrepaid?.last_error ? <p className="device-prepaid-error">{selectedPrepaid.last_error}</p> : null}
+          <label><span>Low warning (MB)</span><input min={1} onChange={(event) => setPrepaidWarningMb(Number(event.target.value))} type="number" value={prepaidWarningMb} /></label>
+          <label><span>Critical (MB)</span><input min={0} onChange={(event) => setPrepaidCriticalMb(Number(event.target.value))} type="number" value={prepaidCriticalMb} /></label>
+          <label><span>Automatic check</span><select onChange={(event) => setPrepaidCheckInterval(Number(event.target.value))} value={prepaidCheckInterval}><option value={60}>Every hour</option><option value={180}>Every 3 hours</option><option value={360}>Every 6 hours</option><option value={720}>Every 12 hours</option><option value={1440}>Daily</option></select></label>
+          <button className="fleet-button secondary" disabled={checkingBalance || selectedPrepaid?.request_pending} onClick={requestBalanceCheck} type="button">{checkingBalance ? 'Queuing…' : selectedPrepaid?.request_pending ? 'Balance check queued' : 'Check balance now'}</button>
+          <p>The Air780EU queries Vodacom with *135*500# and sends the result with its next heartbeat. Top up when this status becomes low or critical.</p>
+        </section>
 
         <section><h3>Reporting</h3><label><span>Reporting mode</span><select value={reportingMode} onChange={(event) => setReportingMode(event.target.value as TelemetryMode)}><option value="live">Live</option><option value="daily">Daily</option><option value="monthly">Monthly</option></select></label><label><span>Location update interval</span><select value={locationInterval} onChange={(event) => setLocationInterval(Number(event.target.value))}><option value={1}>1 minute</option><option value={5}>5 minutes</option><option value={15}>15 minutes</option><option value={30}>30 minutes</option><option value={60}>1 hour</option><option value={1440}>Daily</option></select></label><label><span>Movement threshold</span><select value={movementThreshold} onChange={(event) => setMovementThreshold(Number(event.target.value))}><option value={25}>±25 m</option><option value={50}>±50 m</option><option value={100}>±100 m</option><option value={250}>±250 m</option><option value={500}>±500 m</option></select></label></section>
 

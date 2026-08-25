@@ -5,10 +5,11 @@ import test from 'node:test';
 const configFunction = fs.readFileSync(new URL('../../supabase/functions/telemetry-config/index.ts', import.meta.url), 'utf8');
 const ingestFunction = fs.readFileSync(new URL('../../supabase/functions/telemetry-ingest/index.ts', import.meta.url), 'utf8');
 const migration = fs.readFileSync(new URL('../../supabase/migrations/20260820083000_vodacom_test_and_data_usage.sql', import.meta.url), 'utf8');
+const prepaidMigration = fs.readFileSync(new URL('../../supabase/migrations/20260825103000_telemetry_prepaid_balance_monitoring.sql', import.meta.url), 'utf8');
 const deviceManagement = fs.readFileSync(new URL('../../components/features/AdminTelemetryDevices.tsx', import.meta.url), 'utf8');
 const testRunner = fs.readFileSync(new URL('../../scripts/test-vodacom-telemetry.mjs', import.meta.url), 'utf8');
 const supabaseConfig = fs.readFileSync(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
-const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_15/DallmayrTelemetryV6_8_15.ino', import.meta.url), 'utf8');
+const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_16/DallmayrTelemetryV6_8_16.ino', import.meta.url), 'utf8');
 
 test('device configuration returns the verified Vodacom South Africa profile', () => {
   assert.match(configFunction, /carrier: 'Vodacom South Africa'/);
@@ -52,7 +53,7 @@ test('device-facing telemetry functions keep gateway JWT verification enabled', 
 });
 
 test('Air780E firmware performs a cellular-only simulation test and reports application bytes', () => {
-  assert.match(firmware, /6\.8\.15-esp32s3-air780eu-extended-http-post/);
+  assert.match(firmware, /6\.8\.16-esp32s3-vodacom-prepaid-balance/);
   assert.match(firmware, /SIM DATA TEST/);
   assert.match(firmware, /sendCellularSimulationSnapshot/);
   assert.match(firmware, /airHttpPost\(INGEST_URL/);
@@ -151,4 +152,36 @@ test('ESP32-S3 passive MDB capture uses an RMT-safe noise filter', () => {
   assert.match(firmware, /rmtSetRxMinThreshold\(MDB_VMC_TX_MONITOR_PIN, MDB_NOISE_FILTER_TICKS\)/);
   assert.match(firmware, /rmtSetRxMinThreshold\(MDB_VMC_RX_MONITOR_PIN, MDB_NOISE_FILTER_TICKS\)/);
   assert.doesNotMatch(firmware, /MDB_NOISE_FILTER_US = 15/);
+});
+
+
+test('Vodacom prepaid balance monitoring is scheduled, stored and operator controlled', () => {
+  assert.match(prepaidMigration, /create table if not exists public\.telemetry_prepaid_balance_state/);
+  assert.match(prepaidMigration, /create table if not exists public\.telemetry_prepaid_balance_history/);
+  assert.match(prepaidMigration, /create or replace function public\.record_telemetry_prepaid_balance/);
+  assert.match(prepaidMigration, /create or replace function public\.request_telemetry_prepaid_balance/);
+  assert.match(prepaidMigration, /create or replace function public\.set_telemetry_prepaid_balance_control/);
+  assert.match(prepaidMigration, /enable row level security/);
+  assert.match(prepaidMigration, /warning_threshold_bytes bigint not null default 104857600/);
+  assert.match(prepaidMigration, /critical_threshold_bytes bigint not null default 26214400/);
+  assert.match(configFunction, /prepaid_balance_due/);
+  assert.match(configFunction, /check_interval_minutes: prepaidCheckIntervalMinutes/);
+  assert.match(ingestFunction, /record_telemetry_prepaid_balance/);
+  assert.match(ingestFunction, /report_pending === true/);
+  assert.match(deviceManagement, /Prepaid data balance/);
+  assert.match(deviceManagement, /Check balance now/);
+  assert.match(deviceManagement, /Top-ups required/);
+});
+
+test('Air780EU queries and parses the official Vodacom prepaid data balance USSD', () => {
+  assert.match(firmware, /AT\+CUSD=\?/);
+  assert.match(firmware, /AT\+CUSD=1,/);
+  assert.match(firmware, /\*135\*500#/);
+  assert.match(firmware, /VODACOM_USSD_TIMEOUT_MS = 45000UL/);
+  assert.match(firmware, /parseDataBalanceBytes/);
+  assert.match(firmware, /decodeUcs2Hex/);
+  assert.match(firmware, /prepaidBalanceCheckIntervalMinutes/);
+  assert.match(firmware, /addPrepaidBalanceMetadata/);
+  assert.match(firmware, /balance\["report_pending"\] = prepaidBalanceReportPending/);
+  assert.match(firmware, /VODACOM BALANCE/);
 });

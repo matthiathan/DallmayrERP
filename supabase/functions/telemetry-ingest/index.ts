@@ -209,10 +209,35 @@ Deno.serve(async (request: Request) => {
     p_modem_rx_bytes_total: nonNegativeIntegerOrNull(usagePayload.rx_bytes_total ?? usagePayload.modem_rx_bytes_total),
   });
 
+  let prepaidBalanceResult: unknown = null;
+  let prepaidBalanceError: { message: string } | null = null;
+  const prepaidPayload = payload.prepaid_balance;
+  if (prepaidPayload && typeof prepaidPayload === 'object' && !Array.isArray(prepaidPayload)
+      && (prepaidPayload as Record<string, unknown>).report_pending === true) {
+    const prepaid = prepaidPayload as Record<string, unknown>;
+    const status = typeof prepaid.status === 'string' ? prepaid.status.trim().toLowerCase() : 'failed';
+    const remainingBytes = nonNegativeIntegerOrNull(prepaid.remaining_bytes);
+    const response = await supabase.rpc('record_telemetry_prepaid_balance', {
+      p_device_id: device.id,
+      p_remaining_bytes: remainingBytes,
+      p_balance_text: typeof prepaid.balance_text === 'string' ? prepaid.balance_text.slice(0, 1000) : null,
+      p_query_status: status,
+      p_error_text: typeof prepaid.error === 'string' ? prepaid.error.slice(0, 500) : null,
+      // ESP32 uptime is not wall-clock time. The database uses receipt time when
+      // the device cannot provide a valid ISO timestamp.
+      p_checked_at: validDateOrNull(prepaid.checked_at),
+    });
+    prepaidBalanceResult = response.data;
+    prepaidBalanceError = response.error;
+  }
+
   return jsonResponse({
     ...responseBody,
     data_usage: usageError
       ? { recorded: false, message: 'Data-usage recording is temporarily unavailable.' }
       : usageResult,
+    prepaid_balance: prepaidBalanceError
+      ? { recorded: false, message: 'Prepaid-balance recording is temporarily unavailable.' }
+      : prepaidBalanceResult,
   });
 });

@@ -69,6 +69,17 @@ type ContractRenewalRow = {
   total_count: number;
 };
 
+type PrepaidBalanceAlertRow = {
+  device_id: string;
+  device_code: string;
+  remaining_bytes: number | null;
+  checked_at: string | null;
+  received_at: string | null;
+  request_pending: boolean;
+  query_status: string;
+  alert_level: string;
+};
+
 type DesktopPermissionState = NotificationPermission | 'unsupported';
 
 type InstallPromptEvent = Event & {
@@ -83,6 +94,7 @@ const DESKTOP_ENABLED_KEY_PREFIX = 'dallmayr-desktop-notifications-enabled-v1';
 const exceptionRoles = new Set(['admin', 'operations', 'executive', 'warehouse_staff', 'finance']);
 const fieldRoles = new Set(['technician', 'road_technician']);
 const contractRoles = new Set(['admin', 'executive', 'operations', 'sales', 'marketing']);
+const telemetryBalanceRoles = new Set(['admin', 'executive', 'operations']);
 const severityOrder: Record<string, number> = { critical: 0, high: 1, warning: 2, info: 3 };
 const openWorkStatuses = ['new', 'triaged', 'assigned', 'in_progress', 'blocked', 'waiting_approval'];
 
@@ -313,6 +325,29 @@ export function MobileAppExperience() {
             source: 'Contract renewals',
           });
         }
+      }
+
+      if (telemetryBalanceRoles.has(role)) {
+        const { data, error: balanceError } = await client.rpc('get_telemetry_prepaid_balances');
+        if (balanceError) throw balanceError;
+
+        ((data ?? []) as PrepaidBalanceAlertRow[])
+          .filter((item) => ['low', 'critical', 'depleted', 'stale', 'failed', 'parse_failed', 'unsupported'].includes(item.alert_level))
+          .forEach((item) => {
+            const remaining = item.remaining_bytes === null
+              ? 'Balance unavailable'
+              : `${(Number(item.remaining_bytes) / 1048576).toFixed(Number(item.remaining_bytes) >= 104857600 ? 0 : 1)} MB remaining`;
+            const critical = ['critical', 'depleted'].includes(item.alert_level);
+            next.push({
+              id: `prepaid:${item.device_id}:${item.alert_level}:${item.checked_at ?? item.received_at ?? 'unknown'}`,
+              title: critical ? `Top up ${item.device_code}` : `Check prepaid data for ${item.device_code}`,
+              body: `${remaining}. Status: ${item.alert_level.replace(/_/g, ' ')}${item.request_pending ? '; a new balance check is queued' : ''}.`,
+              href: '/telemetry/devices',
+              tone: critical ? 'critical' : 'warning',
+              occurredAt: alertTimestamp(item.checked_at, item.received_at),
+              source: 'Vodacom prepaid monitoring',
+            });
+          });
       }
 
       if (exceptionRoles.has(role)) {

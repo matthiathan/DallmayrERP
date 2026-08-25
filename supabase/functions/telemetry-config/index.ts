@@ -94,6 +94,22 @@ Deno.serve(async (request: Request) => {
   const configRefreshMinutes = Number(policy.config_refresh_minutes ?? 5);
   const locationIntervalMinutes = Math.max(1, Number(device.location_interval_minutes ?? 15));
 
+  const { data: prepaidBalance, error: prepaidBalanceError } = await supabase
+    .from('telemetry_prepaid_balance_state')
+    .select('carrier,ussd_code,query_status,checked_at,request_pending,check_interval_minutes,stale_after_minutes')
+    .eq('device_id', device.id)
+    .maybeSingle();
+  if (prepaidBalanceError) {
+    return jsonResponse({ accepted: false, message: 'Could not resolve prepaid balance monitoring.' }, 503);
+  }
+  const prepaidCheckIntervalMinutes = Math.max(15, Number(prepaidBalance?.check_interval_minutes ?? 360));
+  const prepaidStaleAfterMinutes = Math.max(
+    prepaidCheckIntervalMinutes,
+    Number(prepaidBalance?.stale_after_minutes ?? 720),
+  );
+  const prepaidBalanceDue = Boolean(prepaidBalance?.request_pending)
+    || intervalDue(prepaidCheckIntervalMinutes, prepaidBalance?.checked_at ?? null);
+
   await supabase.from('telemetry_devices').update({ last_config_at: new Date().toISOString() }).eq('id', device.id);
 
   return jsonResponse({
@@ -133,6 +149,14 @@ Deno.serve(async (request: Request) => {
         mcc: '655',
         mnc: '01',
       },
+      prepaid_balance: {
+        enabled: true,
+        carrier: prepaidBalance?.carrier ?? 'Vodacom South Africa',
+        ussd_code: prepaidBalance?.ussd_code ?? '*135*500#',
+        check_interval_minutes: prepaidCheckIntervalMinutes,
+        stale_after_minutes: prepaidStaleAfterMinutes,
+        last_query_status: prepaidBalance?.query_status ?? 'unknown',
+      },
       location: {
         enabled: Boolean(device.location_enabled),
         interval_minutes: locationIntervalMinutes,
@@ -143,6 +167,7 @@ Deno.serve(async (request: Request) => {
       counter_due: counterDue(mode, counterIntervalMinutes, device.last_counter_at),
       heartbeat_due: intervalDue(heartbeatIntervalMinutes, device.last_heartbeat_at),
       location_due: Boolean(device.location_enabled) && intervalDue(locationIntervalMinutes, device.last_location_at),
+      prepaid_balance_due: prepaidBalanceDue,
     },
     test_environment: {
       safe_payload_type: 'simulation_snapshot',
