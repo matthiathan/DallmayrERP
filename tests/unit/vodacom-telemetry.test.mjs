@@ -8,7 +8,7 @@ const migration = fs.readFileSync(new URL('../../supabase/migrations/20260820083
 const deviceManagement = fs.readFileSync(new URL('../../components/features/AdminTelemetryDevices.tsx', import.meta.url), 'utf8');
 const testRunner = fs.readFileSync(new URL('../../scripts/test-vodacom-telemetry.mjs', import.meta.url), 'utf8');
 const supabaseConfig = fs.readFileSync(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
-const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_13/DallmayrTelemetryV6_8_13.ino', import.meta.url), 'utf8');
+const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_14/DallmayrTelemetryV6_8_14.ino', import.meta.url), 'utf8');
 
 test('device configuration returns the verified Vodacom South Africa profile', () => {
   assert.match(configFunction, /carrier: 'Vodacom South Africa'/);
@@ -52,7 +52,7 @@ test('device-facing telemetry functions keep gateway JWT verification enabled', 
 });
 
 test('Air780E firmware performs a cellular-only simulation test and reports application bytes', () => {
-  assert.match(firmware, /6\.8\.13-esp32s3-air780eu-compact-headers/);
+  assert.match(firmware, /6\.8\.14-esp32s3-air780eu-bounded-http-action/);
   assert.match(firmware, /SIM DATA TEST/);
   assert.match(firmware, /sendCellularSimulationSnapshot/);
   assert.match(firmware, /airHttpPost\(INGEST_URL/);
@@ -64,7 +64,7 @@ test('Air780E firmware performs a cellular-only simulation test and reports appl
   assert.match(firmware, /dailyUnits != 1 \|\| dailyRevenue != 1500/);
 });
 
-test('Air780EU V1180 reopens HTTP after configuring context 153 and uses a compact header block', () => {
+test('Air780EU V1180 reopens HTTP, uses compact headers and waits for the bounded asynchronous result', () => {
   const beginStart = firmware.indexOf('bool beginAir780HttpsSession()');
   const beginEnd = firmware.indexOf('bool setAir780CompactHttpHeaders', beginStart);
   const beginBody = firmware.slice(beginStart, beginEnd);
@@ -115,7 +115,14 @@ test('Air780EU V1180 reopens HTTP after configuring context 153 and uses a compa
   assert.match(firmware, /#define DALLMAYR_WIFI_SSID\s+""/);
   assert.match(firmware, /#define DALLMAYR_WIFI_PASSWORD\s+""/);
   assert.match(firmware, /#define DALLMAYR_SUPABASE_ANON_KEY\s+""/);
-  assert.doesNotMatch(firmware, /AT\+HTTPPARA=\\"TIMEOUT\\"/);
+  assert.match(firmware, /AIR780_HTTP_TIMEOUT_SECONDS = 45/);
+  assert.match(firmware, /AIR780_HTTP_ACTION_WAIT_MS/);
+  assert.match(firmware, /AT\+HTTPPARA=\\"TIMEOUT\\"," \+ String\(AIR780_HTTP_TIMEOUT_SECONDS\)/);
+  assert.match(firmware, /readAir780HttpAction\(AIR780_HTTP_ACTION_WAIT_MS, bearerDeactivated\)/);
+  assert.match(firmware, /response\.lastIndexOf\("\+HTTPACTION:"\)/);
+  assert.match(firmware, /response\.indexOf\('\\n', actionPos\)/);
+  assert.match(firmware, /\+SAPBR 1: DEACT/);
+  assert.match(firmware, /\+CGEV: NW PDN DEACT/);
 });
 
 test('Air780EU SSL configuration failures reset the separate modem without looping forever', () => {
@@ -127,7 +134,8 @@ test('Air780EU SSL configuration failures reset the separate modem without loopi
   assert.match(firmware, /uint8_t air780HttpRecoveryCount = 0/);
   assert.match(firmware, /if \(air780HttpRecoveryCount >= 2\)/);
   assert.match(firmware, /air780HttpRecoveryCount\+\+/);
-  assert.match(firmware, /air780HttpRecoveryCount = 0;\n\s+int p = action\.lastIndexOf/);
+  assert.match(firmware, /air780HttpRecoveryCount = 0;/);
+  assert.match(firmware, /int p = action\.lastIndexOf/);
 });
 
 test('ESP32-S3 passive MDB capture uses an RMT-safe noise filter', () => {
