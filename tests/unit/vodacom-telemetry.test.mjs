@@ -8,7 +8,7 @@ const migration = fs.readFileSync(new URL('../../supabase/migrations/20260820083
 const deviceManagement = fs.readFileSync(new URL('../../components/features/AdminTelemetryDevices.tsx', import.meta.url), 'utf8');
 const testRunner = fs.readFileSync(new URL('../../scripts/test-vodacom-telemetry.mjs', import.meta.url), 'utf8');
 const supabaseConfig = fs.readFileSync(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
-const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_12/DallmayrTelemetryV6_8_12.ino', import.meta.url), 'utf8');
+const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_13/DallmayrTelemetryV6_8_13.ino', import.meta.url), 'utf8');
 
 test('device configuration returns the verified Vodacom South Africa profile', () => {
   assert.match(configFunction, /carrier: 'Vodacom South Africa'/);
@@ -52,24 +52,27 @@ test('device-facing telemetry functions keep gateway JWT verification enabled', 
 });
 
 test('Air780E firmware performs a cellular-only simulation test and reports application bytes', () => {
-  assert.match(firmware, /6\.8\.12-esp32s3-air780eu-httpinit-first/);
+  assert.match(firmware, /6\.8\.13-esp32s3-air780eu-compact-headers/);
   assert.match(firmware, /SIM DATA TEST/);
   assert.match(firmware, /sendCellularSimulationSnapshot/);
   assert.match(firmware, /airHttpPost\(INGEST_URL/);
   assert.match(firmware, /"simulation_snapshot"/);
   assert.match(firmware, /application_tx_bytes_total/);
   assert.match(firmware, /application_rx_bytes_total/);
-  assert.match(firmware, /setAir780HttpHeader\("Authorization", "Bearer " \+ supabaseAnonKey\)/);
+  assert.match(firmware, /String headers = "Authorization: Bearer " \+ supabaseAnonKey/);
   assert.match(firmware, /SUPABASE ANON KEY/);
   assert.match(firmware, /dailyUnits != 1 \|\| dailyRevenue != 1500/);
 });
 
-test('Air780EU V1180 initializes HTTP before configuring context 153 and keeps repository credentials blank', () => {
+test('Air780EU V1180 reopens HTTP after configuring context 153 and uses a compact header block', () => {
   const beginStart = firmware.indexOf('bool beginAir780HttpsSession()');
-  const beginEnd = firmware.indexOf('bool setAir780HttpHeader', beginStart);
+  const beginEnd = firmware.indexOf('bool setAir780CompactHttpHeaders', beginStart);
   const beginBody = firmware.slice(beginStart, beginEnd);
   const httpInit = beginBody.indexOf('cellCommand("AT+HTTPINIT"');
   const configureTls = beginBody.indexOf('configureAir780TlsContext()');
+  const reopenMessage = beginBody.indexOf('Reopening Air780E HTTP service after TLS context setup.');
+  const terminateAfterConfiguration = beginBody.indexOf('endAir780HttpSession(true)', reopenMessage);
+  const reinitializeAfterConfiguration = beginBody.indexOf('cellCommand("AT+HTTPINIT"', terminateAfterConfiguration);
   const configureStart = firmware.indexOf('bool configureAir780TlsContext()');
   const configureEnd = firmware.indexOf('bool restartAir780AfterHttpStall()', configureStart);
   const configureBody = firmware.slice(configureStart, configureEnd);
@@ -82,6 +85,9 @@ test('Air780EU V1180 initializes HTTP before configuring context 153 and keeps r
   assert.ok(beginStart >= 0);
   assert.ok(httpInit >= 0);
   assert.ok(configureTls > httpInit);
+  assert.ok(reopenMessage > configureTls);
+  assert.ok(terminateAfterConfiguration > reopenMessage);
+  assert.ok(reinitializeAfterConfiguration > terminateAfterConfiguration);
   assert.ok(enableHttps >= 0);
   assert.ok(tlsVersion > enableHttps);
   assert.ok(cipherSuite > tlsVersion);
@@ -94,12 +100,14 @@ test('Air780EU V1180 initializes HTTP before configuring context 153 and keeps r
   assert.match(firmware, /endAir780HttpSession\(true\)/);
   assert.match(firmware, /statusCode == 605/);
   assert.match(firmware, /SSL channel establishment failed \(605\)/);
-  assert.match(firmware, /setAir780HttpHeader\("Authorization", "Bearer " \+ supabaseAnonKey\)/);
-  assert.match(firmware, /setAir780HttpHeader\("apikey", supabaseAnonKey\)/);
-  assert.match(firmware, /setAir780HttpHeader\("X-Device-ID", deviceId\)/);
-  assert.match(firmware, /setAir780HttpHeader\("X-Device-Key", deviceKey\)/);
-  assert.match(firmware, /AT\+HTTPPARA=\\"USER_DEFINED\\"/);
-  assert.doesNotMatch(firmware, /String headerCmd = "AT\+HTTPPARA=\\"USERDATA/);
+  assert.match(firmware, /String headers = "Authorization: Bearer " \+ supabaseAnonKey/);
+  assert.match(firmware, /headers \+= "\\\\r\\\\nX-Device-ID: " \+ deviceId/);
+  assert.match(firmware, /"\\\\r\\\\nX-Device-Key: " \+ deviceKey/);
+  assert.match(firmware, /String command = "AT\+HTTPPARA=\\"USERDATA\\",\\"" \+ headers \+ "\\""/);
+  assert.match(firmware, /if \(command\.length\(\) > 480\)/);
+  assert.doesNotMatch(firmware, /setAir780HttpHeader\(/);
+  assert.doesNotMatch(firmware, /setAir780HttpHeader\("apikey"/);
+  assert.doesNotMatch(firmware, /"\\\\r\\\\napikey: "/);
   assert.match(firmware, /Sensitive modem response redacted/);
   assert.match(firmware, /if \(strcmp\(expected, "OK"\) == 0\) successToken = "\\r\\nOK\\r\\n"/);
   assert.match(firmware, /#define DALLMAYR_SIM_DATA_TEST_ENABLED\s+true/);
