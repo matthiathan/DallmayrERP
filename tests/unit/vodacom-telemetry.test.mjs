@@ -10,7 +10,7 @@ const prepaidUssdMigration = fs.readFileSync(new URL('../../supabase/migrations/
 const deviceManagement = fs.readFileSync(new URL('../../components/features/AdminTelemetryDevices.tsx', import.meta.url), 'utf8');
 const testRunner = fs.readFileSync(new URL('../../scripts/test-vodacom-telemetry.mjs', import.meta.url), 'utf8');
 const supabaseConfig = fs.readFileSync(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
-const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_18/DallmayrTelemetryV6_8_18.ino', import.meta.url), 'utf8');
+const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_19/DallmayrTelemetryV6_8_19.ino', import.meta.url), 'utf8');
 
 test('device configuration returns the verified Vodacom South Africa profile', () => {
   assert.match(configFunction, /carrier: 'Vodacom South Africa'/);
@@ -57,7 +57,7 @@ test('device-facing telemetry functions keep gateway JWT verification enabled', 
 });
 
 test('Air780E firmware performs a cellular-only simulation test and reports application bytes', () => {
-  assert.match(firmware, /6\.8\.18-esp32s3-air780eu-direct-ussd/);
+  assert.match(firmware, /6\.8\.19-esp32s3-air780eu-ussd-auto-register/);
   assert.match(firmware, /SIM DATA TEST/);
   assert.match(firmware, /sendCellularSimulationSnapshot/);
   assert.match(firmware, /airHttpPost\(INGEST_URL/);
@@ -195,4 +195,19 @@ test('Air780EU queries and parses the SIM-verified Vodacom prepaid data balance 
   assert.match(firmware, /addPrepaidBalanceMetadata/);
   assert.match(firmware, /balance\["report_pending"\] = prepaidBalanceReportPending/);
   assert.match(firmware, /VODACOM BALANCE/);
+});
+
+test('manual Vodacom balance query registers the cellular modem on demand', () => {
+  const commandStart = firmware.indexOf('if (line.equalsIgnoreCase("VODACOM BALANCE"))');
+  const commandEnd = firmware.indexOf('if (line.equalsIgnoreCase("DATA USAGE"))', commandStart);
+  const commandBody = firmware.slice(commandStart, commandEnd);
+
+  assert.ok(commandStart >= 0);
+  assert.ok(commandEnd > commandStart);
+  assert.match(commandBody, /if \(!cellReady\)/);
+  assert.match(commandBody, /cellReady = initializeCellular\(\)/);
+  assert.match(commandBody, /Air780EU registered; starting the Vodacom balance query/);
+  assert.match(commandBody, /queryVodacomPrepaidBalance\(\)/);
+  assert.match(commandBody, /prepaidBalanceStatus = "modem_not_registered"/);
+  assert.doesNotMatch(commandBody, /requires a registered cellular modem/);
 });
