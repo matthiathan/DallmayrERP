@@ -10,7 +10,7 @@ const prepaidUssdMigration = fs.readFileSync(new URL('../../supabase/migrations/
 const deviceManagement = fs.readFileSync(new URL('../../components/features/AdminTelemetryDevices.tsx', import.meta.url), 'utf8');
 const testRunner = fs.readFileSync(new URL('../../scripts/test-vodacom-telemetry.mjs', import.meta.url), 'utf8');
 const supabaseConfig = fs.readFileSync(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
-const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_17/DallmayrTelemetryV6_8_17.ino', import.meta.url), 'utf8');
+const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_18/DallmayrTelemetryV6_8_18.ino', import.meta.url), 'utf8');
 
 test('device configuration returns the verified Vodacom South Africa profile', () => {
   assert.match(configFunction, /carrier: 'Vodacom South Africa'/);
@@ -57,7 +57,7 @@ test('device-facing telemetry functions keep gateway JWT verification enabled', 
 });
 
 test('Air780E firmware performs a cellular-only simulation test and reports application bytes', () => {
-  assert.match(firmware, /6\.8\.17-esp32s3-vodacom-111-502-balance/);
+  assert.match(firmware, /6\.8\.18-esp32s3-air780eu-direct-ussd/);
   assert.match(firmware, /SIM DATA TEST/);
   assert.match(firmware, /sendCellularSimulationSnapshot/);
   assert.match(firmware, /airHttpPost\(INGEST_URL/);
@@ -178,7 +178,8 @@ test('Vodacom prepaid balance monitoring is scheduled, stored and operator contr
 });
 
 test('Air780EU queries and parses the SIM-verified Vodacom prepaid data balance USSD', () => {
-  assert.match(firmware, /AT\+CUSD=\?/);
+  assert.doesNotMatch(firmware, /cellQueryText\("AT\+CUSD=\?"/);
+  assert.match(firmware, /Skipping unreliable AT\+CUSD=\? capability probe/);
   assert.match(firmware, /AT\+CUSD=1,/);
   assert.match(firmware, /DEFAULT_PREPAID_BALANCE_USSD = "\*111\*502#"/);
   assert.match(firmware, /RETIRED_PREPAID_BALANCE_USSD = "\*135\*500#"/);
