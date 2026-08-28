@@ -13,6 +13,19 @@ import {
 const REMEMBERED_EMAIL_KEY = 'dallmayrerp-remembered-email';
 type LoginMode = 'login' | 'signup' | 'forgot';
 
+function loginDestination() {
+  const requested = new URLSearchParams(window.location.search).get('next');
+  if (!requested || !requested.startsWith('/') || requested.startsWith('//')) return '/';
+  try {
+    const destination = new URL(requested, window.location.origin);
+    if (destination.origin !== window.location.origin) return '/';
+    if (destination.pathname.startsWith('/login') || destination.pathname.startsWith('/reset-password')) return '/';
+    return `${destination.pathname}${destination.search}${destination.hash}`;
+  } catch {
+    return '/';
+  }
+}
+
 function modeCopy(mode: LoginMode) {
   if (mode === 'signup') {
     return {
@@ -56,7 +69,7 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
-    if (!loading && authUser) router.replace('/');
+    if (!loading && authUser) router.replace(loginDestination());
   }, [authUser, loading, router]);
 
   function switchMode(nextMode: LoginMode) {
@@ -99,7 +112,7 @@ export default function LoginPage() {
         });
         if (signUpError) return setError(signUpError.message);
         if (data.session) {
-          router.replace('/');
+          router.replace(loginDestination());
           return;
         }
         setSuccess('Account created. Check your email to confirm it, then sign in.');
@@ -118,7 +131,7 @@ export default function LoginPage() {
         password,
       });
       if (loginError) return setError('Sign in failed. Check your email and password, then try again.');
-      router.replace('/');
+      router.replace(loginDestination());
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Authentication could not start.');
     } finally {
