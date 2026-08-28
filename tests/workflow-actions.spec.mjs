@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { installSupabaseAuthFixture } from './helpers/supabase-auth-fixture.mjs';
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:3000';
 const supabaseOrigin = 'https://egbiiizxsqlarqpnzxxs.supabase.co';
@@ -132,6 +133,8 @@ async function installAuthenticatedSupabaseMock(page, state) {
       created_at: '2026-01-01T00:00:00.000Z',
     },
   };
+
+  await installSupabaseAuthFixture(page, baseURL, session);
 
   await page.addInitScript((storedSession) => {
     window.localStorage.setItem('dallmayrerp-auth-persistence', 'device');

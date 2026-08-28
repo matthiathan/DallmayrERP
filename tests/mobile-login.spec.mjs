@@ -99,7 +99,7 @@ for (const device of [
     await email.fill('mobile-test@example.com');
     await password.fill('not-a-real-password');
     await submit.click();
-    await expect(page.locator('.login-card .error[role="alert"]')).toContainText(/Login failed|Expected test rejection|Login could not start/i);
+    await expect(page.locator('.login-card .error[role="alert"]')).toContainText(/Sign in failed|Expected test rejection|Authentication could not start/i);
 
     await context.close();
   });
@@ -115,7 +115,8 @@ test('login form has a complete keyboard path and visible focus indication', asy
   const password = page.getByLabel('Password', { exact: true });
   const remember = page.getByRole('checkbox', { name: /Remember me on this device/i });
   const submit = page.getByRole('button', { name: 'Sign in', exact: true });
-  const activate = page.getByRole('button', { name: /First login\? Activate account/i });
+  const forgot = page.getByRole('button', { name: 'Forgot password', exact: true });
+  const create = page.getByRole('button', { name: 'Create account', exact: true });
 
   await page.evaluate(() => {
     const active = document.activeElement;
@@ -137,7 +138,9 @@ test('login form has a complete keyboard path and visible focus indication', asy
   await page.keyboard.press('Tab');
   await expect(submit).toBeFocused();
   await page.keyboard.press('Tab');
-  await expect(activate).toBeFocused();
+  await expect(forgot).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(create).toBeFocused();
 
   await context.close();
 });

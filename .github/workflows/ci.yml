@@ -97,6 +97,7 @@ jobs:
         env:
           SECURITY_PENTEST_TARGET: http://localhost:3000
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+          E2E_AUTH_BYPASS_TOKEN: dallmayr-ci-browser-auth-fixture-2026-08-28
         run: |
           npm run start > next-server.log 2>&1 &
           server_pid="$!"

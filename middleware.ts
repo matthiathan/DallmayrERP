@@ -8,6 +8,7 @@ import {
 
 const PUBLIC_AUTH_ROUTES = ['/login', '/reset-password'];
 const SESSION_RESPONSE_HEADERS = ['cache-control', 'expires', 'pragma'] as const;
+const E2E_AUTH_HEADER = 'x-dallmayr-e2e-auth';
 
 function isPublicAuthRoute(pathname: string) {
   return PUBLIC_AUTH_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
@@ -39,11 +40,20 @@ function redirectWithSession(url: URL, sessionResponse: NextResponse) {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const publicRoute = isPublicAuthRoute(pathname);
+  const e2eAuthToken = process.env.E2E_AUTH_BYPASS_TOKEN;
+  const e2eAuthenticated = !publicRoute
+    && Boolean(e2eAuthToken && e2eAuthToken.length >= 32)
+    && request.headers.get(E2E_AUTH_HEADER) === e2eAuthToken;
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
     ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   let response = NextResponse.next({ request });
+
+  // Browser tests use signed-in Supabase fixtures that only exist inside
+  // Playwright. This bypass requires an explicit server-only token and a
+  // matching request header, so it cannot activate in a normal deployment.
+  if (e2eAuthenticated) return response;
 
   if (!supabaseUrl || !supabaseKey) {
     if (publicRoute) return response;

@@ -18,6 +18,8 @@ test('server middleware validates Supabase claims before protected pages render'
   assert.match(middleware, /loginUrl\.searchParams\.set\('next'/);
   assert.match(middleware, /redirectWithSession/);
   assert.match(middleware, /destination\.origin !== origin/);
+  assert.match(middleware, /e2eAuthToken\.length >= 32/);
+  assert.match(middleware, /request\.headers\.get\(E2E_AUTH_HEADER\) === e2eAuthToken/);
 });
 
 test('browser auth uses the same cookie session that middleware can validate', () => {
