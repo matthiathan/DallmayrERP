@@ -168,8 +168,8 @@ export function AdminTelemetryDevices() {
   const selectedUsage = selectedDevice ? dataUsageByDevice[selectedDevice.id] ?? null : null;
   const selectedPrepaid = selectedDevice ? prepaidByDevice[selectedDevice.id] ?? null : null;
 
-  const loadDevices = useCallback(async () => {
-    setLoading(true);
+  const loadDevices = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     setError(null);
     const client = getSupabaseClient();
     const [{ data, error: loadError }, { data: overviewData }, { data: usageData, error: usageError }, { data: prepaidData, error: prepaidError }] = await Promise.all([
@@ -184,7 +184,7 @@ export function AdminTelemetryDevices() {
 
     if (loadError) {
       setError(loadError.message);
-      setLoading(false);
+      if (showLoading) setLoading(false);
       return;
     }
 
@@ -218,7 +218,7 @@ export function AdminTelemetryDevices() {
     }
 
     setLastUpdated(new Date());
-    setLoading(false);
+    if (showLoading) setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -226,6 +226,23 @@ export function AdminTelemetryDevices() {
       setError(loadError instanceof Error ? loadError.message : 'Could not load telemetry devices.');
       setLoading(false);
     });
+
+    const refresh = () => {
+      if (document.visibilityState !== 'visible') return;
+      loadDevices(false).catch((loadError) => {
+        setError(loadError instanceof Error ? loadError.message : 'Could not refresh telemetry devices.');
+      });
+    };
+    const intervalId = window.setInterval(refresh, 10000);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [loadDevices]);
 
   useEffect(() => {
