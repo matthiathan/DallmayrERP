@@ -173,14 +173,20 @@ Deno.serve(async (request: Request) => {
 
   const transport = payload.transport === 'wifi' || payload.transport === 'cellular' ? String(payload.transport) : null;
   const patch: Record<string, unknown> = {};
-  if (transport) patch.last_transport = transport;
+  if (transport) {
+    patch.last_transport = transport;
+    patch.last_transport_at = new Date().toISOString();
+  }
   const wifiRssi = intOrNull(payload.wifi_rssi);
   if (wifiRssi !== null) patch.wifi_rssi = wifiRssi;
   const cellularCsq = intOrNull(payload.cellular_csq ?? payload.cell_csq);
   if (cellularCsq !== null) patch.cellular_csq = cellularCsq;
   if (typeof payload.cellular_operator === 'string') patch.cellular_operator = String(payload.cellular_operator).slice(0, 120);
   if (typeof payload.cellular_model === 'string') patch.cellular_model = String(payload.cellular_model).slice(0, 120);
-  if (Object.keys(patch).length > 0) await supabase.from('telemetry_devices').update(patch).eq('id', device.id);
+  if (Object.keys(patch).length > 0) {
+    const { error: devicePatchError } = await supabase.from('telemetry_devices').update(patch).eq('id', device.id);
+    if (devicePatchError) console.error('Could not persist the accepted telemetry transport.', devicePatchError);
+  }
 
   if (!isSimulation && payload.type !== 'location_update') {
     await supabase

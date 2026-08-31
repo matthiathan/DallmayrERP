@@ -2744,6 +2744,10 @@ body { background: var(--ops-canvas) !important; color: var(--ops-ink) !importan
 .device-data-usage-summary span { color: #667085; font-size: 8px; font-weight: 750; text-transform: uppercase; }
 .device-data-usage-summary strong { color: #101828; font-size: 15px; line-height: 1.2; }
 .device-data-usage-summary small { color: #667085; font-size: 7px; line-height: 1.35; }
+.device-data-usage-summary > div.is-transport-wifi { background: #eff8ff; border-color: #b2ddff; }
+.device-data-usage-summary > div.is-transport-cellular { background: #f0fdf4; border-color: #a6e7bd; }
+.device-data-usage-summary > div.is-transport-wifi strong { color: #175cd3; }
+.device-data-usage-summary > div.is-transport-cellular strong { color: #087443; }
 .device-data-usage-summary > div.is-ok { background: #f0fdf4; border-color: #a6e7bd; }
 .device-data-usage-summary > div:is(.is-low,.is-stale,.is-failed,.is-parse_failed) { background: #fffaeb; border-color: #fedf89; }
 .device-data-usage-summary > div:is(.is-critical,.is-depleted) { background: #fff1f0; border-color: #fda29b; }
