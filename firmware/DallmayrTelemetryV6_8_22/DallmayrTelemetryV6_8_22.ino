@@ -3092,10 +3092,13 @@ bool syncRemotePolicy() {
   String remoteApn = cellularProfile["apn"] | "";
   remoteApn.trim();
   if (remoteApn.length() && remoteApn != apn) {
+    if (pppStarted) stopCellularPpp(true);
     apn = remoteApn;
     saveCoreSettings();
+    cellModemRegistered = false;
     cellReady = false;
-    Serial.print(F("Remote cellular APN saved: "));
+    lastCellAttemptMs = 0;
+    Serial.print(F("Remote cellular APN saved; PPP will reconnect using: "));
     Serial.println(apn);
   }
   JsonObject prepaidControl = control["prepaid_balance"].as<JsonObject>();
@@ -3263,30 +3266,31 @@ bool runWifiDatabaseTest() {
     return false;
   }
 
-  // Temporarily hide the modem from the generic control-plane failover helpers.
-  // This guarantees every request in this diagnostic is actually carried by
-  // Wi-Fi; a successful test can therefore not be a silent cellular fallback.
-  bool savedCellReady = cellReady;
+  // Temporarily remove PPP from the control-plane failover helpers. This
+  // guarantees every request in this diagnostic is actually carried by Wi-Fi.
+  bool restartPppAfterTest = pppStarted || pppOnline;
+  if (pppStarted) stopCellularPpp(true);
+  cellModemRegistered = false;
   cellReady = false;
 
   lastConfigAttemptMs = 0;
   lastConfigSuccessMs = 0;
   bool configOk = syncRemotePolicy();
   if (!configOk) {
-    cellReady = savedCellReady;
+    if (restartPppAfterTest) lastCellAttemptMs = 0;
     Serial.println(F("WIFI DB TEST FAILED at CONFIG READ."));
     return false;
   }
 
   if (!wifiReady()) {
-    cellReady = savedCellReady;
+    if (restartPppAfterTest) lastCellAttemptMs = 0;
     Serial.println(F("WIFI DB TEST FAILED: Wi-Fi dropped after config read."));
     return false;
   }
 
   bool ackOk = uploadConfigAck();
   if (!ackOk) {
-    cellReady = savedCellReady;
+    if (restartPppAfterTest) lastCellAttemptMs = 0;
     Serial.println(F("WIFI DB TEST FAILED at CONFIG ACK."));
     return false;
   }
@@ -3297,7 +3301,7 @@ bool runWifiDatabaseTest() {
 
   heartbeatUploadRequested = true;
   bool heartbeatOk = uploadHeartbeatViaTransport("wifi");
-  cellReady = savedCellReady;
+  if (restartPppAfterTest) lastCellAttemptMs = 0;
 
   if (heartbeatOk && transportTransitionPending
       && strcmp(transportTransitionSource, "wifi") == 0) {
@@ -5043,6 +5047,10 @@ void printStatus() {
     Serial.print(F("Wi-Fi RSSI: ")); Serial.println(WiFi.RSSI());
   }
   Serial.print(F("Cellular ready: ")); Serial.println(cellReady ? "yes" : "no");
+  Serial.print(F("Cellular PPP started: ")); Serial.println(pppStarted ? "yes" : "no");
+  Serial.print(F("Cellular PPP online: ")); Serial.println(pppOnline ? "yes" : "no");
+  if (pppOnline) { Serial.print(F("Cellular PPP IP: ")); Serial.println(PPP.localIP()); }
+  Serial.print(F("Cellular CSQ cached: ")); Serial.println(cellularCsq);
   Serial.print(F("Cellular model: ")); Serial.println(cellularModel.length() ? cellularModel : "<unknown>");
   Serial.print(F("Cellular firmware: ")); Serial.println(cellularFirmware.length() ? cellularFirmware : "<unknown>");
   Serial.print(F("Cellular operator: ")); Serial.println(cellularOperator.length() ? cellularOperator : "<unknown>");
