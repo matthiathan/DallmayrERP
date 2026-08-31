@@ -10,7 +10,7 @@ const prepaidUssdMigration = fs.readFileSync(new URL('../../supabase/migrations/
 const deviceManagement = fs.readFileSync(new URL('../../components/features/AdminTelemetryDevices.tsx', import.meta.url), 'utf8');
 const testRunner = fs.readFileSync(new URL('../../scripts/test-vodacom-telemetry.mjs', import.meta.url), 'utf8');
 const supabaseConfig = fs.readFileSync(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
-const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_38/DallmayrTelemetryV6_8_38.ino', import.meta.url), 'utf8');
+const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_39/DallmayrTelemetryV6_8_39.ino', import.meta.url), 'utf8');
 
 test('device configuration returns the verified Vodacom South Africa profile', () => {
   assert.match(configFunction, /carrier: 'Vodacom South Africa'/);
@@ -63,7 +63,7 @@ test('device-facing telemetry functions keep gateway JWT verification enabled', 
 });
 
 test('Air780E firmware performs a cellular-only simulation test and reports application bytes', () => {
-  assert.match(firmware, /6\.8\.38-esp32s3-air780eu-ussd-auto-register/);
+  assert.match(firmware, /6\.8\.39-esp32s3-air780eu-ussd-auto-register/);
   assert.match(firmware, /SIM DATA TEST/);
   assert.match(firmware, /sendCellularSimulationSnapshot/);
   assert.match(firmware, /pppHttpPost\(INGEST_URL/);
@@ -126,6 +126,14 @@ test('production PPP bootstrap traces control frames and snapshots negotiation s
   assert.match(firmware, /protocol == 0x8021/);
   assert.match(firmware, /\[PPP SNAPSHOT\]/);
   assert.match(firmware, /ipcp_gotoptions\.ouraddr/);
+});
+
+test('MDB free-vend cash-sale notifications count units without revenue', () => {
+  assert.match(firmware, /MDB_VEND_FREE_VEND/);
+  assert.match(firmware, /bool freeVend = \(rawItemNumber & 0x8000U\) != 0/);
+  assert.match(firmware, /uint16_t selection = rawItemNumber & 0x0FFFU/);
+  assert.match(firmware, /mdbRecordVend\(selection, 0, true, "free_vend"\)/);
+  assert.match(firmware, /MDB free-vend audit observed/);
 });
 
 test('Air780EU V1180 production firmware does not execute unsupported USSD balance commands', () => {
