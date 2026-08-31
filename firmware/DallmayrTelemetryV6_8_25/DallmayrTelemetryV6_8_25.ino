@@ -1661,11 +1661,11 @@ String airPppIpText() {
   return String(value);
 }
 
-static u32_t airPppOutputCallback(ppp_pcb* pcb, u8_t* data, u32_t len, void* ctx) {
+static u32_t airPppOutputCallback(ppp_pcb* pcb, const void* data, u32_t len, void* ctx) {
   (void)pcb;
   (void)ctx;
   if (!data || len == 0) return 0;
-  size_t written = CellSerial.write(data, len);
+  size_t written = CellSerial.write(static_cast<const uint8_t*>(data), len);
   airPppUartTxBytes += written;
   return static_cast<u32_t>(written);
 }
