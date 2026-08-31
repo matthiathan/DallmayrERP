@@ -10,7 +10,7 @@ const prepaidUssdMigration = fs.readFileSync(new URL('../../supabase/migrations/
 const deviceManagement = fs.readFileSync(new URL('../../components/features/AdminTelemetryDevices.tsx', import.meta.url), 'utf8');
 const testRunner = fs.readFileSync(new URL('../../scripts/test-vodacom-telemetry.mjs', import.meta.url), 'utf8');
 const supabaseConfig = fs.readFileSync(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
-const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_19/DallmayrTelemetryV6_8_19.ino', import.meta.url), 'utf8');
+const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_20/DallmayrTelemetryV6_8_20.ino', import.meta.url), 'utf8');
 
 test('device configuration returns the verified Vodacom South Africa profile', () => {
   assert.match(configFunction, /carrier: 'Vodacom South Africa'/);
@@ -19,6 +19,12 @@ test('device configuration returns the verified Vodacom South Africa profile', (
   assert.match(configFunction, /authentication: 'pap'/);
   assert.match(configFunction, /mcc: '655'/);
   assert.match(configFunction, /mnc: '01'/);
+});
+
+test('telemetry management refreshes active transport and usage without manual reload', () => {
+  assert.match(deviceManagement, /window\.setInterval\(refresh, 10000\)/);
+  assert.match(deviceManagement, /document\.visibilityState !== 'visible'/);
+  assert.match(deviceManagement, /loadDevices\(false\)/);
 });
 
 test('accepted telemetry records server, device-application and optional modem byte counters', () => {
@@ -57,7 +63,7 @@ test('device-facing telemetry functions keep gateway JWT verification enabled', 
 });
 
 test('Air780E firmware performs a cellular-only simulation test and reports application bytes', () => {
-  assert.match(firmware, /6\.8\.19-esp32s3-air780eu-ussd-auto-register/);
+  assert.match(firmware, /6\.8\.20-esp32s3-air780eu-ussd-auto-register/);
   assert.match(firmware, /SIM DATA TEST/);
   assert.match(firmware, /sendCellularSimulationSnapshot/);
   assert.match(firmware, /airHttpPost\(INGEST_URL/);
@@ -125,7 +131,8 @@ test('Air780EU V1180 reopens HTTP and streams POST data through the extended com
   assert.match(firmware, /AIR780_HTTP_POST_CHUNK_TIMEOUT_MS = 15000UL/);
   assert.match(firmware, /AT\+HTTPPARA=\\"TIMEOUT\\"," \+ String\(AIR780_HTTP_TIMEOUT_SECONDS\)/);
   assert.match(firmware, /AT\+HTTPEXACTION=1,/);
-  assert.match(firmware, /\+HTTPEXPOST\\r\\n/);
+  assert.match(firmware, /Air780EU \+HTTPEXPOST URC not seen; requesting POST prompt after HTTPEXACTION OK/);
+  assert.match(firmware, /actionStart\.indexOf\("\\r\\nOK\\r\\n"\)/);
   assert.match(firmware, /AT\+HTTPEXPOST=/);
   assert.match(firmware, /AT\+HTTPEXGET\\r\\n/);
   assert.match(firmware, /\+HTTPEXGET:/);
