@@ -10,7 +10,7 @@ const prepaidUssdMigration = fs.readFileSync(new URL('../../supabase/migrations/
 const deviceManagement = fs.readFileSync(new URL('../../components/features/AdminTelemetryDevices.tsx', import.meta.url), 'utf8');
 const testRunner = fs.readFileSync(new URL('../../scripts/test-vodacom-telemetry.mjs', import.meta.url), 'utf8');
 const supabaseConfig = fs.readFileSync(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
-const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_32/DallmayrTelemetryV6_8_32.ino', import.meta.url), 'utf8');
+const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_33/DallmayrTelemetryV6_8_33.ino', import.meta.url), 'utf8');
 
 test('device configuration returns the verified Vodacom South Africa profile', () => {
   assert.match(configFunction, /carrier: 'Vodacom South Africa'/);
@@ -63,7 +63,7 @@ test('device-facing telemetry functions keep gateway JWT verification enabled', 
 });
 
 test('Air780E firmware performs a cellular-only simulation test and reports application bytes', () => {
-  assert.match(firmware, /6\.8\.32-esp32s3-air780eu-ussd-auto-register/);
+  assert.match(firmware, /6\.8\.33-esp32s3-air780eu-ussd-auto-register/);
   assert.match(firmware, /SIM DATA TEST/);
   assert.match(firmware, /sendCellularSimulationSnapshot/);
   assert.match(firmware, /pppHttpPost\(INGEST_URL/);
@@ -116,6 +116,19 @@ test('PPP retries reuse one control block instead of recreating the lwIP netif',
   assert.doesNotMatch(firmware, /ppp_free\(/);
   assert.match(firmware, /closeAirPppSession\(/);
   assert.match(firmware, /ppp_close\(airPppPcb, 1\)/);
+});
+
+test('production PPP startup matches the successful isolated diagnostic sequence', () => {
+  assert.doesNotMatch(firmware, /AT\+SAPBR=0,1/);
+  assert.match(firmware, /"air780_ppp_rx",\s*6144/);
+  assert.match(firmware, /matching the successful V6\.8\.31 diagnostic sequence[\s\S]*delay\(20\)/);
+  assert.match(firmware, /after 5 probes/);
+  assert.match(firmware, /AT\+CSCLK=0/);
+
+  const initStart = firmware.indexOf('bool initializeCellular()');
+  const initEnd = firmware.indexOf('const char* airPppAuthUsername()', initStart);
+  const initBody = firmware.slice(initStart, initEnd);
+  assert.doesNotMatch(initBody, /enableCellModemDataUsage\(\)/);
 });
 
 test('production PPP uses the V6.8.31 verified Vodacom IPCP profile', () => {
