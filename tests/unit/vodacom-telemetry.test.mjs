@@ -10,7 +10,7 @@ const prepaidUssdMigration = fs.readFileSync(new URL('../../supabase/migrations/
 const deviceManagement = fs.readFileSync(new URL('../../components/features/AdminTelemetryDevices.tsx', import.meta.url), 'utf8');
 const testRunner = fs.readFileSync(new URL('../../scripts/test-vodacom-telemetry.mjs', import.meta.url), 'utf8');
 const supabaseConfig = fs.readFileSync(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
-const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_20/DallmayrTelemetryV6_8_20.ino', import.meta.url), 'utf8');
+const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_21/DallmayrTelemetryV6_8_21.ino', import.meta.url), 'utf8');
 
 test('device configuration returns the verified Vodacom South Africa profile', () => {
   assert.match(configFunction, /carrier: 'Vodacom South Africa'/);
@@ -63,7 +63,7 @@ test('device-facing telemetry functions keep gateway JWT verification enabled', 
 });
 
 test('Air780E firmware performs a cellular-only simulation test and reports application bytes', () => {
-  assert.match(firmware, /6\.8\.20-esp32s3-air780eu-ussd-auto-register/);
+  assert.match(firmware, /6\.8\.21-esp32s3-air780eu-ussd-auto-register/);
   assert.match(firmware, /SIM DATA TEST/);
   assert.match(firmware, /sendCellularSimulationSnapshot/);
   assert.match(firmware, /airHttpPost\(INGEST_URL/);
@@ -75,7 +75,7 @@ test('Air780E firmware performs a cellular-only simulation test and reports appl
   assert.match(firmware, /dailyUnits != 1 \|\| dailyRevenue != 1500/);
 });
 
-test('Air780EU V1180 reopens HTTP and streams POST data through the extended command path', () => {
+test('Air780EU V1180 uses the standard HTTPDATA POST path with explicit status diagnostics', () => {
   const beginStart = firmware.indexOf('bool beginAir780HttpsSession()');
   const beginEnd = firmware.indexOf('bool setAir780CompactHttpHeaders', beginStart);
   const beginBody = firmware.slice(beginStart, beginEnd);
@@ -130,17 +130,13 @@ test('Air780EU V1180 reopens HTTP and streams POST data through the extended com
   assert.match(firmware, /AIR780_HTTP_ACTION_WAIT_MS/);
   assert.match(firmware, /AIR780_HTTP_POST_CHUNK_TIMEOUT_MS = 15000UL/);
   assert.match(firmware, /AT\+HTTPPARA=\\"TIMEOUT\\"," \+ String\(AIR780_HTTP_TIMEOUT_SECONDS\)/);
-  assert.match(firmware, /AT\+HTTPEXACTION=1,/);
-  assert.match(firmware, /Air780EU \+HTTPEXPOST URC not seen; requesting POST prompt after HTTPEXACTION OK/);
-  assert.match(firmware, /actionStart\.indexOf\("\\r\\nOK\\r\\n"\)/);
-  assert.match(firmware, /AT\+HTTPEXPOST=/);
-  assert.match(firmware, /AT\+HTTPEXGET\\r\\n/);
-  assert.match(firmware, /\+HTTPEXGET:/);
-  assert.match(firmware, /event\.lastIndexOf\("\+HTTPEXACTION:"\)/);
-  assert.match(firmware, /acknowledgedLength\.toInt\(\) != static_cast<int>\(json\.length\(\)\)/);
-  assert.doesNotMatch(firmware, /CellSerial\.print\("AT\+HTTPDATA=/);
-  assert.doesNotMatch(firmware, /CellSerial\.print\("AT\+HTTPACTION=1/);
-  assert.doesNotMatch(firmware, /CellSerial\.print\("AT\+HTTPREAD/);
+  assert.match(firmware, /CellSerial\.print\("AT\+HTTPDATA=/);
+  assert.match(firmware, /CellSerial\.print\("AT\+HTTPACTION=1/);
+  assert.match(firmware, /CellSerial\.print\("AT\+HTTPREAD/);
+  assert.match(firmware, /readAir780StandardHttpAction/);
+  assert.match(firmware, /Air780EU HTTPACTION status=/);
+  assert.match(firmware, /HTTP service timed out before Supabase returned a response/);
+  assert.doesNotMatch(firmware, /CellSerial\.print\("AT\+HTTPEXACTION=1,/);
   assert.match(firmware, /\+SAPBR 1: DEACT/);
   assert.match(firmware, /\+CGEV: NW PDN DEACT/);
 });
@@ -155,7 +151,7 @@ test('Air780EU SSL configuration failures reset the separate modem without loopi
   assert.match(firmware, /if \(air780HttpRecoveryCount >= 2\)/);
   assert.match(firmware, /air780HttpRecoveryCount\+\+/);
   assert.match(firmware, /air780HttpRecoveryCount = 0;/);
-  assert.match(firmware, /readAir780ExtendedPostResult\(responseBody, statusCode/);
+  assert.match(firmware, /readAir780StandardHttpAction\(/);
 });
 
 test('ESP32-S3 passive MDB capture uses an RMT-safe noise filter', () => {
