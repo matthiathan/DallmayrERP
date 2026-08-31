@@ -275,9 +275,9 @@ static const char* CONFIG_URL = "https://egbiiizxsqlarqpnzxxs.supabase.co/functi
 static const char* DEFAULT_PREPAID_BALANCE_USSD = "*111*502#";
 static const char* RETIRED_PREPAID_BALANCE_USSD = "*135*500#";
 // AT+HTTPPARA="TIMEOUT" controls the complete modem-side HTTP operation.
-// Keep the MCU wait longer than the modem deadline. V1180's standard buffered
-// HTTPDATA/HTTPACTION path returned 408 before reaching Supabase, so this build
-// streams POST data through the documented HTTPEXACTION/HTTPEXPOST path.
+// Keep the MCU wait longer than the modem deadline. V6.8.21 deliberately uses
+// the standard HTTPDATA/HTTPACTION/HTTPREAD path because the deployed V1180
+// Air780EU accepts HTTPEXACTION but never opens the HTTPEXPOST data prompt.
 static const uint16_t AIR780_HTTP_TIMEOUT_SECONDS = 45;
 static const uint32_t AIR780_HTTP_ACTION_WAIT_MS =
   (static_cast<uint32_t>(AIR780_HTTP_TIMEOUT_SECONDS) + 10UL) * 1000UL;
