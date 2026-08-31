@@ -228,8 +228,9 @@ test('manual Vodacom balance query registers the cellular modem on demand', () =
 
   assert.ok(commandStart >= 0);
   assert.ok(commandEnd > commandStart);
-  assert.match(commandBody, /if \(!cellReady\)/);
-  assert.match(commandBody, /cellReady = initializeCellular\(\)/);
+  assert.match(commandBody, /if \(pppStarted\)/);
+  assert.match(commandBody, /if \(!cellModemRegistered\)/);
+  assert.match(commandBody, /cellModemRegistered = initializeCellular\(\)/);
   assert.match(commandBody, /Air780EU registered; starting the Vodacom balance query/);
   assert.match(commandBody, /queryVodacomPrepaidBalance\(\)/);
   assert.match(commandBody, /prepaidBalanceStatus = "modem_not_registered"/);
