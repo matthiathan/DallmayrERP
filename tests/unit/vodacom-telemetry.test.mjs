@@ -92,7 +92,7 @@ test('manual PPP raw API is protected by the ESP-IDF TCPIP core lock', () => {
   assert.match(firmware, /LOCK_TCPIP_CORE\(\)[\s\S]*pppos_create\(/);
   assert.match(firmware, /LOCK_TCPIP_CORE\(\)[\s\S]*ppp_connect\(airPppPcb, 0\)/);
   assert.match(firmware, /LOCK_TCPIP_CORE\(\)[\s\S]*ppp_close\(airPppPcb, 1\)/);
-  assert.match(firmware, /airPppIpAddress\[0\] != '\\\\0'/);
+  assert.match(firmware, /airPppIpAddress\[0\] != '\\0'/);
 });
 
 test('Air780EU manual PPPoS handoff configures CID1 and dials without esp-modem', () => {
