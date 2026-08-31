@@ -1569,6 +1569,43 @@ bool recoverAir780CommandMode(bool verbose = true) {
   return recovered;
 }
 
+bool ensureAir780PppCid1Apn() {
+  const char* desiredApn = apn.length() ? apn.c_str() : DEFAULT_APN;
+  String pdpStatus = cellQueryText("AT+CGDCONT?", 3000);
+  String expectedCid1 = String("+CGDCONT: 1,\"IP\",\"") + desiredApn + "\"";
+
+  if (pdpStatus.indexOf(expectedCid1) >= 0) {
+    Serial.print(F("PPP CID1 APN already correct; preserving active PDP state: "));
+    Serial.println(desiredApn);
+    return true;
+  }
+
+  Serial.print(F("PPP CID1 APN differs from desired value; reconfiguring CID1 to: "));
+  Serial.println(desiredApn);
+
+  // Only tear CID1 down when an APN change is actually necessary.
+  String activeStatus = cellQueryText("AT+CGACT?", 3000);
+  if (activeStatus.indexOf("+CGACT: 1,1") >= 0) {
+    if (!cellCommand("AT+CGACT=0,1", "OK", 6000, true)) {
+      Serial.println(F("PPP CID1 could not be deactivated for APN change."));
+      return false;
+    }
+    delay(500);
+  }
+
+  String pdpCmd = String("AT+CGDCONT=1,\"IP\",\"") + desiredApn + "\"";
+  if (!cellCommand(pdpCmd, "OK", 3500)) {
+    Serial.println(F("Air780EU could not configure PPP PDP context 1."));
+    return false;
+  }
+
+  String verify = cellQueryText("AT+CGDCONT?", 3000);
+  bool configured = verify.indexOf(expectedCid1) >= 0;
+  Serial.print(F("PPP CID1 APN verification: "));
+  Serial.println(configured ? "ok" : "failed");
+  return configured;
+}
+
 bool initializeCellular() {
   Serial.println(F("Initialising Air780E/Air780EU..."));
   // A modem restart or a new cellular initialization can discard or retain a
@@ -1629,11 +1666,7 @@ bool initializeCellular() {
   cellCommand("AT+SAPBR=0,1", "OK", 3000, true);
   delay(250);
 
-  String pdpCmd = "AT+CGDCONT=1,\"IP\",\"" + apn + "\"";
-  if (!cellCommand(pdpCmd, "OK", 3000)) {
-    Serial.println(F("Air780EU could not configure PPP PDP context 1."));
-    return false;
-  }
+  if (!ensureAir780PppCid1Apn()) return false;
 
   String pdpStatus = cellQueryText("AT+CGDCONT?", 3000);
   Serial.print(F("PPP PDP context: ")); Serial.println(pdpStatus);
@@ -1966,9 +1999,8 @@ bool startCellularPpp() {
   delay(250);
 
   const char* pppApn = apn.length() ? apn.c_str() : DEFAULT_APN;
-  String pdpConfigCommand = String("AT+CGDCONT=1,\"IP\",\"") + pppApn + "\"";
   if (!cellCommand("ATE0", "OK", 2000, true)
-      || !cellCommand(pdpConfigCommand, "OK", 3500)) {
+      || !ensureAir780PppCid1Apn()) {
     Serial.println(F("Air780EU manual PPP preflight failed before dial."));
     return false;
   }
