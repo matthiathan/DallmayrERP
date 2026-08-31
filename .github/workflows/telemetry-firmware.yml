@@ -43,4 +43,4 @@ jobs:
           arduino-cli compile
           --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=opi
           --warnings all
-          firmware/DallmayrCellularDiagnosticV6_8_30
+          firmware/DallmayrCellularDiagnosticV6_8_31
