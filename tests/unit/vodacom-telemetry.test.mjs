@@ -10,7 +10,7 @@ const prepaidUssdMigration = fs.readFileSync(new URL('../../supabase/migrations/
 const deviceManagement = fs.readFileSync(new URL('../../components/features/AdminTelemetryDevices.tsx', import.meta.url), 'utf8');
 const testRunner = fs.readFileSync(new URL('../../scripts/test-vodacom-telemetry.mjs', import.meta.url), 'utf8');
 const supabaseConfig = fs.readFileSync(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
-const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_22/DallmayrTelemetryV6_8_22.ino', import.meta.url), 'utf8');
+const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_23/DallmayrTelemetryV6_8_23.ino', import.meta.url), 'utf8');
 
 test('device configuration returns the verified Vodacom South Africa profile', () => {
   assert.match(configFunction, /carrier: 'Vodacom South Africa'/);
@@ -63,7 +63,7 @@ test('device-facing telemetry functions keep gateway JWT verification enabled', 
 });
 
 test('Air780E firmware performs a cellular-only simulation test and reports application bytes', () => {
-  assert.match(firmware, /6\.8\.22-esp32s3-air780eu-ussd-auto-register/);
+  assert.match(firmware, /6\.8\.23-esp32s3-air780eu-ussd-auto-register/);
   assert.match(firmware, /SIM DATA TEST/);
   assert.match(firmware, /sendCellularSimulationSnapshot/);
   assert.match(firmware, /pppHttpPost\(INGEST_URL/);
@@ -73,6 +73,15 @@ test('Air780E firmware performs a cellular-only simulation test and reports appl
   assert.match(firmware, /String headers = "Authorization: Bearer " \+ supabaseAnonKey/);
   assert.match(firmware, /SUPABASE ANON KEY/);
   assert.match(firmware, /dailyUnits != 1 \|\| dailyRevenue != 1500/);
+});
+
+test('Air780EU PPP handoff prepares CID1 and disables echo on the PPP DTE', () => {
+  assert.match(firmware, /cellCommand\("AT\+CGACT=0,1"/);
+  assert.match(firmware, /AT\+CGDCONT=1,\\"IP\\",\\"/);
+  assert.match(firmware, /PPP\.cmd\("ATE0", 2500\)/);
+  assert.match(firmware, /PPP\.cmd\("AT\+CGACT=0,1", 6000\)/);
+  assert.match(firmware, /PPP CID1 configure:/);
+  assert.match(firmware, /dialing PPP CID1 with generic ATD\*99#/);
 });
 
 test('production cellular telemetry bypasses Air780EU TLS and uses ESP32 PPPoS', () => {
