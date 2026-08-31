@@ -10,7 +10,7 @@ const prepaidUssdMigration = fs.readFileSync(new URL('../../supabase/migrations/
 const deviceManagement = fs.readFileSync(new URL('../../components/features/AdminTelemetryDevices.tsx', import.meta.url), 'utf8');
 const testRunner = fs.readFileSync(new URL('../../scripts/test-vodacom-telemetry.mjs', import.meta.url), 'utf8');
 const supabaseConfig = fs.readFileSync(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
-const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_27/DallmayrTelemetryV6_8_27.ino', import.meta.url), 'utf8');
+const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_28/DallmayrTelemetryV6_8_28.ino', import.meta.url), 'utf8');
 
 test('device configuration returns the verified Vodacom South Africa profile', () => {
   assert.match(configFunction, /carrier: 'Vodacom South Africa'/);
@@ -63,7 +63,7 @@ test('device-facing telemetry functions keep gateway JWT verification enabled', 
 });
 
 test('Air780E firmware performs a cellular-only simulation test and reports application bytes', () => {
-  assert.match(firmware, /6\.8\.27-esp32s3-air780eu-ussd-auto-register/);
+  assert.match(firmware, /6\.8\.28-esp32s3-air780eu-ussd-auto-register/);
   assert.match(firmware, /SIM DATA TEST/);
   assert.match(firmware, /sendCellularSimulationSnapshot/);
   assert.match(firmware, /pppHttpPost\(INGEST_URL/);
@@ -95,16 +95,18 @@ test('manual PPP raw API is protected by the ESP-IDF TCPIP core lock', () => {
   assert.match(firmware, /airPppIpAddress\[0\] != '\\0'/);
 });
 
-test('Vodacom PPP uses PAP guest credentials and logs negotiation phases', () => {
-  assert.match(firmware, /VODACOM_PPP_USERNAME = "guest"/);
+test('Vodacom PPP tries blank PAP first and falls back to guest', () => {
+  assert.match(firmware, /VODACOM_PPP_USERNAME_BLANK = ""/);
+  assert.match(firmware, /VODACOM_PPP_USERNAME_GUEST = "guest"/);
   assert.match(firmware, /VODACOM_PPP_PASSWORD = ""/);
+  assert.match(firmware, /airPppAuthProfileIndex = 0/);
   assert.match(firmware, /ppp_set_auth\(/);
   assert.match(firmware, /PPPAUTHTYPE_PAP/);
+  assert.match(firmware, /PPP PAP blank\/blank was rejected; next retry will use guest\/blank/);
+  assert.match(firmware, /PPP PAP guest\/blank was also rejected/);
   assert.match(firmware, /ppp_set_notify_phase_callback/);
-  assert.match(firmware, /PPP_PHASE_AUTHENTICATE/);
   assert.match(firmware, /AUTHENTICATE\/PAP/);
   assert.match(firmware, /NETWORK\/IPCP/);
-  assert.match(firmware, /PPP authentication configured: PAP user=guest password=<blank>/);
 });
 
 test('PPP retries reuse one control block instead of recreating the lwIP netif', () => {
