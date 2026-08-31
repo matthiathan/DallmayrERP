@@ -10,7 +10,7 @@ const prepaidUssdMigration = fs.readFileSync(new URL('../../supabase/migrations/
 const deviceManagement = fs.readFileSync(new URL('../../components/features/AdminTelemetryDevices.tsx', import.meta.url), 'utf8');
 const testRunner = fs.readFileSync(new URL('../../scripts/test-vodacom-telemetry.mjs', import.meta.url), 'utf8');
 const supabaseConfig = fs.readFileSync(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
-const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_33/DallmayrTelemetryV6_8_33.ino', import.meta.url), 'utf8');
+const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_34/DallmayrTelemetryV6_8_34.ino', import.meta.url), 'utf8');
 
 test('device configuration returns the verified Vodacom South Africa profile', () => {
   assert.match(configFunction, /carrier: 'Vodacom South Africa'/);
@@ -63,7 +63,7 @@ test('device-facing telemetry functions keep gateway JWT verification enabled', 
 });
 
 test('Air780E firmware performs a cellular-only simulation test and reports application bytes', () => {
-  assert.match(firmware, /6\.8\.33-esp32s3-air780eu-ussd-auto-register/);
+  assert.match(firmware, /6\.8\.34-esp32s3-air780eu-ussd-auto-register/);
   assert.match(firmware, /SIM DATA TEST/);
   assert.match(firmware, /sendCellularSimulationSnapshot/);
   assert.match(firmware, /pppHttpPost\(INGEST_URL/);
@@ -116,6 +116,20 @@ test('PPP retries reuse one control block instead of recreating the lwIP netif',
   assert.doesNotMatch(firmware, /ppp_free\(/);
   assert.match(firmware, /closeAirPppSession\(/);
   assert.match(firmware, /ppp_close\(airPppPcb, 1\)/);
+});
+
+test('cellular-preferred boot isolates the first PPP handshake from Wi-Fi and machine services', () => {
+  assert.match(firmware, /Cellular-preferred isolated bootstrap/);
+  assert.match(firmware, /WiFi\.mode\(WIFI_OFF\)/);
+  assert.match(firmware, /bootstrapRegistered && startCellularPpp\(\)/);
+  assert.match(firmware, /Start machine services only after the isolated cellular bootstrap window/);
+  assert.match(firmware, /cellCommand\("AT\+CSCLK=0"/);
+  assert.match(firmware, /vTaskDelay\(pdMS_TO_TICKS\(1\)\)/);
+
+  const setupStart = firmware.indexOf('void setup()');
+  const setupEnd = firmware.indexOf('void loop()', setupStart);
+  const setupBody = firmware.slice(setupStart, setupEnd);
+  assert.ok(setupBody.indexOf('startCellularPpp()') < setupBody.indexOf('restartMachineInterface()'));
 });
 
 test('production PPP startup matches the successful isolated diagnostic sequence', () => {
