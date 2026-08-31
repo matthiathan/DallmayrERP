@@ -130,8 +130,8 @@ test('production PPP uses the V6.8.31 verified Vodacom IPCP profile', () => {
   assert.match(firmware, /verified V6\.8\.31 profile/);
 });
 
-test('Air780EU manual PPPoS handoff configures CID1 and dials without esp-modem', () => {
-  assert.match(firmware, /cellCommand\("AT\+CGACT=0,1"/);
+test('Air780EU manual PPPoS handoff preserves active CID1 and dials without esp-modem', () => {
+  assert.doesNotMatch(firmware, /cellCommand\("AT\+CGACT=0,1"/);
   assert.match(firmware, /AT\+CGDCONT=1,\\"IP\\",\\"/);
   assert.match(firmware, /CellSerial\.print\("ATD\*99#\\r"\)/);
   assert.match(firmware, /pppos_create\(/);
