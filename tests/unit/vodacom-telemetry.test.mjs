@@ -66,7 +66,7 @@ test('Air780E firmware performs a cellular-only simulation test and reports appl
   assert.match(firmware, /6\.8\.22-esp32s3-air780eu-ussd-auto-register/);
   assert.match(firmware, /SIM DATA TEST/);
   assert.match(firmware, /sendCellularSimulationSnapshot/);
-  assert.match(firmware, /airHttpPost\(INGEST_URL/);
+  assert.match(firmware, /pppHttpPost\(INGEST_URL/);
   assert.match(firmware, /"simulation_snapshot"/);
   assert.match(firmware, /application_tx_bytes_total/);
   assert.match(firmware, /application_rx_bytes_total/);
