@@ -321,38 +321,26 @@ test('Vodacom prepaid balance monitoring is scheduled, stored and operator contr
   assert.match(deviceManagement, /Top-ups required/);
 });
 
-test('Air780EU queries and parses the SIM-verified Vodacom prepaid data balance USSD', () => {
-  assert.doesNotMatch(firmware, /cellQueryText\("AT\+CUSD=\?"/);
-  assert.match(firmware, /Skipping unreliable AT\+CUSD=\? capability probe/);
-  assert.match(firmware, /AT\+CUSD=1,/);
-  assert.match(firmware, /DEFAULT_PREPAID_BALANCE_USSD = "\*111\*502#"/);
-  assert.match(firmware, /RETIRED_PREPAID_BALANCE_USSD = "\*135\*500#"/);
-  assert.match(firmware, /balanceUssdCode != RETIRED_PREPAID_BALANCE_USSD/);
-  assert.match(prepaidUssdMigration, /set default '\*111\*502#'/);
-  assert.match(prepaidUssdMigration, /set ussd_code = '\*111\*502#'/);
-  assert.match(configFunction, /ussd_code: prepaidBalance\?\.ussd_code \?\? '\*111\*502#'/);
-  assert.match(deviceManagement, /queries this Vodacom SIM with \*111\*502#/);
-  assert.match(firmware, /VODACOM_USSD_TIMEOUT_MS = 45000UL/);
-  assert.match(firmware, /parseDataBalanceBytes/);
-  assert.match(firmware, /decodeUcs2Hex/);
+test('Air780EU V1180 reports prepaid balance as unsupported without executing USSD', () => {
+  assert.doesNotMatch(firmware, /cellCommand\("AT\+CUSD/);
+  assert.doesNotMatch(firmware, /CellSerial\.print\("AT\+CUSD/);
+  assert.match(firmware, /unsupported_modem_firmware/);
+  assert.match(firmware, /Air780EU V1180 AT firmware does not support the required USSD balance query/);
   assert.match(firmware, /prepaidBalanceCheckIntervalMinutes/);
   assert.match(firmware, /addPrepaidBalanceMetadata/);
   assert.match(firmware, /balance\["report_pending"\] = prepaidBalanceReportPending/);
   assert.match(firmware, /VODACOM BALANCE/);
 });
 
-test('manual Vodacom balance query registers the cellular modem on demand', () => {
+test('manual Vodacom balance command is non-disruptive while PPP is running', () => {
   const commandStart = firmware.indexOf('if (line.equalsIgnoreCase("VODACOM BALANCE"))');
   const commandEnd = firmware.indexOf('if (line.equalsIgnoreCase("DATA USAGE"))', commandStart);
   const commandBody = firmware.slice(commandStart, commandEnd);
 
   assert.ok(commandStart >= 0);
   assert.ok(commandEnd > commandStart);
-  assert.match(commandBody, /if \(pppStarted\)/);
-  assert.match(commandBody, /if \(!cellModemRegistered\)/);
-  assert.match(commandBody, /cellModemRegistered = initializeCellular\(\)/);
-  assert.match(commandBody, /Air780EU registered; starting the Vodacom balance query/);
   assert.match(commandBody, /queryVodacomPrepaidBalance\(\)/);
-  assert.match(commandBody, /prepaidBalanceStatus = "modem_not_registered"/);
-  assert.doesNotMatch(commandBody, /requires a registered cellular modem/);
+  assert.doesNotMatch(commandBody, /stopCellularPpp/);
+  assert.doesNotMatch(commandBody, /initializeCellular\(\)/);
+  assert.doesNotMatch(commandBody, /CellSerial/);
 });
