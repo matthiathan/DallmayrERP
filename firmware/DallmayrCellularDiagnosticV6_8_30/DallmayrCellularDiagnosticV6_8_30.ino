@@ -139,8 +139,11 @@ String readCell(uint32_t timeoutMs, bool stopOnTerminal = true) {
         // waking from a low-power or just-escaped PPP state.
         String normalized = out;
         normalized.replace("\r", "\n");
-        if (normalized.indexOf("\nOK\n") >= 0 ||
-            normalized.indexOf("\nERROR\n") >= 0 ||
+        normalized.trim();
+        if (normalized == "OK" ||
+            normalized.endsWith("\nOK") ||
+            normalized == "ERROR" ||
+            normalized.endsWith("\nERROR") ||
             normalized.indexOf("+CME ERROR:") >= 0 ||
             normalized.indexOf("NO CARRIER") >= 0 ||
             normalized.indexOf("CONNECT") >= 0) {
@@ -172,7 +175,8 @@ String atQuery(const String& command, uint32_t timeoutMs = 3000) {
 
 bool responseHasOk(String response) {
   response.replace("\r", "\n");
-  return response.indexOf("\nOK\n") >= 0 || response.endsWith("\nOK");
+  response.trim();
+  return response == "OK" || response.endsWith("\nOK");
 }
 
 bool atOk(const String& command, uint32_t timeoutMs = 3000) {
