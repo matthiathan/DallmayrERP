@@ -10,7 +10,7 @@ const prepaidUssdMigration = fs.readFileSync(new URL('../../supabase/migrations/
 const deviceManagement = fs.readFileSync(new URL('../../components/features/AdminTelemetryDevices.tsx', import.meta.url), 'utf8');
 const testRunner = fs.readFileSync(new URL('../../scripts/test-vodacom-telemetry.mjs', import.meta.url), 'utf8');
 const supabaseConfig = fs.readFileSync(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
-const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_21/DallmayrTelemetryV6_8_21.ino', import.meta.url), 'utf8');
+const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_22/DallmayrTelemetryV6_8_22.ino', import.meta.url), 'utf8');
 
 test('device configuration returns the verified Vodacom South Africa profile', () => {
   assert.match(configFunction, /carrier: 'Vodacom South Africa'/);
@@ -63,7 +63,7 @@ test('device-facing telemetry functions keep gateway JWT verification enabled', 
 });
 
 test('Air780E firmware performs a cellular-only simulation test and reports application bytes', () => {
-  assert.match(firmware, /6\.8\.21-esp32s3-air780eu-ussd-auto-register/);
+  assert.match(firmware, /6\.8\.22-esp32s3-air780eu-ussd-auto-register/);
   assert.match(firmware, /SIM DATA TEST/);
   assert.match(firmware, /sendCellularSimulationSnapshot/);
   assert.match(firmware, /airHttpPost\(INGEST_URL/);
@@ -75,7 +75,28 @@ test('Air780E firmware performs a cellular-only simulation test and reports appl
   assert.match(firmware, /dailyUnits != 1 \|\| dailyRevenue != 1500/);
 });
 
-test('Air780EU V1180 uses the standard HTTPDATA POST path with explicit status diagnostics', () => {
+test('production cellular telemetry bypasses Air780EU TLS and uses ESP32 PPPoS', () => {
+  assert.match(firmware, /#include <PPP\.h>/);
+  assert.match(firmware, /#include <NetworkClientSecure\.h>/);
+  assert.match(firmware, /PPP\.setApn\(pppApn\)/);
+  assert.match(firmware, /PPP\.setPins\(CELL_TX_PIN, CELL_RX_PIN/);
+  assert.match(firmware, /PPP\.begin\(PPP_MODEM_GENERIC, 1, CELL_BAUD\)/);
+  assert.match(firmware, /PPP\.mode\(ESP_MODEM_MODE_DATA\)/);
+  assert.match(firmware, /Network\.setDefaultInterface\(PPP\)/);
+  assert.match(firmware, /bool pppHttpPost\(/);
+  assert.match(firmware, /NetworkClientSecure tls/);
+  assert.match(firmware, /recordApplicationTransfer\("cellular"/);
+  assert.match(firmware, /: pppHttpPost\(INGEST_URL, payload, body, status\)/);
+  assert.match(firmware, /pppOnline && pppHttpPost\(ENROLL_URL/);
+
+  const legacyStart = firmware.indexOf('bool airHttpPost(');
+  const legacyEnd = firmware.indexOf('// -----------------------------------------------------------------------------\n// GNSS / GPS', legacyStart);
+  assert.ok(legacyStart >= 0 && legacyEnd > legacyStart);
+  const productionWithoutLegacy = firmware.slice(0, legacyStart) + firmware.slice(legacyEnd);
+  assert.doesNotMatch(productionWithoutLegacy, /airHttpPost\(/);
+});
+
+test('legacy Air780EU modem HTTP diagnostics remain available but isolated from production telemetry', () => {
   const beginStart = firmware.indexOf('bool beginAir780HttpsSession()');
   const beginEnd = firmware.indexOf('bool setAir780CompactHttpHeaders', beginStart);
   const beginBody = firmware.slice(beginStart, beginEnd);
