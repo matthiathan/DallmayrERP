@@ -5,12 +5,13 @@ import test from 'node:test';
 const configFunction = fs.readFileSync(new URL('../../supabase/functions/telemetry-config/index.ts', import.meta.url), 'utf8');
 const ingestFunction = fs.readFileSync(new URL('../../supabase/functions/telemetry-ingest/index.ts', import.meta.url), 'utf8');
 const migration = fs.readFileSync(new URL('../../supabase/migrations/20260820083000_vodacom_test_and_data_usage.sql', import.meta.url), 'utf8');
+const actualTransportMigration = fs.readFileSync(new URL('../../supabase/migrations/20260831070000_telemetry_actual_transport_usage.sql', import.meta.url), 'utf8');
 const prepaidMigration = fs.readFileSync(new URL('../../supabase/migrations/20260825103000_telemetry_prepaid_balance_monitoring.sql', import.meta.url), 'utf8');
 const prepaidUssdMigration = fs.readFileSync(new URL('../../supabase/migrations/20260825122510_vodacom_prepaid_balance_111_502.sql', import.meta.url), 'utf8');
 const deviceManagement = fs.readFileSync(new URL('../../components/features/AdminTelemetryDevices.tsx', import.meta.url), 'utf8');
 const testRunner = fs.readFileSync(new URL('../../scripts/test-vodacom-telemetry.mjs', import.meta.url), 'utf8');
 const supabaseConfig = fs.readFileSync(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
-const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_19/DallmayrTelemetryV6_8_19.ino', import.meta.url), 'utf8');
+const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_20/DallmayrTelemetryV6_8_20.ino', import.meta.url), 'utf8');
 
 test('device configuration returns the verified Vodacom South Africa profile', () => {
   assert.match(configFunction, /carrier: 'Vodacom South Africa'/);
@@ -32,11 +33,11 @@ test('accepted telemetry records server, device-application and optional modem b
   assert.match(deviceManagement, /Fleet total · last 30 days/);
   assert.match(deviceManagement, /Mobile data usage and balance/);
   assert.match(deviceManagement, /Mobile data · usage and balance/);
-  assert.match(deviceManagement, /Used · last 30 days/);
+  assert.match(deviceManagement, /Current transport · last 30 days/);
   assert.match(deviceManagement, /Prepaid remaining/);
   assert.match(deviceManagement, /Device-reported transfer/);
   assert.match(deviceManagement, /Modem measured/);
-  assert.match(deviceManagement, /Telemetry payload/);
+  assert.match(deviceManagement, /All transports/);
 });
 
 test('safe test runner cannot claim cellular transport without explicit confirmation', () => {
@@ -57,7 +58,7 @@ test('device-facing telemetry functions keep gateway JWT verification enabled', 
 });
 
 test('Air780E firmware performs a cellular-only simulation test and reports application bytes', () => {
-  assert.match(firmware, /6\.8\.19-esp32s3-air780eu-ussd-auto-register/);
+  assert.match(firmware, /6\.8\.20-esp32s3-actual-transport-usage/);
   assert.match(firmware, /SIM DATA TEST/);
   assert.match(firmware, /sendCellularSimulationSnapshot/);
   assert.match(firmware, /airHttpPost\(INGEST_URL/);
@@ -67,6 +68,20 @@ test('Air780E firmware performs a cellular-only simulation test and reports appl
   assert.match(firmware, /String headers = "Authorization: Bearer " \+ supabaseAnonKey/);
   assert.match(firmware, /SUPABASE ANON KEY/);
   assert.match(firmware, /dailyUnits != 1 \|\| dailyRevenue != 1500/);
+});
+
+test('actual successful transport and matching counters remain separate through failover', () => {
+  assert.match(ingestFunction, /patch\.last_transport = transport/);
+  assert.match(ingestFunction, /patch\.last_transport_at = new Date\(\)\.toISOString\(\)/);
+  assert.match(actualTransportMigration, /create or replace function public\.get_telemetry_transport_usage/);
+  assert.match(actualTransportMigration, /group by u\.device_id, u\.transport/);
+  assert.match(actualTransportMigration, /coalesce\(t\.transport, s\.transport\) in \('wifi', 'cellular'\)/);
+  assert.match(firmware, /doc\.remove\("data_usage"\)/);
+  assert.match(firmware, /cellular modem totals can never be stored as Wi-Fi usage/);
+  assert.match(deviceManagement, /Current transmission mode/);
+  assert.match(deviceManagement, /Wi-Fi · last 30 days/);
+  assert.match(deviceManagement, /Cellular · last 30 days/);
+  assert.match(deviceManagement, /AUTO_REFRESH_INTERVAL_MS/);
 });
 
 test('Air780EU V1180 reopens HTTP and streams POST data through the extended command path', () => {
