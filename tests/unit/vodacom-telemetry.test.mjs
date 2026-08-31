@@ -10,7 +10,7 @@ const prepaidUssdMigration = fs.readFileSync(new URL('../../supabase/migrations/
 const deviceManagement = fs.readFileSync(new URL('../../components/features/AdminTelemetryDevices.tsx', import.meta.url), 'utf8');
 const testRunner = fs.readFileSync(new URL('../../scripts/test-vodacom-telemetry.mjs', import.meta.url), 'utf8');
 const supabaseConfig = fs.readFileSync(new URL('../../supabase/config.toml', import.meta.url), 'utf8');
-const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_34/DallmayrTelemetryV6_8_34.ino', import.meta.url), 'utf8');
+const firmware = fs.readFileSync(new URL('../../firmware/DallmayrTelemetryV6_8_35/DallmayrTelemetryV6_8_35.ino', import.meta.url), 'utf8');
 
 test('device configuration returns the verified Vodacom South Africa profile', () => {
   assert.match(configFunction, /carrier: 'Vodacom South Africa'/);
@@ -63,7 +63,7 @@ test('device-facing telemetry functions keep gateway JWT verification enabled', 
 });
 
 test('Air780E firmware performs a cellular-only simulation test and reports application bytes', () => {
-  assert.match(firmware, /6\.8\.34-esp32s3-air780eu-ussd-auto-register/);
+  assert.match(firmware, /6\.8\.35-esp32s3-air780eu-ussd-auto-register/);
   assert.match(firmware, /SIM DATA TEST/);
   assert.match(firmware, /sendCellularSimulationSnapshot/);
   assert.match(firmware, /pppHttpPost\(INGEST_URL/);
@@ -116,6 +116,11 @@ test('PPP retries reuse one control block instead of recreating the lwIP netif',
   assert.doesNotMatch(firmware, /ppp_free\(/);
   assert.match(firmware, /closeAirPppSession\(/);
   assert.match(firmware, /ppp_close\(airPppPcb, 1\)/);
+});
+
+test('compile-time Supabase key fallback stays blank and wifiReady is explicitly declared', () => {
+  assert.match(firmware, /#define DALLMAYR_SUPABASE_ANON_KEY\s+""/);
+  assert.match(firmware, /bool wifiReady\(\);/);
 });
 
 test('cellular-preferred boot isolates the first PPP handshake from Wi-Fi and machine services', () => {
