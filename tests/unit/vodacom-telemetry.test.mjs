@@ -122,7 +122,8 @@ test('production PPP bootstrap traces control frames and snapshots negotiation s
   assert.match(firmware, /struct AirPppTraceState/);
   assert.match(firmware, /traceAirPppBytes\(airPppTxTrace, "TX"/);
   assert.match(firmware, /traceAirPppBytes\(airPppRxTrace, "RX"/);
-  assert.match(firmware, /IPCP CONF-/);
+  assert.match(firmware, /traceAirPppIpcpOptions/);
+  assert.match(firmware, /protocol == 0x8021/);
   assert.match(firmware, /\[PPP SNAPSHOT\]/);
   assert.match(firmware, /ipcp_gotoptions\.ouraddr/);
 });
