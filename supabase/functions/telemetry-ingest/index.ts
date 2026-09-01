@@ -97,7 +97,19 @@ Deno.serve(async (request: Request) => {
   // Remote Test Center log batches are isolated from production telemetry
   // ingestion. They are accepted only for an active, unexpired session owned by
   // this authenticated device and are capped to keep cellular use bounded.
-  if (payload.type === 'debug_log_batch') {
+  //
+  // V6.8.41 field diagnostics showed the device entering the 1.5s debug upload
+  // cadence while the server still routed the request through normal telemetry
+  // ingestion. Recognize the explicit debug shape as well as the type marker so
+  // field logs cannot be lost if an intermediary/serializer omits or alters the
+  // top-level type value.
+  const isDebugLogBatch = payload.type === 'debug_log_batch'
+    || (
+      typeof payload.test_session_id === 'string'
+      && Array.isArray(payload.lines)
+    );
+
+  if (isDebugLogBatch) {
     const sessionId = typeof payload.test_session_id === 'string' ? payload.test_session_id.trim() : '';
     if (!sessionId) return jsonResponse({ accepted: false, message: 'test_session_id is required.' }, 400);
 
@@ -120,7 +132,7 @@ Deno.serve(async (request: Request) => {
       if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
       const line = value as Record<string, unknown>;
       const message = typeof line.message === 'string'
-        ? line.message.replace(/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/g, '').slice(0, 500)
+        ? line.message.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').slice(0, 500)
         : '';
       const sequence = nonNegativeIntegerOrNull(line.seq ?? line.sequence);
       if (!message.trim() || sequence === null) return [];
