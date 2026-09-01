@@ -10,6 +10,7 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 type DeviceStatus = 'active' | 'disabled';
 type TelemetryMode = 'live' | 'daily' | 'monthly';
 type TransportPreference = 'auto' | 'wifi' | 'cellular';
+type MdbPolarityMode = 'auto' | 'normal' | 'inverted';
 
 type TelemetryDevice = {
   id: string;
@@ -28,6 +29,8 @@ type TelemetryDevice = {
   transport_preference: TransportPreference;
   wifi_enabled: boolean;
   cellular_enabled: boolean;
+  mdb_master_polarity: MdbPolarityMode;
+  mdb_slave_polarity: MdbPolarityMode;
   last_transport: 'wifi' | 'cellular' | null;
   cellular_csq: number | null;
   cellular_operator: string | null;
@@ -149,6 +152,8 @@ export function AdminTelemetryDevices() {
   const [transportPreference, setTransportPreference] = useState<TransportPreference>('auto');
   const [wifiEnabled, setWifiEnabled] = useState(true);
   const [cellularEnabled, setCellularEnabled] = useState(true);
+  const [mdbMasterPolarity, setMdbMasterPolarity] = useState<MdbPolarityMode>('auto');
+  const [mdbSlavePolarity, setMdbSlavePolarity] = useState<MdbPolarityMode>('auto');
   const [reportingMode, setReportingMode] = useState<TelemetryMode>('live');
   const [locationInterval, setLocationInterval] = useState(15);
   const [movementThreshold, setMovementThreshold] = useState(50);
@@ -176,7 +181,7 @@ export function AdminTelemetryDevices() {
     const [{ data, error: loadError }, { data: overviewData }, { data: usageData, error: usageError }, { data: prepaidData, error: prepaidError }] = await Promise.all([
       client
         .from('telemetry_devices')
-        .select('id,device_code,machine_id,site_id,status,profile_id,location_override,firmware_version,wifi_rssi,last_seen_at,last_upload_at,last_sequence,updated_at,transport_preference,wifi_enabled,cellular_enabled,last_transport,cellular_csq,cellular_operator,location_interval_minutes,location_min_move_m')
+        .select('id,device_code,machine_id,site_id,status,profile_id,location_override,firmware_version,wifi_rssi,last_seen_at,last_upload_at,last_sequence,updated_at,transport_preference,wifi_enabled,cellular_enabled,mdb_master_polarity,mdb_slave_polarity,last_transport,cellular_csq,cellular_operator,location_interval_minutes,location_min_move_m')
         .order('device_code'),
       client.rpc('get_telemetry_dashboard', { p_period: 'today', p_branch: 'all' }),
       client.rpc('get_telemetry_data_usage', { p_days: 30 }),
@@ -254,6 +259,8 @@ export function AdminTelemetryDevices() {
     setTransportPreference(selectedDevice.transport_preference ?? 'auto');
     setWifiEnabled(selectedDevice.wifi_enabled ?? true);
     setCellularEnabled(selectedDevice.cellular_enabled ?? true);
+    setMdbMasterPolarity(selectedDevice.mdb_master_polarity ?? 'auto');
+    setMdbSlavePolarity(selectedDevice.mdb_slave_polarity ?? 'auto');
     setReportingMode(deviceModes[selectedDevice.id] ?? 'live');
     setLocationInterval(selectedDevice.location_interval_minutes ?? 15);
     setMovementThreshold(selectedDevice.location_min_move_m ?? 50);
@@ -306,6 +313,8 @@ export function AdminTelemetryDevices() {
         site_id: selectedMachine?.site_id ?? null,
         status: deviceStatus,
         location_override: locationOverride.trim() || null,
+        mdb_master_polarity: mdbMasterPolarity,
+        mdb_slave_polarity: mdbSlavePolarity,
         updated_at: new Date().toISOString(),
       })
       .eq('id', selectedDevice.id);
@@ -557,6 +566,27 @@ export function AdminTelemetryDevices() {
         <section><h3>Transport preference</h3><div className="device-radio-row">{(['auto','wifi','cellular'] as TransportPreference[]).map((value) => <label key={value}><input checked={transportPreference === value} onChange={() => setTransportPreference(value)} type="radio" /><span>{value === 'wifi' ? 'Wi-Fi' : value.charAt(0).toUpperCase() + value.slice(1)}</span></label>)}</div><label className="device-toggle-row"><span>Wi-Fi</span><input checked={wifiEnabled} onChange={(event) => setWifiEnabled(event.target.checked)} type="checkbox" /></label><label className="device-toggle-row"><span>Cellular</span><input checked={cellularEnabled} onChange={(event) => setCellularEnabled(event.target.checked)} type="checkbox" /></label></section>
 
         <section className="device-cellular-profile"><h3>Vodacom cellular test profile</h3><dl><div><dt>APN</dt><dd>internet</dd></div><div><dt>Username</dt><dd>guest</dd></div><div><dt>Password</dt><dd>Blank</dd></div><div><dt>Authentication</dt><dd>PAP</dd></div><div><dt>Network</dt><dd>MCC 655 · MNC 01</dd></div></dl><p>For a conclusive test, disable Wi-Fi and use a normal Vodacom mobile-data, IoT or M2M SIM.</p></section>
+
+        <section>
+          <h3>MDB signal polarity</h3>
+          <label>
+            <span>GPIO4 · Master-TX</span>
+            <select value={mdbMasterPolarity} onChange={(event) => setMdbMasterPolarity(event.target.value as MdbPolarityMode)}>
+              <option value="auto">Auto detect</option>
+              <option value="normal">Normal</option>
+              <option value="inverted">Inverted</option>
+            </select>
+          </label>
+          <label>
+            <span>GPIO5 · Master-RX</span>
+            <select value={mdbSlavePolarity} onChange={(event) => setMdbSlavePolarity(event.target.value as MdbPolarityMode)}>
+              <option value="auto">Auto detect</option>
+              <option value="normal">Normal</option>
+              <option value="inverted">Inverted</option>
+            </select>
+          </label>
+          <p>These settings only change how the passive MDB signals are interpreted. GPIO4 and GPIO5 remain input-only and are never driven onto the machine bus.</p>
+        </section>
 
         <section className={`device-prepaid-balance is-${selectedPrepaid?.alert_level ?? 'unknown'}`}>
           <div className="device-prepaid-heading"><div><h3>Prepaid data balance</h3><span>{prepaidBalanceUnsupported ? 'Modem query unavailable' : selectedPrepaid?.request_pending ? 'Check queued' : (selectedPrepaid?.alert_level ?? 'unknown').replace(/_/g, ' ')}</span></div><strong>{prepaidBalanceUnsupported ? 'Unavailable' : selectedPrepaid?.remaining_bytes === null || selectedPrepaid?.remaining_bytes === undefined ? 'Awaiting first check' : formatBytes(selectedPrepaid.remaining_bytes)}</strong></div>

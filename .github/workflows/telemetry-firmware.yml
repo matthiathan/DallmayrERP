@@ -36,7 +36,7 @@ jobs:
           arduino-cli compile
           --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=opi
           --warnings all
-          firmware/DallmayrTelemetryV6_8_41
+          firmware/DallmayrTelemetryV6_8_42
 
       - name: Compile Air780EU cellular diagnostic
         run: >-
