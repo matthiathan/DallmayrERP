@@ -132,7 +132,7 @@ Deno.serve(async (request: Request) => {
       if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
       const line = value as Record<string, unknown>;
       const message = typeof line.message === 'string'
-        ? line.message.replace(/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/g, '').slice(0, 500)
+        ? line.message.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').slice(0, 500)
         : '';
       const sequence = nonNegativeIntegerOrNull(line.seq ?? line.sequence);
       if (!message.trim() || sequence === null) return [];
