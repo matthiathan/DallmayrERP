@@ -110,7 +110,46 @@ Deno.serve(async (request: Request) => {
   const prepaidBalanceDue = Boolean(prepaidBalance?.request_pending)
     || intervalDue(prepaidCheckIntervalMinutes, prepaidBalance?.checked_at ?? null);
 
-  await supabase.from('telemetry_devices').update({ last_config_at: new Date().toISOString() }).eq('id', device.id);
+  // Remote Test Center is opt-in and session-scoped. Expire stale sessions here
+  // so a forgotten browser session cannot leave an ESP32 in verbose mode.
+  const nowIso = new Date().toISOString();
+  await supabase
+    .from('telemetry_test_sessions')
+    .update({ status: 'expired', ended_at: nowIso, updated_at: nowIso })
+    .eq('device_id', device.id)
+    .eq('status', 'active')
+    .lte('expires_at', nowIso);
+
+  const { data: testSession, error: testSessionError } = await supabase
+    .from('telemetry_test_sessions')
+    .select('id,status,log_level,raw_mdb,raw_dex,modem_at,http_trace,cup_counters,machine_identity,started_at,expires_at')
+    .eq('device_id', device.id)
+    .eq('status', 'active')
+    .gt('expires_at', nowIso)
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (testSessionError) {
+    return jsonResponse({ accepted: false, message: 'Could not resolve Remote Test Center state.' }, 503);
+  }
+
+  let testCommands: Array<{ id: string; command: string; created_at: string }> = [];
+  if (testSession) {
+    const { data: pendingCommands, error: commandError } = await supabase
+      .from('telemetry_test_commands')
+      .select('id,command,created_at')
+      .eq('session_id', testSession.id)
+      .eq('device_id', device.id)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true })
+      .limit(8);
+    if (commandError) {
+      return jsonResponse({ accepted: false, message: 'Could not resolve Remote Test Center commands.' }, 503);
+    }
+    testCommands = pendingCommands ?? [];
+  }
+
+  await supabase.from('telemetry_devices').update({ last_config_at: nowIso }).eq('id', device.id);
 
   return jsonResponse({
     accepted: true,
@@ -168,6 +207,26 @@ Deno.serve(async (request: Request) => {
       heartbeat_due: intervalDue(heartbeatIntervalMinutes, device.last_heartbeat_at),
       location_due: Boolean(device.location_enabled) && intervalDue(locationIntervalMinutes, device.last_location_at),
       prepaid_balance_due: prepaidBalanceDue,
+    },
+    test_center: testSession ? {
+      active: true,
+      session_id: testSession.id,
+      started_at: testSession.started_at,
+      expires_at: testSession.expires_at,
+      expires_in_seconds: Math.max(0, Math.floor((new Date(testSession.expires_at).getTime() - Date.now()) / 1000)),
+      config_poll_seconds: 10,
+      log_level: testSession.log_level,
+      raw_mdb: Boolean(testSession.raw_mdb),
+      raw_dex: Boolean(testSession.raw_dex),
+      modem_at: Boolean(testSession.modem_at),
+      http_trace: Boolean(testSession.http_trace),
+      cup_counters: Boolean(testSession.cup_counters),
+      machine_identity: Boolean(testSession.machine_identity),
+      commands: testCommands,
+    } : {
+      active: false,
+      config_poll_seconds: 300,
+      commands: [],
     },
     test_environment: {
       safe_payload_type: 'simulation_snapshot',
