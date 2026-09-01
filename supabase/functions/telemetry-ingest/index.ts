@@ -94,6 +94,110 @@ Deno.serve(async (request: Request) => {
   if (!device || device.status !== 'active') return jsonResponse({ accepted: false, message: 'Unknown or inactive telemetry device.' }, 401);
   if (!constantTimeEqual(await sha256Hex(deviceKey), device.credential_hash)) return jsonResponse({ accepted: false, message: 'Invalid telemetry device credentials.' }, 401);
 
+  // Remote Test Center log batches are isolated from production telemetry
+  // ingestion. They are accepted only for an active, unexpired session owned by
+  // this authenticated device and are capped to keep cellular use bounded.
+  if (payload.type === 'debug_log_batch') {
+    const sessionId = typeof payload.test_session_id === 'string' ? payload.test_session_id.trim() : '';
+    if (!sessionId) return jsonResponse({ accepted: false, message: 'test_session_id is required.' }, 400);
+
+    const nowIso = new Date().toISOString();
+    const { data: testSession, error: sessionError } = await supabase
+      .from('telemetry_test_sessions')
+      .select('id,device_id,status,expires_at')
+      .eq('id', sessionId)
+      .eq('device_id', device.id)
+      .eq('status', 'active')
+      .gt('expires_at', nowIso)
+      .maybeSingle();
+
+    if (sessionError) return jsonResponse({ accepted: false, message: 'Remote Test Center is temporarily unavailable.' }, 503);
+    if (!testSession) return jsonResponse({ accepted: false, message: 'Remote Test Center session is not active.' }, 409);
+
+    const bootId = typeof payload.boot_id === 'string' ? payload.boot_id.slice(0, 64) : '';
+    const rawLines = Array.isArray(payload.lines) ? payload.lines.slice(0, 24) : [];
+    const rows = rawLines.flatMap((value) => {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+      const line = value as Record<string, unknown>;
+      const message = typeof line.message === 'string'
+        ? line.message.replace(/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/g, '').slice(0, 500)
+        : '';
+      const sequence = nonNegativeIntegerOrNull(line.seq ?? line.sequence);
+      if (!message.trim() || sequence === null) return [];
+      return [{
+        session_id: testSession.id,
+        device_id: device.id,
+        boot_id: bootId,
+        device_sequence: sequence,
+        device_uptime_ms: nonNegativeIntegerOrNull(line.uptime_ms),
+        category: typeof line.category === 'string' ? line.category.slice(0, 40) : null,
+        message,
+      }];
+    });
+
+    if (rows.length > 0) {
+      const { error: insertError } = await supabase
+        .from('telemetry_debug_logs')
+        .upsert(rows, {
+          onConflict: 'session_id,boot_id,device_sequence',
+          ignoreDuplicates: true,
+        });
+      if (insertError) return jsonResponse({ accepted: false, message: 'Remote debug log storage failed.' }, 500);
+    }
+
+    const commandIds = Array.isArray(payload.completed_command_ids)
+      ? payload.completed_command_ids
+          .filter((value): value is string => typeof value === 'string')
+          .slice(0, 8)
+      : [];
+    if (commandIds.length > 0) {
+      await supabase
+        .from('telemetry_test_commands')
+        .update({ status: 'completed', completed_at: nowIso })
+        .eq('session_id', testSession.id)
+        .eq('device_id', device.id)
+        .eq('status', 'pending')
+        .in('id', commandIds);
+    }
+
+    await supabase
+      .from('telemetry_test_sessions')
+      .update({
+        acknowledged_at: nowIso,
+        last_device_contact_at: nowIso,
+        ...(rows.length > 0 ? { last_log_at: nowIso } : {}),
+        updated_at: nowIso,
+      })
+      .eq('id', testSession.id);
+
+    const transport = payload.transport === 'wifi' || payload.transport === 'cellular'
+      ? String(payload.transport)
+      : 'unknown';
+    const usagePayload = payload.data_usage && typeof payload.data_usage === 'object' && !Array.isArray(payload.data_usage)
+      ? payload.data_usage as Record<string, unknown>
+      : {};
+    const responseBody = {
+      accepted: true,
+      debug_log_batch: true,
+      test_session_id: testSession.id,
+      lines_recorded: rows.length,
+      commands_completed: commandIds.length,
+    };
+    const responseBytes = new TextEncoder().encode(JSON.stringify(responseBody)).byteLength;
+    await supabase.rpc('record_telemetry_data_usage', {
+      p_device_id: device.id,
+      p_transport: transport,
+      p_request_bytes: new TextEncoder().encode(bodyText).byteLength,
+      p_response_bytes: responseBytes,
+      p_counter_epoch: typeof usagePayload.counter_epoch === 'string' ? usagePayload.counter_epoch.slice(0, 120) : null,
+      p_application_tx_bytes_total: nonNegativeIntegerOrNull(usagePayload.application_tx_bytes_total),
+      p_application_rx_bytes_total: nonNegativeIntegerOrNull(usagePayload.application_rx_bytes_total),
+      p_modem_tx_bytes_total: nonNegativeIntegerOrNull(usagePayload.tx_bytes_total ?? usagePayload.modem_tx_bytes_total),
+      p_modem_rx_bytes_total: nonNegativeIntegerOrNull(usagePayload.rx_bytes_total ?? usagePayload.modem_rx_bytes_total),
+    });
+    return jsonResponse(responseBody);
+  }
+
   let machineLink: unknown = null;
   const machineSerial = typeof payload.machine_serial === 'string' ? payload.machine_serial.trim().slice(0, 160) : '';
   if (machineSerial && !device.machine_id && normalizedSerial(machineSerial) !== normalizedSerial(device.reported_machine_serial)) {

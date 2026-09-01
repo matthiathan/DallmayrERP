@@ -16,3 +16,414 @@
 @import '../../ui-stabilization-contract.css';
 @import '../../canonical-navigation-baseline.css';
 @import '../../canonical-appearance-runtime.css';
+
+
+/* -------------------------------------------------------------------------- */
+/* Remote Telemetry Test Center                                               */
+/* -------------------------------------------------------------------------- */
+
+.test-center-page {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.test-center-hero {
+  align-items: flex-start;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+}
+
+.test-center-hero h1 {
+  font-size: clamp(1.65rem, 2.6vw, 2.35rem);
+  letter-spacing: -0.035em;
+  margin: 4px 0 8px;
+}
+
+.test-center-hero p {
+  color: var(--text-secondary, #5f6670);
+  margin: 0;
+  max-width: 780px;
+}
+
+.test-center-eyebrow {
+  color: var(--text-secondary, #6b7280);
+  font-size: .76rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.test-center-session-pill {
+  align-items: center;
+  background: rgba(120, 125, 135, .1);
+  border: 1px solid rgba(120, 125, 135, .18);
+  border-radius: 999px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: .82rem;
+  font-weight: 750;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.test-center-session-pill i {
+  background: #8a9099;
+  border-radius: 50%;
+  height: 8px;
+  width: 8px;
+}
+
+.test-center-session-pill.is-active i {
+  animation: test-center-pulse 1.5s ease-in-out infinite;
+  background: #20a464;
+}
+
+@keyframes test-center-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(32, 164, 100, .25); }
+  50% { box-shadow: 0 0 0 6px rgba(32, 164, 100, 0); }
+}
+
+.test-center-error {
+  background: rgba(194, 54, 54, .08);
+  border: 1px solid rgba(194, 54, 54, .2);
+  border-radius: 12px;
+  color: #9e2929;
+  padding: 11px 14px;
+}
+
+.test-center-layout {
+  align-items: stretch;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  min-height: 680px;
+}
+
+.test-center-sidebar {
+  align-content: start;
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.test-center-field {
+  display: grid;
+  gap: 7px;
+}
+
+.test-center-field > span,
+.test-center-options legend {
+  font-size: .76rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.test-center-field select {
+  background: var(--surface, #fff);
+  border: 1px solid var(--border-color, #d9dde3);
+  border-radius: 10px;
+  color: inherit;
+  min-height: 42px;
+  padding: 0 10px;
+  width: 100%;
+}
+
+.test-center-device-card {
+  background: rgba(127, 127, 127, .055);
+  border: 1px solid rgba(127, 127, 127, .12);
+  border-radius: 12px;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.test-center-device-card > div {
+  align-items: baseline;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.test-center-device-card span {
+  color: var(--text-secondary, #6b7280);
+  font-size: .78rem;
+}
+
+.test-center-device-card strong {
+  font-size: .82rem;
+  max-width: 170px;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.test-center-options {
+  border: 1px solid rgba(127, 127, 127, .14);
+  border-radius: 12px;
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 12px;
+}
+
+.test-center-options label {
+  align-items: center;
+  display: flex;
+  font-size: .86rem;
+  gap: 8px;
+}
+
+.test-center-options small,
+.test-center-session-meta small {
+  color: var(--text-secondary, #6b7280);
+  font-size: .73rem;
+  line-height: 1.45;
+}
+
+.test-center-primary,
+.test-center-stop {
+  justify-content: center;
+  min-height: 42px;
+  width: 100%;
+}
+
+.test-center-stop {
+  background: #a93232;
+  border-color: #a93232;
+  color: #fff;
+}
+
+.test-center-session-meta {
+  background: rgba(32, 164, 100, .06);
+  border: 1px solid rgba(32, 164, 100, .17);
+  border-radius: 12px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.test-center-session-meta > span {
+  display: flex;
+  font-size: .79rem;
+  justify-content: space-between;
+}
+
+.test-center-session-meta code {
+  font-size: .75rem;
+}
+
+.test-center-console-panel {
+  display: grid;
+  grid-template-rows: auto minmax(420px, 1fr) auto;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.test-center-console-toolbar {
+  align-items: center;
+  border-bottom: 1px solid rgba(127, 127, 127, .16);
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 13px 15px;
+}
+
+.test-center-console-toolbar > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.test-center-console-toolbar span {
+  color: var(--text-secondary, #6b7280);
+  font-size: .72rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.test-center-console-toolbar strong {
+  font-size: .9rem;
+}
+
+.test-center-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.test-center-toolbar-actions button,
+.test-center-command-strip button {
+  background: var(--surface, #fff);
+  border: 1px solid rgba(127, 127, 127, .2);
+  border-radius: 8px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: .75rem;
+  font-weight: 700;
+  min-height: 32px;
+  padding: 0 9px;
+}
+
+.test-center-toolbar-actions button:hover:not(:disabled),
+.test-center-command-strip button:hover:not(:disabled) {
+  border-color: rgba(50, 90, 140, .5);
+}
+
+.test-center-toolbar-actions button:disabled,
+.test-center-command-strip button:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
+.test-center-terminal {
+  background: #0d1117;
+  color: #d9e0e8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: .76rem;
+  line-height: 1.55;
+  min-height: 440px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 12px 0;
+  scrollbar-color: #444c56 #0d1117;
+}
+
+.test-center-terminal-empty {
+  align-items: center;
+  color: #87909c;
+  display: grid;
+  gap: 7px;
+  justify-items: center;
+  min-height: 380px;
+  padding: 30px;
+  text-align: center;
+}
+
+.test-center-terminal-empty svg {
+  font-size: 2rem;
+}
+
+.test-center-terminal-empty span {
+  max-width: 520px;
+}
+
+.test-center-line {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  padding: 1px 14px;
+}
+
+.test-center-line:hover {
+  background: rgba(255, 255, 255, .035);
+}
+
+.test-center-line time {
+  color: #697381;
+  user-select: none;
+}
+
+.test-center-line pre {
+  color: inherit;
+  font: inherit;
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.test-center-line.is-mdb pre { color: #93c5fd; }
+.test-center-line.is-dex pre { color: #c4b5fd; }
+.test-center-line.is-control pre { color: #f9d67a; }
+.test-center-line.is-error pre { color: #ff9494; }
+.test-center-line.is-success pre { color: #8ce0ad; }
+
+.test-center-command-strip {
+  align-items: center;
+  border-top: 1px solid rgba(127, 127, 127, .16);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(180px, auto) 1fr;
+  padding: 12px 15px;
+}
+
+.test-center-command-strip > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.test-center-command-strip > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.test-center-command-strip span {
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.test-center-command-strip small {
+  color: var(--text-secondary, #6b7280);
+  font-size: .7rem;
+}
+
+.test-center-loading {
+  padding: 24px;
+}
+
+@media (max-width: 980px) {
+  .test-center-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .test-center-sidebar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .test-center-field,
+  .test-center-device-card,
+  .test-center-options,
+  .test-center-session-meta {
+    grid-column: 1 / -1;
+  }
+
+  .test-center-console-panel {
+    min-height: 620px;
+  }
+}
+
+@media (max-width: 680px) {
+  .test-center-hero,
+  .test-center-console-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .test-center-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .test-center-toolbar-actions,
+  .test-center-command-strip > div:last-child {
+    justify-content: flex-start;
+  }
+
+  .test-center-command-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .test-center-line {
+    grid-template-columns: 1fr;
+    gap: 1px;
+  }
+
+  .test-center-line time {
+    font-size: .66rem;
+  }
+}
