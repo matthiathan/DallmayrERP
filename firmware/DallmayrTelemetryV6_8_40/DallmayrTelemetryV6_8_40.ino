@@ -448,7 +448,10 @@ uint32_t lastLocationUploadMs = 0;
 // -----------------------------------------------------------------------------
 
 static const uint16_t MAX_COUNTERS = 96;
-static const uint8_t MAX_ITEMS_PER_UPLOAD = 16; // backend limit
+// Backend accepts up to 16, but Air780EU standard HTTPDATA is limited to
+// roughly 3.3 KB. Ten items leaves headroom for machine identity, transport,
+// data-usage and cup-counter metadata without fragmenting a JSON document.
+static const uint8_t MAX_ITEMS_PER_UPLOAD = 10;
 static const uint8_t MAX_FAULTS = 24;
 static const size_t DEX_TEXT_MAX = 12288;
 static const uint32_t CONFIG_RETRY_MS = 60000UL;
