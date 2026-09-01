@@ -96,7 +96,7 @@ void printStatus();
 void printMachineIdentity();
 void printCupCounters();
 void handleConsoleLine(String line);
-void applyConfiguredMdbPolarity(bool announce);
+void applyConfiguredMdbPolarity(bool announce, bool force = false);
 
 auto& DallmayrNativeSerial = Serial;
 
@@ -4877,6 +4877,8 @@ static bool mdbRmtReady = false;
 // -1 unknown/auto-learning, 0 normal, 1 inverted.
 static int8_t mdbMasterInvert = -1;
 static int8_t mdbSlaveInvert = -1;
+static char mdbAppliedMasterPolarity[12] = {0};
+static char mdbAppliedSlavePolarity[12] = {0};
 
 int8_t mdbConfiguredInvert(const char* mode) {
   if (!mode) return -1;
@@ -4885,14 +4887,34 @@ int8_t mdbConfiguredInvert(const char* mode) {
   return -1;
 }
 
-void applyConfiguredMdbPolarity(bool announce) {
-  int8_t requestedMaster = mdbConfiguredInvert(policy.mdbMasterPolarity);
-  int8_t requestedSlave = mdbConfiguredInvert(policy.mdbSlavePolarity);
-  bool changed = requestedMaster != mdbMasterInvert || requestedSlave != mdbSlaveInvert;
+void applyConfiguredMdbPolarity(bool announce, bool force) {
+  bool masterModeChanged = force || strcmp(mdbAppliedMasterPolarity, policy.mdbMasterPolarity) != 0;
+  bool slaveModeChanged = force || strcmp(mdbAppliedSlavePolarity, policy.mdbSlavePolarity) != 0;
+  bool changed = false;
 
-  mdbMasterInvert = requestedMaster;
-  mdbSlaveInvert = requestedSlave;
+  if (masterModeChanged) {
+    mdbMasterInvert = mdbConfiguredInvert(policy.mdbMasterPolarity);
+    copyText(mdbAppliedMasterPolarity, sizeof(mdbAppliedMasterPolarity), policy.mdbMasterPolarity);
+    changed = true;
+  } else if (strcmp(policy.mdbMasterPolarity, "normal") == 0) {
+    mdbMasterInvert = 0;
+  } else if (strcmp(policy.mdbMasterPolarity, "inverted") == 0) {
+    mdbMasterInvert = 1;
+  }
 
+  if (slaveModeChanged) {
+    mdbSlaveInvert = mdbConfiguredInvert(policy.mdbSlavePolarity);
+    copyText(mdbAppliedSlavePolarity, sizeof(mdbAppliedSlavePolarity), policy.mdbSlavePolarity);
+    changed = true;
+  } else if (strcmp(policy.mdbSlavePolarity, "normal") == 0) {
+    mdbSlaveInvert = 0;
+  } else if (strcmp(policy.mdbSlavePolarity, "inverted") == 0) {
+    mdbSlaveInvert = 1;
+  }
+
+  // In Auto mode, an already learned 0/1 polarity is deliberately preserved
+  // across routine config syncs. Only a real mode change back to Auto, or an
+  // interface restart, returns the decoder to -1/learning.
   if (announce && changed) {
     Serial.print(F("MDB polarity applied: GPIO4/master-TX="));
     Serial.print(policy.mdbMasterPolarity);
@@ -6113,7 +6135,7 @@ bool beginMdbCapture() {
   lastMdbValidSlaveMs = 0;
   mdbMasterInvert = -1;
   mdbSlaveInvert = -1;
-  applyConfiguredMdbPolarity(false);
+  applyConfiguredMdbPolarity(false, true);
   mdbEventQueueOverflows = 0;
   mdbMasterCaptureFault = false;
   mdbSlaveCaptureFault = false;
