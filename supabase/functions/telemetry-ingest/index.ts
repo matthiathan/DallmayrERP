@@ -30,6 +30,7 @@ async function recordIngestDiag(input: {
   requestBytes: number;
   payloadType?: string | null;
   testSessionId?: string | null;
+  bodyText?: string | null;
 }) {
   try {
     await supabase.from('telemetry_ingest_diag').insert({
@@ -39,6 +40,7 @@ async function recordIngestDiag(input: {
       request_bytes: input.requestBytes,
       payload_type: input.payloadType ?? null,
       test_session_id: input.testSessionId ?? null,
+      body_text: input.bodyText ?? null,
     });
   } catch {
     // Diagnostics must never change ingest behavior.
@@ -112,6 +114,7 @@ Deno.serve(async (request: Request) => {
       firmware,
       reason: 'invalid_json',
       requestBytes,
+      bodyText: bodyText.slice(0, 2000),
     });
     return jsonResponse({ accepted: false, message: 'Invalid JSON payload.' }, 400);
   }
