@@ -5232,7 +5232,8 @@ void serviceMdbRawDebugEvents(uint8_t maxFrames = 4) {
 
     Serial.print(F("[MDB RAW] "));
     Serial.print(frame.masterDirection ? F("MASTER ") : F("SLAVE "));
-    printMdbWordList(frame.values, frame.modeMask, frame.count);
+    if (frame.count == 0) Serial.print(F("<no decoded words>"));
+    else printMdbWordList(frame.values, frame.modeMask, frame.count);
     if (frame.repeatCount > 1) {
       Serial.print(F(" x"));
       Serial.print(frame.repeatCount);
@@ -6150,10 +6151,11 @@ void mdbProcessCapture(const rmt_data_t* symbols,
   MdbWord words[MDB_MAX_WORDS_PER_CAPTURE];
   size_t wordCount = mdbDecodeWithPolarity(symbols, symbolCount, masterDirection,
                                            learnedInvert, words, MDB_MAX_WORDS_PER_CAPTURE);
-  if (!wordCount) return;
-  mdbDecodedWords += wordCount;
+  bool rawDebugEnabled = remoteDebugActive && remoteDebugRawMdb && mdbRawDebugQueue;
+  if (!wordCount && !rawDebugEnabled) return;
+  if (wordCount) mdbDecodedWords += wordCount;
 
-  if (remoteDebugActive && remoteDebugRawMdb && mdbRawDebugQueue) {
+  if (rawDebugEnabled) {
     MdbRawDebugFrame frame = {};
     frame.masterDirection = masterDirection;
     frame.count = static_cast<uint8_t>(min(wordCount, static_cast<size_t>(24)));
@@ -6165,9 +6167,9 @@ void mdbProcessCapture(const rmt_data_t* symbols,
 
     uint32_t now = millis();
     uint32_t& lastDiagMs = masterDirection ? mdbLastMasterDiagMs : mdbLastSlaveDiagMs;
-    bool multiWordCapture = frame.count > 1;
+    bool unusualCapture = frame.count != 1;
     bool periodicSampleDue = lastDiagMs == 0 || now - lastDiagMs >= MDB_RAW_DIAG_SAMPLE_MS;
-    frame.diagnosticSample = multiWordCapture || periodicSampleDue;
+    frame.diagnosticSample = unusualCapture || periodicSampleDue;
     if (frame.diagnosticSample) {
       mdbPopulateRawDiagnostics(frame, symbols, symbolCount);
       lastDiagMs = now;
@@ -6176,6 +6178,7 @@ void mdbProcessCapture(const rmt_data_t* symbols,
     mdbQueueRawDebugFrame(frame);
   }
 
+  if (!wordCount) return;
   if (masterDirection) mdbProcessMasterWords(words, wordCount);
   else mdbProcessSlaveWords(words, wordCount);
 }
