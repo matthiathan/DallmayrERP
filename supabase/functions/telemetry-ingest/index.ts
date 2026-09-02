@@ -71,8 +71,16 @@ Deno.serve(async (request: Request) => {
   const deviceKey = request.headers.get('x-device-key') ?? '';
   if (!deviceCode || !deviceKey) return jsonResponse({ accepted: false, message: 'Device credentials are required.' }, 401);
 
-  const bodyText = await request.text();
-  if (new TextEncoder().encode(bodyText).byteLength > MAX_BODY_BYTES) return jsonResponse({ accepted: false, message: 'Payload is too large.' }, 413);
+  const rawBodyText = await request.text();
+  const rawBodyBytes = new TextEncoder().encode(rawBodyText).byteLength;
+  if (rawBodyBytes > MAX_BODY_BYTES) return jsonResponse({ accepted: false, message: 'Payload is too large.' }, 413);
+
+  // Field hardware can occasionally surface raw modem/control bytes inside a
+  // JSON string (for example an Air780EU identity response containing 0x1D).
+  // Those bytes are illegal in JSON and make JSON.parse reject the entire
+  // telemetry/debug batch. Strip only disallowed C0 controls before parsing;
+  // preserve legal JSON whitespace (TAB, LF, CR) and all printable content.
+  const bodyText = rawBodyText.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
 
   let payload: Record<string, unknown>;
   try {
@@ -199,7 +207,7 @@ Deno.serve(async (request: Request) => {
     await supabase.rpc('record_telemetry_data_usage', {
       p_device_id: device.id,
       p_transport: transport,
-      p_request_bytes: new TextEncoder().encode(bodyText).byteLength,
+      p_request_bytes: rawBodyBytes,
       p_response_bytes: responseBytes,
       p_counter_epoch: typeof usagePayload.counter_epoch === 'string' ? usagePayload.counter_epoch.slice(0, 120) : null,
       p_application_tx_bytes_total: nonNegativeIntegerOrNull(usagePayload.application_tx_bytes_total),
