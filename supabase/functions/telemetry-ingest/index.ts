@@ -78,11 +78,30 @@ Deno.serve(async (request: Request) => {
   try {
     payload = JSON.parse(bodyText) as Record<string, unknown>;
   } catch {
+    console.warn('[telemetry-ingest] reject_400 invalid_json', {
+      device_code: deviceCode,
+      firmware: request.headers.get('x-firmware-version') ?? 'unknown',
+      request_bytes: new TextEncoder().encode(bodyText).byteLength,
+    });
     return jsonResponse({ accepted: false, message: 'Invalid JSON payload.' }, 400);
   }
 
-  if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) return jsonResponse({ accepted: false, message: 'The JSON body must be an object.' }, 400);
-  if (typeof payload.device_id === 'string' && payload.device_id !== deviceCode) return jsonResponse({ accepted: false, message: 'Payload device_id does not match the request header.' }, 400);
+  if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
+    console.warn('[telemetry-ingest] reject_400 body_not_object', {
+      device_code: deviceCode,
+      firmware: request.headers.get('x-firmware-version') ?? 'unknown',
+    });
+    return jsonResponse({ accepted: false, message: 'The JSON body must be an object.' }, 400);
+  }
+  if (typeof payload.device_id === 'string' && payload.device_id !== deviceCode) {
+    console.warn('[telemetry-ingest] reject_400 device_id_mismatch', {
+      device_code: deviceCode,
+      payload_device_id: payload.device_id,
+      firmware: request.headers.get('x-firmware-version') ?? 'unknown',
+      payload_type: typeof payload.type === 'string' ? payload.type : 'unknown',
+    });
+    return jsonResponse({ accepted: false, message: 'Payload device_id does not match the request header.' }, 400);
+  }
 
   const { data: device, error: deviceError } = await supabase
     .from('telemetry_devices')
@@ -111,7 +130,15 @@ Deno.serve(async (request: Request) => {
 
   if (isDebugLogBatch) {
     const sessionId = typeof payload.test_session_id === 'string' ? payload.test_session_id.trim() : '';
-    if (!sessionId) return jsonResponse({ accepted: false, message: 'test_session_id is required.' }, 400);
+    if (!sessionId) {
+      console.warn('[telemetry-ingest] reject_400 missing_test_session_id', {
+        device_code: deviceCode,
+        firmware: request.headers.get('x-firmware-version') ?? 'unknown',
+        payload_type: typeof payload.type === 'string' ? payload.type : 'unknown',
+        lines_count: Array.isArray(payload.lines) ? payload.lines.length : -1,
+      });
+      return jsonResponse({ accepted: false, message: 'test_session_id is required.' }, 400);
+    }
 
     const nowIso = new Date().toISOString();
     const { data: testSession, error: sessionError } = await supabase
