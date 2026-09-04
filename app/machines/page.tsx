@@ -1,10 +1,10 @@
-import { MachineTelemetryOverview } from '@/components/features/MachineTelemetryOverview';
+import { MachinesWorkspace } from '@/components/features/MachinesWorkspace';
 import { AppShell } from '@/components/layout/AppShell';
 
 export default function MachinesPage() {
   return (
     <AppShell>
-      <MachineTelemetryOverview machinesOnly />
+      <MachinesWorkspace />
     </AppShell>
   );
 }
