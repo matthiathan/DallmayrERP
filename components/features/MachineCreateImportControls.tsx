@@ -29,7 +29,7 @@ type Props = {
 
 const CUSTOMER_PAGE_SIZE = 1000;
 const MACHINE_PAGE_SIZE = 1000;
-const INSERT_BATCH_SIZE = 100;
+const MAX_IMPORT_ROWS = 5000;
 
 function normaliseName(value: string) {
   return value.trim().replace(/\s+/g, ' ').toLocaleLowerCase('en-ZA');
@@ -207,15 +207,14 @@ export function MachineCreateImportControls({ onChanged }: Props) {
     setSaving(true);
     try {
       const client = getSupabaseClient();
-      const { data: duplicates, error: duplicateError } = await client
-        .from('machines')
-        .select('id,serial_number,machine_barcode')
-        .or(`serial_number.eq.${serial},machine_barcode.eq.${qr}`)
-        .limit(5);
-      if (duplicateError) throw duplicateError;
-      const duplicateRows = (duplicates ?? []) as { serial_number: string | null; machine_barcode: string | null }[];
-      if (duplicateRows.some((row) => row.machine_barcode === qr)) throw new Error(`QR Code Number ${qr} already belongs to another machine.`);
-      if (duplicateRows.some((row) => row.serial_number === serial)) throw new Error(`Serial Number ${serial} already belongs to another machine.`);
+      const [serialResult, qrResult] = await Promise.all([
+        client.from('machines').select('id').eq('serial_number', serial).limit(1),
+        client.from('machines').select('id').eq('machine_barcode', qr).limit(1),
+      ]);
+      if (serialResult.error) throw serialResult.error;
+      if (qrResult.error) throw qrResult.error;
+      if ((serialResult.data ?? []).length > 0) throw new Error(`Serial Number ${serial} already belongs to another machine.`);
+      if ((qrResult.data ?? []).length > 0) throw new Error(`QR Code Number ${qr} already belongs to another machine.`);
 
       const { error: insertError } = await client.from('machines').insert({
         machine_name: asset,
@@ -252,6 +251,7 @@ export function MachineCreateImportControls({ onChanged }: Props) {
       ]);
       const csv = parseCsv(text.replace(/^\uFEFF/, ''));
       if (csv.length < 2) throw new Error('The CSV must contain a header row and at least one machine row.');
+      if (csv.length - 1 > MAX_IMPORT_ROWS) throw new Error(`A single import can contain at most ${MAX_IMPORT_ROWS.toLocaleString('en-ZA')} machines.`);
 
       const headers = csv[0].map(normaliseHeader);
       const required = {
@@ -260,12 +260,13 @@ export function MachineCreateImportControls({ onChanged }: Props) {
         serialNumber: headers.indexOf('serialnumber'),
         qrCodeNumber: headers.indexOf('qrcodenumber'),
       };
-      const missing = Object.entries(required).filter(([, index]) => index < 0).map(([key]) => ({
+      const labels = {
         assetName: 'Asset Name',
         clientName: 'Client Name',
         serialNumber: 'Serial Number',
         qrCodeNumber: 'QR Code Number',
-      }[key as keyof typeof required]));
+      };
+      const missing = (Object.keys(required) as (keyof typeof required)[]).filter((key) => required[key] < 0).map((key) => labels[key]);
       if (missing.length) throw new Error(`Missing required CSV column${missing.length === 1 ? '' : 's'}: ${missing.join(', ')}.`);
 
       const customersByName = customerIndex(loadedCustomers);
@@ -319,7 +320,6 @@ export function MachineCreateImportControls({ onChanged }: Props) {
     setSuccess(null);
     setImporting(true);
     try {
-      const client = getSupabaseClient();
       const payload = validImportRows.map((row) => ({
         machine_name: row.assetName,
         customer_id: row.customerId,
@@ -327,10 +327,9 @@ export function MachineCreateImportControls({ onChanged }: Props) {
         serial_number: row.serialNumber,
         machine_barcode: row.qrCodeNumber,
       }));
-      for (let from = 0; from < payload.length; from += INSERT_BATCH_SIZE) {
-        const { error: insertError } = await client.from('machines').insert(payload.slice(from, from + INSERT_BATCH_SIZE));
-        if (insertError) throw insertError;
-      }
+      const { error: insertError } = await getSupabaseClient().from('machines').insert(payload);
+      if (insertError) throw insertError;
+
       setSuccess(`${payload.length.toLocaleString('en-ZA')} machine${payload.length === 1 ? '' : 's'} imported successfully.`);
       setImportRows([]);
       setFileName('');
@@ -358,8 +357,8 @@ export function MachineCreateImportControls({ onChanged }: Props) {
 
   return (
     <>
-      <button className="fleet-button secondary" onClick={openImport} type="button"><NavigationIcon kind="upload" />Bulk import</button>
-      <button className="fleet-button" onClick={openCreate} type="button"><NavigationIcon kind="plus" />Create new machine</button>
+      <button className="fleet-button secondary" onClick={openImport} type="button"><NavigationIcon kind="box" />Bulk import</button>
+      <button className="fleet-button" onClick={openCreate} type="button"><NavigationIcon kind="tool" />Create new machine</button>
       {success ? <span className="sr-only" role="status">{success}</span> : null}
 
       <AccessibleDialog ariaLabel="Create new machine" className="device-delete-dialog" id="create-machine-dialog" onClose={() => { if (!saving) { setCreateOpen(false); setError(null); } }} open={createOpen} closeOnBackdrop={!saving}>
