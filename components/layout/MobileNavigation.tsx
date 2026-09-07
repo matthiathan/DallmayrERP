@@ -47,12 +47,11 @@ function isPinnedPathActive(pathname: string, href: string, activeHref: string |
 
 function groupedSections(sections: NavSection[], homePath: string) {
   const seen = new Set<string>();
-  const featuredPaths = new Set([homePath, '/machines', '/alerts', '/work']);
   return sections
     .map((section) => ({
       ...section,
       items: section.items.filter((item) => {
-        if (featuredPaths.has(item.href) || seen.has(item.href)) return false;
+        if (item.href === homePath || item.href === '/work' || item.href === '/machines' || item.href === '/alerts' || seen.has(item.href)) return false;
         seen.add(item.href);
         return true;
       }),

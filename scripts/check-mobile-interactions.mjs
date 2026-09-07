@@ -32,7 +32,7 @@ requireSource(mobile, /document\.body\.style\.overflow\s*=\s*'hidden'/, 'Only th
 requireSource(mobile, /event\.key === 'Escape'/, 'Responsive navigation must close with Escape.');
 requireSource(mobile, /event\.key !== 'Tab'/, 'Responsive navigation must trap keyboard focus.');
 requireSource(mobile, /window\.dispatchEvent\(new Event\(OPEN_SEARCH_EVENT\)\)/, 'Bottom Search must open Global Search directly.');
-requireSource(mobile, /featuredPaths = new Set\(\[homePath, '\/machines', '\/alerts', '\/work'\]\)/, 'Featured mobile destinations must not be duplicated in grouped navigation.');
+requireSource(mobile, /item\.href === homePath \|\| item\.href === '\/work' \|\| item\.href === '\/machines' \|\| item\.href === '\/alerts'/, 'Featured mobile destinations must not be duplicated in grouped navigation.');
 requireSource(shell, /<strong>\{activeTitle\}<\/strong>/, 'Mobile header must expose the current page title, not only its section.');
 if (/if \(!menuOpen\) return;[\s\S]*document\.body\.style\.overflow/.test(shell)) failures.push('AppShell must not compete with the portal drawer for mobile scroll locking.');
 requireSource(machines, /fleet-mobile-machine-list/, 'Machines must expose a phone-native card register.');
