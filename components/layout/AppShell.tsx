@@ -110,9 +110,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="desktop-account-menu-target" id="desktop-account-menu-target" />
           </div>
 
-          <div aria-label={`Current page: ${activeTitle}`} className="application-page-context telemetry-page-context-contract">
+          <div aria-label={`Current area: ${activeArea}`} className="application-page-context telemetry-page-context-contract">
             <span>{activeArea}</span>
-            <strong>{activeTitle}</strong>
           </div>
 
           <button
