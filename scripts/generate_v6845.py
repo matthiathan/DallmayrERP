@@ -25,9 +25,6 @@ new_load = '''void loadCounters() {
   prefs.end();
 
   if (!countValid || !blobValid) {
-    // Counter values and counter_epoch form one logical contract with the
-    // backend. Never reuse an old epoch after local counter storage is
-    // missing/corrupt, otherwise a later vend can equal the stale server total.
     memset(counters, 0, sizeof(counters));
     counterCount = 0;
     makeRandomId(counterEpoch, sizeof(counterEpoch));
@@ -78,12 +75,3 @@ text = text.replace(
 
 dst.parent.mkdir(parents=True, exist_ok=True)
 dst.write_text(text, encoding='utf-8')
-
-workflow = Path('.github/workflows/telemetry-firmware.yml')
-wf = workflow.read_text(encoding='utf-8')
-if 'firmware/DallmayrTelemetryV6_8_44' not in wf:
-    raise RuntimeError('Telemetry workflow target changed unexpectedly')
-workflow.write_text(
-    wf.replace('firmware/DallmayrTelemetryV6_8_44', 'firmware/DallmayrTelemetryV6_8_45'),
-    encoding='utf-8',
-)
