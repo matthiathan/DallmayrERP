@@ -47,11 +47,12 @@ function isPinnedPathActive(pathname: string, href: string, activeHref: string |
 
 function groupedSections(sections: NavSection[], homePath: string) {
   const seen = new Set<string>();
+  const featuredPaths = new Set([homePath, '/machines', '/alerts', '/work']);
   return sections
     .map((section) => ({
       ...section,
       items: section.items.filter((item) => {
-        if (item.href === homePath || item.href === '/work' || seen.has(item.href)) return false;
+        if (featuredPaths.has(item.href) || seen.has(item.href)) return false;
         seen.add(item.href);
         return true;
       }),
@@ -179,7 +180,7 @@ export function MobileNavigationDrawer({
             <span className="mobile-menu-v2-chevron" aria-hidden="true"><NavigationIcon kind="chevron-right" /></span>
           </Link>
 
-          {canSeeAlerts ? <Link className="mobile-menu-v2-link" href="/alerts" onClick={() => setOpen(false)}>
+          {canSeeAlerts ? <Link aria-current={activeHref === '/alerts' ? 'page' : undefined} className={`mobile-menu-v2-link ${activeHref === '/alerts' ? 'is-active' : ''}`} href="/alerts" onClick={() => setOpen(false)}>
             <span className="mobile-menu-v2-icon" aria-hidden="true"><NavigationIcon kind="bell" /></span>
             <span className="mobile-menu-v2-copy"><strong>Active Alerts</strong></span>
             <span className="mobile-menu-v2-chevron" aria-hidden="true"><NavigationIcon kind="chevron-right" /></span>

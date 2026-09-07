@@ -3,13 +3,15 @@ import path from 'node:path';
 import process from 'node:process';
 
 const root = process.cwd();
-const [search, mobile, responsive, application, responsiveAuthority, hygiene] = await Promise.all([
+const [search, mobile, responsive, application, responsiveAuthority, hygiene, shell, machines] = await Promise.all([
   readFile(path.join(root, 'components', 'ui', 'GlobalSearch.tsx'), 'utf8'),
   readFile(path.join(root, 'components', 'layout', 'MobileNavigation.tsx'), 'utf8'),
   readFile(path.join(root, 'app', 'responsive-mobile-tablet.css'), 'utf8'),
   readFile(path.join(root, 'app', 'styles', 'application.css'), 'utf8'),
   readFile(path.join(root, 'app', 'styles', 'application', 'responsive.css'), 'utf8'),
   readFile(path.join(root, 'components', 'layout', 'MobileBrowserHygiene.tsx'), 'utf8'),
+  readFile(path.join(root, 'components', 'layout', 'AppShell.tsx'), 'utf8'),
+  readFile(path.join(root, 'components', 'features', 'MachinesWorkspace.tsx'), 'utf8'),
 ]);
 
 const failures = [];
@@ -30,6 +32,11 @@ requireSource(mobile, /document\.body\.style\.overflow\s*=\s*'hidden'/, 'Only th
 requireSource(mobile, /event\.key === 'Escape'/, 'Responsive navigation must close with Escape.');
 requireSource(mobile, /event\.key !== 'Tab'/, 'Responsive navigation must trap keyboard focus.');
 requireSource(mobile, /window\.dispatchEvent\(new Event\(OPEN_SEARCH_EVENT\)\)/, 'Bottom Search must open Global Search directly.');
+requireSource(mobile, /featuredPaths = new Set\(\[homePath, '\/machines', '\/alerts', '\/work'\]\)/, 'Featured mobile destinations must not be duplicated in grouped navigation.');
+requireSource(shell, /<strong>\{activeTitle\}<\/strong>/, 'Mobile header must expose the current page title, not only its section.');
+if (/if \(!menuOpen\) return;[\s\S]*document\.body\.style\.overflow/.test(shell)) failures.push('AppShell must not compete with the portal drawer for mobile scroll locking.');
+requireSource(machines, /fleet-mobile-machine-list/, 'Machines must expose a phone-native card register.');
+requireSource(machines, /fleet-desktop-machine-table/, 'Desktop machine table must be independently hideable on phones.');
 
 requireSource(application, /@import ['"]\.\/application\/responsive\.css['"];/, 'Application registry must delegate responsive ownership to the responsive authority manifest.');
 requireSource(responsiveAuthority, /@import ['"]\.\.\/\.\.\/responsive-mobile-tablet\.css['"];/, 'Unified responsive stylesheet must be registered by the responsive authority.');
@@ -48,6 +55,9 @@ requireSource(responsive, /\.global-search-dialog[\s\S]*max-height:/m, 'Search d
 requireSource(responsive, /\.global-search-results[\s\S]*overflow-y:\s*auto\s*!important/m, 'Search results must scroll independently.');
 requireSource(responsive, /\.erp-table-scroll[\s\S]*overflow-x:\s*auto\s*!important/m, 'Data tables must scroll locally.');
 requireSource(responsive, /font-size:\s*16px\s*!important/m, 'Form controls must prevent iOS focus zoom.');
+requireSource(responsive, /\.fleet-mobile-machine-list[\s\S]*display:\s*grid\s*!important/m, 'Phone machine register must use native cards instead of a desktop-width table.');
+requireSource(responsive, /\.fleet-desktop-machine-table[\s\S]*display:\s*none\s*!important/m, 'Desktop machine table must be hidden when phone cards are active.');
+requireSource(responsive, /\.fleet-search input,[\s\S]*font-size:\s*16px\s*!important/m, 'Fleet form controls must reassert 16px text after feature-specific styles.');
 requireSource(responsive, /\.messaging-layout/, 'Responsive messaging rules are required.');
 requireSource(responsive, /\.mobile-quick-bar[\s\S]*position:\s*fixed\s*!important/m, 'Bottom navigation must remain reachable.');
 requireSource(responsive, /var\(--ui-canvas/, 'Responsive colours must inherit desktop design tokens.');
