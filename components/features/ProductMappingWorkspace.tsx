@@ -46,6 +46,8 @@ type FleetModel = {
 
 const PAGE_SIZE = 1000;
 const DEFAULT_BUTTON_COUNT = 12;
+const MIN_BUTTON_COUNT = 1;
+const MAX_BUTTON_COUNT = 100;
 
 function modelKey(model: string | null, machineName: string | null) {
   return model?.trim() || machineName?.trim() || '';
@@ -66,6 +68,7 @@ async function loadFleetModels() {
       .order('id', { ascending: true })
       .range(from, from + PAGE_SIZE - 1);
     if (error) throw error;
+
     const page = (data ?? []) as Array<{ model: string | null; machine_name: string | null }>;
     page.forEach((machine) => {
       const key = modelKey(machine.model, machine.machine_name);
@@ -74,14 +77,25 @@ async function loadFleetModels() {
       const existing = counts.get(lookup);
       counts.set(lookup, { key: existing?.key ?? key, count: (existing?.count ?? 0) + 1 });
     });
+
     if (page.length < PAGE_SIZE) break;
   }
 
   return counts;
 }
 
+function clampButtonCount(value: number) {
+  if (!Number.isFinite(value)) return MIN_BUTTON_COUNT;
+  return Math.max(MIN_BUTTON_COUNT, Math.min(MAX_BUTTON_COUNT, Math.trunc(value)));
+}
+
 function mappingDraft(buttonCount: number, rows: MapRow[]) {
-  const byButton = new Map(rows.filter((row) => row.button_number !== null).map((row) => [Number(row.button_number), row]));
+  const byButton = new Map(
+    rows
+      .filter((row) => row.button_number !== null)
+      .map((row) => [Number(row.button_number), row]),
+  );
+
   return Array.from({ length: buttonCount }, (_, index): ButtonDraft => {
     const buttonNumber = index + 1;
     const existing = byButton.get(buttonNumber);
@@ -114,14 +128,17 @@ export function ProductMappingWorkspace() {
     setLoading(true);
     setError(null);
     const client = getSupabaseClient();
+
     try {
       const [productResult, profileResult, modelCounts] = await Promise.all([
         client.from('products').select('id,product_name,is_active,updated_at').order('product_name'),
         client.from('machine_model_profiles').select('id,model_key,display_name,button_count,updated_at').order('display_name'),
         loadFleetModels(),
       ]);
+
       if (productResult.error) throw productResult.error;
       if (profileResult.error) throw profileResult.error;
+
       const nextProducts = (productResult.data ?? []) as ProductRecord[];
       const nextProfiles = (profileResult.data ?? []) as ProfileRecord[];
       setProducts(nextProducts);
@@ -129,20 +146,24 @@ export function ProductMappingWorkspace() {
       setFleetModels(modelCounts);
       setProductDrafts(Object.fromEntries(nextProducts.map((product) => [product.id, product.product_name])));
 
-      if (!selectedModel) {
+      setSelectedModel((current) => {
+        if (current) return current;
         const belluno = Array.from(modelCounts.values()).find((entry) => normalise(entry.key) === 'sielaff belluno');
         const firstProfile = nextProfiles[0]?.model_key;
-        const firstFleetModel = Array.from(modelCounts.values()).sort((a, b) => b.count - a.count || a.key.localeCompare(b.key))[0]?.key;
-        setSelectedModel(belluno?.key ?? firstProfile ?? firstFleetModel ?? '');
-      }
+        const firstFleetModel = Array.from(modelCounts.values())
+          .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key))[0]?.key;
+        return belluno?.key ?? firstProfile ?? firstFleetModel ?? '';
+      });
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Could not load product mapping data.');
     } finally {
       setLoading(false);
     }
-  }, [selectedModel]);
+  }, []);
 
-  useEffect(() => { loadBase().catch(() => undefined); }, [loadBase]);
+  useEffect(() => {
+    loadBase().catch(() => undefined);
+  }, [loadBase]);
 
   const modelOptions = useMemo<FleetModel[]>(() => {
     const combined = new Map<string, FleetModel>();
@@ -152,6 +173,7 @@ export function ProductMappingWorkspace() {
       const existing = combined.get(key);
       combined.set(key, { key: profile.model_key, count: existing?.count ?? 0, configured: true });
     });
+
     const term = normalise(modelSearch);
     return Array.from(combined.values())
       .filter((entry) => !term || normalise(entry.key).includes(term))
@@ -162,6 +184,7 @@ export function ProductMappingWorkspace() {
     () => profiles.find((profile) => normalise(profile.model_key) === normalise(selectedModel)) ?? null,
     [profiles, selectedModel],
   );
+
   const selectedMachineCount = fleetModels.get(normalise(selectedModel))?.count ?? 0;
 
   const loadMap = useCallback(async (model: string) => {
@@ -169,12 +192,16 @@ export function ProductMappingWorkspace() {
     setLoadingMap(true);
     setError(null);
     setNotice(null);
+
     try {
-      const { data, error: mapError } = await getSupabaseClient().rpc('get_machine_model_button_map', { p_model_key: model });
+      const { data, error: mapError } = await getSupabaseClient().rpc('get_machine_model_button_map', {
+        p_model_key: model,
+      });
       if (mapError) throw mapError;
+
       const rows = (data ?? []) as MapRow[];
       const profile = rows[0] ?? profiles.find((item) => normalise(item.model_key) === normalise(model));
-      const nextCount = Math.max(1, Math.min(100, Number(profile?.button_count ?? DEFAULT_BUTTON_COUNT)));
+      const nextCount = clampButtonCount(Number(profile?.button_count ?? DEFAULT_BUTTON_COUNT));
       setButtonCount(nextCount);
       setButtons(mappingDraft(nextCount, rows));
     } catch (mapLoadError) {
@@ -184,10 +211,12 @@ export function ProductMappingWorkspace() {
     }
   }, [profiles]);
 
-  useEffect(() => { loadMap(selectedModel).catch(() => undefined); }, [loadMap, selectedModel]);
+  useEffect(() => {
+    loadMap(selectedModel).catch(() => undefined);
+  }, [loadMap, selectedModel]);
 
   function changeButtonCount(value: number) {
-    const nextCount = Math.max(1, Math.min(100, Number.isFinite(value) ? value : 1));
+    const nextCount = clampButtonCount(value);
     setButtonCount(nextCount);
     setButtons((current) => Array.from({ length: nextCount }, (_, index) => {
       const buttonNumber = index + 1;
@@ -195,20 +224,35 @@ export function ProductMappingWorkspace() {
     }));
   }
 
+  function addButton() {
+    if (buttonCount >= MAX_BUTTON_COUNT) return;
+    changeButtonCount(buttonCount + 1);
+  }
+
+  function removeButton() {
+    if (buttonCount <= MIN_BUTTON_COUNT) return;
+    changeButtonCount(buttonCount - 1);
+  }
+
   function updateButton(buttonNumber: number, patch: Partial<ButtonDraft>) {
-    setButtons((current) => current.map((row) => row.buttonNumber === buttonNumber ? { ...row, ...patch } : row));
+    setButtons((current) => current.map((row) => (
+      row.buttonNumber === buttonNumber ? { ...row, ...patch } : row
+    )));
   }
 
   async function saveMapping() {
     if (!selectedModel) return;
     setError(null);
     setNotice(null);
+
     const mapped = buttons.filter((row) => row.productId);
     const codes = mapped.map((row) => normalise(row.selectionCode));
+
     if (mapped.some((row) => !row.selectionCode.trim())) {
       setError('Every mapped button needs a telemetry selection code.');
       return;
     }
+
     if (new Set(codes).size !== codes.length) {
       setError('A telemetry selection code can only be mapped once within the same machine model.');
       return;
@@ -227,8 +271,11 @@ export function ProductMappingWorkspace() {
         })),
       });
       if (saveError) throw saveError;
+
       const result = (data ?? {}) as { mapping_count?: number; refreshed_sales_rows?: number };
-      setNotice(`Saved ${Number(result.mapping_count ?? mapped.length)} button mappings for ${selectedModel}. ${Number(result.refreshed_sales_rows ?? 0)} existing telemetry sales rows were relabelled.`);
+      setNotice(
+        `Saved ${buttonCount} buttons and ${Number(result.mapping_count ?? mapped.length)} product mappings for ${selectedModel}. ${Number(result.refreshed_sales_rows ?? 0)} existing telemetry sales rows were relabelled.`,
+      );
       await loadBase();
       await loadMap(selectedModel);
     } catch (saveError) {
@@ -242,9 +289,11 @@ export function ProductMappingWorkspace() {
     event.preventDefault();
     const name = newProductName.trim();
     if (!name) return;
+
     setSavingProduct(true);
     setError(null);
     setNotice(null);
+
     try {
       const { error: insertError } = await getSupabaseClient().from('products').insert({ product_name: name });
       if (insertError) throw insertError;
@@ -261,10 +310,14 @@ export function ProductMappingWorkspace() {
   async function renameProduct(product: ProductRecord) {
     const nextName = (productDrafts[product.id] ?? '').trim();
     if (!nextName || nextName === product.product_name) return;
+
     setError(null);
     setNotice(null);
     try {
-      const { error: updateError } = await getSupabaseClient().from('products').update({ product_name: nextName }).eq('id', product.id);
+      const { error: updateError } = await getSupabaseClient()
+        .from('products')
+        .update({ product_name: nextName })
+        .eq('id', product.id);
       if (updateError) throw updateError;
       setNotice(`Renamed ${product.product_name} to ${nextName}. Existing mapped telemetry labels were refreshed.`);
       await loadBase();
@@ -277,7 +330,10 @@ export function ProductMappingWorkspace() {
     setError(null);
     setNotice(null);
     try {
-      const { error: updateError } = await getSupabaseClient().from('products').update({ is_active: !product.is_active }).eq('id', product.id);
+      const { error: updateError } = await getSupabaseClient()
+        .from('products')
+        .update({ is_active: !product.is_active })
+        .eq('id', product.id);
       if (updateError) throw updateError;
       setNotice(`${product.product_name} is now ${product.is_active ? 'inactive' : 'active'}. Existing mappings are preserved.`);
       await loadBase();
@@ -295,42 +351,241 @@ export function ProductMappingWorkspace() {
           <h1>Products</h1>
           <p>Maintain the product catalog and map each machine model&apos;s physical buttons and telemetry selections once for the whole fleet.</p>
         </div>
-        <button className="fleet-button secondary" onClick={() => loadBase()} type="button"><NavigationIcon kind="telemetry" />Refresh</button>
+        <button className="fleet-button secondary" onClick={() => loadBase()} type="button">
+          <NavigationIcon kind="telemetry" />
+          Refresh
+        </button>
       </header>
 
-      {error ? <div className="fleet-banner is-error" role="alert"><strong>Product mapping needs attention.</strong><span>{error}</span></div> : null}
-      {notice ? <div className="fleet-banner" role="status"><strong>Saved.</strong><span>{notice}</span></div> : null}
+      {error ? (
+        <div className="fleet-banner is-error" role="alert">
+          <strong>Product mapping needs attention.</strong>
+          <span>{error}</span>
+        </div>
+      ) : null}
+
+      {notice ? (
+        <div className="fleet-banner" role="status">
+          <strong>Saved.</strong>
+          <span>{notice}</span>
+        </div>
+      ) : null}
 
       <div className="grid grid-2">
         <section className="fleet-panel">
-          <header className="fleet-table-heading"><div><span>Catalog</span><h2>Products</h2></div><span>{products.length} products</span></header>
+          <header className="fleet-table-heading">
+            <div><span>Catalog</span><h2>Products</h2></div>
+            <span>{products.length} products</span>
+          </header>
           <p>Create the names that should appear in vending reports and machine dashboards. A product can be reused across any number of machine models and buttons.</p>
           <form className="fleet-filters" onSubmit={addProduct}>
-            <label className="fleet-search"><NavigationIcon kind="search" /><input aria-label="New product name" onChange={(event) => setNewProductName(event.target.value)} placeholder="e.g. Hot Chocolate" value={newProductName} /></label>
-            <button className="fleet-button" disabled={savingProduct || !newProductName.trim()} type="submit">{savingProduct ? 'Adding…' : 'Add product'}</button>
+            <label className="fleet-search">
+              <NavigationIcon kind="search" />
+              <input
+                aria-label="New product name"
+                onChange={(event) => setNewProductName(event.target.value)}
+                placeholder="e.g. Hot Chocolate"
+                value={newProductName}
+              />
+            </label>
+            <button className="fleet-button" disabled={savingProduct || !newProductName.trim()} type="submit">
+              {savingProduct ? 'Adding…' : 'Add product'}
+            </button>
           </form>
-          {products.length === 0 ? <div className="fleet-empty-state"><strong>No products yet</strong><p>Add your first product, then assign it to machine buttons.</p></div> : <div className="fleet-table-scroll"><table className="fleet-machine-table"><thead><tr><th>Product name</th><th>Status</th><th>Actions</th></tr></thead><tbody>{products.map((product) => <tr key={product.id}><td><input aria-label={`Product name for ${product.product_name}`} onChange={(event) => setProductDrafts((current) => ({ ...current, [product.id]: event.target.value }))} value={productDrafts[product.id] ?? product.product_name} /></td><td><span className={`fleet-status-pill is-${product.is_active ? 'success' : 'neutral'}`}><i />{product.is_active ? 'Active' : 'Inactive'}</span></td><td><div className="fleet-heading-actions"><button className="fleet-button secondary" disabled={!productDrafts[product.id]?.trim() || productDrafts[product.id]?.trim() === product.product_name} onClick={() => renameProduct(product)} type="button">Save name</button><button className="fleet-button secondary" onClick={() => toggleProduct(product)} type="button">{product.is_active ? 'Deactivate' : 'Activate'}</button></div></td></tr>)}</tbody></table></div>}
+
+          {products.length === 0 ? (
+            <div className="fleet-empty-state">
+              <strong>No products yet</strong>
+              <p>Add your first product, then assign it to machine buttons.</p>
+            </div>
+          ) : (
+            <div className="fleet-table-scroll">
+              <table className="fleet-machine-table">
+                <thead><tr><th>Product name</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {products.map((product) => (
+                    <tr key={product.id}>
+                      <td>
+                        <input
+                          aria-label={`Product name for ${product.product_name}`}
+                          onChange={(event) => setProductDrafts((current) => ({ ...current, [product.id]: event.target.value }))}
+                          value={productDrafts[product.id] ?? product.product_name}
+                        />
+                      </td>
+                      <td>
+                        <span className={`fleet-status-pill is-${product.is_active ? 'success' : 'neutral'}`}>
+                          <i />
+                          {product.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="fleet-heading-actions">
+                          <button
+                            className="fleet-button secondary"
+                            disabled={!productDrafts[product.id]?.trim() || productDrafts[product.id]?.trim() === product.product_name}
+                            onClick={() => renameProduct(product)}
+                            type="button"
+                          >
+                            Save name
+                          </button>
+                          <button className="fleet-button secondary" onClick={() => toggleProduct(product)} type="button">
+                            {product.is_active ? 'Deactivate' : 'Activate'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
 
         <section className="fleet-panel">
-          <header className="fleet-table-heading"><div><span>Fleet model</span><h2>Choose machine model</h2></div><span>{modelOptions.length} models</span></header>
+          <header className="fleet-table-heading">
+            <div><span>Fleet model</span><h2>Choose machine model</h2></div>
+            <span>{modelOptions.length} models</span>
+          </header>
           <p>A mapping applies automatically to every machine whose model exactly matches the selected profile. Similar variants such as Belluno and Belluno Pro remain separate.</p>
-          <label><span>Find model</span><input onChange={(event) => setModelSearch(event.target.value)} placeholder="Search Belluno, Dr Coffee, Rhea…" value={modelSearch} /></label>
-          <label><span>Machine model</span><select onChange={(event) => setSelectedModel(event.target.value)} value={selectedModel}><option value="">Choose model</option>{modelOptions.map((entry) => <option key={normalise(entry.key)} value={entry.key}>{entry.key} · {entry.count} machine{entry.count === 1 ? '' : 's'}{entry.configured ? ' · configured' : ''}</option>)}</select></label>
-          {selectedModel ? <dl><div><dt>Selected profile</dt><dd>{selectedModel}</dd></div><div><dt>Affects</dt><dd>{selectedMachineCount.toLocaleString('en-ZA')} current machine{selectedMachineCount === 1 ? '' : 's'}</dd></div><div><dt>Profile status</dt><dd>{selectedProfile ? 'Configured' : 'New mapping'}</dd></div></dl> : null}
+          <label>
+            <span>Find model</span>
+            <input
+              onChange={(event) => setModelSearch(event.target.value)}
+              placeholder="Search Belluno, Dr Coffee, Rhea…"
+              value={modelSearch}
+            />
+          </label>
+          <label>
+            <span>Machine model</span>
+            <select onChange={(event) => setSelectedModel(event.target.value)} value={selectedModel}>
+              <option value="">Choose model</option>
+              {modelOptions.map((entry) => (
+                <option key={normalise(entry.key)} value={entry.key}>
+                  {entry.key} · {entry.count} machine{entry.count === 1 ? '' : 's'}{entry.configured ? ' · configured' : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          {selectedModel ? (
+            <dl>
+              <div><dt>Selected profile</dt><dd>{selectedModel}</dd></div>
+              <div><dt>Affects</dt><dd>{selectedMachineCount.toLocaleString('en-ZA')} current machine{selectedMachineCount === 1 ? '' : 's'}</dd></div>
+              <div><dt>Profile status</dt><dd>{selectedProfile ? 'Configured' : 'New mapping'}</dd></div>
+              <div><dt>Buttons</dt><dd>{buttonCount}</dd></div>
+            </dl>
+          ) : null}
         </section>
       </div>
 
       <section className="fleet-panel fleet-table-panel">
-        <header className="fleet-table-heading"><div><span>Button map</span><h2>{selectedModel || 'Choose a machine model'}</h2></div><span>{buttons.filter((row) => row.productId).length} of {buttonCount} mapped</span></header>
-        {!selectedModel ? <div className="fleet-empty-state"><strong>Select a machine model</strong><p>Choose a model above to define its physical buttons and telemetry selection codes.</p></div> : loadingMap ? <HamsterLoader label={`Loading ${selectedModel} mapping`} /> : <>
-          <div className="fleet-filters"><label><span>Number of buttons</span><input max={100} min={1} onChange={(event) => changeButtonCount(Number(event.target.value))} type="number" value={buttonCount} /></label><div><strong>{selectedMachineCount.toLocaleString('en-ZA')} machines</strong><p>Saving this profile affects all current and future machines with the exact model <strong>{selectedModel}</strong>.</p></div></div>
-          <div className="fleet-table-scroll"><table className="fleet-machine-table"><thead><tr><th>Button</th><th>Telemetry selection code</th><th>Product</th><th>Result</th></tr></thead><tbody>{buttons.map((row) => {
-            const product = products.find((item) => item.id === row.productId);
-            return <tr key={row.buttonNumber}><td><strong>Button {row.buttonNumber}</strong></td><td><input aria-label={`Telemetry selection code for button ${row.buttonNumber}`} onChange={(event) => updateButton(row.buttonNumber, { selectionCode: event.target.value })} value={row.selectionCode} /></td><td><select aria-label={`Product for button ${row.buttonNumber}`} onChange={(event) => updateButton(row.buttonNumber, { productId: event.target.value })} value={row.productId}><option value="">Not mapped</option>{products.map((item) => <option key={item.id} value={item.id}>{item.product_name}{item.is_active ? '' : ' (inactive)'}</option>)}</select></td><td>{product ? <><strong>{product.product_name}</strong><span>{row.selectionCode}</span></> : <span>Raw selection only</span>}</td></tr>;
-          })}</tbody></table></div>
-          <footer className="fleet-table-footer"><div className="fleet-table-footer-copy"><strong>One profile, fleet-wide</strong><span>Selection codes remain visible for diagnostics even after the product name is applied.</span></div><button className="fleet-button" disabled={savingMap} onClick={saveMapping} type="button">{savingMap ? 'Saving mapping…' : 'Save model mapping'}</button></footer>
-        </>}
+        <header className="fleet-table-heading">
+          <div><span>Button map</span><h2>{selectedModel || 'Choose a machine model'}</h2></div>
+          <span>{buttons.filter((row) => row.productId).length} of {buttonCount} mapped</span>
+        </header>
+
+        {!selectedModel ? (
+          <div className="fleet-empty-state">
+            <strong>Select a machine model</strong>
+            <p>Choose a model above to define its physical buttons and telemetry selection codes.</p>
+          </div>
+        ) : loadingMap ? (
+          <HamsterLoader label={`Loading ${selectedModel} mapping`} />
+        ) : (
+          <>
+            <div className="fleet-filters">
+              <div>
+                <strong>Number of buttons</strong>
+                <div className="fleet-heading-actions">
+                  <button
+                    aria-label={`Remove button ${buttonCount}`}
+                    className="fleet-button secondary"
+                    disabled={buttonCount <= MIN_BUTTON_COUNT}
+                    onClick={removeButton}
+                    type="button"
+                  >
+                    Remove button
+                  </button>
+                  <input
+                    aria-label="Number of buttons"
+                    max={MAX_BUTTON_COUNT}
+                    min={MIN_BUTTON_COUNT}
+                    onChange={(event) => changeButtonCount(Number(event.target.value))}
+                    type="number"
+                    value={buttonCount}
+                  />
+                  <button
+                    aria-label={`Add button ${buttonCount + 1}`}
+                    className="fleet-button secondary"
+                    disabled={buttonCount >= MAX_BUTTON_COUNT}
+                    onClick={addButton}
+                    type="button"
+                  >
+                    Add button
+                  </button>
+                </div>
+                <p>Add or remove buttons to match this exact machine model. Changes take effect fleet-wide when you save the model mapping.</p>
+              </div>
+              <div>
+                <strong>{selectedMachineCount.toLocaleString('en-ZA')} machines</strong>
+                <p>Saving this profile affects all current and future machines with the exact model <strong>{selectedModel}</strong>.</p>
+              </div>
+            </div>
+
+            <div className="fleet-table-scroll">
+              <table className="fleet-machine-table">
+                <thead><tr><th>Button</th><th>Telemetry selection code</th><th>Product</th><th>Result</th></tr></thead>
+                <tbody>
+                  {buttons.map((row) => {
+                    const product = products.find((item) => item.id === row.productId);
+                    return (
+                      <tr key={row.buttonNumber}>
+                        <td><strong>Button {row.buttonNumber}</strong></td>
+                        <td>
+                          <input
+                            aria-label={`Telemetry selection code for button ${row.buttonNumber}`}
+                            onChange={(event) => updateButton(row.buttonNumber, { selectionCode: event.target.value })}
+                            value={row.selectionCode}
+                          />
+                        </td>
+                        <td>
+                          <select
+                            aria-label={`Product for button ${row.buttonNumber}`}
+                            onChange={(event) => updateButton(row.buttonNumber, { productId: event.target.value })}
+                            value={row.productId}
+                          >
+                            <option value="">Not mapped</option>
+                            {products.map((item) => (
+                              <option key={item.id} value={item.id}>
+                                {item.product_name}{item.is_active ? '' : ' (inactive)'}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
+                          {product ? (
+                            <><strong>{product.product_name}</strong><span>{row.selectionCode}</span></>
+                          ) : (
+                            <span>Raw selection only</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <footer className="fleet-table-footer">
+              <div className="fleet-table-footer-copy">
+                <strong>One profile, fleet-wide</strong>
+                <span>Button count and product mappings are stored per machine model. Removing buttons removes any mappings above the new count when this profile is saved.</span>
+              </div>
+              <button className="fleet-button" disabled={savingMap} onClick={saveMapping} type="button">
+                {savingMap ? 'Saving mapping…' : 'Save model mapping'}
+              </button>
+            </footer>
+          </>
+        )}
       </section>
     </section>
   );
