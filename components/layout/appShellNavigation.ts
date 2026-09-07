@@ -23,6 +23,7 @@ const telemetryNavigationSections: NavSection[] = [
   {
     heading: 'Management',
     items: [
+      { href: '/products', label: 'Products', code: 'PRD01', roles: 'all', description: 'Product catalog and machine-model button mappings.' },
       { href: '/telemetry/devices', label: 'Device Management', code: 'TEL02', roles: 'all', description: 'Device assignment, reporting frequency and connectivity settings.' },
     ],
   },
