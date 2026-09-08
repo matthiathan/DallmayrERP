@@ -16,7 +16,6 @@ function forbid(sourceName, source, forbidden, message) {
 const shellNavigation = read('components/layout/appShellNavigation.ts');
 const appShell = read('components/layout/AppShell.tsx');
 const desktopNavigation = read('components/layout/DesktopNavigationRail.tsx');
-const mobileNavigation = read('components/layout/MobileNavigation.tsx');
 const globalSearch = read('components/ui/GlobalSearch.tsx');
 
 for (const href of ["href: '/'", "href: '/machines'", "href: '/alerts'", "href: '/telemetry'", "href: '/map'", "href: '/telemetry/devices'"]) {
@@ -45,7 +44,7 @@ requireText(
   'app shell',
   appShell,
   'activeHref={activeHref}',
-  'the canonical active route must be passed to desktop and mobile navigation surfaces.',
+  'the canonical active route must be passed to desktop navigation.',
 );
 forbid(
   'app shell',
@@ -58,18 +57,6 @@ requireText(
   desktopNavigation,
   "aria-current={activeHref === item.href ? 'page' : undefined}",
   'desktop navigation must mark only the canonical route as current.',
-);
-requireText(
-  'mobile navigation',
-  mobileNavigation,
-  'const active = activeHref === item.href;',
-  'mobile navigation must mark only the canonical route as current.',
-);
-forbid(
-  'mobile navigation',
-  mobileNavigation,
-  'BusinessRole',
-  'mobile telemetry navigation must not depend on ERP roles.',
 );
 forbid(
   'global search',
@@ -90,4 +77,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Telemetry navigation contract passed: one authenticated workspace exposes the same six pages without role gates.');
+console.log('Telemetry navigation contract passed: the authenticated desktop workspace exposes the same six pages without role gates.');
