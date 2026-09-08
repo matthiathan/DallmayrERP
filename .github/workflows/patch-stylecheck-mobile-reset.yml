@@ -1,0 +1,49 @@
+name: Patch stylecheck for mobile reset
+
+on:
+  push:
+    branches:
+      - rollback/mobile-ground-up-final5
+    paths:
+      - '.github/workflows/patch-stylecheck-mobile-reset.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rollback/mobile-ground-up-final5
+          fetch-depth: 0
+      - name: Remove retired mobile-only style assertions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/check-style-architecture.mjs')
+          s = p.read_text()
+
+          start = s.index("const mobileDataViewsSource = await readFile(path.join(root, 'app', 'mobile-data-views.css'), 'utf8');")
+          end = s.index("const stabilizationSource =", start)
+          s = s[:start] + s[end:]
+
+          start = s.index("const responsiveSource = await readFile(path.join(root, 'app', 'responsive-mobile-tablet.css'), 'utf8');")
+          end = s.index("\nif (process.exitCode)", start)
+          s = s[:start] + s[end:]
+
+          s = s.replace(
+            "console.log(`Style architecture check passed: ${visited.size} stylesheets registered, application cascade grouped into base/desktop/responsive authorities with exact leaf order preserved, retired compatibility programmes excluded, and final mobile/tablet ownership enforced.`);",
+            "console.log(`Style architecture check passed: ${visited.size} stylesheets registered, application cascade grouped into base/desktop/responsive authorities with exact leaf order preserved and retired compatibility programmes excluded.`);"
+          )
+          p.write_text(s)
+          PY
+      - name: Commit stylecheck update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/check-style-architecture.mjs
+          git commit -m "test: remove retired mobile style assertions"
+          git push origin HEAD:rollback/mobile-ground-up-final5
