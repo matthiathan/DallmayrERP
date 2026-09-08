@@ -29,14 +29,6 @@ jobs:
           import json
           import re
 
-          def require_replace(path, old, new, label):
-              p = Path(path)
-              text = p.read_text()
-              if old not in text:
-                  raise SystemExit(f'missing anchor {label} in {path}')
-              p.write_text(text.replace(old, new, 1))
-
-          # Root layout: stop mounting the old mobile/PWA runtime.
           layout = Path('app/layout.tsx')
           text = layout.read_text()
           text = text.replace("import { AuthenticatedMobileRuntime } from '@/components/layout/AuthenticatedMobileRuntime';\n", '')
@@ -46,7 +38,6 @@ jobs:
           text = text.replace('              <AuthenticatedMobileRuntime />\n', '')
           layout.write_text(text)
 
-          # App shell: desktop navigation only. Remove drawer, quick bar and hamburger state.
           shell = Path('components/layout/AppShell.tsx')
           text = shell.read_text()
           text = text.replace("import { useEffect, useState } from 'react';", "import { useEffect } from 'react';")
@@ -65,10 +56,8 @@ jobs:
               raise SystemExit('mobile shell references remain after cleanup')
           shell.write_text(text)
 
-          # Keep the stylesheet registry stable but deliberately empty the mobile authority.
           Path('app/styles/application/responsive.css').write_text("""/*\n * Mobile web responsive authority intentionally reset.\n *\n * The previous phone/tablet implementation was removed on 2026-09-08 so the\n * next mobile experience can be designed from a clean baseline. Desktop visual\n * authority remains in application/desktop.css. Add no mobile rules here until\n * the replacement mobile architecture is approved.\n */\n""")
 
-          # Package contracts: remove checks for the deleted mobile website layer.
           package = Path('package.json')
           data = json.loads(package.read_text())
           data['scripts'].pop('mobile:interaction-check', None)
@@ -76,17 +65,6 @@ jobs:
           data['scripts']['check'] = data['scripts']['check'].replace(' && npm run mobile:interaction-check', '')
           package.write_text(json.dumps(data, indent=2) + '\n')
 
-          # CI: stop asserting/launching the deleted mobile website implementation.
-          ci = Path('.github/workflows/ci.yml')
-          text = ci.read_text()
-          text = text.replace("\n      - name: Check mobile navigation and search contracts\n        run: npm run mobile:interaction-check\n", '')
-          text = text.replace('      - name: Check responsive and accessibility contracts\n', '      - name: Check accessibility contracts\n')
-          text = text.replace('tests/mobile-login.spec.mjs ', '')
-          ci.write_text(text)
-
-          # Existing browsers may already have /sw.js registered. Ship a tombstone
-          # worker that clears old caches and unregisters itself instead of leaving
-          # stale mobile/PWA behavior controlling the desktop baseline.
           Path('public/sw.js').write_text("""const LEGACY_CACHE_PREFIX = 'dallmayr-';\n\nself.addEventListener('install', () => self.skipWaiting());\n\nself.addEventListener('activate', (event) => {\n  event.waitUntil((async () => {\n    const keys = await caches.keys();\n    await Promise.all(keys.filter((key) => key.startsWith(LEGACY_CACHE_PREFIX)).map((key) => caches.delete(key)));\n    await self.clients.claim();\n    await self.registration.unregister();\n  })());\n});\n\n// Intentionally no fetch handler: the legacy mobile/PWA layer has been retired.\n""")
           PY
 
