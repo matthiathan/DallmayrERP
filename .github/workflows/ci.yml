@@ -58,13 +58,10 @@ jobs:
       - name: Check stylesheet architecture
         run: npm run stylecheck
 
-      - name: Check mobile navigation and search contracts
-        run: npm run mobile:interaction-check
-
-      - name: Check responsive and accessibility contracts
+      - name: Check accessibility contracts
         run: npm run accessibility:check
 
-      - name: Check native/mobile readiness contracts
+      - name: Check native readiness contracts
         run: npm run native:check
 
       - name: Run unit and component tests
@@ -115,7 +112,7 @@ jobs:
           for attempt in {1..45}; do
             if curl -fsS "$SECURITY_PENTEST_TARGET/login" > /dev/null; then
               npm run security:pentest
-              npx playwright test tests/mobile-login.spec.mjs tests/workflow-actions.spec.mjs tests/compact-desktop.spec.mjs tests/quick-access-dialog.spec.mjs tests/page-navigation-metadata.spec.mjs tests/design-system-authority.spec.mjs --reporter=line
+              npx playwright test tests/workflow-actions.spec.mjs tests/compact-desktop.spec.mjs tests/quick-access-dialog.spec.mjs tests/page-navigation-metadata.spec.mjs tests/design-system-authority.spec.mjs --reporter=line
               exit 0
             fi
             sleep 2
@@ -150,7 +147,7 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Check native/mobile readiness contracts
+      - name: Check native readiness contracts
         run: npm run native:check
 
       - name: Prepare and sync local Android field bundle
