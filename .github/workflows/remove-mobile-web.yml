@@ -1,0 +1,112 @@
+name: Remove legacy mobile web layer
+
+on:
+  push:
+    branches:
+      - rollback/mobile-ground-up-final5
+    paths:
+      - '.github/workflows/remove-mobile-web.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  remove-mobile-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out rollback branch
+        uses: actions/checkout@v4
+        with:
+          ref: rollback/mobile-ground-up-final5
+          fetch-depth: 0
+
+      - name: Remove mobile web runtime and responsive authority
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          import re
+
+          def require_replace(path, old, new, label):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f'missing anchor {label} in {path}')
+              p.write_text(text.replace(old, new, 1))
+
+          # Root layout: stop mounting the old mobile/PWA runtime.
+          layout = Path('app/layout.tsx')
+          text = layout.read_text()
+          text = text.replace("import { AuthenticatedMobileRuntime } from '@/components/layout/AuthenticatedMobileRuntime';\n", '')
+          text = text.replace("import { MobileBrowserHygiene } from '@/components/layout/MobileBrowserHygiene';\n", '')
+          text = re.sub(r"\n  appleWebApp: \{\n    capable: true,\n    statusBarStyle: 'black-translucent' as const,\n    title: 'Dallmayr Telemetry',\n  \},", '', text, count=1)
+          text = text.replace('            <MobileBrowserHygiene />\n', '')
+          text = text.replace('              <AuthenticatedMobileRuntime />\n', '')
+          layout.write_text(text)
+
+          # App shell: desktop navigation only. Remove drawer, quick bar and hamburger state.
+          shell = Path('components/layout/AppShell.tsx')
+          text = shell.read_text()
+          text = text.replace("import { useEffect, useState } from 'react';", "import { useEffect } from 'react';")
+          text = text.replace("import { MobileNavigationDrawer, MobileQuickBar } from '@/components/layout/MobileNavigation';\n", '')
+          text = text.replace('  const [menuOpen, setMenuOpen] = useState(false);\n', '')
+          text = text.replace("\n  useEffect(() => {\n    setMenuOpen(false);\n  }, [pathname]);\n", '\n')
+          text = re.sub(r"\n  useEffect\(\(\) => \{\n    if \(!menuOpen\) return;[\s\S]*?\n  \}, \[menuOpen\]\);\n", '\n', text, count=1)
+          text = text.replace('    activeTitle,\n', '')
+          text = text.replace('    mobileTaskPath,\n', '')
+          text = text.replace("<div className={`app-shell top-shell application-shell-v2 ${railCollapsed ? 'desktop-rail-collapsed' : ''} ${menuOpen ? 'mobile-menu-open' : ''}`}>", "<div className={`app-shell top-shell application-shell-v2 ${railCollapsed ? 'desktop-rail-collapsed' : ''}`}>")
+          text = re.sub(r"\n      \{menuOpen \? <button aria-label=\"Close navigation menu\"[\s\S]*? : null\}\n", '\n', text, count=1)
+          text = re.sub(r"\n          <button\n            aria-controls=\"mobile-navigation\"[\s\S]*?\n          </button>\n", '\n', text, count=1)
+          text = re.sub(r"\n        <MobileNavigationDrawer[\s\S]*?\n        />\n", '\n', text, count=1)
+          text = re.sub(r"\n      <MobileQuickBar[\s\S]*?\n      />\n", '\n', text, count=1)
+          if 'menuOpen' in text or 'setMenuOpen' in text or 'MobileNavigation' in text or 'mobile-navigation' in text:
+              raise SystemExit('mobile shell references remain after cleanup')
+          shell.write_text(text)
+
+          # Keep the stylesheet registry stable but deliberately empty the mobile authority.
+          Path('app/styles/application/responsive.css').write_text("""/*\n * Mobile web responsive authority intentionally reset.\n *\n * The previous phone/tablet implementation was removed on 2026-09-08 so the\n * next mobile experience can be designed from a clean baseline. Desktop visual\n * authority remains in application/desktop.css. Add no mobile rules here until\n * the replacement mobile architecture is approved.\n */\n""")
+
+          # Package contracts: remove checks for the deleted mobile website layer.
+          package = Path('package.json')
+          data = json.loads(package.read_text())
+          data['scripts'].pop('mobile:interaction-check', None)
+          data['scripts']['accessibility:check'] = 'node scripts/check-dialog-accessibility.mjs'
+          data['scripts']['check'] = data['scripts']['check'].replace(' && npm run mobile:interaction-check', '')
+          package.write_text(json.dumps(data, indent=2) + '\n')
+
+          # CI: stop asserting/launching the deleted mobile website implementation.
+          ci = Path('.github/workflows/ci.yml')
+          text = ci.read_text()
+          text = text.replace("\n      - name: Check mobile navigation and search contracts\n        run: npm run mobile:interaction-check\n", '')
+          text = text.replace('      - name: Check responsive and accessibility contracts\n', '      - name: Check accessibility contracts\n')
+          text = text.replace('tests/mobile-login.spec.mjs ', '')
+          ci.write_text(text)
+
+          # Existing browsers may already have /sw.js registered. Ship a tombstone
+          # worker that clears old caches and unregisters itself instead of leaving
+          # stale mobile/PWA behavior controlling the desktop baseline.
+          Path('public/sw.js').write_text("""const LEGACY_CACHE_PREFIX = 'dallmayr-';\n\nself.addEventListener('install', () => self.skipWaiting());\n\nself.addEventListener('activate', (event) => {\n  event.waitUntil((async () => {\n    const keys = await caches.keys();\n    await Promise.all(keys.filter((key) => key.startsWith(LEGACY_CACHE_PREFIX)).map((key) => caches.delete(key)));\n    await self.clients.claim();\n    await self.registration.unregister();\n  })());\n});\n\n// Intentionally no fetch handler: the legacy mobile/PWA layer has been retired.\n""")
+          PY
+
+          rm -f \
+            app/responsive-mobile-tablet.css \
+            app/responsive-mobile-interactions.css \
+            app/responsive-runtime-authority.css \
+            components/layout/MobileNavigation.tsx \
+            components/layout/AuthenticatedMobileRuntime.tsx \
+            components/layout/MobileBrowserHygiene.tsx \
+            components/features/MobileAppExperience.tsx \
+            components/ui/MobileWorkflowEnhancer.tsx \
+            scripts/check-mobile-interactions.mjs \
+            scripts/check-universal-phone.mjs \
+            tests/mobile-login.spec.mjs
+
+      - name: Commit clean desktop baseline
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "refactor: remove legacy mobile web implementation"
+          git push origin HEAD:rollback/mobile-ground-up-final5
