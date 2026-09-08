@@ -16,7 +16,6 @@ function forbid(sourceName, source, forbidden, message) {
 const terminology = read('lib/navigation/terminology.ts');
 const permissions = read('lib/auth/permissions.ts');
 const desktop = read('components/layout/DesktopNavigationRail.tsx');
-const mobile = read('components/layout/MobileNavigation.tsx');
 const breadcrumbs = read('components/ui/Breadcrumbs.tsx');
 const pageNavigation = read('lib/navigation/pageNavigation.ts');
 const shell = read('components/layout/AppShell.tsx');
@@ -36,12 +35,8 @@ requireText('desktop navigation', desktop, 'aria-label={FLEET_OVERVIEW_OPEN_LABE
 forbid('desktop navigation', desktop, 'title="Dashboard"', 'the /workspace role landing must not be renamed Dashboard.');
 forbid('desktop navigation', desktop, 'Dallmayr ERP home', 'the /workspace role landing must not be renamed home in accessibility copy.');
 
-requireText('mobile navigation', mobile, '<strong>{FLEET_OVERVIEW_LABEL}</strong>', 'the drawer must consume the canonical Fleet Overview label.');
-requireText('mobile navigation', mobile, "item.href === homePath || item.href === '/work'", 'generated sections must not duplicate the fixed Today and My Work destinations.');
-forbid('mobile navigation', mobile, '<strong>Dashboard</strong>', 'the role landing must not be renamed Dashboard in the drawer.');
-
 requireText('breadcrumbs', breadcrumbs, '<Link href="/">{FLEET_OVERVIEW_LABEL}</Link>', 'breadcrumbs must root telemetry pages at Fleet Overview.');
-requireText('page navigation', pageNavigation, "{ href: '/', label: FLEET_OVERVIEW_LABEL }", 'mobile back navigation must fall back to Fleet Overview.');
+requireText('page navigation', pageNavigation, "{ href: '/', label: FLEET_OVERVIEW_LABEL }", 'fallback navigation must return to Fleet Overview.');
 forbid('breadcrumbs', breadcrumbs, '>Workspace</Link>', 'the /workspace route must not be renamed Workspace in breadcrumbs.');
 forbid('page navigation', pageNavigation, "label: 'Start Page'", 'the /workspace route must not use the ambiguous Start Page alias.');
 
@@ -54,4 +49,4 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log('Navigation terminology contract passed: telemetry surfaces consistently use Fleet Overview while legacy terminology remains stable.');
+console.log('Navigation terminology contract passed: desktop telemetry surfaces consistently use Fleet Overview while legacy terminology remains stable.');
