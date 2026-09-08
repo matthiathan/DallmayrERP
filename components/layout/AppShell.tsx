@@ -2,11 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { DesktopNavigationRail } from '@/components/layout/DesktopNavigationRail';
-import { MobileNavigationDrawer, MobileQuickBar } from '@/components/layout/MobileNavigation';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { canAccessShellPath, deriveAppShellNavigation } from '@/components/layout/appShellNavigation';
 import { useAppShellPreferences } from '@/components/layout/useAppShellPreferences';
@@ -45,32 +44,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { authUser, businessProfile, loading, error } = useAuth();
-  const [menuOpen, setMenuOpen] = useState(false);
   const { favoriteEntries, railCollapsed, toggleFavorite, toggleRail } = useAppShellPreferences();
 
   useEffect(() => {
     if (!loading && !authUser) router.replace('/login');
   }, [authUser, loading, router]);
 
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') setMenuOpen(false);
-    }
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [menuOpen]);
 
   if (loading) {
     return <StatusScreen title="Loading secure workspace" message="Checking your Supabase session." loading />;
@@ -87,10 +67,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const {
     activeHref,
     activeSection,
-    activeTitle,
     allowedPath,
     homePath,
-    mobileTaskPath,
     navigationSections,
     statusQuickLinks,
   } = deriveAppShellNavigation(pathname);
@@ -103,10 +81,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const visibleFavorites = favoriteEntries.filter((entry) => canAccessShellPath(favoritePathname(entry.href)));
 
   return (
-    <div className={`app-shell top-shell application-shell-v2 ${railCollapsed ? 'desktop-rail-collapsed' : ''} ${menuOpen ? 'mobile-menu-open' : ''}`}>
+    <div className={`app-shell top-shell application-shell-v2 ${railCollapsed ? 'desktop-rail-collapsed' : ''}`}>
       <a className="skip-link" href="#main-content">Skip to main content</a>
 
-      {menuOpen ? <button aria-label="Close navigation menu" className="mobile-nav-backdrop" onClick={() => setMenuOpen(false)} type="button" /> : null}
 
       <header className="application-header">
         <div className="application-header-inner">
@@ -130,16 +107,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span>{activeArea}</span>
           </div>
 
-          <button
-            aria-controls="mobile-navigation"
-            aria-expanded={menuOpen}
-            aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-            className="hamburger-button notch-mobile-button application-mobile-menu-button"
-            onClick={() => setMenuOpen((current) => !current)}
-            type="button"
-          >
-            <NavigationIcon kind={menuOpen ? 'close' : 'menu'} />
-          </button>
         </div>
 
         <div aria-label="Workspace status" className="application-status-strip">
@@ -151,19 +118,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </div>
 
-        <MobileNavigationDrawer
-          activeHref={activeHref}
-          activeTitle={activeTitle}
-          favorites={visibleFavorites}
-          homePath={homePath}
-          onToggleFavorite={toggleFavorite}
-          open={menuOpen}
-          pathname={pathname}
-          accountLabel="Telemetry account"
-          sections={navigationSections}
-          setOpen={setMenuOpen}
-          userName={userName}
-        />
       </header>
 
       <DesktopNavigationRail
@@ -176,13 +130,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         sections={navigationSections}
       />
 
-      <MobileQuickBar
-        homePath={homePath}
-        menuOpen={menuOpen}
-        pathname={pathname}
-        setMenuOpen={setMenuOpen}
-        taskPath={mobileTaskPath}
-      />
 
       <main className="main top-main application-main" id="main-content" tabIndex={-1}>
         {!allowedPath ? (

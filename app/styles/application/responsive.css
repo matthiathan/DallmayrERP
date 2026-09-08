@@ -1,13 +1,8 @@
 /*
- * Responsive application authority.
+ * Mobile web responsive authority intentionally reset.
  *
- * Runtime/mobile interaction rules and finishing layers load after desktop.
- * responsive-mobile-tablet.css must remain the final application leaf.
+ * The previous phone/tablet implementation was removed on 2026-09-08 so the
+ * next mobile experience can be designed from a clean baseline. Desktop visual
+ * authority remains in application/desktop.css. Add no mobile rules here until
+ * the replacement mobile architecture is approved.
  */
-@import '../../responsive-runtime-authority.css';
-@import '../../responsive-mobile-interactions.css';
-@import '../../professional-finish.css';
-@import '../../professional-finish-details.css';
-@import '../../compact-desktop-authority.css';
-@import '../connected-workflow-strip.css';
-@import '../../responsive-mobile-tablet.css';
