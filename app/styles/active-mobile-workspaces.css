@@ -1,12 +1,6 @@
 /*
- * Active mobile workspace bundle.
+ * Legacy mobile workspace bundle retired on 2026-09-08.
  *
- * These styles still own live phone/touch interaction and workflow structure.
- * Keep this import order stable while their selectors are progressively moved
- * into the canonical responsive/component layers.
+ * Intentionally imports nothing. The previous mobile website is disabled so a
+ * replacement can be designed and implemented from a clean baseline.
  */
-@import '../mobile-navigation-drawer.css';
-@import '../mobile-data-views.css';
-@import '../mobile-application-layout.css';
-@import '../mobile-master-detail-actions.css';
-@import '../mobile-offline-field-work.css';
