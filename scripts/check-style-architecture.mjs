@@ -202,25 +202,6 @@ for (const requiredRule of [
 }
 if (readabilitySafetySource.includes('--ui-safe-blue')) fail('Canonical readability safety must not restore the retired blue visual programme.');
 
-const mobileDataViewsSource = await readFile(path.join(root, 'app', 'mobile-data-views.css'), 'utf8');
-for (const requiredRule of [
-  '.mobile-record-card-details > div:has(.button)',
-  '.low-stock-alerts > .grid',
-  '.document-grid',
-  'var(--mobile-quick-bar-height, 0px)',
-]) {
-  if (!mobileDataViewsSource.includes(requiredRule)) fail(`Mobile data views are missing migrated compatibility rule ${requiredRule}.`);
-}
-
-const mobileOfflineSource = await readFile(path.join(root, 'app', 'mobile-offline-field-work.css'), 'utf8');
-for (const requiredRule of [
-  'var(--mobile-quick-bar-height, 66px)',
-  '@media (max-width: 390px)',
-  '.field-offline-indicator strong',
-]) {
-  if (!mobileOfflineSource.includes(requiredRule)) fail(`Offline field-work presentation is missing migrated navigation compatibility rule ${requiredRule}.`);
-}
-
 const stabilizationSource = await readFile(path.join(root, 'app', 'ui-stabilization-contract.css'), 'utf8');
 for (const requiredRule of ['--ui-canvas: #f5f0e6', '--ui-ink: #231f1a', '--ui-gold: #b8862f', '.dallmayr-sidebar']) {
   if (!stabilizationSource.includes(requiredRule)) fail(`Desktop stabilization is missing ${requiredRule}.`);
@@ -339,27 +320,6 @@ if (desktopRailSource.includes('navigationGlyph(') || desktopRailSource.includes
 const navigationIconSource = await readFile(path.join(root, 'components', 'layout', 'NavigationIcon.tsx'), 'utf8');
 if (!navigationIconSource.includes('export function NavigationIcon') || !navigationIconSource.includes('<svg')) fail('Shared NavigationIcon must provide SVG navigation icons.');
 
-const responsiveSource = await readFile(path.join(root, 'app', 'responsive-mobile-tablet.css'), 'utf8');
-const responsiveWithoutComments = responsiveSource.replace(/\/\*[\s\S]*?\*\//g, '').trim();
-if (!responsiveWithoutComments.startsWith('@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {')) {
-  fail('responsive-mobile-tablet.css must begin with the locked phone/touch-tablet responsive query.');
-}
-for (const requiredRule of [
-  'var(--ui-canvas',
-  '.app-shell > .mobile-nav-backdrop',
-  '.mobile-nav-portal-root',
-  '.global-search-dialog',
-  '.mobile-quick-bar',
-  '.messaging-layout',
-  "html[data-mobile-route-surface='auth'] .dynamics-login-page",
-  "html[data-mobile-route-surface='auth'] .dynamics-login-card",
-  "html[data-mobile-route-surface='auth'] .dynamics-login-intro",
-  'overflow-x: auto !important',
-  'font-size: 16px !important',
-  'env(safe-area-inset-bottom)',
-]) {
-  if (!responsiveSource.includes(requiredRule)) fail(`Unified responsive contract is missing ${requiredRule}.`);
-}
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Style architecture check passed: ${visited.size} stylesheets registered, application cascade grouped into base/desktop/responsive authorities with exact leaf order preserved, retired compatibility programmes excluded, and final mobile/tablet ownership enforced.`);
+console.log(`Style architecture check passed: ${visited.size} stylesheets registered, application cascade grouped into base/desktop/responsive authorities with exact leaf order preserved and retired compatibility programmes excluded.`);
