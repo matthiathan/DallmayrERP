@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { ComparisonLineChart, type ComparisonPoint } from './ComparisonLineChart';
+import { formatLocalDate } from '@/lib/dates/local-date';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import styles from './TelevendFleetDashboard.module.css';
 
@@ -135,8 +136,8 @@ function previousWindow(report: ReportingPayload, history: ReportingPayload) {
   previousEnd.setDate(previousEnd.getDate() - 1);
   const previousStart = new Date(previousEnd);
   previousStart.setDate(previousStart.getDate() - days + 1);
-  const startKey = previousStart.toISOString().slice(0, 10);
-  const endKey = previousEnd.toISOString().slice(0, 10);
+  const startKey = formatLocalDate(previousStart);
+  const endKey = formatLocalDate(previousEnd);
   return history.daily_trend.filter((row) => row.date >= startKey && row.date <= endKey);
 }
 
