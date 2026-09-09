@@ -14,6 +14,7 @@ function jsonResponse(data, status = 200) {
       'access-control-allow-origin': '*',
       'access-control-allow-headers': 'authorization, apikey, content-type, x-client-info, prefer',
       'access-control-allow-methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+      'content-range': '0-0/1',
     },
     body: JSON.stringify(data),
   };
@@ -51,12 +52,12 @@ function telemetryReportFixture() {
   return {
     period: 'month',
     dataset: 'production',
-    date_from: '2026-08-11',
+    date_from: '2026-09-06',
     date_to: '2026-09-09',
     availability: { production_rows: 4, simulation_rows: 0, active_simulation_devices: 0 },
     summary: {
       units_sold: 29,
-      revenue_cents: 48300,
+      revenue_cents: 48_300,
       failed_vends: 3,
       active_machines: 3,
       reporting_devices: 3,
@@ -65,74 +66,27 @@ function telemetryReportFixture() {
       unassigned_devices: 0,
     },
     daily_trend: [
-      { date: '2026-09-06', units_sold: 5, failed_vends: 1, revenue_cents: 8200 },
-      { date: '2026-09-07', units_sold: 8, failed_vends: 0, revenue_cents: 13200 },
-      { date: '2026-09-08', units_sold: 7, failed_vends: 1, revenue_cents: 11900 },
-      { date: '2026-09-09', units_sold: 9, failed_vends: 1, revenue_cents: 15000 },
+      { date: '2026-09-06', units_sold: 5, failed_vends: 1, revenue_cents: 8_200 },
+      { date: '2026-09-07', units_sold: 8, failed_vends: 0, revenue_cents: 13_200 },
+      { date: '2026-09-08', units_sold: 7, failed_vends: 1, revenue_cents: 11_900 },
+      { date: '2026-09-09', units_sold: 9, failed_vends: 1, revenue_cents: 15_000 },
     ],
     by_branch: [
-      { branch: 'jhb', units_sold: 18, failed_vends: 2, revenue_cents: 30100 },
-      { branch: 'cpt', units_sold: 11, failed_vends: 1, revenue_cents: 18200 },
+      { branch: 'jhb', units_sold: 18, failed_vends: 2, revenue_cents: 30_100 },
+      { branch: 'cpt', units_sold: 11, failed_vends: 1, revenue_cents: 18_200 },
     ],
     top_items: [
-      { product_key: 'coffee-caramel', sku: 'CC01', product_name: 'Caramel Cappuccino', brand: 'Dallmayr', units_sold: 12, failed_vends: 1, revenue_cents: 20400 },
-      { product_key: 'porridge-instant', sku: 'IP01', product_name: 'Instant Porridge', brand: 'Dallmayr', units_sold: 9, failed_vends: 0, revenue_cents: 12600 },
-      { product_key: 'coffee-black', sku: 'BC01', product_name: 'Black Coffee', brand: 'Dallmayr', units_sold: 8, failed_vends: 2, revenue_cents: 15300 },
+      { product_key: 'coffee-caramel', sku: 'CC01', product_name: 'Caramel Cappuccino', brand: 'Dallmayr', units_sold: 12, failed_vends: 1, revenue_cents: 20_400 },
+      { product_key: 'porridge-instant', sku: 'IP01', product_name: 'Instant Porridge', brand: 'Dallmayr', units_sold: 9, failed_vends: 0, revenue_cents: 12_600 },
     ],
     top_machines: [
-      { machine_id: 'machine-1', machine_name: 'Belluno 01', serial_number: 'BEL-001', location: 'Johannesburg', branch: 'jhb', units_sold: 14, failed_vends: 2, revenue_cents: 23400 },
-      { machine_id: 'machine-2', machine_name: 'Belluno 02', serial_number: 'BEL-002', location: 'Cape Town', branch: 'cpt', units_sold: 9, failed_vends: 1, revenue_cents: 14600 },
-      { machine_id: 'machine-3', machine_name: 'Belluno 03', serial_number: 'BEL-003', location: 'Johannesburg', branch: 'jhb', units_sold: 6, failed_vends: 0, revenue_cents: 10300 },
+      { machine_id: 'machine-1', machine_name: 'Belluno 01', serial_number: 'BEL-001', location: 'Johannesburg', branch: 'jhb', units_sold: 18, failed_vends: 2, revenue_cents: 30_100 },
+      { machine_id: 'machine-2', machine_name: 'Belluno 02', serial_number: 'BEL-002', location: 'Cape Town', branch: 'cpt', units_sold: 11, failed_vends: 1, revenue_cents: 18_200 },
     ],
-    recent_sales: [],
+    recent_sales: [
+      { id: 'sale-1', sales_date: '2026-09-09', machine_name: 'Belluno 01', serial_number: 'BEL-001', location: 'Johannesburg', branch: 'jhb', selection_code: '01', sku: 'CC01', product_name: 'Caramel Cappuccino', units_sold: 3, failed_vends: 0, revenue_cents: 5_100, last_received_at: '2026-09-09T07:55:00.000Z' },
+    ],
   };
-}
-
-function dataUsageFixture() {
-  return [{
-    device_id: 'device-1',
-    request_count: 420,
-    request_bytes: 4_000_000,
-    response_bytes: 1_000_000,
-    application_bytes: 18_000_000,
-    device_application_tx_bytes: 15_000_000,
-    device_application_rx_bytes: 5_000_000,
-    device_application_bytes: 20_000_000,
-    device_application_sample_count: 30,
-    modem_tx_bytes: 35_000_000,
-    modem_rx_bytes: 10_000_000,
-    measured_modem_bytes: 45_000_000,
-    modem_sample_count: 30,
-    days_observed: 30,
-    last_reported_at: '2026-09-09T06:00:00.000Z',
-    projected_monthly_application_bytes: 18_000_000,
-    projected_monthly_device_application_bytes: 20_000_000,
-    projected_monthly_modem_bytes: 45_000_000,
-  }];
-}
-
-function prepaidFixture() {
-  return [{
-    device_id: 'device-1',
-    device_code: 'DALL-TEL-001',
-    carrier: 'Vodacom',
-    ussd_code: '*111*502#',
-    remaining_bytes: 524_288_000,
-    balance_text: '500 MB remaining',
-    query_status: 'ok',
-    last_error: null,
-    checked_at: '2026-09-09T06:00:00.000Z',
-    received_at: '2026-09-09T06:00:00.000Z',
-    request_pending: false,
-    requested_at: null,
-    warning_threshold_bytes: 104_857_600,
-    critical_threshold_bytes: 26_214_400,
-    check_interval_minutes: 360,
-    stale_after_minutes: 720,
-    next_check_at: '2026-09-09T12:00:00.000Z',
-    is_stale: false,
-    alert_level: 'ok',
-  }];
 }
 
 async function installAuthenticatedTelemetryMock(page) {
@@ -148,198 +102,136 @@ async function installAuthenticatedTelemetryMock(page) {
     const request = route.request();
     const url = new URL(request.url());
 
-    if (request.method() === 'OPTIONS') {
-      await route.fulfill(jsonResponse(null, 204));
-      return;
-    }
-    if (url.pathname === '/auth/v1/user') {
-      await route.fulfill(jsonResponse(session.user));
-      return;
-    }
-    if (url.pathname.startsWith('/auth/v1/token')) {
-      await route.fulfill(jsonResponse(session));
-      return;
-    }
-    if (url.pathname === '/rest/v1/users') {
-      await route.fulfill(jsonResponse({
-        id: businessUserId,
-        auth_user_id: authUserId,
-        email: session.user.email,
-        is_active: true,
-        access_note: null,
-        access_updated_by: null,
-        access_updated_at: null,
-        created_at: '2026-01-01T00:00:00.000Z',
-        updated_at: '2026-01-01T00:00:00.000Z',
-      }));
-      return;
-    }
-    if (url.pathname === '/rest/v1/user_details') {
-      await route.fulfill(jsonResponse({
-        id: 'details-telemetry-mobile',
-        user_id: businessUserId,
-        first_name: 'Mobile',
-        last_name: 'Tester',
-        phone_number: '0110000000',
-        birthday: '1990-01-01',
-        role: 'admin',
-        branch: 'national',
-        emergency_contact_name: 'Test Contact',
-        emergency_contact_phone: '0820000000',
-        created_at: '2026-01-01T00:00:00.000Z',
-        updated_at: '2026-01-01T00:00:00.000Z',
-      }));
-      return;
-    }
-    if (url.pathname === '/rest/v1/rpc/claim_current_app_user') {
-      await route.fulfill(jsonResponse(null));
-      return;
-    }
-    if (url.pathname === '/rest/v1/rpc/get_telemetry_dashboard') {
-      await route.fulfill(jsonResponse({ device_states: [], active_faults: [] }));
-      return;
-    }
-    if (url.pathname === '/rest/v1/rpc/get_telemetry_reporting') {
-      await route.fulfill(jsonResponse(telemetryReportFixture()));
-      return;
-    }
-    if (url.pathname === '/rest/v1/rpc/get_telemetry_data_usage') {
-      await route.fulfill(jsonResponse(dataUsageFixture()));
-      return;
-    }
-    if (url.pathname === '/rest/v1/rpc/get_telemetry_prepaid_balances') {
-      await route.fulfill(jsonResponse(prepaidFixture()));
-      return;
-    }
-    if (url.pathname.startsWith('/rest/v1/rpc/')) {
-      await route.fulfill(jsonResponse([]));
-      return;
-    }
-    if (url.pathname.startsWith('/rest/v1/')) {
-      await route.fulfill(jsonResponse([]));
-      return;
-    }
-
-    await route.fulfill(jsonResponse({}));
+    if (request.method() === 'OPTIONS') return route.fulfill(jsonResponse(null, 204));
+    if (url.pathname === '/auth/v1/user') return route.fulfill(jsonResponse(session.user));
+    if (url.pathname.startsWith('/auth/v1/token')) return route.fulfill(jsonResponse(session));
+    if (url.pathname === '/rest/v1/users') return route.fulfill(jsonResponse({
+      id: businessUserId,
+      auth_user_id: authUserId,
+      email: session.user.email,
+      is_active: true,
+      access_note: null,
+      access_updated_by: null,
+      access_updated_at: null,
+      created_at: '2026-01-01T00:00:00.000Z',
+      updated_at: '2026-01-01T00:00:00.000Z',
+    }));
+    if (url.pathname === '/rest/v1/user_details') return route.fulfill(jsonResponse({
+      id: 'details-telemetry-mobile',
+      user_id: businessUserId,
+      first_name: 'Mobile',
+      last_name: 'Tester',
+      phone_number: '0110000000',
+      birthday: '1990-01-01',
+      role: 'admin',
+      branch: 'national',
+      emergency_contact_name: 'Test Contact',
+      emergency_contact_phone: '0820000000',
+      created_at: '2026-01-01T00:00:00.000Z',
+      updated_at: '2026-01-01T00:00:00.000Z',
+    }));
+    if (url.pathname === '/rest/v1/rpc/claim_current_app_user') return route.fulfill(jsonResponse(null));
+    if (url.pathname === '/rest/v1/rpc/get_telemetry_reporting') return route.fulfill(jsonResponse(telemetryReportFixture()));
+    if (url.pathname === '/rest/v1/rpc/get_telemetry_dashboard') return route.fulfill(jsonResponse({ device_states: [], active_faults: [] }));
+    if (url.pathname === '/rest/v1/rpc/get_telemetry_data_usage') return route.fulfill(jsonResponse([]));
+    if (url.pathname === '/rest/v1/rpc/get_telemetry_prepaid_balances') return route.fulfill(jsonResponse([]));
+    if (url.pathname.startsWith('/rest/v1/rpc/')) return route.fulfill(jsonResponse([]));
+    if (url.pathname.startsWith('/rest/v1/')) return route.fulfill(jsonResponse([]));
+    return route.fulfill(jsonResponse({}));
   });
 }
 
-async function openMobilePage(browser, pathname) {
-  const context = await browser.newContext({
-    viewport: { width: 390, height: 844 },
-    hasTouch: true,
-    isMobile: true,
-  });
+async function openResponsivePage(browser, pathname, viewport = { width: 390, height: 844 }) {
+  const context = await browser.newContext({ viewport, hasTouch: true, isMobile: true });
   const page = await context.newPage();
   await installAuthenticatedTelemetryMock(page);
   await page.goto(`${baseURL}${pathname}`, { waitUntil: 'domcontentloaded' });
-  await expect(page.locator('.application-shell-v2')).toHaveCount(1, { timeout: 20_000 });
+  await expect(page.locator('[data-platform-shell="telemetry-v3"]')).toHaveCount(1, { timeout: 20_000 });
   await expect(page.locator('[data-mobile-shell="v1"]')).toBeVisible({ timeout: 20_000 });
   return { context, page };
 }
 
-test('new mobile telemetry shell exposes primary fleet navigation without rendering the desktop chrome', async ({ browser }) => {
-  const { context, page } = await openMobilePage(browser, '/machines');
+async function expectNoHorizontalOverflow(page) {
+  const overflow = await page.evaluate(() => ({
+    document: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    main: Boolean(document.querySelector('#main-content') && document.querySelector('#main-content').scrollWidth > document.querySelector('#main-content').clientWidth),
+  }));
+  expect(overflow.document).toBe(false);
+  expect(overflow.main).toBe(false);
+}
 
+test('mobile telemetry shell exposes the four primary fleet routes without desktop chrome', async ({ browser }) => {
+  const { context, page } = await openResponsivePage(browser, '/machines');
   await expect(page.locator('.application-header')).toBeHidden();
   await expect(page.locator('.dallmayr-sidebar')).toBeHidden();
   await expect(page.locator('.telemetry-mobile-header')).toBeVisible();
   await expect(page.locator('.telemetry-mobile-bottom-nav')).toBeVisible();
   await expect(page.locator('.telemetry-mobile-bottom-nav a[href="/machines"]')).toHaveAttribute('aria-current', 'page');
-
   for (const href of ['/', '/machines', '/alerts', '/telemetry']) {
     await expect(page.locator(`.telemetry-mobile-bottom-nav a[href="${href}"]`)).toHaveCount(1);
   }
-
   await expect(page.locator('#mobile-account-menu-target')).toHaveCount(1);
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
-  expect(overflow).toBe(false);
-
+  await expectNoHorizontalOverflow(page);
   await context.close();
 });
 
-test('visual Fleet Overview and Machines stay inside the phone viewport', async ({ browser }) => {
-  const home = await openMobilePage(browser, '/');
-  await expect(home.page.getByRole('heading', { name: 'Mobile, here is the fleet right now.', level: 1 })).toBeVisible({ timeout: 20_000 });
-  await expect(home.page.getByText('Items sold', { exact: true }).first()).toBeVisible();
-  await expect(home.page.getByText('Fleet availability', { exact: true }).first()).toBeVisible();
-  await expect(home.page.locator('[data-chart-interactive="line"]')).toBeVisible();
-  await expect(home.page.locator('[data-chart-interactive="bar"]')).toHaveCount(3);
-  const usagePanel = home.page.locator('[data-fleet-usage-panel="v1"]');
-  await expect(usagePanel).toBeVisible();
-  await expect(usagePanel.getByText('30-day transfer', { exact: true })).toBeVisible();
-  await expect(usagePanel.getByText('Prepaid remaining', { exact: true })).toBeVisible();
-  const homeOverflow = await home.page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
-  expect(homeOverflow).toBe(false);
+test('rebuilt Fleet Overview and Machines remain bounded on a phone', async ({ browser }) => {
+  const home = await openResponsivePage(browser, '/');
+  const dashboard = home.page.locator('[data-fleet-dashboard="televend-v3"]');
+  await expect(dashboard).toBeVisible({ timeout: 20_000 });
+  await expect(dashboard.getByText('Items sold', { exact: true }).first()).toBeVisible();
+  await expect(dashboard.getByRole('heading', { name: 'Sales metrics' })).toBeVisible();
+  await expect(dashboard.locator('[data-chart-interactive="comparison-line"]')).toBeVisible();
+  await expectNoHorizontalOverflow(home.page);
   await home.context.close();
 
-  const machines = await openMobilePage(browser, '/machines');
-  await expect(machines.page.locator('.fleet-page-heading')).toBeVisible({ timeout: 20_000 });
-  await expect(machines.page.getByRole('heading', { name: 'Machines', level: 1 })).toBeVisible({ timeout: 20_000 });
-  await expect(machines.page.locator('.fleet-metric-grid')).toBeVisible({ timeout: 20_000 });
-  await expect(machines.page.locator('.fleet-table-panel')).toBeVisible({ timeout: 20_000 });
-  await expect(machines.page.locator('.fleet-filters')).toBeVisible({ timeout: 20_000 });
-  const machineOverflow = await machines.page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
-  expect(machineOverflow).toBe(false);
+  const machines = await openResponsivePage(browser, '/machines');
+  const browserRoot = machines.page.locator('[data-machine-browser="televend-v3"]');
+  await expect(browserRoot).toBeVisible({ timeout: 20_000 });
+  await expect(browserRoot.getByRole('heading', { name: 'Machines', level: 1 })).toBeVisible();
+  await expect(browserRoot.getByRole('searchbox', { name: 'Search machines' })).toBeVisible();
+  await expect(browserRoot.getByText('Online', { exact: true }).first()).toBeVisible();
+  await expectNoHorizontalOverflow(machines.page);
   await machines.context.close();
 });
 
-test('Telemetry Analytics charts support tap-to-pin details on mobile', async ({ browser }) => {
-  const { context, page } = await openMobilePage(browser, '/telemetry');
-
-  await expect(page.getByRole('heading', { name: 'Telemetry analytics', level: 1 })).toBeVisible({ timeout: 20_000 });
-  const lineChart = page.locator('[data-chart-interactive="line"]');
-  const barCharts = page.locator('[data-chart-interactive="bar"]');
-  const donutChart = page.locator('[data-chart-interactive="donut"]');
-  await expect(lineChart).toBeVisible();
-  await expect(barCharts).toHaveCount(3);
-  await expect(donutChart).toBeVisible();
-
-  const firstPoint = lineChart.locator('circle[role="button"]').first();
-  await firstPoint.click();
-  await expect(firstPoint).toHaveAttribute('aria-pressed', 'true');
-  await expect(lineChart.getByRole('status')).toContainText('Failed vends');
-
-  const firstBar = barCharts.first().getByRole('button').first();
-  await firstBar.click();
-  await expect(firstBar).toHaveAttribute('aria-pressed', 'true');
-  await expect(barCharts.first().getByRole('status')).toContainText('JHB');
-
-  const firstLegendItem = donutChart.getByRole('button').first();
-  await firstLegendItem.click();
-  await expect(firstLegendItem).toHaveAttribute('aria-pressed', 'true');
-  await expect(donutChart.getByRole('status')).toContainText('Online');
-
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
-  expect(overflow).toBe(false);
+test('rebuilt Analytics comparison chart supports tap-to-pin detail on mobile', async ({ browser }) => {
+  const { context, page } = await openResponsivePage(browser, '/telemetry');
+  const analytics = page.locator('[data-analytics="televend-v3"]');
+  await expect(analytics).toBeVisible({ timeout: 20_000 });
+  await expect(analytics.getByRole('heading', { name: 'Analytics', level: 1 })).toBeVisible();
+  const chart = analytics.locator('[data-chart-interactive="comparison-line"]');
+  await expect(chart).toBeVisible();
+  const point = chart.locator('circle[role="button"]').last();
+  await point.click();
+  await expect(point).toHaveAttribute('aria-pressed', 'true');
+  await expect(chart.locator('[data-tooltip-placement]')).toBeVisible();
+  await expectNoHorizontalOverflow(page);
   await context.close();
 });
 
-test('standalone telemetry workspaces stay usable and bounded on a phone', async ({ browser }) => {
+test('specialist telemetry workspaces remain usable and bounded on a phone', async ({ browser }) => {
   const routes = [
-    ['/telemetry/test-center', 'Telemetry Test Center'],
-    ['/map', 'Machine locations'],
+    ['/telemetry/test-center', 'Test Center'],
+    ['/map', 'Fleet map'],
     ['/products', 'Products'],
     ['/telemetry/devices', 'Telemetry devices'],
   ];
 
   for (const [pathname, heading] of routes) {
-    const { context, page } = await openMobilePage(browser, pathname);
-    await expect(page.getByRole('heading', { name: heading, level: 1 })).toBeVisible({ timeout: 20_000 });
-    const overflow = await page.evaluate(() => ({
-      document: document.documentElement.scrollWidth > document.documentElement.clientWidth,
-      main: document.querySelector('#main-content')?.scrollWidth > document.querySelector('#main-content')?.clientWidth,
-    }));
-    expect(overflow.document).toBe(false);
-    expect(overflow.main).toBe(false);
+    const { context, page } = await openResponsivePage(browser, pathname);
+    const workspace = page.locator('[data-specialist-workspace="televend-v3"]');
+    await expect(workspace).toBeVisible({ timeout: 20_000 });
+    await expect(workspace.getByRole('heading', { name: heading, level: 1 })).toBeVisible();
+    await expectNoHorizontalOverflow(page);
     await context.close();
   }
 });
 
-test('new mobile More sheet exposes every telemetry route and closes after navigation', async ({ browser }) => {
-  const { context, page } = await openMobilePage(browser, '/machines');
-
-  await page.getByRole('button', { name: 'More' }).click();
+test('mobile More sheet exposes every telemetry route and announces the active secondary route', async ({ browser }) => {
+  const { context, page } = await openResponsivePage(browser, '/machines');
+  const more = page.getByRole('button', { name: 'More' });
+  await more.click();
   const dialog = page.getByRole('dialog', { name: 'Telemetry navigation' });
   await expect(dialog).toBeVisible();
 
@@ -350,7 +242,22 @@ test('new mobile More sheet exposes every telemetry route and closes after navig
   await dialog.locator('a[href="/products"]').click();
   await expect(page).toHaveURL(`${baseURL}/products`);
   await expect(page.locator('.telemetry-mobile-menu-layer')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'More' })).toHaveClass(/is-active/);
-
+  await expect(page.getByRole('button', { name: 'More' })).toHaveAttribute('aria-current', 'page');
   await context.close();
+});
+
+test('touch tablet layouts use the mobile telemetry authority at 768, 1024 and 1366 widths', async ({ browser }) => {
+  for (const viewport of [
+    { width: 768, height: 1024 },
+    { width: 1024, height: 1366 },
+    { width: 1366, height: 1024 },
+  ]) {
+    const { context, page } = await openResponsivePage(browser, '/', viewport);
+    await expect(page.locator('[data-fleet-dashboard="televend-v3"]')).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('.application-header')).toBeHidden();
+    await expect(page.locator('.dallmayr-sidebar')).toBeHidden();
+    await expect(page.locator('.telemetry-mobile-bottom-nav')).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await context.close();
+  }
 });
