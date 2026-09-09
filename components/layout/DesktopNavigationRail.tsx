@@ -40,7 +40,7 @@ export function DesktopNavigationRail({
   pinnedItems,
   sections,
 }: DesktopNavigationRailProps) {
-  const items = allItems(sections);
+  allItems(sections);
 
   return (
     <aside
@@ -77,7 +77,7 @@ export function DesktopNavigationRail({
           <section className={styles.navGroup} key={section.heading}>
             {!collapsed ? <h2 className={styles.navHeading}>{section.heading}</h2> : null}
             {section.items.map((item) => {
-              const active = activeHref === item.href || isActivePath(pathname, item.href);
+              const active = activeHref === item.href;
               return (
                 <Link
                   aria-current={active ? 'page' : undefined}
