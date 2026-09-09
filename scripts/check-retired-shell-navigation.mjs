@@ -278,6 +278,9 @@ for (const requiredRule of [
   '.telemetry-mobile-bottom-nav',
   '.application-header,',
   '.dallmayr-sidebar',
+  '.fleet-page-heading',
+  '.fleet-metric-grid',
+  '.fleet-detail-panel',
   '@media (max-width: 900px)',
 ]) {
   if (!responsiveRuntime.includes(requiredRule)) {
@@ -299,12 +302,19 @@ for (const requiredRule of [
   }
 }
 
-const reservedTabletAuthority = await readFile(path.join(root, 'app', 'responsive-mobile-tablet.css'), 'utf8');
-const reservedTabletWithoutComments = reservedTabletAuthority.replace(/\/\*[\s\S]*?\*\//g, '').trim();
-if (reservedTabletWithoutComments.length > 0) {
-  console.error('app/responsive-mobile-tablet.css must remain reserved until page-family/tablet adaptation begins.');
-  process.exitCode = 1;
+const responsivePageFamilies = await readFile(path.join(root, 'app', 'responsive-mobile-tablet.css'), 'utf8');
+for (const requiredRule of [
+  '.telemetry-analytics-workspace',
+  '.analytics-filter-bar',
+  '.analytics-chart-grid',
+  '.analytics-machine-table',
+  '@media (max-width: 900px)',
+]) {
+  if (!responsivePageFamilies.includes(requiredRule)) {
+    console.error(`Responsive telemetry page-family authority is missing ${requiredRule}.`);
+    process.exitCode = 1;
+  }
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('Style guard passed: desktop authorities remain intact and the new telemetry mobile shell owns the canonical responsive runtime without restoring legacy mobile layers.');
+console.log('Style guard passed: desktop authorities remain intact and the new telemetry mobile shell/page families own the canonical responsive runtime without restoring legacy mobile layers.');
