@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { MachineCreateImportControls } from '@/components/features/MachineCreateImportControls';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
@@ -11,7 +11,7 @@ import styles from './MachineFleetBrowser.module.css';
 
 type ConnectionStatus = 'online' | 'delayed' | 'offline' | 'never' | 'unlinked';
 
-type MachineRecord = {
+type MachineFleetRow = {
   id: string;
   branch: string;
   site_id: string | null;
@@ -20,19 +20,15 @@ type MachineRecord = {
   asset_tag: string | null;
   machine_name: string | null;
   model: string | null;
-  status: string;
+  asset_status: string;
   current_custodian: string | null;
   manufacturer: string | null;
-};
-
-type SiteRecord = { id: string; site_name: string | null; address: string | null };
-type DeviceState = {
-  device_id: string;
-  device_code: string;
-  machine_id: string | null;
-  device_status: string;
-  telemetry_mode: 'live' | 'daily' | 'monthly';
-  machine_status: string;
+  site_name: string;
+  location: string;
+  device_id: string | null;
+  device_code: string | null;
+  telemetry_mode: 'live' | 'daily' | 'monthly' | null;
+  machine_status: string | null;
   last_transport: 'wifi' | 'cellular' | null;
   wifi_rssi: number | null;
   cellular_csq: number | null;
@@ -40,37 +36,28 @@ type DeviceState = {
   firmware_version: string | null;
   last_seen_at: string | null;
   last_heartbeat_at: string | null;
+  fault_count: number;
+  last_contact: string | null;
+  connection_status: ConnectionStatus;
 };
 
-type FaultRecord = { id: string; machine_id: string | null };
-type OverviewPayload = { device_states?: DeviceState[]; active_faults?: FaultRecord[] };
-type MachineView = MachineRecord & {
-  siteName: string;
-  location: string;
-  device: DeviceState | null;
-  connectionStatus: ConnectionStatus;
-  faultCount: number;
-  lastContact: string | null;
+type FleetSummary = Record<ConnectionStatus, number> & { active_faults: number };
+type FleetPayload = {
+  rows?: MachineFleetRow[];
+  total?: number;
+  fleet_total?: number;
+  summary?: Partial<FleetSummary>;
+  branches?: string[];
+  limit?: number;
+  offset?: number;
+  generated_at?: string;
 };
 
-type QueryPage = { data: unknown[] | null; error: { message: string } | null };
-
-const DATABASE_PAGE_SIZE = 1000;
 const TABLE_PAGE_SIZE = 75;
-const SITE_BATCH_SIZE = 100;
+const EMPTY_SUMMARY: FleetSummary = { online: 0, delayed: 0, offline: 0, never: 0, unlinked: 0, active_faults: 0 };
 
-function titleFor(machine: MachineRecord) {
+function titleFor(machine: MachineFleetRow) {
   return machine.machine_name ?? machine.model ?? machine.serial_number ?? machine.asset_tag ?? 'Unnamed machine';
-}
-
-function connectionStatus(device: DeviceState | null): ConnectionStatus {
-  if (!device) return 'unlinked';
-  const contact = device.last_heartbeat_at ?? device.last_seen_at;
-  if (!contact) return 'never';
-  const age = Date.now() - new Date(contact).getTime();
-  if (age <= 30 * 60 * 1000) return 'online';
-  if (age <= 24 * 60 * 60 * 1000) return 'delayed';
-  return 'offline';
 }
 
 function statusLabel(status: ConnectionStatus) {
@@ -79,9 +66,9 @@ function statusLabel(status: ConnectionStatus) {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
-function transportLabel(device: DeviceState | null) {
-  if (!device?.last_transport) return 'Not reported';
-  return device.last_transport === 'wifi' ? 'Wi-Fi' : 'Cellular';
+function transportLabel(machine: MachineFleetRow) {
+  if (!machine.last_transport) return 'Not reported';
+  return machine.last_transport === 'wifi' ? 'Wi-Fi' : 'Cellular';
 }
 
 function contactAge(value: string | null) {
@@ -95,153 +82,104 @@ function contactAge(value: string | null) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-async function loadMachineMaster() {
-  const client = getSupabaseClient();
-  const rows: MachineRecord[] = [];
-  for (let from = 0; ; from += DATABASE_PAGE_SIZE) {
-    const result = await client
-      .from('machines')
-      .select('id,branch,site_id,serial_number,machine_barcode,asset_tag,machine_name,model,status,current_custodian,manufacturer')
-      .order('machine_name', { ascending: true, nullsFirst: false })
-      .order('id', { ascending: true })
-      .range(from, from + DATABASE_PAGE_SIZE - 1) as QueryPage;
-    if (result.error) throw new Error(result.error.message);
-    const page = (result.data ?? []) as MachineRecord[];
-    rows.push(...page);
-    if (page.length < DATABASE_PAGE_SIZE) break;
-  }
-  return rows;
-}
-
-async function loadSites(siteIds: string[]) {
-  if (!siteIds.length) return [] as SiteRecord[];
-  const client = getSupabaseClient();
-  const rows: SiteRecord[] = [];
-  for (let offset = 0; offset < siteIds.length; offset += SITE_BATCH_SIZE) {
-    const { data, error } = await client.from('customer_sites').select('id,site_name,address').in('id', siteIds.slice(offset, offset + SITE_BATCH_SIZE));
-    if (error) throw error;
-    rows.push(...((data ?? []) as SiteRecord[]));
-  }
-  return rows;
+function normaliseRow(row: MachineFleetRow): MachineFleetRow {
+  return {
+    ...row,
+    fault_count: Number(row.fault_count ?? 0),
+    wifi_rssi: row.wifi_rssi === null || row.wifi_rssi === undefined ? null : Number(row.wifi_rssi),
+    cellular_csq: row.cellular_csq === null || row.cellular_csq === undefined ? null : Number(row.cellular_csq),
+  };
 }
 
 export function MachineFleetBrowser() {
-  const [machines, setMachines] = useState<MachineRecord[]>([]);
-  const [sites, setSites] = useState<Record<string, SiteRecord>>({});
-  const [devices, setDevices] = useState<DeviceState[]>([]);
-  const [faults, setFaults] = useState<FaultRecord[]>([]);
+  const [rows, setRows] = useState<MachineFleetRow[]>([]);
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [branch, setBranch] = useState('all');
   const [status, setStatus] = useState<'all' | ConnectionStatus>('all');
   const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [fleetTotal, setFleetTotal] = useState(0);
+  const [summary, setSummary] = useState<FleetSummary>(EMPTY_SUMMARY);
+  const [branches, setBranches] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const loadTelemetry = useCallback(async (quiet = false) => {
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
+  const loadFleet = useCallback(async (quiet = false, pageOverride?: number) => {
     if (quiet) setRefreshing(true);
-    try {
-      const { data, error: telemetryError } = await getSupabaseClient().rpc('get_telemetry_dashboard', { p_period: 'today', p_branch: 'all' });
-      if (telemetryError) throw telemetryError;
-      const payload = (data ?? {}) as OverviewPayload;
-      setDevices((payload.device_states ?? []).map((device) => ({
-        ...device,
-        wifi_rssi: device.wifi_rssi === null || device.wifi_rssi === undefined ? null : Number(device.wifi_rssi),
-        cellular_csq: device.cellular_csq === null || device.cellular_csq === undefined ? null : Number(device.cellular_csq),
-      })));
-      setFaults(payload.active_faults ?? []);
-      setLastUpdated(new Date());
-    } finally {
-      if (quiet) setRefreshing(false);
-    }
-  }, []);
-
-  const loadStatic = useCallback(async () => {
-    const machineRows = await loadMachineMaster();
-    const siteIds = Array.from(new Set(machineRows.map((row) => row.site_id).filter((value): value is string => Boolean(value))));
-    const siteRows = await loadSites(siteIds);
-    setMachines(machineRows);
-    setSites(Object.fromEntries(siteRows.map((site) => [site.id, site])));
-  }, []);
-
-  const loadInitial = useCallback(async () => {
-    setLoading(true);
+    else setLoading(true);
     setError(null);
     try {
-      await Promise.all([loadStatic(), loadTelemetry(false)]);
+      const targetPage = Math.max(1, pageOverride ?? page);
+      const { data, error: fleetError } = await getSupabaseClient().rpc('get_telemetry_machine_fleet', {
+        p_search: search,
+        p_branch: branch,
+        p_status: status,
+        p_offset: (targetPage - 1) * TABLE_PAGE_SIZE,
+        p_limit: TABLE_PAGE_SIZE,
+      });
+      if (fleetError) throw fleetError;
+      const payload = (data ?? {}) as FleetPayload;
+      const nextSummary = payload.summary ?? {};
+      setRows((payload.rows ?? []).map(normaliseRow));
+      setTotal(Number(payload.total ?? 0));
+      setFleetTotal(Number(payload.fleet_total ?? 0));
+      setSummary({
+        online: Number(nextSummary.online ?? 0),
+        delayed: Number(nextSummary.delayed ?? 0),
+        offline: Number(nextSummary.offline ?? 0),
+        never: Number(nextSummary.never ?? 0),
+        unlinked: Number(nextSummary.unlinked ?? 0),
+        active_faults: Number(nextSummary.active_faults ?? 0),
+      });
+      setBranches((payload.branches ?? []).filter(Boolean));
+      setLastUpdated(payload.generated_at ? new Date(payload.generated_at) : new Date());
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Could not load the machine fleet.');
     } finally {
       setLoading(false);
-    }
-  }, [loadStatic, loadTelemetry]);
-
-  useEffect(() => { loadInitial().catch(() => undefined); }, [loadInitial]);
-  useEffect(() => {
-    const interval = window.setInterval(() => loadTelemetry(true).catch((loadError) => {
-      setError(loadError instanceof Error ? loadError.message : 'Could not refresh telemetry status.');
-    }), 30_000);
-    return () => window.clearInterval(interval);
-  }, [loadTelemetry]);
-
-  const rows = useMemo<MachineView[]>(() => {
-    const deviceByMachine = new Map(devices.filter((device) => device.machine_id).map((device) => [device.machine_id as string, device]));
-    const faultCount = new Map<string, number>();
-    faults.forEach((fault) => {
-      if (!fault.machine_id) return;
-      faultCount.set(fault.machine_id, (faultCount.get(fault.machine_id) ?? 0) + 1);
-    });
-
-    return machines.map((machine) => {
-      const device = deviceByMachine.get(machine.id) ?? null;
-      const site = machine.site_id ? sites[machine.site_id] : null;
-      return {
-        ...machine,
-        siteName: site?.site_name ?? 'Unassigned site',
-        location: site?.address ?? machine.current_custodian ?? machine.branch.toUpperCase(),
-        device,
-        connectionStatus: connectionStatus(device),
-        faultCount: faultCount.get(machine.id) ?? 0,
-        lastContact: device?.last_heartbeat_at ?? device?.last_seen_at ?? null,
-      };
-    });
-  }, [devices, faults, machines, sites]);
-
-  const branches = useMemo(() => Array.from(new Set(rows.map((row) => row.branch))).sort(), [rows]);
-  const filtered = useMemo(() => rows.filter((machine) => {
-    if (branch !== 'all' && machine.branch !== branch) return false;
-    if (status !== 'all' && machine.connectionStatus !== status) return false;
-    const term = search.trim().toLowerCase();
-    if (!term) return true;
-    return [titleFor(machine), machine.serial_number, machine.machine_barcode, machine.asset_tag, machine.model, machine.manufacturer, machine.siteName, machine.location, machine.device?.device_code]
-      .join(' ')
-      .toLowerCase()
-      .includes(term);
-  }), [branch, rows, search, status]);
-
-  const counts = rows.reduce((acc, machine) => {
-    acc[machine.connectionStatus] += 1;
-    return acc;
-  }, { online: 0, delayed: 0, offline: 0, never: 0, unlinked: 0 } as Record<ConnectionStatus, number>);
-
-  const pageCount = Math.max(1, Math.ceil(filtered.length / TABLE_PAGE_SIZE));
-  const currentPage = Math.min(page, pageCount);
-  const visible = filtered.slice((currentPage - 1) * TABLE_PAGE_SIZE, currentPage * TABLE_PAGE_SIZE);
-
-  useEffect(() => setPage(1), [branch, search, status]);
-  useEffect(() => setPage((value) => Math.min(value, pageCount)), [pageCount]);
-
-  const refreshAll = async () => {
-    setRefreshing(true);
-    setError(null);
-    try {
-      await Promise.all([loadStatic(), loadTelemetry(false)]);
-    } catch (refreshError) {
-      setError(refreshError instanceof Error ? refreshError.message : 'Could not refresh the machine fleet.');
-    } finally {
       setRefreshing(false);
     }
+  }, [branch, page, search, status]);
+
+  useEffect(() => { loadFleet(false).catch(() => undefined); }, [loadFleet]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => loadFleet(true).catch(() => undefined), 30_000);
+    return () => window.clearInterval(interval);
+  }, [loadFleet]);
+
+  const pageCount = Math.max(1, Math.ceil(total / TABLE_PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
+
+  const refreshAll = useCallback(async () => {
+    if (page !== 1) {
+      setPage(1);
+      return;
+    }
+    await loadFleet(true, 1);
+  }, [loadFleet, page]);
+
+  const clearFilters = () => {
+    setSearchInput('');
+    setSearch('');
+    setBranch('all');
+    setStatus('all');
+    setPage(1);
   };
 
   return (
@@ -249,7 +187,7 @@ export function MachineFleetBrowser() {
       <header className={styles.header}>
         <div className={styles.headerCopy}><h1>Machines</h1><p>Live machine status, faults, connectivity and device assignment.</p></div>
         <div className={styles.headerActions}>
-          <button className={styles.headerButton} disabled={refreshing} onClick={() => refreshAll()} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button>
+          <button className={styles.headerButton} disabled={refreshing} onClick={() => loadFleet(true)} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button>
           <MachineCreateImportControls onChanged={refreshAll} />
         </div>
       </header>
@@ -259,37 +197,37 @@ export function MachineFleetBrowser() {
 
       {!loading ? <>
         <section aria-label="Machine fleet status" className={styles.statusStrip}>
-          <article className={`${styles.statusCard} ${styles.online}`}><span>Online</span><strong>{counts.online.toLocaleString('en-ZA')}</strong></article>
-          <article className={`${styles.statusCard} ${styles.delayed}`}><span>Delayed</span><strong>{counts.delayed.toLocaleString('en-ZA')}</strong></article>
-          <article className={`${styles.statusCard} ${styles.offline}`}><span>Offline</span><strong>{counts.offline.toLocaleString('en-ZA')}</strong></article>
-          <article className={`${styles.statusCard} ${styles.unlinked}`}><span>No device / never</span><strong>{(counts.unlinked + counts.never).toLocaleString('en-ZA')}</strong></article>
-          <article className={`${styles.statusCard} ${styles.faults}`}><span>Active faults</span><strong>{faults.length.toLocaleString('en-ZA')}</strong></article>
+          <article className={`${styles.statusCard} ${styles.online}`}><span>Online</span><strong>{summary.online.toLocaleString('en-ZA')}</strong></article>
+          <article className={`${styles.statusCard} ${styles.delayed}`}><span>Delayed</span><strong>{summary.delayed.toLocaleString('en-ZA')}</strong></article>
+          <article className={`${styles.statusCard} ${styles.offline}`}><span>Offline</span><strong>{summary.offline.toLocaleString('en-ZA')}</strong></article>
+          <article className={`${styles.statusCard} ${styles.unlinked}`}><span>No device / never</span><strong>{(summary.unlinked + summary.never).toLocaleString('en-ZA')}</strong></article>
+          <article className={`${styles.statusCard} ${styles.faults}`}><span>Active faults</span><strong>{summary.active_faults.toLocaleString('en-ZA')}</strong></article>
         </section>
 
         <section className={styles.filters} aria-label="Machine filters">
-          <label className={styles.search}><NavigationIcon kind="search" /><input aria-label="Search machines" placeholder="Search machine, serial, QR, site or device" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
-          <label className={styles.filterLabel}><span>Branch</span><select value={branch} onChange={(event) => setBranch(event.target.value)}><option value="all">All branches</option>{branches.map((value) => <option key={value} value={value}>{value.toUpperCase()}</option>)}</select></label>
-          <label className={styles.filterLabel}><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}><option value="all">All statuses</option><option value="online">Online</option><option value="delayed">Delayed</option><option value="offline">Offline</option><option value="never">Never connected</option><option value="unlinked">No device</option></select></label>
-          <button className={styles.clearButton} onClick={() => { setSearch(''); setBranch('all'); setStatus('all'); }} type="button">Clear filters</button>
+          <label className={styles.search}><NavigationIcon kind="search" /><input aria-label="Search machines" placeholder="Search machine, serial, QR, site or device" value={searchInput} onChange={(event) => setSearchInput(event.target.value)} /></label>
+          <label className={styles.filterLabel}><span>Branch</span><select value={branch} onChange={(event) => { setBranch(event.target.value); setPage(1); }}><option value="all">All branches</option>{branches.map((value) => <option key={value} value={value}>{value.toUpperCase()}</option>)}</select></label>
+          <label className={styles.filterLabel}><span>Status</span><select value={status} onChange={(event) => { setStatus(event.target.value as typeof status); setPage(1); }}><option value="all">All statuses</option><option value="online">Online</option><option value="delayed">Delayed</option><option value="offline">Offline</option><option value="never">Never connected</option><option value="unlinked">No device</option></select></label>
+          <button className={styles.clearButton} onClick={clearFilters} type="button">Clear filters</button>
         </section>
 
         <section className={styles.listCard}>
-          <header className={styles.listHeader}><strong>Machine overview</strong><span>{filtered.length.toLocaleString('en-ZA')} of {rows.length.toLocaleString('en-ZA')} machines · updated {lastUpdated ? lastUpdated.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '—'}</span></header>
+          <header className={styles.listHeader}><strong>Machine overview</strong><span>{total.toLocaleString('en-ZA')} of {fleetTotal.toLocaleString('en-ZA')} machines · updated {lastUpdated ? lastUpdated.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '—'}</span></header>
 
-          {filtered.length === 0 ? <div className={styles.empty}>No machines match the selected filters.</div> : <>
+          {total === 0 ? <div className={styles.empty}>No machines match the selected filters.</div> : <>
             <div className={styles.tableScroll}>
               <table className={styles.table}>
                 <thead><tr><th>Machine</th><th>Status</th><th>Location</th><th>Telemetry device</th><th>Network</th><th>Signal</th><th>Faults</th><th>Last contact</th><th><span className="sr-only">Open</span></th></tr></thead>
-                <tbody>{visible.map((machine) => (
+                <tbody>{rows.map((machine) => (
                   <tr key={machine.id}>
-                    <td className={`${styles.machineCell} ${styles[`status_${machine.connectionStatus}`]}`}><Link className={styles.machineLink} href={`/machines/${machine.id}`}><strong>{titleFor(machine)}</strong><span>{machine.serial_number ?? 'No serial'} · QR {machine.machine_barcode ?? machine.asset_tag ?? '—'}</span></Link></td>
-                    <td><span className={`${styles.statusPill} ${styles[`is_${machine.connectionStatus}`]}`}><i />{statusLabel(machine.connectionStatus)}</span></td>
-                    <td><strong>{machine.siteName}</strong><div className={styles.secondary}>{machine.location}</div></td>
-                    <td>{machine.device ? <><strong>{machine.device.device_code}</strong><div className={styles.secondary}>{machine.device.telemetry_mode} · {machine.device.machine_status}</div></> : <span className={styles.secondary}>Not assigned</span>}</td>
-                    <td><div className={styles.network}><strong>{transportLabel(machine.device)}</strong><span className={styles.secondary}>{machine.device?.cellular_operator ?? machine.device?.firmware_version ?? '—'}</span></div></td>
-                    <td>{machine.device ? <SignalStrengthIndicator cellularCsq={machine.device.cellular_csq} transport={machine.device.last_transport} wifiRssi={machine.device.wifi_rssi} /> : <span className={styles.secondary}>—</span>}</td>
-                    <td>{machine.faultCount ? <span className={styles.faultCount}>{machine.faultCount}</span> : <span className={styles.noFaults}>Clear</span>}</td>
-                    <td>{contactAge(machine.lastContact)}</td>
+                    <td className={`${styles.machineCell} ${styles[`status_${machine.connection_status}`]}`}><Link className={styles.machineLink} href={`/machines/${machine.id}`}><strong>{titleFor(machine)}</strong><span>{machine.serial_number ?? 'No serial'} · QR {machine.machine_barcode ?? machine.asset_tag ?? '—'}</span></Link></td>
+                    <td><span className={`${styles.statusPill} ${styles[`is_${machine.connection_status}`]}`}><i />{statusLabel(machine.connection_status)}</span></td>
+                    <td><strong>{machine.site_name}</strong><div className={styles.secondary}>{machine.location}</div></td>
+                    <td>{machine.device_id ? <><strong>{machine.device_code}</strong><div className={styles.secondary}>{machine.telemetry_mode ?? 'live'} · {machine.machine_status ?? 'unknown'}</div></> : <span className={styles.secondary}>Not assigned</span>}</td>
+                    <td><div className={styles.network}><strong>{transportLabel(machine)}</strong><span className={styles.secondary}>{machine.cellular_operator ?? machine.firmware_version ?? '—'}</span></div></td>
+                    <td>{machine.device_id ? <SignalStrengthIndicator cellularCsq={machine.cellular_csq} transport={machine.last_transport} wifiRssi={machine.wifi_rssi} /> : <span className={styles.secondary}>—</span>}</td>
+                    <td>{machine.fault_count ? <span className={styles.faultCount}>{machine.fault_count}</span> : <span className={styles.noFaults}>Clear</span>}</td>
+                    <td>{contactAge(machine.last_contact)}</td>
                     <td><Link className={styles.openLink} href={`/machines/${machine.id}`}>Open <NavigationIcon kind="chevron-right" /></Link></td>
                   </tr>
                 ))}</tbody>
@@ -297,11 +235,11 @@ export function MachineFleetBrowser() {
             </div>
 
             <div className={styles.mobileList}>
-              {visible.map((machine) => (
-                <Link className={`${styles.machineMobile} ${styles[`status_${machine.connectionStatus}`]}`} href={`/machines/${machine.id}`} key={machine.id}>
-                  <div className={styles.mobileMain}><strong>{titleFor(machine)}</strong><span>{machine.siteName}</span><small>{machine.location}</small></div>
-                  <div className={styles.mobileSide}><span className={`${styles.statusPill} ${styles[`is_${machine.connectionStatus}`]}`}><i />{statusLabel(machine.connectionStatus)}</span>{machine.faultCount ? <b>{machine.faultCount} fault{machine.faultCount === 1 ? '' : 's'}</b> : null}</div>
-                  <div className={styles.mobileMeta}><span>{machine.serial_number ?? 'No serial'}</span><span>·</span><span>{transportLabel(machine.device)}</span><span>·</span><span>{contactAge(machine.lastContact)}</span></div>
+              {rows.map((machine) => (
+                <Link className={`${styles.machineMobile} ${styles[`status_${machine.connection_status}`]}`} href={`/machines/${machine.id}`} key={machine.id}>
+                  <div className={styles.mobileMain}><strong>{titleFor(machine)}</strong><span>{machine.site_name}</span><small>{machine.location}</small></div>
+                  <div className={styles.mobileSide}><span className={`${styles.statusPill} ${styles[`is_${machine.connection_status}`]}`}><i />{statusLabel(machine.connection_status)}</span>{machine.fault_count ? <b>{machine.fault_count} fault{machine.fault_count === 1 ? '' : 's'}</b> : null}</div>
+                  <div className={styles.mobileMeta}><span>{machine.serial_number ?? 'No serial'}</span><span>·</span><span>{transportLabel(machine)}</span><span>·</span><span>{contactAge(machine.last_contact)}</span></div>
                 </Link>
               ))}
             </div>
