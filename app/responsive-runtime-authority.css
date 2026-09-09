@@ -1,8 +1,9 @@
 /*
- * Ground-up mobile shell authority.
+ * Ground-up mobile shell and core telemetry page authority.
  *
- * This layer owns only the new telemetry phone/tablet shell. Desktop remains
- * governed by the desktop authority and is deliberately untouched here.
+ * Desktop remains governed by the desktop authority. This file owns the new
+ * telemetry phone/tablet shell plus the first responsive page family:
+ * Fleet Overview and Machines.
  */
 .telemetry-mobile-shell {
   display: none;
@@ -282,5 +283,495 @@
   .telemetry-mobile-brand:focus-visible {
     outline: 3px solid var(--content-focus, #67e8f9);
     outline-offset: 2px;
+  }
+
+  /* Fleet Overview + Machines: first responsive page family. */
+  .fleet-workspace,
+  .fleet-main-column {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .fleet-workspace {
+    display: block !important;
+  }
+
+  .fleet-page-heading {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 14px !important;
+    align-items: start !important;
+    margin: 0 0 16px !important;
+  }
+
+  .fleet-page-heading h1 {
+    margin: 0 !important;
+    font-size: clamp(1.55rem, 7vw, 2rem) !important;
+    line-height: 1.08 !important;
+    letter-spacing: -.035em !important;
+  }
+
+  .fleet-page-heading p {
+    margin: 6px 0 0 !important;
+    color: var(--content-muted, #cbd5e1) !important;
+    font-size: .86rem !important;
+    line-height: 1.45 !important;
+  }
+
+  .fleet-heading-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .fleet-heading-actions > label {
+    grid-column: 1 / -1;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 10px !important;
+    min-width: 0 !important;
+    min-height: 46px !important;
+    padding: 7px 10px !important;
+    color: var(--content-muted, #cbd5e1) !important;
+    background: var(--content-surface, #20272f) !important;
+    border: 1px solid var(--content-border, #71808e) !important;
+    border-radius: 12px !important;
+    font-size: .72rem !important;
+    font-weight: 750 !important;
+  }
+
+  .fleet-heading-actions > label select {
+    width: auto !important;
+    min-width: 112px !important;
+    min-height: 34px !important;
+    margin: 0 !important;
+  }
+
+  .fleet-heading-actions .fleet-button {
+    justify-content: center !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 44px !important;
+    padding: 8px 10px !important;
+    font-size: .76rem !important;
+  }
+
+  .fleet-banner {
+    margin-bottom: 12px !important;
+    padding: 12px !important;
+    border-radius: 12px !important;
+  }
+
+  .fleet-metric-grid,
+  .fleet-alert-metric-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px !important;
+    width: 100% !important;
+    margin: 0 0 14px !important;
+  }
+
+  .fleet-metric-grid > * {
+    min-width: 0 !important;
+    min-height: 112px !important;
+    padding: 12px !important;
+    border-radius: 14px !important;
+  }
+
+  .fleet-metric-grid > *:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .fleet-insight-grid,
+  .fleet-overview-insight-grid,
+  .fleet-alert-chart-grid,
+  .fleet-operations-grid,
+  .fleet-overview-operations-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+    width: 100% !important;
+    margin: 0 0 14px !important;
+  }
+
+  .fleet-panel {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    border-radius: 14px !important;
+  }
+
+  .fleet-panel > header {
+    gap: 10px !important;
+    padding: 13px 13px 10px !important;
+  }
+
+  .fleet-panel > header h2 {
+    font-size: 1rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .fleet-trend-panel,
+  .fleet-health-panel,
+  .fleet-products-panel {
+    overflow: hidden !important;
+  }
+
+  .fleet-trend-panel svg,
+  .fleet-trend-panel canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .fleet-health-content {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    justify-items: center !important;
+    gap: 14px !important;
+    padding: 8px 14px 16px !important;
+  }
+
+  .fleet-health-content dl {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .fleet-filters,
+  .fleet-alert-filters {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 8px !important;
+    padding: 12px !important;
+  }
+
+  .fleet-filters > *,
+  .fleet-alert-filters > * {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .fleet-filters label,
+  .fleet-alert-filters label {
+    display: grid !important;
+    gap: 5px !important;
+  }
+
+  .fleet-filters select,
+  .fleet-filters input,
+  .fleet-alert-filters select,
+  .fleet-alert-filters input {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 44px !important;
+  }
+
+  .fleet-search {
+    grid-template-columns: 22px minmax(0, 1fr) !important;
+    align-items: center !important;
+  }
+
+  .fleet-search > svg {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  .fleet-search > input {
+    grid-row: 1;
+    grid-column: 1 / -1;
+    padding-left: 38px !important;
+  }
+
+  .fleet-table-heading {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 6px !important;
+    padding: 13px 13px 8px !important;
+  }
+
+  .fleet-table-heading > span {
+    justify-self: start !important;
+    font-size: .72rem !important;
+  }
+
+  .fleet-table-scroll {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 10px 10px !important;
+    overflow: visible !important;
+  }
+
+  .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table,
+  .fleet-alert-table-panel .fleet-alert-table {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    border-collapse: separate !important;
+  }
+
+  .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table thead,
+  .fleet-alert-table-panel .fleet-alert-table thead {
+    display: none !important;
+  }
+
+  .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table tbody,
+  .fleet-alert-table-panel .fleet-alert-table tbody {
+    display: grid !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table tr,
+  .fleet-alert-table-panel .fleet-alert-table tr {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    background: var(--content-surface-raised, #2b343d) !important;
+    border: 1px solid var(--content-border, #71808e) !important;
+    border-radius: 14px !important;
+  }
+
+  .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table td,
+  .fleet-alert-table-panel .fleet-alert-table td {
+    display: grid !important;
+    grid-template-columns: 88px minmax(0, 1fr) !important;
+    align-items: start !important;
+    gap: 10px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 9px 11px !important;
+    white-space: normal !important;
+    border: 0 !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--content-border, #71808e) 62%, transparent) !important;
+  }
+
+  .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table td:last-child,
+  .fleet-alert-table-panel .fleet-alert-table td:last-child {
+    border-bottom: 0 !important;
+  }
+
+  .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table td::before,
+  .fleet-alert-table-panel .fleet-alert-table td::before {
+    color: var(--content-subtle, #a8b3bf);
+    font-size: .64rem;
+    font-weight: 800;
+    letter-spacing: .05em;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+
+  .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table td:nth-child(1)::before { content: 'Status'; }
+  .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table td:nth-child(2)::before { content: 'Machine'; }
+  .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table td:nth-child(3)::before { content: 'Identifiers'; }
+  .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table td:nth-child(4)::before { content: 'Location'; }
+  .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table td:nth-child(5)::before { content: 'Device'; }
+  .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table td:nth-child(6)::before { content: 'Update'; }
+  .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table td:nth-child(7)::before { content: 'Items sold'; }
+  .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table td:nth-child(8)::before { content: 'Errors'; }
+  .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table td:nth-child(9)::before { content: 'Contact'; }
+  .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table td:nth-child(10)::before { content: 'Open'; }
+
+  .fleet-alert-table-panel .fleet-alert-table td:nth-child(1)::before { content: 'Severity'; }
+  .fleet-alert-table-panel .fleet-alert-table td:nth-child(2)::before { content: 'Machine'; }
+  .fleet-alert-table-panel .fleet-alert-table td:nth-child(3)::before { content: 'Fault'; }
+  .fleet-alert-table-panel .fleet-alert-table td:nth-child(4)::before { content: 'Site'; }
+  .fleet-alert-table-panel .fleet-alert-table td:nth-child(5)::before { content: 'Started'; }
+  .fleet-alert-table-panel .fleet-alert-table td:nth-child(6)::before { content: 'Last seen'; }
+  .fleet-alert-table-panel .fleet-alert-table td:nth-child(7)::before { content: 'Status'; }
+  .fleet-alert-table-panel .fleet-alert-table td:nth-child(8)::before { content: 'Open'; }
+
+  .fleet-machine-table td > *,
+  .fleet-alert-table td > * {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .fleet-machine-link {
+    width: 100% !important;
+    min-width: 0 !important;
+    text-align: left !important;
+  }
+
+  .fleet-machine-table td strong,
+  .fleet-machine-table td span,
+  .fleet-alert-table td strong,
+  .fleet-alert-table td span {
+    overflow-wrap: anywhere;
+  }
+
+  .fleet-machine-table td select {
+    width: 100% !important;
+    min-height: 40px !important;
+  }
+
+  .fleet-row-action,
+  .fleet-error-count {
+    justify-self: start !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+  }
+
+  .fleet-table-footer {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+    padding: 10px 12px 13px !important;
+  }
+
+  .fleet-table-footer-copy {
+    min-width: 0 !important;
+  }
+
+  .fleet-table-pagination {
+    display: grid !important;
+    grid-template-columns: 1fr auto 1fr !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .fleet-table-pagination button {
+    min-width: 0 !important;
+    min-height: 42px !important;
+  }
+
+  .fleet-detail-panel {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 370 !important;
+    display: grid !important;
+    grid-template-rows: auto auto minmax(0, 1fr) !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    color: var(--content-text, #f8fafc) !important;
+    background: var(--user-background, #0f1419) !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .fleet-detail-header {
+    min-width: 0 !important;
+    padding: max(14px, env(safe-area-inset-top)) 14px 12px !important;
+    background: var(--content-surface, #20272f) !important;
+    border-bottom: 1px solid var(--content-border, #71808e) !important;
+  }
+
+  .fleet-detail-header > div {
+    min-width: 0 !important;
+  }
+
+  .fleet-detail-header h2 {
+    overflow-wrap: anywhere;
+    font-size: 1.2rem !important;
+  }
+
+  .fleet-detail-header > button {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    font-size: 1.5rem !important;
+  }
+
+  .fleet-detail-tabs {
+    display: flex !important;
+    gap: 4px !important;
+    width: 100% !important;
+    padding: 8px 10px !important;
+    overflow-x: auto !important;
+    background: var(--content-surface, #20272f) !important;
+    border-bottom: 1px solid var(--content-border, #71808e) !important;
+    scrollbar-width: none;
+  }
+
+  .fleet-detail-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .fleet-detail-tabs button {
+    flex: 0 0 auto !important;
+    min-height: 40px !important;
+    white-space: nowrap !important;
+  }
+
+  .fleet-detail-body {
+    min-width: 0 !important;
+    padding: 12px 12px calc(18px + env(safe-area-inset-bottom)) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .fleet-detail-stats {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .fleet-detail-stats > div {
+    min-width: 0 !important;
+    padding: 10px 6px !important;
+  }
+
+  .fleet-detail-list > div,
+  .fleet-fault-list article,
+  .fleet-critical-callout {
+    min-width: 0 !important;
+  }
+
+  .fleet-detail-list strong,
+  .fleet-detail-list span,
+  .fleet-fault-list strong,
+  .fleet-fault-list p,
+  .fleet-critical-callout span {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 430px) {
+  .fleet-heading-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .fleet-heading-actions > label {
+    grid-column: auto;
+  }
+
+  .fleet-metric-grid,
+  .fleet-alert-metric-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .fleet-metric-grid > *:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+
+  .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table td,
+  .fleet-alert-table-panel .fleet-alert-table td {
+    grid-template-columns: 78px minmax(0, 1fr) !important;
+  }
+
+  .fleet-table-pagination {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .fleet-table-pagination span {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-self: center;
+  }
+
+  .fleet-table-pagination button {
+    grid-row: 2;
   }
 }
