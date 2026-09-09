@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const browserSource = await readFile(new URL('../../components/telemetry-platform/MachineFleetBrowser.tsx', import.meta.url), 'utf8');
-const migrationSource = await readFile(new URL('../../supabase/migrations/20260909130000_telemetry_machine_fleet_search.sql', import.meta.url), 'utf8');
+const migrationSource = await readFile(new URL('../../supabase/migrations/20260909124637_telemetry_machine_fleet_search.sql', import.meta.url), 'utf8');
 
 test('machine fleet uses one server-paged telemetry RPC instead of downloading the machine master', () => {
   assert.match(browserSource, /\.rpc\('get_telemetry_machine_fleet'/);
