@@ -1,4 +1,4 @@
-import { navSections } from '@/lib/auth/permissions';
+import { telemetryNavigationSections } from '@/components/layout/appShellNavigation';
 import { FLEET_OVERVIEW_LABEL } from '@/lib/navigation/terminology';
 
 export type PageNavigationSection = {
@@ -37,36 +37,13 @@ type DynamicRecordRule = {
 
 const dynamicRecordRules: DynamicRecordRule[] = [
   {
-    matches: (segments) => segments.length === 2 && segments[0] === 'customers',
-    currentLabel: 'Customer record',
-    parent: { href: '/customers', label: 'Customer Master' },
-  },
-  {
-    matches: (segments) => segments.length === 3
-      && segments[0] === 'operations'
-      && segments[1] === 'assets'
-      && !['lifecycle', 'scan'].includes(segments[2] ?? ''),
-    currentLabel: 'Machine record',
-    parent: { href: '/operations/assets', label: 'Machine Master' },
-  },
-  {
-    matches: (segments) => segments.length === 2
-      && segments[0] === 'work'
-      && !['execution', 'messages'].includes(segments[1] ?? ''),
-    currentLabel: 'Work item',
-    parent: { href: '/work', label: 'Action Centre' },
-  },
-  {
-    matches: (segments) => segments.length === 3
-      && segments[0] === 'warehouse'
-      && segments[1] === 'stock'
-      && segments[2] !== 'scan',
-    currentLabel: 'Stock item',
-    parent: { href: '/warehouse/stock', label: 'Stock Control' },
+    matches: (segments) => segments.length === 2 && segments[0] === 'machines',
+    currentLabel: 'Machine details',
+    parent: { href: '/machines', label: 'Machines' },
   },
 ];
 
-const navigationItems = navSections.flatMap((section) => section.items);
+const navigationItems = telemetryNavigationSections.flatMap((section) => section.items);
 
 function titleCase(value: string) {
   return value
@@ -79,7 +56,7 @@ function findNavLabel(pathname: string) {
   if (exact) return exact.label;
 
   const parent = [...navigationItems]
-    .filter((item) => pathname.startsWith(`${item.href}/`))
+    .filter((item) => item.href !== '/' && pathname.startsWith(`${item.href}/`))
     .sort((a, b) => b.href.length - a.href.length)[0];
 
   return parent?.label ?? null;
@@ -87,7 +64,7 @@ function findNavLabel(pathname: string) {
 
 function defaultBackTarget(pathname: string) {
   const parent = [...navigationItems]
-    .filter((item) => item.href !== pathname && pathname.startsWith(`${item.href}/`))
+    .filter((item) => item.href !== '/' && item.href !== pathname && pathname.startsWith(`${item.href}/`))
     .sort((a, b) => b.href.length - a.href.length)[0];
 
   return parent
