@@ -16,26 +16,15 @@ import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { favoritePathname } from '@/lib/navigation/favorites';
 import { displayProfileName } from '@/types/dallmayrerp';
+import styles from '@/components/telemetry-platform/TelemetryPlatformShell.module.css';
 
-function StatusScreen({
-  title,
-  message,
-  action,
-  loading = false,
-}: {
-  title: string;
-  message: string;
-  action?: ReactNode;
-  loading?: boolean;
-}) {
+function StatusScreen({ title, message, loading = false }: { title: string; message: string; loading?: boolean }) {
   return (
     <main aria-busy={loading} className="main auth-state-page" role={loading ? 'status' : 'main'}>
       <div className="neo-card auth-state-card">
-        <div className="orb" />
         {loading ? <HamsterLoader label={title} /> : null}
         <h1>{title}</h1>
         <p>{message}</p>
-        {action ? <div className="action-row">{action}</div> : null}
       </div>
     </main>
   );
@@ -45,23 +34,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { authUser, businessProfile, loading, error } = useAuth();
-  const { favoriteEntries, railCollapsed, toggleFavorite, toggleRail } = useAppShellPreferences();
+  const { favoriteEntries, railCollapsed, toggleRail } = useAppShellPreferences();
 
   useEffect(() => {
     if (!loading && !authUser) router.replace('/login');
   }, [authUser, loading, router]);
 
-  if (loading) {
-    return <StatusScreen title="Loading secure workspace" message="Checking your Supabase session." loading />;
-  }
-
-  if (!authUser) {
-    return <StatusScreen title="Redirecting to sign in" message="You need to sign in before opening Dallmayr Machine Telemetry." />;
-  }
-
-  if (error) {
-    return <StatusScreen title="Session check failed" message={error} />;
-  }
+  if (loading) return <StatusScreen title="Loading telemetry" message="Checking your secure session." loading />;
+  if (!authUser) return <StatusScreen title="Redirecting to sign in" message="Sign in is required to open Dallmayr Machine Telemetry." />;
+  if (error) return <StatusScreen title="Session check failed" message={error} />;
 
   const {
     activeHref,
@@ -70,52 +51,21 @@ export function AppShell({ children }: { children: ReactNode }) {
     allowedPath,
     homePath,
     navigationSections,
-    statusQuickLinks,
   } = deriveAppShellNavigation(pathname);
+
   const metadataName = typeof authUser.user_metadata?.full_name === 'string'
     ? authUser.user_metadata.full_name.trim()
     : '';
   const legacyProfileName = businessProfile ? displayProfileName(businessProfile) : '';
   const userName = metadataName || legacyProfileName || authUser.email?.split('@')[0] || 'Telemetry user';
-  const activeArea = activeSection?.heading ?? 'Telemetry';
   const visibleFavorites = favoriteEntries.filter((entry) => canAccessShellPath(favoritePathname(entry.href)));
 
   return (
-    <div className={`app-shell top-shell application-shell-v2 ${railCollapsed ? 'desktop-rail-collapsed' : ''}`}>
+    <div
+      className={`${styles.shell} ${styles.desktopShell} application-shell-v2 app-shell ${railCollapsed ? `${styles.desktopCollapsed} desktop-rail-collapsed` : ''}`}
+      data-platform-shell="telemetry-v3"
+    >
       <a className="skip-link" href="#main-content">Skip to main content</a>
-
-      <header className="application-header">
-        <div className="application-header-inner">
-          <Link aria-label="Open Fleet Overview" className="application-brand" href={homePath}>
-            <span aria-hidden="true" className="application-brand-mark">D</span>
-            <span>Dallmayr Telemetry</span>
-          </Link>
-
-          <div className="application-header-search">
-            <GlobalSearch triggerLabel="Search machine, serial, QR or device ID" />
-          </div>
-
-          <div className="application-header-actions">
-            <div className="telemetry-header-branch"><NavigationIcon kind="pin" /><span>South Africa</span><span aria-hidden="true">⌄</span></div>
-            <div className="telemetry-sync-state"><i aria-hidden="true" />Synced just now</div>
-            <Link aria-label="Open active alerts" className="telemetry-header-alerts" href="/alerts"><NavigationIcon kind="bell" /><span aria-hidden="true">!</span></Link>
-            <div className="desktop-account-menu-target" id="desktop-account-menu-target" />
-          </div>
-
-          <div aria-label={`Current area: ${activeArea}`} className="application-page-context telemetry-page-context-contract">
-            <span>{activeArea}</span>
-          </div>
-        </div>
-
-        <div aria-label="Workspace status" className="application-status-strip">
-          <span><strong>South Africa</strong></span>
-          <span>Telemetry access</span>
-          <span>{authUser.email}</span>
-          {statusQuickLinks.map((item) => (
-            <Link href={item.href} key={item.href}>{item.label}</Link>
-          ))}
-        </div>
-      </header>
 
       <DesktopNavigationRail
         activeHref={activeHref}
@@ -127,6 +77,25 @@ export function AppShell({ children }: { children: ReactNode }) {
         sections={navigationSections}
       />
 
+      <header className={`${styles.topbar} application-header`}>
+        <div className={styles.pageContext}>
+          <span>{activeSection?.heading ?? 'Telemetry'}</span>
+          <strong>{activeTitle}</strong>
+        </div>
+        <div className={styles.searchSlot}>
+          <GlobalSearch triggerLabel="Search machine, serial, QR or device ID" />
+        </div>
+        <div className={styles.topbarActions}>
+          <div className={styles.headerChip}><NavigationIcon kind="pin" />South Africa</div>
+          <div className={styles.headerChip}><i aria-hidden="true" />Live telemetry</div>
+          <Link aria-label="Open active alerts" className={styles.headerIcon} href="/alerts">
+            <NavigationIcon kind="bell" />
+            <span aria-hidden="true" className={styles.alertDot} />
+          </Link>
+          <div className="desktop-account-menu-target" id="desktop-account-menu-target" />
+        </div>
+      </header>
+
       <MobileTelemetryShell
         activeHref={activeHref}
         activeTitle={activeTitle}
@@ -136,12 +105,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         userName={userName}
       />
 
-      <main className="main top-main application-main" id="main-content" tabIndex={-1}>
+      <main className={`${styles.main} application-main main top-main`} id="main-content" tabIndex={-1}>
         {!allowedPath ? (
           <ErpStateBanner
             action={<Link className="button" href={homePath}>Open Fleet Overview</Link>}
             className="access-denied"
-            message="This application contains machine and telemetry pages only. Use the navigation menu to return to the active workspace."
+            message="This application contains machine and telemetry pages only."
             title="This page is outside the telemetry workspace."
             tone="danger"
           />
