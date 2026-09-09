@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
@@ -56,22 +56,11 @@ for (const requiredActiveImport of [
   }
 }
 
+// The registry keeps an explicit mobile boundary, but the legacy implementation is disabled.
 const activeMobileBundle = await readFile(path.join(styles, 'active-mobile-workspaces.css'), 'utf8');
-const expectedMobileImports = [
-  "@import '../mobile-navigation-drawer.css'",
-  "@import '../mobile-data-views.css'",
-  "@import '../mobile-application-layout.css'",
-  "@import '../mobile-master-detail-actions.css'",
-  "@import '../mobile-offline-field-work.css'",
-];
-let previousMobileImportIndex = -1;
-for (const activeImport of expectedMobileImports) {
-  const importIndex = activeMobileBundle.indexOf(activeImport);
-  if (importIndex < 0 || importIndex <= previousMobileImportIndex) {
-    console.error(`Active mobile workspace bundle must contain ${activeImport} in the approved order.`);
-    process.exitCode = 1;
-  }
-  previousMobileImportIndex = importIndex;
+if (/^\s*@import\s/m.test(activeMobileBundle)) {
+  console.error('Legacy mobile workspace bundle must remain empty until the replacement mobile architecture is approved.');
+  process.exitCode = 1;
 }
 
 const readabilitySafety = await readFile(path.join(styles, 'canonical-readability-safety.css'), 'utf8');
@@ -117,29 +106,32 @@ for (const requiredRule of ['.machine-match-options', '.machine-match-list', '.m
 }
 
 const appShell = await readFile(path.join(root, 'components', 'layout', 'AppShell.tsx'), 'utf8');
-for (const obsoleteHook of ['erp-chrome', 'notch-navbar-frame', 'notch-menu-row', 'erp-menu-overflow', 'ribbon-app-background', 'monday-shell-phase-1']) {
+for (const obsoleteHook of [
+  'erp-chrome',
+  'notch-navbar-frame',
+  'notch-menu-row',
+  'erp-menu-overflow',
+  'ribbon-app-background',
+  'monday-shell-phase-1',
+  'mobile-navigation',
+  'mobile-menu-open',
+  'MobileNavigationDrawer',
+  'MobileQuickBar',
+  'menuOpen',
+  'setMenuOpen',
+]) {
   if (appShell.includes(obsoleteHook)) {
-    console.error(`Current AppShell must not regress to retired shell hook: ${obsoleteHook}`);
+    console.error(`Current AppShell must not contain retired shell/mobile hook: ${obsoleteHook}`);
     process.exitCode = 1;
   }
-}
-if (!appShell.includes('<NavigationIcon kind={menuOpen')) {
-  console.error('AppShell mobile navigation control must use the shared SVG NavigationIcon.');
-  process.exitCode = 1;
 }
 
-const mobileNavigation = await readFile(path.join(root, 'components', 'layout', 'MobileNavigation.tsx'), 'utf8');
-for (const forbiddenGlyph of ['⌂', '✓', '◌', '♢', '◎', '◇', '▥', '↗', '⚙', '▣', '⌕', '★', '☆', '☰', '×']) {
-  if (mobileNavigation.includes(forbiddenGlyph)) {
-    console.error(`Mobile navigation must use SVG icons instead of text glyph: ${forbiddenGlyph}`);
-    process.exitCode = 1;
-  }
-}
-for (const requiredHook of ['NavigationIcon', 'navigationIconKind', 'kind="menu"', 'kind="pin-filled"']) {
-  if (!mobileNavigation.includes(requiredHook)) {
-    console.error(`Mobile navigation is missing SVG navigation contract: ${requiredHook}`);
-    process.exitCode = 1;
-  }
+try {
+  await access(path.join(root, 'components', 'layout', 'MobileNavigation.tsx'));
+  console.error('Legacy MobileNavigation.tsx must remain removed for the ground-up mobile rebuild.');
+  process.exitCode = 1;
+} catch (error) {
+  if (error?.code !== 'ENOENT') throw error;
 }
 
 const desktopNavigation = await readFile(path.join(root, 'components', 'layout', 'DesktopNavigationRail.tsx'), 'utf8');
@@ -155,7 +147,7 @@ if (!desktopNavigation.includes('NavigationIcon') || !desktopNavigation.includes
 }
 
 const navigationIcons = await readFile(path.join(root, 'components', 'layout', 'NavigationIcon.tsx'), 'utf8');
-for (const requiredRule of ['export function NavigationIcon', 'export function navigationIconKind', "case 'menu'", "case 'close'", "case 'pin-filled'"]) {
+for (const requiredRule of ['export function NavigationIcon', 'export function navigationIconKind']) {
   if (!navigationIcons.includes(requiredRule)) {
     console.error(`Shared SVG navigation icon set is missing ${requiredRule}.`);
     process.exitCode = 1;
@@ -173,6 +165,7 @@ for (const requiredManifest of [
     process.exitCode = 1;
   }
 }
+
 const baseAuthority = await readFile(path.join(styles, 'application', 'base.css'), 'utf8');
 const desktopAuthority = await readFile(path.join(styles, 'application', 'desktop.css'), 'utf8');
 const responsiveAuthority = await readFile(path.join(styles, 'application', 'responsive.css'), 'utf8');
@@ -197,8 +190,8 @@ for (const requiredDesktop of [
     process.exitCode = 1;
   }
 }
-if (!responsiveAuthority.trim().endsWith("@import '../../responsive-mobile-tablet.css';")) {
-  console.error('Responsive application authority must end with responsive-mobile-tablet.css.');
+if (/^\s*@import\s/m.test(responsiveAuthority)) {
+  console.error('Responsive application authority must remain empty during the mobile ground-up reset.');
   process.exitCode = 1;
 }
 
@@ -229,9 +222,9 @@ for (const requiredRule of ['.erp-panel', '.erp-table-shell', '.erp-toolbar', '.
 }
 
 const navigationBaseline = await readFile(path.join(root, 'app', 'canonical-navigation-baseline.css'), 'utf8');
-for (const requiredRule of ['.skip-link', '.skip-link:focus', '.application-mobile-menu-button', '.hamburger-button.notch-mobile-button', '.application-mobile-menu-button svg', '@media (prefers-reduced-motion: reduce)']) {
+for (const requiredRule of ['.skip-link', '.skip-link:focus', '@media (prefers-reduced-motion: reduce)']) {
   if (!navigationBaseline.includes(requiredRule)) {
-    console.error(`Canonical navigation baseline is missing migrated rule: ${requiredRule}`);
+    console.error(`Canonical navigation baseline is missing desktop/accessibility rule: ${requiredRule}`);
     process.exitCode = 1;
   }
 }
@@ -244,13 +237,18 @@ for (const requiredRule of [':focus-visible', '@media (prefers-reduced-motion: r
   }
 }
 
-const responsive = await readFile(path.join(root, 'app', 'responsive-mobile-tablet.css'), 'utf8');
-for (const requiredRule of ['.application-header', '.mobile-nav-portal-root', '.mobile-quick-bar', '.application-mobile-menu-button']) {
-  if (!responsive.includes(requiredRule)) {
-    console.error(`Responsive authority is missing retired-shell replacement rule: ${requiredRule}`);
+for (const resetResponsivePath of [
+  path.join(root, 'app', 'responsive-runtime-authority.css'),
+  path.join(root, 'app', 'responsive-mobile-interactions.css'),
+  path.join(root, 'app', 'responsive-mobile-tablet.css'),
+]) {
+  const source = await readFile(resetResponsivePath, 'utf8');
+  const withoutComments = source.replace(/\/\*[\s\S]*?\*\//g, '').trim();
+  if (withoutComments.length > 0) {
+    console.error(`${path.relative(root, resetResponsivePath)} must remain an empty reset placeholder until mobile is rebuilt.`);
     process.exitCode = 1;
   }
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('Final Work Package A guard passed: retired shell/navigation/mobile programmes remain unregistered, classified feature owners remain explicit, and base/desktop/responsive application authorities preserve the canonical navigation contracts.');
+console.log('Style guard passed: desktop application authorities remain intact while the legacy mobile web implementation stays removed and its responsive boundaries remain empty.');
