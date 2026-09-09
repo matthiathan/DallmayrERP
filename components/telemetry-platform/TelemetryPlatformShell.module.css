@@ -1,4 +1,4 @@
-:root {
+.shell {
   --dallmayr-red: #c9151e;
   --dallmayr-red-dark: #a90f17;
   --dallmayr-red-soft: #fff1f2;
@@ -8,9 +8,6 @@
   --platform-muted: #777772;
   --platform-border: #ddddda;
   --platform-surface: #ffffff;
-}
-
-.shell {
   min-height: 100dvh !important;
   color: var(--platform-ink) !important;
   background: #f3f3f0 !important;
