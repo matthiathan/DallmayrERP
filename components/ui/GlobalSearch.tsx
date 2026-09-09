@@ -103,9 +103,10 @@ export function GlobalSearch({
 
   useEffect(() => {
     if (!open) return;
+    const fallbackRestoreTarget = triggerRef.current;
     restoreFocusRef.current = document.activeElement instanceof HTMLElement
       ? document.activeElement
-      : triggerRef.current;
+      : fallbackRestoreTarget;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const focusFrame = window.requestAnimationFrame(() => inputRef.current?.focus());
@@ -137,7 +138,7 @@ export function GlobalSearch({
       window.cancelAnimationFrame(focusFrame);
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleDialogKeyDown);
-      const restoreTarget = restoreFocusRef.current ?? triggerRef.current;
+      const restoreTarget = restoreFocusRef.current ?? fallbackRestoreTarget;
       window.requestAnimationFrame(() => restoreTarget?.focus());
     };
   }, [open]);
