@@ -79,6 +79,15 @@ for (const appFile of appFiles) {
   }
 }
 
+for (const retiredOwner of retiredPresentationOwners) {
+  for (const suffix of ['.tsx', '.module.css']) {
+    const retiredPath = `components/features/${retiredOwner}${suffix}`;
+    if (await exists(retiredPath)) {
+      fail(`${retiredPath} must remain removed; active telemetry routes use rebuilt component-owned presentation.`);
+    }
+  }
+}
+
 const platformDirectory = 'components/telemetry-platform';
 const platformFiles = await readdir(path.join(root, platformDirectory));
 const componentFiles = platformFiles.filter((fileName) => fileName.endsWith('.tsx'));
@@ -116,11 +125,9 @@ for (const retiredPresentationFile of [
 for (const retiredSourcePath of [
   'components/boards',
   'components/features/MondayMyWorkWorkspace.tsx',
-  'components/features/FleetAlertPulse.tsx',
-  'components/features/FleetAlertPulse.module.css',
 ]) {
   if (await exists(retiredSourcePath)) {
-    fail(`${retiredSourcePath} must remain removed; this retired ERP presentation is outside the telemetry application.`);
+    fail(`${retiredSourcePath} must remain removed; this ERP workspace is outside the telemetry application.`);
   }
 }
 
