@@ -75,7 +75,7 @@ Deno.serve(async (request: Request) => {
 
   const { data: device, error: deviceError } = await supabase
     .from('telemetry_devices')
-    .select('id,device_code,status,credential_hash,machine_id,site_id,profile_id,last_counter_at,last_heartbeat_at,transport_preference,wifi_enabled,cellular_enabled,mdb_master_polarity,mdb_slave_polarity,location_enabled,location_interval_minutes,location_min_move_m,last_location_at')
+    .select('id,device_code,status,credential_hash,machine_id,site_id,profile_id,last_counter_at,last_heartbeat_at,transport_preference,wifi_enabled,cellular_enabled,mdb_master_polarity,mdb_slave_polarity,mdb_pin_swap,location_enabled,location_interval_minutes,location_min_move_m,last_location_at')
     .eq('device_code', deviceCode)
     .maybeSingle();
 
@@ -182,6 +182,7 @@ Deno.serve(async (request: Request) => {
       mdb: {
         master_tx_polarity: device.mdb_master_polarity ?? 'auto',
         slave_rx_polarity: device.mdb_slave_polarity ?? 'auto',
+        swap_pins: Boolean(device.mdb_pin_swap),
       },
       cellular_profile: {
         carrier: 'Vodacom South Africa',
