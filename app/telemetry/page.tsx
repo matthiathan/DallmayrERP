@@ -1,10 +1,10 @@
-import { TelemetryDashboard } from '@/components/features/TelemetryDashboard';
 import { AppShell } from '@/components/layout/AppShell';
+import { TelemetryAnalytics } from '@/components/telemetry-platform/TelemetryAnalytics';
 
 export default function TelemetryPage() {
   return (
     <AppShell>
-      <TelemetryDashboard />
+      <TelemetryAnalytics />
     </AppShell>
   );
 }
