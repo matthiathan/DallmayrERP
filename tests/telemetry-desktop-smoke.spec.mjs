@@ -129,22 +129,24 @@ async function openAuthenticatedPage(browser, pathname) {
   const page = await context.newPage();
   await installAuthenticatedTelemetryMock(page);
   await page.goto(`${baseURL}${pathname}`, { waitUntil: 'domcontentloaded' });
-  await expect(page.locator('.application-shell-v2')).toHaveCount(1, { timeout: 20_000 });
-  await expect(page.locator('.dallmayr-sidebar')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('[data-platform-shell="telemetry-v3"]')).toHaveCount(1, { timeout: 20_000 });
+  await expect(page.locator('[data-platform-navigation="desktop-v3"]')).toBeVisible({ timeout: 20_000 });
   await expect(page.locator('#main-content')).toHaveCount(1, { timeout: 20_000 });
   return { context, page };
 }
 
 test('desktop telemetry shell exposes the current fleet navigation without retired mobile chrome', async ({ browser }) => {
   const { context, page } = await openAuthenticatedPage(browser, '/machines');
+  const desktopNav = page.locator('[data-platform-navigation="desktop-v3"] nav[aria-label="Machine telemetry navigation"]');
 
   await expect(page.getByRole('heading', { name: 'Machines', level: 1 })).toBeVisible({ timeout: 20_000 });
-  await expect(page.locator('a[href="/machines"][aria-current="page"]')).toHaveCount(1);
+  await expect(desktopNav.locator('a[href="/machines"][aria-current="page"]')).toHaveCount(1);
 
   for (const href of ['/', '/machines', '/alerts', '/telemetry', '/telemetry/test-center', '/map', '/products', '/telemetry/devices']) {
-    await expect(page.locator(`.dallmayr-sidebar-nav a[href="${href}"]`)).toHaveCount(1);
+    await expect(desktopNav.locator(`a[href="${href}"]`)).toHaveCount(1);
   }
 
+  await expect(page.locator('[data-mobile-shell="v1"]')).toBeHidden();
   await expect(page.locator('.mobile-quick-bar')).toHaveCount(0);
   await expect(page.locator('.mobile-nav-portal-root')).toHaveCount(0);
   await expect(page.locator('[aria-controls="mobile-navigation"]')).toHaveCount(0);
@@ -158,8 +160,10 @@ test('desktop telemetry shell exposes the current fleet navigation without retir
 test('current telemetry management routes keep the desktop shell and canonical active navigation', async ({ browser }) => {
   for (const pathname of ['/products', '/telemetry/test-center', '/telemetry/devices']) {
     const { context, page } = await openAuthenticatedPage(browser, pathname);
+    const desktopNav = page.locator('[data-platform-navigation="desktop-v3"] nav[aria-label="Machine telemetry navigation"]');
     await expect(page).toHaveURL(`${baseURL}${pathname}`);
-    await expect(page.locator(`.dallmayr-sidebar a[href="${pathname}"][aria-current="page"]`)).toHaveCount(1);
+    await expect(desktopNav.locator(`a[href="${pathname}"][aria-current="page"]`)).toHaveCount(1);
+    await expect(page.locator('[data-mobile-shell="v1"]')).toBeHidden();
     await expect(page.locator('.mobile-quick-bar, .mobile-nav-portal-root')).toHaveCount(0);
     await context.close();
   }
