@@ -113,6 +113,14 @@ for (const retiredPresentationFile of [
   }
 }
 
+for (const retiredSourcePath of [
+  'components/boards',
+]) {
+  if (await exists(retiredSourcePath)) {
+    fail(`${retiredSourcePath} must remain removed; the customer-board ERP workspace is outside the telemetry application.`);
+  }
+}
+
 if (failures.length) {
   console.error('Telemetry feature style ownership contract failed:');
   for (const failure of failures) console.error(`- ${failure}`);
