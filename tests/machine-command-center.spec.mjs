@@ -109,6 +109,13 @@ async function installMock(page) {
       { selection_code: '01', sold_total: 142, failed_total: 3, revenue_cents_total: 241400, updated_at: '2026-09-09T05:55:00.000Z' },
       { selection_code: '02', sold_total: 88, failed_total: 2, revenue_cents_total: 123200, updated_at: '2026-09-09T05:55:00.000Z' },
       { selection_code: '03', sold_total: 74, failed_total: 1, revenue_cents_total: 111000, updated_at: '2026-09-09T05:55:00.000Z' },
+      { selection_code: '04', sold_total: 22, failed_total: 0, revenue_cents_total: 0, updated_at: '2026-09-09T05:55:00.000Z' },
+    ]));
+    if (url.pathname === '/rest/v1/rpc/get_machine_model_button_map') return route.fulfill(jsonResponse([
+      { profile_id: 'profile-1', model_key: 'Belluno', display_name: 'Belluno', button_count: 12, button_number: 1, selection_code: '01', product_id: 'product-1', product_name: 'Caramel Cappuccino', product_active: true },
+      { profile_id: 'profile-1', model_key: 'Belluno', display_name: 'Belluno', button_count: 12, button_number: 2, selection_code: '02', product_id: 'product-2', product_name: 'Instant Porridge', product_active: true },
+      { profile_id: 'profile-1', model_key: 'Belluno', display_name: 'Belluno', button_count: 12, button_number: 3, selection_code: '03', product_id: 'product-3', product_name: 'Black Coffee', product_active: true },
+      { profile_id: 'profile-1', model_key: 'Belluno', display_name: 'Belluno', button_count: 12, button_number: 4, selection_code: '04', product_id: 'product-4', product_name: 'Espresso', product_active: true },
     ]));
     if (url.pathname === '/rest/v1/rpc/get_telemetry_data_usage') return route.fulfill(jsonResponse({ device_id: 'device-1', request_count: 420, application_bytes: 18_000_000, device_application_bytes: 20_000_000, device_application_sample_count: 30, measured_modem_bytes: 45_000_000, modem_sample_count: 30, projected_monthly_application_bytes: 18_000_000, projected_monthly_device_application_bytes: 20_000_000, projected_monthly_modem_bytes: 45_000_000 }));
     if (url.pathname === '/rest/v1/rpc/get_telemetry_prepaid_balances') return route.fulfill(jsonResponse({ device_id: 'device-1', remaining_bytes: 524_288_000, query_status: 'ok', alert_level: 'ok', checked_at: '2026-09-09T05:55:00.000Z', is_stale: false }));
@@ -145,9 +152,11 @@ test('rebuilt machine detail workspace exposes telemetry, lifetime cup counters 
   const lifetime = detail.locator('[data-lifetime-cup-counters="true"]');
   await expect(lifetime).toBeVisible();
   await expect(lifetime.getByRole('heading', { name: 'Lifetime cups by selection' })).toBeVisible();
-  await expect(lifetime).toContainText('304 cups');
+  await expect(lifetime).toContainText('326 cups');
   await expect(lifetime).toContainText('Caramel Cappuccino');
+  await expect(lifetime).toContainText('Espresso');
   await expect(lifetime).toContainText('142');
+  await expect(lifetime).toContainText('zero-price/free');
 
   await detail.getByRole('button', { name: 'Events' }).click();
   await expect(detail.getByText('MDB_TIMEOUT', { exact: true })).toBeVisible();
