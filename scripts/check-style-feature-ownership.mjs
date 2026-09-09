@@ -116,9 +116,11 @@ for (const retiredPresentationFile of [
 for (const retiredSourcePath of [
   'components/boards',
   'components/features/MondayMyWorkWorkspace.tsx',
+  'components/features/FleetAlertPulse.tsx',
+  'components/features/FleetAlertPulse.module.css',
 ]) {
   if (await exists(retiredSourcePath)) {
-    fail(`${retiredSourcePath} must remain removed; this ERP workspace is outside the telemetry application.`);
+    fail(`${retiredSourcePath} must remain removed; this retired ERP presentation is outside the telemetry application.`);
   }
 }
 
