@@ -141,7 +141,7 @@ test('rebuilt machine detail workspace exposes telemetry, lifetime cup counters 
   await expect(chart.locator('[data-tooltip-placement]')).toContainText('10 vends');
 
   await detail.getByRole('button', { name: 'Vends & products' }).click();
-  await expect(detail.getByText('Black Coffee', { exact: true }).first()).toBeVisible();
+  await expect(detail.getByText('Black Coffee', { exact: true }).last()).toBeVisible();
   const lifetime = detail.locator('[data-lifetime-cup-counters="true"]');
   await expect(lifetime).toBeVisible();
   await expect(lifetime.getByRole('heading', { name: 'Lifetime cups by selection' })).toBeVisible();
