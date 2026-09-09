@@ -151,6 +151,12 @@ async function openResponsivePage(browser, pathname, viewport = { width: 390, he
   return { context, page };
 }
 
+async function expectMobilePageTitle(page, title) {
+  const header = page.locator('.telemetry-mobile-header');
+  await expect(header).toBeVisible({ timeout: 20_000 });
+  await expect(header.getByText(title, { exact: true }).first()).toBeVisible();
+}
+
 async function expectNoHorizontalOverflow(page) {
   const overflow = await page.evaluate(() => ({
     document: document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -164,7 +170,7 @@ test('mobile telemetry shell exposes the four primary fleet routes without deskt
   const { context, page } = await openResponsivePage(browser, '/machines');
   await expect(page.locator('.application-header')).toBeHidden();
   await expect(page.locator('.dallmayr-sidebar')).toBeHidden();
-  await expect(page.locator('.telemetry-mobile-header')).toBeVisible();
+  await expectMobilePageTitle(page, 'Machines');
   await expect(page.locator('.telemetry-mobile-bottom-nav')).toBeVisible();
   await expect(page.locator('.telemetry-mobile-bottom-nav a[href="/machines"]')).toHaveAttribute('aria-current', 'page');
   for (const href of ['/', '/machines', '/alerts', '/telemetry']) {
@@ -179,6 +185,7 @@ test('rebuilt Fleet Overview and Machines remain bounded on a phone', async ({ b
   const home = await openResponsivePage(browser, '/');
   const dashboard = home.page.locator('[data-fleet-dashboard="televend-v3"]');
   await expect(dashboard).toBeVisible({ timeout: 20_000 });
+  await expectMobilePageTitle(home.page, 'Fleet Overview');
   await expect(dashboard.getByText('Items sold', { exact: true }).first()).toBeVisible();
   await expect(dashboard.getByRole('heading', { name: 'Sales metrics' })).toBeVisible();
   await expect(dashboard.locator('[data-chart-interactive="comparison-line"]')).toBeVisible();
@@ -188,7 +195,7 @@ test('rebuilt Fleet Overview and Machines remain bounded on a phone', async ({ b
   const machines = await openResponsivePage(browser, '/machines');
   const browserRoot = machines.page.locator('[data-machine-browser="televend-v3"]');
   await expect(browserRoot).toBeVisible({ timeout: 20_000 });
-  await expect(browserRoot.getByRole('heading', { name: 'Machines', level: 1 })).toBeVisible();
+  await expectMobilePageTitle(machines.page, 'Machines');
   await expect(browserRoot.getByRole('searchbox', { name: 'Search machines' })).toBeVisible();
   await expect(browserRoot.getByText('Online', { exact: true }).first()).toBeVisible();
   await expectNoHorizontalOverflow(machines.page);
@@ -199,7 +206,7 @@ test('rebuilt Analytics comparison chart supports tap-to-pin detail on mobile', 
   const { context, page } = await openResponsivePage(browser, '/telemetry');
   const analytics = page.locator('[data-analytics="televend-v3"]');
   await expect(analytics).toBeVisible({ timeout: 20_000 });
-  await expect(analytics.getByRole('heading', { name: 'Analytics', level: 1 })).toBeVisible();
+  await expectMobilePageTitle(page, 'Analytics');
   const chart = analytics.locator('[data-chart-interactive="comparison-line"]');
   await expect(chart).toBeVisible();
   const point = chart.locator('circle[role="button"]').last();
@@ -213,16 +220,16 @@ test('rebuilt Analytics comparison chart supports tap-to-pin detail on mobile', 
 test('specialist telemetry workspaces remain usable and bounded on a phone', async ({ browser }) => {
   const routes = [
     ['/telemetry/test-center', 'Test Center'],
-    ['/map', 'Fleet map'],
+    ['/map', 'Machine Map'],
     ['/products', 'Products'],
-    ['/telemetry/devices', 'Telemetry devices'],
+    ['/telemetry/devices', 'Device Management'],
   ];
 
-  for (const [pathname, heading] of routes) {
+  for (const [pathname, mobileTitle] of routes) {
     const { context, page } = await openResponsivePage(browser, pathname);
     const workspace = page.locator('[data-specialist-workspace="televend-v3"]');
     await expect(workspace).toBeVisible({ timeout: 20_000 });
-    await expect(workspace.getByRole('heading', { name: heading, level: 1 })).toBeVisible();
+    await expectMobilePageTitle(page, mobileTitle);
     await expectNoHorizontalOverflow(page);
     await context.close();
   }
@@ -254,6 +261,7 @@ test('touch tablet layouts use the mobile telemetry authority at 768, 1024 and 1
   ]) {
     const { context, page } = await openResponsivePage(browser, '/', viewport);
     await expect(page.locator('[data-fleet-dashboard="televend-v3"]')).toBeVisible({ timeout: 20_000 });
+    await expectMobilePageTitle(page, 'Fleet Overview');
     await expect(page.locator('.application-header')).toBeHidden();
     await expect(page.locator('.dallmayr-sidebar')).toBeHidden();
     await expect(page.locator('.telemetry-mobile-bottom-nav')).toBeVisible();
