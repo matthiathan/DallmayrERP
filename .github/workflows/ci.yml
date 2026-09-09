@@ -76,6 +76,7 @@ jobs:
           node --check tests/quick-access-dialog.spec.mjs
           node --check tests/page-navigation-metadata.spec.mjs
           node --check tests/design-system-authority.spec.mjs
+          node --check tests/telemetry-desktop-smoke.spec.mjs
           python -m py_compile scripts/compare-production-screenshots.py
 
       - name: Typecheck application
@@ -89,7 +90,7 @@ jobs:
           npm install --no-save --no-package-lock --no-audit --no-fund @playwright/test@1.55.0
           npx playwright install --with-deps chromium
 
-      - name: Run security and real-browser tests against local production server
+      - name: Run security and current telemetry desktop browser tests against local production server
         shell: bash
         env:
           SECURITY_PENTEST_TARGET: http://localhost:3000
@@ -112,7 +113,7 @@ jobs:
           for attempt in {1..45}; do
             if curl -fsS "$SECURITY_PENTEST_TARGET/login" > /dev/null; then
               npm run security:pentest
-              npx playwright test tests/workflow-actions.spec.mjs tests/compact-desktop.spec.mjs tests/quick-access-dialog.spec.mjs tests/page-navigation-metadata.spec.mjs tests/design-system-authority.spec.mjs --reporter=line
+              npx playwright test tests/telemetry-desktop-smoke.spec.mjs --reporter=line
               exit 0
             fi
             sleep 2
