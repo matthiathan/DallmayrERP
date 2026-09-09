@@ -5,9 +5,7 @@ import { AuthenticationGate } from '@/components/auth/AuthenticationGate';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { AppearanceProvider } from '@/components/appearance/AppearanceProvider';
 import { RenderedSurfaceContrastSync } from '@/components/appearance/RenderedSurfaceContrastSync';
-import { AuthenticatedMobileRuntime } from '@/components/layout/AuthenticatedMobileRuntime';
 import { GlobalAccountMenu } from '@/components/layout/GlobalAccountMenu';
-import { MobileBrowserHygiene } from '@/components/layout/MobileBrowserHygiene';
 import { PageTemplateFrame } from '@/components/layout/PageTemplateFrame';
 
 const APPEARANCE_BOOT_SCRIPT = `
@@ -95,11 +93,6 @@ export const metadata = {
   title: 'Dallmayr Machine Telemetry',
   description: 'Dallmayr South Africa machine and telemetry monitoring',
   applicationName: 'Dallmayr Machine Telemetry',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black-translucent' as const,
-    title: 'Dallmayr Telemetry',
-  },
   icons: {
     icon: '/icons/dallmayr-app.svg',
     apple: '/icons/dallmayr-app.svg',
@@ -130,10 +123,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <AuthProvider>
           <AppearanceProvider>
             <RenderedSurfaceContrastSync />
-            <MobileBrowserHygiene />
             <AuthenticationGate>
               <PageTemplateFrame />
-              <AuthenticatedMobileRuntime />
               <GlobalAccountMenu />
               {children}
             </AuthenticationGate>

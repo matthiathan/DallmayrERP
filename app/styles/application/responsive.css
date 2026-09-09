@@ -1,8 +1,9 @@
 /*
- * Responsive application authority.
+ * Responsive application authority reset for a ground-up mobile rebuild.
  *
- * Runtime/mobile interaction rules and finishing layers load after desktop.
- * responsive-mobile-tablet.css must remain the final application leaf.
+ * The three mobile authority leaves remain registered as empty tombstones so
+ * cascade ordering stays stable. Shared finishing/compact-desktop layers remain
+ * active because they are not part of the retired mobile implementation.
  */
 @import '../../responsive-runtime-authority.css';
 @import '../../responsive-mobile-interactions.css';
