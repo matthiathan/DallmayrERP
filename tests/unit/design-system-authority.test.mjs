@@ -10,7 +10,7 @@ test('AppShell owns the rebuilt telemetry platform shell presentation', async ()
   assert.match(source, /data-platform-shell="telemetry-v3"/);
   assert.match(source, /<DesktopNavigationRail/);
   assert.match(source, /<MobileTelemetryShell/);
-  assert.doesNotMatch(source, /<strong>\{activeTitle\}<\/strong>/);
+  assert.match(source, /<strong>\{activeTitle\}<\/strong>/);
 });
 
 test('core telemetry routes render the rebuilt platform owners directly', async () => {
