@@ -1,4 +1,4 @@
-import { MachineDashboard } from '@/components/features/MachineDashboard';
+import { MachineCommandCenter } from '@/components/features/MachineCommandCenter';
 import { AppShell } from '@/components/layout/AppShell';
 
 export default async function MachineDashboardPage({ params }: { params: Promise<{ id: string }> }) {
@@ -6,7 +6,7 @@ export default async function MachineDashboardPage({ params }: { params: Promise
 
   return (
     <AppShell>
-      <MachineDashboard machineId={id} />
+      <MachineCommandCenter machineId={id} />
     </AppShell>
   );
 }
