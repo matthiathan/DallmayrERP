@@ -122,6 +122,7 @@ export function MobileTelemetryShell({
         })}
         <button
           aria-controls="telemetry-mobile-menu"
+          aria-current={moreActive ? 'page' : undefined}
           aria-expanded={menuOpen}
           className={`${styles.mobileNavItem} telemetry-mobile-nav-item telemetry-mobile-more ${moreActive || menuOpen ? styles.mobileNavActive : ''}`}
           onClick={() => setMenuOpen((current) => !current)}
