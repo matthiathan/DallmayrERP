@@ -1,4 +1,272 @@
 /*
- * Unified phone/touch-tablet authority retired on 2026-09-08.
- * Intentionally empty pending the ground-up mobile rebuild.
+ * Responsive telemetry page-family authority.
+ *
+ * The mobile shell and fleet register live in responsive-runtime-authority.css.
+ * This layer owns standalone telemetry workspaces as they are migrated into the
+ * ground-up phone/touch-tablet experience.
  */
+
+@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  .fleet-route-page,
+  .telemetry-analytics-workspace {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .telemetry-analytics-workspace > .fleet-page-heading > .fleet-button {
+    justify-self: stretch !important;
+    width: 100% !important;
+    min-height: 44px !important;
+  }
+
+  .analytics-filter-bar {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin: 0 0 14px !important;
+    padding: 12px !important;
+    background: var(--content-surface, #20272f) !important;
+    border: 1px solid var(--content-border, #71808e) !important;
+    border-radius: 14px !important;
+  }
+
+  .analytics-filter-bar > label {
+    display: grid !important;
+    gap: 5px !important;
+    min-width: 0 !important;
+  }
+
+  .analytics-filter-bar > label:nth-of-type(3) {
+    grid-column: 1 / -1;
+  }
+
+  .analytics-filter-bar label > span {
+    color: var(--content-subtle, #a8b3bf) !important;
+    font-size: .66rem !important;
+    font-weight: 800 !important;
+    letter-spacing: .05em !important;
+    text-transform: uppercase !important;
+  }
+
+  .analytics-filter-bar select,
+  .analytics-filter-bar .fleet-button {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 44px !important;
+  }
+
+  .analytics-filter-bar .fleet-button {
+    align-self: end !important;
+    justify-content: center !important;
+  }
+
+  .analytics-updated {
+    grid-column: 1 / -1;
+    color: var(--content-muted, #cbd5e1) !important;
+    font-size: .7rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .telemetry-analytics-workspace > .error,
+  .telemetry-analytics-workspace > .success {
+    width: 100% !important;
+    margin: 0 0 12px !important;
+    padding: 12px !important;
+    border-radius: 12px !important;
+    overflow-wrap: anywhere;
+  }
+
+  .analytics-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .analytics-metric-grid > .analytics-metric:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .analytics-chart-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+    width: 100% !important;
+    margin: 0 0 14px !important;
+  }
+
+  .analytics-chart-grid > .fleet-panel {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .analytics-line-chart {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 4px 10px 12px !important;
+    overflow: hidden !important;
+  }
+
+  .analytics-line-chart svg {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 190px !important;
+  }
+
+  .analytics-line-chart > div {
+    display: flex !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .analytics-line-chart > div span {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    color: var(--content-subtle, #a8b3bf) !important;
+    font-size: .62rem !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .analytics-horizontal-bars {
+    display: grid !important;
+    gap: 10px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 4px 12px 14px !important;
+  }
+
+  .analytics-horizontal-bars > div {
+    display: grid !important;
+    grid-template-columns: minmax(72px, .9fr) minmax(90px, 1.7fr) auto !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-width: 0 !important;
+  }
+
+  .analytics-horizontal-bars > div > span {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    font-size: .72rem !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .analytics-horizontal-bars > div > strong {
+    font-size: .72rem !important;
+  }
+
+  .analytics-donut-summary {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    justify-items: center !important;
+    gap: 14px !important;
+    width: 100% !important;
+    padding: 8px 14px 16px !important;
+  }
+
+  .analytics-donut-summary dl {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .analytics-machine-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .analytics-machine-table > header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 5px !important;
+  }
+
+  .analytics-machine-table .fleet-machine-table {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    border-collapse: separate !important;
+  }
+
+  .analytics-machine-table .fleet-machine-table thead {
+    display: none !important;
+  }
+
+  .analytics-machine-table .fleet-machine-table tbody {
+    display: grid !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .analytics-machine-table .fleet-machine-table tr {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    background: var(--content-surface-raised, #2b343d) !important;
+    border: 1px solid var(--content-border, #71808e) !important;
+    border-radius: 14px !important;
+  }
+
+  .analytics-machine-table .fleet-machine-table td {
+    display: grid !important;
+    grid-template-columns: 92px minmax(0, 1fr) !important;
+    align-items: start !important;
+    gap: 10px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 9px 11px !important;
+    white-space: normal !important;
+    border: 0 !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--content-border, #71808e) 62%, transparent) !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .analytics-machine-table .fleet-machine-table td:last-child {
+    border-bottom: 0 !important;
+  }
+
+  .analytics-machine-table .fleet-machine-table td::before {
+    color: var(--content-subtle, #a8b3bf);
+    font-size: .64rem;
+    font-weight: 800;
+    letter-spacing: .05em;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+
+  .analytics-machine-table .fleet-machine-table td:nth-child(1)::before { content: 'Status'; }
+  .analytics-machine-table .fleet-machine-table td:nth-child(2)::before { content: 'Machine'; }
+  .analytics-machine-table .fleet-machine-table td:nth-child(3)::before { content: 'Serial'; }
+  .analytics-machine-table .fleet-machine-table td:nth-child(4)::before { content: 'Location'; }
+  .analytics-machine-table .fleet-machine-table td:nth-child(5)::before { content: 'Branch'; }
+  .analytics-machine-table .fleet-machine-table td:nth-child(6)::before { content: 'Items sold'; }
+  .analytics-machine-table .fleet-machine-table td:nth-child(7)::before { content: 'Failed'; }
+  .analytics-machine-table .fleet-machine-table td:nth-child(8)::before { content: 'Failure rate'; }
+}
+
+@media (max-width: 430px) {
+  .analytics-filter-bar,
+  .analytics-metric-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .analytics-filter-bar > label:nth-of-type(3),
+  .analytics-metric-grid > .analytics-metric:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+
+  .analytics-horizontal-bars > div {
+    grid-template-columns: minmax(66px, .8fr) minmax(70px, 1.4fr) auto !important;
+    gap: 6px !important;
+  }
+
+  .analytics-machine-table .fleet-machine-table td {
+    grid-template-columns: 82px minmax(0, 1fr) !important;
+  }
+}
