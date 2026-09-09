@@ -4,7 +4,9 @@ import { AppShell } from '@/components/layout/AppShell';
 export default function ProductsPage() {
   return (
     <AppShell>
-      <ProductMappingWorkspace />
+      <div className="product-mobile-route">
+        <ProductMappingWorkspace />
+      </div>
     </AppShell>
   );
 }
