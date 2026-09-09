@@ -14,107 +14,53 @@ function forbid(sourceName, source, forbidden, message) {
 }
 
 const shell = read('components/layout/AppShell.tsx');
-const erpLayout = read('components/ui/ErpLayout.tsx');
-const serviceJobsPage = read('app/operations/service-jobs/page.tsx');
-const connectedWorkflow = read('components/layout/ConnectedWorkflowBar.tsx');
-const connectedWorkflowStyles = read('app/styles/connected-workflow-strip.css');
+const specialist = read('components/telemetry-platform/SpecialistWorkspaceFrame.tsx');
+const machines = read('components/telemetry-platform/MachineFleetBrowser.tsx');
+const alarms = read('components/telemetry-platform/AlarmCenter.tsx');
+const analytics = read('components/telemetry-platform/TelemetryAnalytics.tsx');
+const machineDetail = read('components/telemetry-platform/MachineDetail.tsx');
 
 requireText(
   'application shell',
   shell,
-  "const activeArea = activeSection?.heading ?? 'Telemetry';",
-  'the desktop shell must derive an area-level context separately from the route title.',
+  "activeSection?.heading ?? 'Telemetry'",
+  'the rebuilt shell must retain area-level telemetry context.',
 );
 requireText(
-  'application shell',
-  shell,
-  'aria-label={`Current area: ${activeArea}`}',
-  'the shell context must identify itself as application area metadata.',
-);
-requireText(
-  'application shell',
-  shell,
-  '<span>{activeArea}</span>',
-  'the visible shell context must show the application area rather than the page title.',
-);
-forbid(
   'application shell',
   shell,
   '<strong>{activeTitle}</strong>',
-  'the route title must not be rendered as a competing shell heading.',
+  'the rebuilt top bar must expose the active telemetry route title.',
 );
 requireText(
-  'ERP page header',
-  erpLayout,
+  'specialist workspace',
+  specialist,
   '<h1>{title}</h1>',
-  'canonical ERP pages must retain the page-level h1 as the document title.',
+  'specialist workspaces must own a semantic page title.',
 );
 requireText(
-  'service jobs page',
-  serviceJobsPage,
-  '<ErpPageHeader',
-  'the representative operational route must delegate its page-owned h1 to the canonical ERP page header.',
-);
-requireText(
-  'service jobs page',
-  serviceJobsPage,
-  'title="Scheduled Call Log"',
-  'the representative operational route must retain Scheduled Call Log as its canonical page title.',
-);
-forbid(
-  'service jobs page',
-  serviceJobsPage,
-  '<h1>Scheduled Call Log</h1>',
-  'the representative operational route must not duplicate the canonical ErpPageHeader h1 in route markup.',
+  'specialist workspace',
+  specialist,
+  'data-specialist-workspace="televend-v3"',
+  'specialist pages must use the rebuilt platform frame.',
 );
 
-requireText(
-  'connected workflow',
-  connectedWorkflow,
-  'className="connected-workflow-strip"',
-  'connected record context must use the compact supporting strip.',
-);
-requireText(
-  'connected workflow',
-  connectedWorkflow,
-  '<nav aria-label="Connected records" className="connected-workflow-links">',
-  'related-record navigation must remain directly available in the compact strip.',
-);
-forbid(
-  'connected workflow',
-  connectedWorkflow,
-  'className="neo-card"',
-  'connected record context must not compete with route content as a full card.',
-);
-forbid(
-  'connected workflow',
-  connectedWorkflow,
-  'page-toolbar-heading',
-  'connected record context must not use page-heading presentation.',
-);
-forbid(
-  'connected workflow',
-  connectedWorkflow,
-  'feature-pill',
-  'connected record context must not reuse prominent generic feature pills.',
-);
-requireText(
-  'connected workflow styles',
-  connectedWorkflowStyles,
-  '.connected-workflow-strip {',
-  'the compact connected workflow strip must have owned application styling.',
-);
-requireText(
-  'connected workflow styles',
-  connectedWorkflowStyles,
-  'box-shadow: none;',
-  'the supporting connected workflow strip must remain visually flatter than page cards.',
-);
+for (const [name, source, marker] of [
+  ['machines', machines, 'data-machine-browser="televend-v3"'],
+  ['alerts', alarms, 'data-alarm-center="televend-v3"'],
+  ['analytics', analytics, 'data-analytics="televend-v3"'],
+  ['machine detail', machineDetail, 'data-machine-detail="televend-v3"'],
+]) {
+  requireText(name, source, marker, `${name} must remain on the rebuilt telemetry platform.`);
+}
+
+forbid('application shell', shell, 'Scheduled Call Log', 'ERP operational page titles must not return to the telemetry shell.');
+forbid('application shell', shell, '/operations/service-jobs', 'removed ERP operational routes must not return.');
 
 if (failures.length) {
-  console.error('Page and supporting-context hierarchy contract failed:');
+  console.error('Rebuilt telemetry page hierarchy contract failed:');
   for (const failure of failures) console.error(`- ${failure}`);
   process.exit(1);
 }
 
-console.log('Page and supporting-context hierarchy contract passed.');
+console.log('Rebuilt telemetry page hierarchy contract passed.');
