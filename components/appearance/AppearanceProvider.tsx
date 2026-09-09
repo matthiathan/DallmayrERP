@@ -193,6 +193,7 @@ function readLocalPreferences() {
 
 export function AppearanceProvider({ children }: { children: ReactNode }) {
   const { businessUser } = useAuth();
+  const businessUserId = businessUser?.id;
   const [preferences, setPreferences] = useState<AppearancePreferences>(DEFAULT_APPEARANCE);
   const [status, setStatus] = useState<AppearanceStatus>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -213,14 +214,14 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
   }, [preferences]);
 
   const persistPreferences = useCallback(async (next: AppearancePreferences) => {
-    if (!businessUser?.id) return;
+    if (!businessUserId) return;
     setStatus('saving');
     setError(null);
 
     const { error: saveError } = await getSupabaseClient()
       .from('user_appearance_preferences')
       .upsert({
-        user_id: businessUser.id,
+        user_id: businessUserId,
         accent_color: next.accentColor,
         theme_color: next.themeColor,
         background_color: next.backgroundColor,
@@ -236,7 +237,7 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     }
 
     setStatus('saved');
-  }, [businessUser?.id]);
+  }, [businessUserId]);
 
   const queueSave = useCallback((next: AppearancePreferences) => {
     if (saveTimerRef.current !== null) window.clearTimeout(saveTimerRef.current);
@@ -250,7 +251,7 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
   }, [persistPreferences]);
 
   useEffect(() => {
-    if (!hydrated || !businessUser?.id) return;
+    if (!hydrated || !businessUserId) return;
     let active = true;
 
     async function loadPreferences() {
@@ -261,7 +262,7 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
         const { data, error: loadError } = await getSupabaseClient()
           .from('user_appearance_preferences')
           .select('accent_color, theme_color, background_color, theme_tone, background_style')
-          .eq('user_id', businessUser!.id)
+          .eq('user_id', businessUserId)
           .maybeSingle();
 
         if (!active) return;
@@ -300,7 +301,7 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [businessUser?.id, hydrated, persistPreferences]);
+  }, [businessUserId, hydrated, persistPreferences]);
 
   useEffect(() => () => {
     if (saveTimerRef.current !== null) window.clearTimeout(saveTimerRef.current);
@@ -312,12 +313,12 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       preferencesRef.current = next;
       applyAppearance(next);
       storeLocally(next);
-      setStatus(businessUser?.id ? 'saving' : 'saved');
+      setStatus(businessUserId ? 'saving' : 'saved');
       setError(null);
-      if (businessUser?.id) queueSave(next);
+      if (businessUserId) queueSave(next);
       return next;
     });
-  }, [businessUser?.id, queueSave]);
+  }, [businessUserId, queueSave]);
 
   const resetPreferences = useCallback(() => {
     updatePreferences(DEFAULT_APPEARANCE);
