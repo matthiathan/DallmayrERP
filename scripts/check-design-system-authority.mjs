@@ -13,43 +13,55 @@ function forbid(sourceName, source, forbidden, message) {
   if (source.includes(forbidden)) failures.push(`${sourceName}: ${message}`);
 }
 
-const erpLayout = read('components/ui/ErpLayout.tsx');
-const workspacePrimitives = read('components/ui/WorkspacePrimitives.tsx');
-const pageToolbar = read('components/ui/PageToolbar.tsx');
-const shellPages = [
-  ['service jobs', read('app/operations/service-jobs/page.tsx')],
-  ['deliveries', read('app/operations/deliveries/page.tsx')],
-  ['machine assets', read('app/operations/assets/page.tsx')],
-  ['executive reports', read('app/executive/reports/page.tsx')],
-];
+const shell = read('components/layout/AppShell.tsx');
+const desktopNavigation = read('components/layout/DesktopNavigationRail.tsx');
+const fleet = read('components/telemetry-platform/TelevendFleetDashboard.tsx');
+const machines = read('components/telemetry-platform/MachineFleetBrowser.tsx');
+const machineDetail = read('components/telemetry-platform/MachineDetail.tsx');
+const alarms = read('components/telemetry-platform/AlarmCenter.tsx');
+const analytics = read('components/telemetry-platform/TelemetryAnalytics.tsx');
+const specialist = read('components/telemetry-platform/SpecialistWorkspaceFrame.tsx');
+const home = read('app/page.tsx');
+const machinePage = read('app/machines/page.tsx');
+const alertPage = read('app/alerts/page.tsx');
+const analyticsPage = read('app/telemetry/page.tsx');
 
-for (const exportName of ['ErpSurface', 'ErpSectionHeader', 'ErpCommandBar', 'ErpPage', 'ErpPageHeader', 'ErpPanel', 'ErpStateBanner']) {
-  requireText('ErpLayout', erpLayout, `export function ${exportName}`, `${exportName} must remain owned by the canonical high-level ERP layout module.`);
+requireText('application shell', shell, "TelemetryPlatformShell.module.css", 'the rebuilt platform shell must own the authenticated application chrome.');
+requireText('application shell', shell, 'data-platform-shell="telemetry-v3"', 'the active shell must expose the rebuilt platform marker.');
+requireText('desktop navigation', desktopNavigation, "TelemetryPlatformShell.module.css", 'desktop navigation must share the rebuilt shell styling authority.');
+
+for (const [name, source, marker] of [
+  ['fleet dashboard', fleet, 'data-fleet-dashboard="televend-v3"'],
+  ['machine browser', machines, 'data-machine-browser="televend-v3"'],
+  ['machine detail', machineDetail, 'data-machine-detail="televend-v3"'],
+  ['alarm center', alarms, 'data-alarm-center="televend-v3"'],
+  ['analytics', analytics, 'data-analytics="televend-v3"'],
+  ['specialist workspace', specialist, 'data-specialist-workspace="televend-v3"'],
+]) {
+  requireText(name, source, marker, `${name} must remain owned by the rebuilt telemetry platform.`);
+  requireText(name, source, "styles from './", `${name} must use an owned CSS module rather than legacy global route styling.`);
 }
 
-requireText('WorkspacePrimitives', workspacePrimitives, 'ErpCommandBar as WorkspaceCommandBar', 'WorkspaceCommandBar must be a compatibility alias to ErpLayout.');
-requireText('WorkspacePrimitives', workspacePrimitives, 'ErpSectionHeader as WorkspaceSectionHeader', 'WorkspaceSectionHeader must be a compatibility alias to ErpLayout.');
-requireText('WorkspacePrimitives', workspacePrimitives, 'ErpSurface as WorkspaceSurface', 'WorkspaceSurface must be a compatibility alias to ErpLayout.');
-forbid('WorkspacePrimitives', workspacePrimitives, 'function Workspace', 'WorkspacePrimitives must not reintroduce a competing high-level implementation.');
-forbid('WorkspacePrimitives', workspacePrimitives, '<section', 'WorkspacePrimitives must stay compatibility-only and contain no rendered surface implementation.');
+requireText('Fleet Overview route', home, 'TelevendFleetDashboard', 'Fleet Overview must render the rebuilt dashboard.');
+requireText('Machines route', machinePage, 'MachineFleetBrowser', 'Machines must render the rebuilt fleet browser.');
+requireText('Alerts route', alertPage, 'AlarmCenter', 'Alerts must render the rebuilt alarm center.');
+requireText('Analytics route', analyticsPage, 'TelemetryAnalytics', 'Analytics must render the rebuilt analytics workspace.');
 
-requireText('PageToolbar', pageToolbar, "from '@/components/ui/ErpLayout'", 'PageToolbar must consume the canonical ErpLayout authority directly.');
-forbid('PageToolbar', pageToolbar, "from '@/components/ui/WorkspacePrimitives'", 'PageToolbar must not depend on the retired competing workspace implementation layer.');
-requireText('PageToolbar', pageToolbar, '<ErpCommandBar', 'PageToolbar must use the canonical ERP command bar.');
-requireText('PageToolbar', pageToolbar, '<ErpSectionHeader', 'PageToolbar must use the canonical ERP section header.');
-
-for (const [name, source] of shellPages) {
-  requireText(name, source, '<ErpPage', 'route shell must use the canonical ERP page container.');
-  requireText(name, source, '<ErpPageHeader', 'route shell must use the canonical ERP page header.');
-  for (const legacy of ['page-header', 'hero-panel', 'spatial-card', 'neo-card']) {
-    forbid(name, source, legacy, `route shell must not reintroduce legacy ${legacy} surface markup.`);
-  }
+for (const [name, source] of [
+  ['Fleet Overview route', home],
+  ['Machines route', machinePage],
+  ['Alerts route', alertPage],
+  ['Analytics route', analyticsPage],
+]) {
+  forbid(name, source, 'MachineTelemetryOverview', 'active telemetry routes must not depend on the retired overview implementation.');
+  forbid(name, source, 'FleetVisualCommandCenter', 'active telemetry routes must not depend on the retired visual command center.');
+  forbid(name, source, 'TelemetryDashboard', 'active telemetry routes must not depend on the retired analytics implementation.');
 }
 
 if (failures.length > 0) {
-  console.error('Design-system authority contract failed:');
+  console.error('Telemetry design-system authority contract failed:');
   failures.forEach((failure) => console.error(`- ${failure}`));
   process.exit(1);
 }
 
-console.log('Design-system authority contract passed: DesignSystem owns low-level controls, ErpLayout owns high-level surfaces/layout, WorkspacePrimitives is compatibility-only, and core route shells use canonical ERP primitives.');
+console.log('Telemetry design-system authority contract passed: the rebuilt Televend-style platform owns active shell and route presentation.');
