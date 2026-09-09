@@ -41,7 +41,7 @@ export function MobileTelemetryShell({
   userEmail,
   userName,
 }: {
-  activeHref?: string;
+  activeHref: string | null | undefined;
   activeTitle: string;
   homePath: string;
   navigationSections: NavSection[];
