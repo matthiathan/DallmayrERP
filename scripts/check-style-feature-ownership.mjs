@@ -100,6 +100,7 @@ for (const fileName of componentFiles) {
 
 for (const retiredPresentationFile of [
   'app/concentrix-dallmayr-dashboard.css',
+  'app/concentrix-execution-details.css',
   'app/mobile-functional-experience.css',
   'app/mobile-menu-stacking-fix.css',
   'app/mobile-overhaul.css',
