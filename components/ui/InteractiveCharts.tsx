@@ -25,10 +25,10 @@ function defaultFormatter(value: number) {
   return value.toLocaleString('en-ZA');
 }
 
-function tooltipAlignment(percent: number) {
-  if (percent < 18) return styles.tooltipAlignLeft;
-  if (percent > 82) return styles.tooltipAlignRight;
-  return '';
+function tooltipTransform(xPercent: number, yPercent: number) {
+  const x = xPercent < 18 ? '0%' : xPercent > 82 ? '-100%' : '-50%';
+  const y = yPercent < 34 ? '12px' : 'calc(-100% - 12px)';
+  return `translate(${x}, ${y})`;
 }
 
 export function InteractiveLineChart({
@@ -107,19 +107,29 @@ export function InteractiveLineChart({
             );
           })}
         </svg>
-        {active ? (
-          <div
-            aria-live="polite"
-            className={`${styles.tooltip} ${tooltipAlignment((active.x / width) * 100)}`}
-            role="status"
-            style={{ left: `${(active.x / width) * 100}%`, top: `${(active.y / height) * 100}%` }}
-          >
-            <strong>{active.item.label}</strong>
-            <span className={styles.tooltipValue}>{valueFormatter(active.item.value)} {valueLabel}</span>
-            {active.item.secondaryLabel && active.item.secondaryValue !== undefined ? <small>{active.item.secondaryLabel}: {valueFormatter(active.item.secondaryValue)}</small> : null}
-            {active.item.detail ? <small>{active.item.detail}</small> : null}
-          </div>
-        ) : null}
+        {active ? (() => {
+          const xPercent = (active.x / width) * 100;
+          const yPercent = (active.y / height) * 100;
+          const placement = yPercent < 34 ? 'below' : 'above';
+          return (
+            <div
+              aria-live="polite"
+              className={styles.tooltip}
+              data-tooltip-placement={placement}
+              role="status"
+              style={{
+                left: `${xPercent}%`,
+                top: `${yPercent}%`,
+                transform: tooltipTransform(xPercent, yPercent),
+              }}
+            >
+              <strong>{active.item.label}</strong>
+              <span className={styles.tooltipValue}>{valueFormatter(active.item.value)} {valueLabel}</span>
+              {active.item.secondaryLabel && active.item.secondaryValue !== undefined ? <small>{active.item.secondaryLabel}: {valueFormatter(active.item.secondaryValue)}</small> : null}
+              {active.item.detail ? <small>{active.item.detail}</small> : null}
+            </div>
+          );
+        })() : null}
       </div>
       <div aria-hidden="true" className={styles.axisLabels}>
         {labels.map((point) => <span key={point.item.key}>{point.item.label}</span>)}
