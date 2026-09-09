@@ -194,7 +194,13 @@ export function TelemetryTestCenter() {
       setError(logError.message);
       return;
     }
-    setLogs(((data ?? []) as DebugLog[]).reverse());
+    const incoming = ((data ?? []) as DebugLog[]).reverse();
+    setLogs((current) => {
+      const byId = new Map<number, DebugLog>();
+      current.forEach((row) => byId.set(row.id, row));
+      incoming.forEach((row) => byId.set(row.id, row));
+      return Array.from(byId.values()).sort((left, right) => left.id - right.id).slice(-500);
+    });
   }, [client]);
 
   useEffect(() => { void loadFleet(); }, [loadFleet]);
@@ -224,11 +230,11 @@ export function TelemetryTestCenter() {
         (payload) => {
           const row = payload.new as DebugLog;
           if (pausedRef.current) {
-            pausedBufferRef.current.push(row);
+            if (!pausedBufferRef.current.some((item) => item.id === row.id)) pausedBufferRef.current.push(row);
             setPausedCount(pausedBufferRef.current.length);
             return;
           }
-          setLogs((current) => [...current.slice(-499), row]);
+          setLogs((current) => current.some((item) => item.id === row.id) ? current : [...current.slice(-499), row]);
         },
       )
       .subscribe();
@@ -244,6 +250,7 @@ export function TelemetryTestCenter() {
         setSession(null);
       } else {
         setSession(updated);
+        if (!pausedRef.current) void loadLogs(session.id);
       }
     }, 5000);
 
@@ -312,7 +319,12 @@ export function TelemetryTestCenter() {
     if (paused) {
       const pending = pausedBufferRef.current;
       pausedBufferRef.current = [];
-      setLogs((current) => [...current, ...pending].slice(-500));
+      setLogs((current) => {
+        const byId = new Map<number, DebugLog>();
+        current.forEach((row) => byId.set(row.id, row));
+        pending.forEach((row) => byId.set(row.id, row));
+        return Array.from(byId.values()).sort((left, right) => left.id - right.id).slice(-500);
+      });
       setPausedCount(0);
       pausedRef.current = false;
       setPaused(false);
