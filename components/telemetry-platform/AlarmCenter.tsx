@@ -113,7 +113,6 @@ export function AlarmCenter() {
   const resolved = faults.filter((fault) => fault.cleared_at);
   const critical = active.filter((fault) => severityKey(fault.severity) === 'critical').length;
   const warning = active.filter((fault) => severityKey(fault.severity) === 'warning').length;
-  const connectivity = active.filter((fault) => severityKey(fault.severity) === 'connectivity').length;
   const affected = new Set(active.map((fault) => fault.machine_id).filter(Boolean)).size;
   const resolvedRate = faults.length ? resolved.length / faults.length * 100 : 100;
   const activeRate = faults.length ? active.length / faults.length * 100 : 0;
