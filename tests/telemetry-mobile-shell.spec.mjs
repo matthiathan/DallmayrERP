@@ -158,6 +158,30 @@ test('new mobile telemetry shell exposes primary fleet navigation without render
   await context.close();
 });
 
+test('Fleet Overview and Machines stay inside the phone viewport with mobile page-family layout', async ({ browser }) => {
+  for (const [pathname, heading] of [['/', 'Good morning, Mobile'], ['/machines', 'Machines']]) {
+    const { context, page } = await openMobilePage(browser, pathname);
+
+    await expect(page.locator('.fleet-page-heading')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('heading', { name: heading, level: 1 })).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('.fleet-metric-grid')).toBeVisible({ timeout: 20_000 });
+
+    if (pathname === '/machines') {
+      await expect(page.locator('.fleet-table-panel')).toBeVisible({ timeout: 20_000 });
+      await expect(page.locator('.fleet-filters')).toBeVisible({ timeout: 20_000 });
+    }
+
+    const overflow = await page.evaluate(() => ({
+      document: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      main: document.querySelector('#main-content')?.scrollWidth > document.querySelector('#main-content')?.clientWidth,
+    }));
+    expect(overflow.document).toBe(false);
+    expect(overflow.main).toBe(false);
+
+    await context.close();
+  }
+});
+
 test('new mobile More sheet exposes every telemetry route and closes after navigation', async ({ browser }) => {
   const { context, page } = await openMobilePage(browser, '/machines');
 
