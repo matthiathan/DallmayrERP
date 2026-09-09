@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { DesktopNavigationRail } from '@/components/layout/DesktopNavigationRail';
+import { MobileTelemetryShell } from '@/components/layout/MobileTelemetryShell';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { canAccessShellPath, deriveAppShellNavigation } from '@/components/layout/appShellNavigation';
 import { useAppShellPreferences } from '@/components/layout/useAppShellPreferences';
@@ -50,8 +51,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (!loading && !authUser) router.replace('/login');
   }, [authUser, loading, router]);
 
-
-
   if (loading) {
     return <StatusScreen title="Loading secure workspace" message="Checking your Supabase session." loading />;
   }
@@ -67,6 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const {
     activeHref,
     activeSection,
+    activeTitle,
     allowedPath,
     homePath,
     navigationSections,
@@ -83,7 +83,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className={`app-shell top-shell application-shell-v2 ${railCollapsed ? 'desktop-rail-collapsed' : ''}`}>
       <a className="skip-link" href="#main-content">Skip to main content</a>
-
 
       <header className="application-header">
         <div className="application-header-inner">
@@ -106,7 +105,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div aria-label={`Current area: ${activeArea}`} className="application-page-context telemetry-page-context-contract">
             <span>{activeArea}</span>
           </div>
-
         </div>
 
         <div aria-label="Workspace status" className="application-status-strip">
@@ -117,7 +115,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link href={item.href} key={item.href}>{item.label}</Link>
           ))}
         </div>
-
       </header>
 
       <DesktopNavigationRail
@@ -130,6 +127,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         sections={navigationSections}
       />
 
+      <MobileTelemetryShell
+        activeHref={activeHref}
+        activeTitle={activeTitle}
+        homePath={homePath}
+        navigationSections={navigationSections}
+        userEmail={authUser.email ?? ''}
+        userName={userName}
+      />
 
       <main className="main top-main application-main" id="main-content" tabIndex={-1}>
         {!allowedPath ? (
