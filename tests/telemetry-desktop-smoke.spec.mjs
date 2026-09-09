@@ -131,7 +131,7 @@ async function openAuthenticatedPage(browser, pathname) {
   await page.goto(`${baseURL}${pathname}`, { waitUntil: 'domcontentloaded' });
   await expect(page.locator('.application-shell-v2')).toHaveCount(1, { timeout: 20_000 });
   await expect(page.locator('.dallmayr-sidebar')).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByRole('main')).toHaveCount(1, { timeout: 20_000 });
+  await expect(page.locator('#main-content')).toHaveCount(1, { timeout: 20_000 });
   return { context, page };
 }
 
@@ -142,7 +142,7 @@ test('desktop telemetry shell exposes the current fleet navigation without retir
   await expect(page.locator('a[href="/machines"][aria-current="page"]')).toHaveCount(1);
 
   for (const href of ['/', '/machines', '/alerts', '/telemetry', '/telemetry/test-center', '/map', '/products', '/telemetry/devices']) {
-    await expect(page.locator(`.dallmayr-sidebar a[href="${href}"]`)).toHaveCount(1);
+    await expect(page.locator(`.dallmayr-sidebar-nav a[href="${href}"]`)).toHaveCount(1);
   }
 
   await expect(page.locator('.mobile-quick-bar')).toHaveCount(0);
