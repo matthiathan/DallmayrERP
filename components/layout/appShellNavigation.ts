@@ -3,7 +3,7 @@ import { selectActiveNavigationHref } from '@/lib/navigation/activeNavigation';
 
 const TELEMETRY_HOME_PATH = '/';
 
-const telemetryNavigationSections: NavSection[] = [
+export const telemetryNavigationSections: NavSection[] = [
   {
     heading: 'Monitoring',
     items: [
