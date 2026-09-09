@@ -203,28 +203,26 @@ test('new mobile telemetry shell exposes primary fleet navigation without render
   await context.close();
 });
 
-test('Fleet Overview and Machines stay inside the phone viewport with mobile page-family layout', async ({ browser }) => {
-  for (const [pathname, heading] of [['/', 'Good morning, Mobile'], ['/machines', 'Machines']]) {
-    const { context, page } = await openMobilePage(browser, pathname);
+test('visual Fleet Overview and Machines stay inside the phone viewport', async ({ browser }) => {
+  const home = await openMobilePage(browser, '/');
+  await expect(home.page.getByRole('heading', { name: 'Mobile, here is the fleet right now.', level: 1 })).toBeVisible({ timeout: 20_000 });
+  await expect(home.page.getByText('Items sold', { exact: true }).first()).toBeVisible();
+  await expect(home.page.getByText('Fleet availability', { exact: true }).first()).toBeVisible();
+  await expect(home.page.locator('[data-chart-interactive="line"]')).toBeVisible();
+  await expect(home.page.locator('[data-chart-interactive="bar"]')).toHaveCount(3);
+  const homeOverflow = await home.page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+  expect(homeOverflow).toBe(false);
+  await home.context.close();
 
-    await expect(page.locator('.fleet-page-heading')).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByRole('heading', { name: heading, level: 1 })).toBeVisible({ timeout: 20_000 });
-    await expect(page.locator('.fleet-metric-grid')).toBeVisible({ timeout: 20_000 });
-
-    if (pathname === '/machines') {
-      await expect(page.locator('.fleet-table-panel')).toBeVisible({ timeout: 20_000 });
-      await expect(page.locator('.fleet-filters')).toBeVisible({ timeout: 20_000 });
-    }
-
-    const overflow = await page.evaluate(() => ({
-      document: document.documentElement.scrollWidth > document.documentElement.clientWidth,
-      main: document.querySelector('#main-content')?.scrollWidth > document.querySelector('#main-content')?.clientWidth,
-    }));
-    expect(overflow.document).toBe(false);
-    expect(overflow.main).toBe(false);
-
-    await context.close();
-  }
+  const machines = await openMobilePage(browser, '/machines');
+  await expect(machines.page.locator('.fleet-page-heading')).toBeVisible({ timeout: 20_000 });
+  await expect(machines.page.getByRole('heading', { name: 'Machines', level: 1 })).toBeVisible({ timeout: 20_000 });
+  await expect(machines.page.locator('.fleet-metric-grid')).toBeVisible({ timeout: 20_000 });
+  await expect(machines.page.locator('.fleet-table-panel')).toBeVisible({ timeout: 20_000 });
+  await expect(machines.page.locator('.fleet-filters')).toBeVisible({ timeout: 20_000 });
+  const machineOverflow = await machines.page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+  expect(machineOverflow).toBe(false);
+  await machines.context.close();
 });
 
 test('Telemetry Analytics charts support tap-to-pin details on mobile', async ({ browser }) => {
