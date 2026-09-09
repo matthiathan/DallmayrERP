@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ComparisonLineChart, type ComparisonPoint } from './ComparisonLineChart';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
+import { formatLocalDate } from '@/lib/dates/local-date';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import styles from './TelemetryAnalytics.module.css';
 
@@ -28,7 +29,7 @@ function normalise(value:unknown):Payload{const v=(value??{}) as Partial<Payload
 function previousRows(current:Payload,history:Payload){
   if(!current.date_from||!current.date_to||!history.daily_trend.length)return [] as Daily[];
   const from=new Date(`${current.date_from}T00:00:00`);const to=new Date(`${current.date_to}T00:00:00`);const days=Math.max(1,Math.round((to.getTime()-from.getTime())/86400000)+1);if(days>190)return [];
-  const end=new Date(from);end.setDate(end.getDate()-1);const start=new Date(end);start.setDate(start.getDate()-days+1);const a=start.toISOString().slice(0,10);const b=end.toISOString().slice(0,10);return history.daily_trend.filter(r=>r.date>=a&&r.date<=b);
+  const end=new Date(from);end.setDate(end.getDate()-1);const start=new Date(end);start.setDate(start.getDate()-days+1);const a=formatLocalDate(start);const b=formatLocalDate(end);return history.daily_trend.filter(r=>r.date>=a&&r.date<=b);
 }
 
 function Metric({label,value,helper,tone=''}:{label:string;value:string;helper:string;tone?:''|'green'|'red'|'amber'|'gold'}){return <article className={`${styles.metric} ${tone?styles[tone]:''}`}><span>{label}</span><strong>{value}</strong><small>{helper}</small></article>}
