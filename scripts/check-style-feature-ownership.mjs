@@ -98,15 +98,16 @@ for (const fileName of componentFiles) {
   }
 }
 
-for (const retiredRootFeatureFile of [
+for (const retiredPresentationFile of [
+  'app/concentrix-dallmayr-dashboard.css',
   'app/mobile-functional-experience.css',
   'app/mobile-menu-stacking-fix.css',
   'app/mobile-overhaul.css',
   'app/mobile-universal-phone.css',
   'app/mobile-browser-native.css',
 ]) {
-  if (await exists(retiredRootFeatureFile)) {
-    fail(`${retiredRootFeatureFile} must remain removed; responsive telemetry presentation is component-owned.`);
+  if (await exists(retiredPresentationFile)) {
+    fail(`${retiredPresentationFile} must remain removed; rebuilt telemetry presentation is component-owned.`);
   }
 }
 
