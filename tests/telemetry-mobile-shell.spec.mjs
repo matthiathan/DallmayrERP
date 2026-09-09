@@ -88,6 +88,53 @@ function telemetryReportFixture() {
   };
 }
 
+function dataUsageFixture() {
+  return [{
+    device_id: 'device-1',
+    request_count: 420,
+    request_bytes: 4_000_000,
+    response_bytes: 1_000_000,
+    application_bytes: 18_000_000,
+    device_application_tx_bytes: 15_000_000,
+    device_application_rx_bytes: 5_000_000,
+    device_application_bytes: 20_000_000,
+    device_application_sample_count: 30,
+    modem_tx_bytes: 35_000_000,
+    modem_rx_bytes: 10_000_000,
+    measured_modem_bytes: 45_000_000,
+    modem_sample_count: 30,
+    days_observed: 30,
+    last_reported_at: '2026-09-09T06:00:00.000Z',
+    projected_monthly_application_bytes: 18_000_000,
+    projected_monthly_device_application_bytes: 20_000_000,
+    projected_monthly_modem_bytes: 45_000_000,
+  }];
+}
+
+function prepaidFixture() {
+  return [{
+    device_id: 'device-1',
+    device_code: 'DALL-TEL-001',
+    carrier: 'Vodacom',
+    ussd_code: '*111*502#',
+    remaining_bytes: 524_288_000,
+    balance_text: '500 MB remaining',
+    query_status: 'ok',
+    last_error: null,
+    checked_at: '2026-09-09T06:00:00.000Z',
+    received_at: '2026-09-09T06:00:00.000Z',
+    request_pending: false,
+    requested_at: null,
+    warning_threshold_bytes: 104_857_600,
+    critical_threshold_bytes: 26_214_400,
+    check_interval_minutes: 360,
+    stale_after_minutes: 720,
+    next_check_at: '2026-09-09T12:00:00.000Z',
+    is_stale: false,
+    alert_level: 'ok',
+  }];
+}
+
 async function installAuthenticatedTelemetryMock(page) {
   const session = makeSession();
   await installSupabaseAuthFixture(page, baseURL, session);
@@ -156,6 +203,14 @@ async function installAuthenticatedTelemetryMock(page) {
       await route.fulfill(jsonResponse(telemetryReportFixture()));
       return;
     }
+    if (url.pathname === '/rest/v1/rpc/get_telemetry_data_usage') {
+      await route.fulfill(jsonResponse(dataUsageFixture()));
+      return;
+    }
+    if (url.pathname === '/rest/v1/rpc/get_telemetry_prepaid_balances') {
+      await route.fulfill(jsonResponse(prepaidFixture()));
+      return;
+    }
     if (url.pathname.startsWith('/rest/v1/rpc/')) {
       await route.fulfill(jsonResponse([]));
       return;
@@ -210,6 +265,10 @@ test('visual Fleet Overview and Machines stay inside the phone viewport', async 
   await expect(home.page.getByText('Fleet availability', { exact: true }).first()).toBeVisible();
   await expect(home.page.locator('[data-chart-interactive="line"]')).toBeVisible();
   await expect(home.page.locator('[data-chart-interactive="bar"]')).toHaveCount(3);
+  const usagePanel = home.page.locator('[data-fleet-usage-panel="v1"]');
+  await expect(usagePanel).toBeVisible();
+  await expect(usagePanel.getByText('30-day transfer', { exact: true })).toBeVisible();
+  await expect(usagePanel.getByText('Prepaid remaining', { exact: true })).toBeVisible();
   const homeOverflow = await home.page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   expect(homeOverflow).toBe(false);
   await home.context.close();
@@ -254,6 +313,27 @@ test('Telemetry Analytics charts support tap-to-pin details on mobile', async ({
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   expect(overflow).toBe(false);
   await context.close();
+});
+
+test('standalone telemetry workspaces stay usable and bounded on a phone', async ({ browser }) => {
+  const routes = [
+    ['/telemetry/test-center', 'Telemetry Test Center'],
+    ['/map', 'Machine locations'],
+    ['/products', 'Products'],
+    ['/telemetry/devices', 'Telemetry devices'],
+  ];
+
+  for (const [pathname, heading] of routes) {
+    const { context, page } = await openMobilePage(browser, pathname);
+    await expect(page.getByRole('heading', { name: heading, level: 1 })).toBeVisible({ timeout: 20_000 });
+    const overflow = await page.evaluate(() => ({
+      document: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      main: document.querySelector('#main-content')?.scrollWidth > document.querySelector('#main-content')?.clientWidth,
+    }));
+    expect(overflow.document).toBe(false);
+    expect(overflow.main).toBe(false);
+    await context.close();
+  }
 });
 
 test('new mobile More sheet exposes every telemetry route and closes after navigation', async ({ browser }) => {
