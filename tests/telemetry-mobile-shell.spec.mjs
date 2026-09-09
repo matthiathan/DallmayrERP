@@ -196,7 +196,7 @@ test('rebuilt Fleet Overview and Machines remain bounded on a phone', async ({ b
   const browserRoot = machines.page.locator('[data-machine-browser="televend-v3"]');
   await expect(browserRoot).toBeVisible({ timeout: 20_000 });
   await expectMobilePageTitle(machines.page, 'Machines');
-  await expect(browserRoot.getByRole('searchbox', { name: 'Search machines' })).toBeVisible();
+  await expect(browserRoot.getByRole('textbox', { name: 'Search machines' })).toBeVisible();
   await expect(browserRoot.getByText('Online', { exact: true }).first()).toBeVisible();
   await expectNoHorizontalOverflow(machines.page);
   await machines.context.close();
