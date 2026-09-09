@@ -14,8 +14,8 @@
   box-shadow: 0 14px 38px rgba(0, 0, 0, .14), inset 0 1px 0 rgba(255,255,255,.035);
 }
 
-:global(.alerts-visual-route .fleet-alert-metric-grid),
-:global(.alerts-visual-route .fleet-alert-chart-grid) {
+.pulse ~ :global(.fleet-workspace) :global(.fleet-alert-metric-grid),
+.pulse ~ :global(.fleet-workspace) :global(.fleet-alert-chart-grid) {
   display: none !important;
 }
 
