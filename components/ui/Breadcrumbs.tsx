@@ -18,12 +18,11 @@ export function Breadcrumbs() {
   if (!pathname) return null;
 
   const isRoot = pathname === '/';
-  const isWorkspace = pathname === '/workspace';
   const showSectionIndex = navigation.sections.length >= 2;
 
   return (
     <>
-      {!isRoot && !isWorkspace ? (
+      {!isRoot ? (
         <nav aria-label="Back navigation" className="mobile-page-navigation">
           <Link className="mobile-page-back" href={navigation.backTarget.href}>
             <span aria-hidden="true">←</span>
@@ -41,7 +40,7 @@ export function Breadcrumbs() {
         </nav>
       ) : null}
 
-      {!isRoot && !isWorkspace ? (
+      {!isRoot ? (
         <nav aria-label="Breadcrumb" className="breadcrumbs">
           <Link href="/">{FLEET_OVERVIEW_LABEL}</Link>
           {navigation.crumbs.map((crumb) => (
