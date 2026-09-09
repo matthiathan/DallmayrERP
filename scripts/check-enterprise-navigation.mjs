@@ -18,7 +18,16 @@ const appShell = read('components/layout/AppShell.tsx');
 const desktopNavigation = read('components/layout/DesktopNavigationRail.tsx');
 const globalSearch = read('components/ui/GlobalSearch.tsx');
 
-for (const href of ["href: '/'", "href: '/machines'", "href: '/alerts'", "href: '/telemetry'", "href: '/map'", "href: '/telemetry/devices'"]) {
+for (const href of [
+  "href: '/'",
+  "href: '/machines'",
+  "href: '/alerts'",
+  "href: '/telemetry'",
+  "href: '/telemetry/test-center'",
+  "href: '/map'",
+  "href: '/products'",
+  "href: '/telemetry/devices'",
+]) {
   requireText('app shell navigation', shellNavigation, href, `the shared telemetry catalogue is missing ${href}.`);
 }
 
@@ -55,8 +64,14 @@ forbid(
 requireText(
   'desktop navigation',
   desktopNavigation,
-  "aria-current={activeHref === item.href ? 'page' : undefined}",
-  'desktop navigation must mark only the canonical route as current.',
+  'const active = activeHref === item.href;',
+  'desktop navigation must derive active state from the canonical route only.',
+);
+requireText(
+  'desktop navigation',
+  desktopNavigation,
+  "aria-current={active ? 'page' : undefined}",
+  'desktop navigation must expose only the canonical active item as current.',
 );
 forbid(
   'global search',
@@ -77,4 +92,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Telemetry navigation contract passed: the authenticated desktop workspace exposes the same six pages without role gates.');
+console.log('Telemetry navigation contract passed: the rebuilt authenticated workspace exposes all telemetry pages without role gates.');
