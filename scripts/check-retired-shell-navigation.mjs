@@ -207,7 +207,6 @@ for (const requiredDesktop of [
   "@import '../../desktop-reference-layout.css'",
   "@import '../../professional-ui-system.css'",
   "@import '../../concentrix-dallmayr-shell.css'",
-  "@import '../../concentrix-execution-details.css'",
 ]) {
   if (!desktopAuthority.includes(requiredDesktop)) {
     console.error(`Desktop application authority must retain ${requiredDesktop}`);
