@@ -92,7 +92,7 @@ async function installMock(page) {
       id: 'machine-1', branch: 'jhb', customer_id: 'customer-1', site_id: 'site-1', asset_tag: 'AST-001', serial_number: 'BEL-001', machine_barcode: 'QR-BEL-001', machine_name: 'Belluno 01', model: 'Belluno', status: 'active', current_custodian: null, manufacturer: 'Dallmayr', condition: 'good', criticality: 'standard', installed_at: '2026-01-10T08:00:00.000Z', last_service_at: '2026-08-01T08:00:00.000Z', next_service_at: '2026-10-01T08:00:00.000Z',
     }));
     if (url.pathname === '/rest/v1/telemetry_devices') return route.fulfill(jsonResponse({
-      id: 'device-1', device_code: 'DALL-TEL-001', status: 'active', profile_id: 'belluno-mdb', firmware_version: '6.8.41', wifi_rssi: -58, cellular_csq: 24, cellular_operator: 'Vodacom', cellular_model: 'Air780EU', last_transport: 'cellular', transport_preference: 'cellular', last_seen_at: new Date().toISOString(), last_upload_at: new Date().toISOString(), last_counter_at: new Date().toISOString(), last_heartbeat_at: new Date().toISOString(), last_config_at: new Date().toISOString(), last_config_ack_at: new Date().toISOString(), hardware_uid: 'ESP32S3-TEST-001', reported_machine_serial: 'BEL-001', machine_link_status: 'linked', machine_link_method: 'automatic',
+      id: 'device-1', device_code: 'DALL-TEL-001', status: 'active', profile_id: 'belluno-mdb', firmware_version: '6.8.41', wifi_rssi: -58, cellular_csq: 24, cellular_operator: 'Vodacom', cellular_model: 'Air780EU', last_transport: 'cellular', transport_preference: 'cellular', telemetry_mode: 'live', last_seen_at: new Date().toISOString(), last_upload_at: new Date().toISOString(), last_counter_at: new Date().toISOString(), last_heartbeat_at: new Date().toISOString(), last_config_at: new Date().toISOString(), last_config_ack_at: new Date().toISOString(), hardware_uid: 'ESP32S3-TEST-001', reported_machine_serial: 'BEL-001', machine_link_status: 'linked', machine_link_method: 'automatic',
     }));
     if (url.pathname === '/rest/v1/customer_sites') return route.fulfill(jsonResponse({ id: 'site-1', site_name: 'Johannesburg Test Site', address: '1 Test Road, Johannesburg', latitude: -26.2041, longitude: 28.0473 }));
     if (url.pathname === '/rest/v1/customers') return route.fulfill(jsonResponse({ id: 'customer-1', customer_name: 'Test Customer', customer_code: 'TC001' }));
@@ -118,7 +118,7 @@ async function installMock(page) {
   });
 }
 
-test('rebuilt machine detail workspace exposes telemetry, interactive vends and device diagnostics on mobile', async ({ browser }) => {
+test('rebuilt machine detail workspace exposes telemetry, lifetime cup counters and device diagnostics on mobile', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   const page = await context.newPage();
   await installMock(page);
@@ -141,14 +141,21 @@ test('rebuilt machine detail workspace exposes telemetry, interactive vends and 
   await expect(chart.locator('[data-tooltip-placement]')).toContainText('10 vends');
 
   await detail.getByRole('button', { name: 'Vends & products' }).click();
-  const blackCoffeeRows = detail.getByText('Black Coffee', { exact: true });
-  await expect(blackCoffeeRows).toHaveCount(2);
-  await expect(blackCoffeeRows.last()).toBeVisible();
+  await expect(detail.getByText('Black Coffee', { exact: true }).first()).toBeVisible();
+  const lifetime = detail.locator('[data-lifetime-cup-counters="true"]');
+  await expect(lifetime).toBeVisible();
+  await expect(lifetime.getByRole('heading', { name: 'Lifetime cups by selection' })).toBeVisible();
+  await expect(lifetime).toContainText('304 cups');
+  await expect(lifetime).toContainText('Caramel Cappuccino');
+  await expect(lifetime).toContainText('142');
+
   await detail.getByRole('button', { name: 'Events' }).click();
   await expect(detail.getByText('MDB_TIMEOUT', { exact: true })).toBeVisible();
   await detail.getByRole('button', { name: 'Device' }).click();
   await expect(detail.getByRole('heading', { name: 'DALL-TEL-001' })).toBeVisible();
   await expect(detail.getByText('ESP32S3-TEST-001', { exact: true })).toBeVisible();
+  await expect(detail.getByText('Reporting mode', { exact: true })).toBeVisible();
+  await expect(detail.getByText('Live', { exact: true })).toBeVisible();
 
   const overflow = await page.evaluate(() => ({
     document: document.documentElement.scrollWidth > document.documentElement.clientWidth,
