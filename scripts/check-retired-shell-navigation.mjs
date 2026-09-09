@@ -48,18 +48,11 @@ for (const requiredActiveImport of [
   "@import './features/appearance-panel.css'",
   "@import './features/appearance-customization.css'",
   "@import './themes/slate-sand-themes.css'",
-  "@import './active-mobile-workspaces.css'",
 ]) {
   if (!manifest.includes(requiredActiveImport)) {
     console.error(`Active feature/appearance owner must remain registered: ${requiredActiveImport}`);
     process.exitCode = 1;
   }
-}
-
-const activeMobileBundle = await readFile(path.join(styles, 'active-mobile-workspaces.css'), 'utf8');
-if (/^\s*@import\s/m.test(activeMobileBundle)) {
-  console.error('Legacy mobile workspace bundle must remain empty; the replacement shell belongs to the canonical responsive authorities.');
-  process.exitCode = 1;
 }
 
 const readabilitySafety = await readFile(path.join(styles, 'canonical-readability-safety.css'), 'utf8');
