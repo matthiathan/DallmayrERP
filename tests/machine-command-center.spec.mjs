@@ -141,7 +141,9 @@ test('rebuilt machine detail workspace exposes telemetry, interactive vends and 
   await expect(chart.locator('[data-tooltip-placement]')).toContainText('10 vends');
 
   await detail.getByRole('button', { name: 'Vends & products' }).click();
-  await expect(detail.getByText('Black Coffee', { exact: true }).first()).toBeVisible();
+  const blackCoffeeRows = detail.getByText('Black Coffee', { exact: true });
+  await expect(blackCoffeeRows).toHaveCount(2);
+  await expect(blackCoffeeRows.last()).toBeVisible();
   await detail.getByRole('button', { name: 'Events' }).click();
   await expect(detail.getByText('MDB_TIMEOUT', { exact: true })).toBeVisible();
   await detail.getByRole('button', { name: 'Device' }).click();
