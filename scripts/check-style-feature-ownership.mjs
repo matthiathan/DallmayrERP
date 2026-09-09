@@ -1,92 +1,119 @@
-import { access, readFile } from 'node:fs/promises';
+import { access, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
 const root = process.cwd();
-const stylesDirectory = path.join(root, 'app', 'styles');
-const manifestPath = path.join(stylesDirectory, 'legacy-feature-manifest.css');
+const failures = [];
 
 function fail(message) {
-  console.error(`Style feature ownership check failed: ${message}`);
-  process.exitCode = 1;
+  failures.push(message);
 }
 
-function cssImports(source) {
-  return [...source.matchAll(/@import\s+['"]([^'"]+\.css)['"];?/g)].map((match) => match[1]);
-}
-
-const expectedImports = [
-  '../globals.css',
-  './features/feature-widgets.css',
-  './features/enterprise-ui.css',
-  './page-families/stock-control.css',
-  './page-families/professional-ops.css',
-  './page-families/minimalist-operations.css',
-  './features/density.css',
-  './features/asset-ticket.css',
-  './features/text-visibility-polish.css',
-  './features/resizable-tables.css',
-  './features/account-menu.css',
-  './page-families/role-workspace-details.css',
-  './page-families/reliability-machine-search.css',
-  './page-families/operations-manager.css',
-  './page-families/operational-admin-forms.css',
-  './features/appearance-panel.css',
-  './features/appearance-customization.css',
-  './page-families/field-service-workflow.css',
-  './page-families/operations-dispatch.css',
-  './page-families/customer-360.css',
-  './page-families/operations-exceptions.css',
-  './themes/slate-sand-themes.css',
-  './active-mobile-workspaces.css',
-];
-
-const manifest = await readFile(manifestPath, 'utf8');
-const imports = cssImports(manifest);
-if (JSON.stringify(imports) !== JSON.stringify(expectedImports)) {
-  fail(`legacy-feature-manifest.css must preserve the approved migration order ${JSON.stringify(expectedImports)}; found ${JSON.stringify(imports)}.`);
-}
-
-const retiredRootFeatureFiles = [
-  'feature-widgets.css',
-  'enterprise-ui.css',
-  'stock-control.css',
-  'professional-ops.css',
-  'minimalist-operations.css',
-  'density.css',
-  'asset-ticket.css',
-  'text-visibility-polish.css',
-  'resizable-tables.css',
-  'account-menu.css',
-  'role-workspace-details.css',
-  'reliability-machine-search.css',
-  'operations-manager.css',
-  'operational-admin-forms.css',
-  'appearance-panel.css',
-  'appearance-customization.css',
-  'field-service-workflow.css',
-  'operations-dispatch.css',
-  'customer-360.css',
-  'operations-exceptions.css',
-  'slate-sand-themes.css',
-];
-
-for (const fileName of retiredRootFeatureFiles) {
+async function exists(relativePath) {
   try {
-    await access(path.join(root, 'app', fileName));
-    fail(`app/${fileName} must not be restored; its live rules have a canonical owner under app/styles/.`);
-  } catch (error) {
-    if (error?.code !== 'ENOENT') throw error;
-  }
-}
-
-for (const importPath of expectedImports.filter((item) => item.startsWith('./features/') || item.startsWith('./page-families/') || item.startsWith('./themes/'))) {
-  try {
-    await access(path.resolve(stylesDirectory, importPath));
+    await access(path.join(root, relativePath));
+    return true;
   } catch {
-    fail(`Canonical feature stylesheet ${importPath} is missing.`);
+    return false;
   }
 }
 
-if (process.exitCode) process.exit(process.exitCode);
-console.log('Style feature ownership check passed: live feature CSS is classified under canonical ownership folders and retired app-root feature files remain absent.');
+async function read(relativePath) {
+  return readFile(path.join(root, relativePath), 'utf8');
+}
+
+async function collectFiles(relativeDirectory, predicate) {
+  const directory = path.join(root, relativeDirectory);
+  const entries = await readdir(directory, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    const relativePath = path.join(relativeDirectory, entry.name).split(path.sep).join('/');
+    if (entry.isDirectory()) files.push(...await collectFiles(relativePath, predicate));
+    else if (predicate(relativePath)) files.push(relativePath);
+  }
+  return files;
+}
+
+const routeContracts = [
+  ['app/page.tsx', 'TelevendFleetDashboard'],
+  ['app/machines/page.tsx', 'MachineFleetBrowser'],
+  ['app/machines/[id]/page.tsx', 'MachineDetail'],
+  ['app/alerts/page.tsx', 'AlarmCenter'],
+  ['app/telemetry/page.tsx', 'TelemetryAnalytics'],
+  ['app/telemetry/devices/page.tsx', 'SpecialistWorkspaceFrame'],
+  ['app/telemetry/test-center/page.tsx', 'SpecialistWorkspaceFrame'],
+  ['app/map/page.tsx', 'SpecialistWorkspaceFrame'],
+  ['app/products/page.tsx', 'SpecialistWorkspaceFrame'],
+];
+
+for (const [routePath, expectedOwner] of routeContracts) {
+  if (!(await exists(routePath))) {
+    fail(`${routePath} is missing from the telemetry application.`);
+    continue;
+  }
+  const source = await read(routePath);
+  if (!source.includes(expectedOwner)) {
+    fail(`${routePath} must render through ${expectedOwner}.`);
+  }
+}
+
+const appFiles = await collectFiles('app', (fileName) => /\.(?:ts|tsx)$/.test(fileName));
+const retiredPresentationOwners = [
+  'FleetVisualCommandCenter',
+  'MachineCommandCenter',
+  'MachineTelemetryOverview',
+  'TelemetryDashboard',
+  'FleetAlertPulse',
+  'MachinesWorkspace',
+  'OperationsManagerDashboard',
+  'EnterpriseCommandCentre',
+  'RoleTodayWorkspace',
+];
+
+for (const appFile of appFiles) {
+  const source = await read(appFile);
+  for (const retiredOwner of retiredPresentationOwners) {
+    if (source.includes(retiredOwner)) {
+      fail(`${appFile} still references retired presentation owner ${retiredOwner}.`);
+    }
+  }
+}
+
+const platformDirectory = 'components/telemetry-platform';
+const platformFiles = await readdir(path.join(root, platformDirectory));
+const componentFiles = platformFiles.filter((fileName) => fileName.endsWith('.tsx'));
+for (const fileName of componentFiles) {
+  const source = await read(`${platformDirectory}/${fileName}`);
+  const localStyleImports = [...source.matchAll(/import\s+styles\s+from\s+['"]\.\/(.+?\.module\.css)['"];?/g)].map((match) => match[1]);
+  for (const styleImport of localStyleImports) {
+    if (!(await exists(`${platformDirectory}/${styleImport}`))) {
+      fail(`${platformDirectory}/${fileName} imports missing CSS module ${styleImport}.`);
+    }
+  }
+
+  for (const legacyClass of ['neo-card', 'workspace-template-frame', 'cx-dashboard-', 'monday-', 'dynamics-']) {
+    if (source.includes(legacyClass)) {
+      fail(`${platformDirectory}/${fileName} contains retired global presentation class ${legacyClass}.`);
+    }
+  }
+}
+
+for (const retiredRootFeatureFile of [
+  'app/mobile-functional-experience.css',
+  'app/mobile-menu-stacking-fix.css',
+  'app/mobile-overhaul.css',
+  'app/mobile-universal-phone.css',
+  'app/mobile-browser-native.css',
+]) {
+  if (await exists(retiredRootFeatureFile)) {
+    fail(`${retiredRootFeatureFile} must remain removed; responsive telemetry presentation is component-owned.`);
+  }
+}
+
+if (failures.length) {
+  console.error('Telemetry feature style ownership contract failed:');
+  for (const failure of failures) console.error(`- ${failure}`);
+  process.exit(1);
+}
+
+console.log(`Telemetry feature style ownership contract passed across ${appFiles.length} application source files and ${componentFiles.length} telemetry-platform components.`);
