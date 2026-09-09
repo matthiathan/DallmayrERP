@@ -1,7 +1,7 @@
 /* Televend-inspired mobile telemetry shell and fleet responsive authority. */
 .telemetry-mobile-shell { display:none; }
 
-@media (max-width:900px),(max-width:1366px) and (hover:none) and (pointer:coarse) {
+@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {
   :root {
     --telemetry-mobile-header-height:58px;
     --telemetry-mobile-nav-height:66px;
@@ -129,7 +129,7 @@
   .fleet-detail-tabs { display:flex !important; gap:3px !important; width:100% !important; padding:6px 8px !important; overflow-x:auto !important; background:#fff !important; border-bottom:1px solid #deded9 !important; scrollbar-width:none; }.fleet-detail-tabs::-webkit-scrollbar { display:none; }.fleet-detail-tabs button { flex:0 0 auto !important; min-height:38px !important; white-space:nowrap !important; }.fleet-detail-body { min-width:0 !important; padding:9px 9px calc(15px + env(safe-area-inset-bottom)) !important; overflow-y:auto !important; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }.fleet-detail-stats { display:grid !important; grid-template-columns:repeat(3,minmax(0,1fr)) !important; gap:6px !important; }.fleet-detail-stats > div { min-width:0 !important; padding:9px 5px !important; }.fleet-detail-list > div,.fleet-fault-list article,.fleet-critical-callout { min-width:0 !important; }.fleet-detail-list strong,.fleet-detail-list span,.fleet-fault-list strong,.fleet-fault-list p,.fleet-critical-callout span { overflow-wrap:anywhere; }
 }
 
-@media (max-width:430px) {
+@media (max-width: 430px) {
   .fleet-heading-actions { grid-template-columns:minmax(0,1fr) !important; }.fleet-heading-actions > label { grid-column:auto; }
   .fleet-metric-grid,.fleet-alert-metric-grid { grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important; }.fleet-metric-grid > *:last-child:nth-child(odd) { grid-column:1/-1; }
   .fleet-table-panel:not(.fleet-alert-table-panel) .fleet-machine-table td,.fleet-alert-table-panel .fleet-alert-table td { grid-template-columns:72px minmax(0,1fr) !important; }
