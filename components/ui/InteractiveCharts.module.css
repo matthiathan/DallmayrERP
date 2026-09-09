@@ -1,0 +1,395 @@
+.chart {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  color: var(--content-text, #f8fafc);
+}
+
+.hint {
+  margin: 0 0 8px;
+  color: var(--content-subtle, #a8b3bf);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.lineStage {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.lineSvg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 190px;
+  overflow: visible;
+}
+
+.gridLine {
+  stroke: color-mix(in srgb, var(--content-border, #71808e) 48%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.area {
+  fill: color-mix(in srgb, var(--user-accent, #22c3dc) 14%, transparent);
+  stroke: none;
+}
+
+.line {
+  fill: none;
+  stroke: var(--user-accent, #22c3dc);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.focusGuide {
+  stroke: color-mix(in srgb, var(--content-text, #f8fafc) 42%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.point {
+  fill: var(--content-surface, #20272f);
+  stroke: var(--user-accent, #22c3dc);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+  cursor: pointer;
+  transition: r 120ms ease, fill 120ms ease, stroke-width 120ms ease;
+}
+
+.point:hover,
+.point:focus,
+.pointActive {
+  fill: var(--user-accent, #22c3dc);
+  stroke: var(--content-strong, #ffffff);
+  stroke-width: 4;
+  outline: none;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 4;
+  display: grid;
+  gap: 2px;
+  min-width: 132px;
+  max-width: min(220px, 72%);
+  padding: 8px 10px;
+  color: var(--content-text, #f8fafc);
+  background: color-mix(in srgb, var(--content-surface-raised, #2b343d) 96%, transparent);
+  border: 1px solid var(--content-border, #71808e);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 12px));
+}
+
+.tooltipAlignLeft {
+  transform: translate(0, calc(-100% - 12px));
+}
+
+.tooltipAlignRight {
+  transform: translate(-100%, calc(-100% - 12px));
+}
+
+.tooltip strong {
+  color: var(--content-strong, #fff);
+  font-size: 0.76rem;
+  overflow-wrap: anywhere;
+}
+
+.tooltip span,
+.tooltip small {
+  color: var(--content-muted, #cbd5e1);
+  font-size: 0.68rem;
+  overflow-wrap: anywhere;
+}
+
+.tooltipValue {
+  color: var(--content-strong, #fff) !important;
+  font-size: 0.82rem !important;
+  font-weight: 800;
+}
+
+.axisLabels {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 3px;
+  color: var(--content-subtle, #a8b3bf);
+  font-size: 0.64rem;
+}
+
+.axisLabels span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barChart {
+  display: grid;
+  gap: 7px;
+  width: 100%;
+  min-width: 0;
+}
+
+.barTooltip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 7px 9px;
+  color: var(--content-muted, #cbd5e1);
+  background: color-mix(in srgb, var(--content-surface-raised, #2b343d) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--content-border, #71808e) 72%, transparent);
+  border-radius: 10px;
+  font-size: 0.68rem;
+}
+
+.barTooltip strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--content-strong, #fff);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barTooltip span {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.barRow {
+  appearance: none;
+  display: grid;
+  grid-template-columns: minmax(84px, 1fr) minmax(100px, 2fr) auto;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 4px 5px;
+  color: var(--content-text, #f8fafc);
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.barRow:hover,
+.barRow:focus-visible,
+.barRowActive {
+  background: color-mix(in srgb, var(--user-accent, #22c3dc) 8%, transparent);
+  border-color: color-mix(in srgb, var(--user-accent, #22c3dc) 28%, transparent);
+  outline: none;
+}
+
+.barLabel {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barTrack {
+  display: block;
+  width: 100%;
+  height: 9px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--content-border, #71808e) 35%, transparent);
+  border-radius: 999px;
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  min-width: 3px;
+  background: var(--user-accent, #22c3dc);
+  border-radius: inherit;
+  transition: width 180ms ease, filter 120ms ease;
+}
+
+.barRow:hover .barFill,
+.barRow:focus-visible .barFill,
+.barRowActive .barFill {
+  filter: brightness(1.14);
+}
+
+.barValue {
+  color: var(--content-strong, #fff);
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.donutLayout {
+  display: grid;
+  grid-template-columns: minmax(170px, 210px) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+.donutStage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(210px, 100%);
+  aspect-ratio: 1;
+  justify-self: center;
+}
+
+.donutSvg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.donutTrack {
+  fill: none;
+  stroke: color-mix(in srgb, var(--content-border, #71808e) 28%, transparent);
+  stroke-width: 28;
+}
+
+.donutSegment {
+  fill: none;
+  stroke-width: 28;
+  stroke-linecap: butt;
+  cursor: pointer;
+  transition: stroke-width 120ms ease, filter 120ms ease, opacity 120ms ease;
+}
+
+.donutSegment:hover,
+.donutSegment:focus,
+.donutSegmentActive {
+  stroke-width: 34;
+  filter: brightness(1.12);
+  outline: none;
+}
+
+.series0 { stroke: var(--user-accent, #22c3dc); }
+.series1 { stroke: #16a34a; }
+.series2 { stroke: #f2a900; }
+.series3 { stroke: #d71920; }
+.series4 { stroke: #8b5cf6; }
+.series5 { stroke: #98a2b3; }
+
+.donutCenter {
+  position: absolute;
+  inset: 25%;
+  display: grid;
+  place-content: center;
+  gap: 1px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.donutCenter strong {
+  color: var(--content-strong, #fff);
+  font-size: clamp(1.1rem, 4vw, 1.55rem);
+}
+
+.donutCenter span {
+  color: var(--content-muted, #cbd5e1);
+  font-size: 0.66rem;
+}
+
+.legend {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.legendButton {
+  appearance: none;
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 6px 8px;
+  color: var(--content-text, #f8fafc);
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.legendButton:hover,
+.legendButton:focus-visible,
+.legendButtonActive {
+  background: color-mix(in srgb, var(--user-accent, #22c3dc) 8%, transparent);
+  border-color: color-mix(in srgb, var(--content-border, #71808e) 70%, transparent);
+  outline: none;
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.legendDot.series0 { background: var(--user-accent, #22c3dc); }
+.legendDot.series1 { background: #16a34a; }
+.legendDot.series2 { background: #f2a900; }
+.legendDot.series3 { background: #d71920; }
+.legendDot.series4 { background: #8b5cf6; }
+.legendDot.series5 { background: #98a2b3; }
+
+.legendLabel {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.legendValue {
+  color: var(--content-strong, #fff);
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .tooltip {
+    max-width: 62%;
+  }
+
+  .barRow {
+    grid-template-columns: minmax(74px, 0.9fr) minmax(70px, 1.35fr) auto;
+    gap: 6px;
+    min-height: 44px;
+  }
+
+  .donutLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .donutStage {
+    width: min(190px, 74vw);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .point,
+  .barFill,
+  .donutSegment {
+    transition: none;
+  }
+}
