@@ -1,12 +1,10 @@
-import { FleetDataUsagePanel } from '@/components/features/FleetDataUsagePanel';
-import { FleetVisualCommandCenter } from '@/components/features/FleetVisualCommandCenter';
 import { AppShell } from '@/components/layout/AppShell';
+import { TelevendFleetDashboard } from '@/components/telemetry-platform/TelevendFleetDashboard';
 
 export default function DashboardPage() {
   return (
     <AppShell>
-      <FleetVisualCommandCenter />
-      <FleetDataUsagePanel />
+      <TelevendFleetDashboard />
     </AppShell>
   );
 }
