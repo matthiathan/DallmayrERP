@@ -47,6 +47,47 @@ function makeSession() {
   };
 }
 
+function telemetryReportFixture() {
+  return {
+    period: 'month',
+    dataset: 'production',
+    date_from: '2026-08-11',
+    date_to: '2026-09-09',
+    availability: { production_rows: 4, simulation_rows: 0, active_simulation_devices: 0 },
+    summary: {
+      units_sold: 29,
+      revenue_cents: 48300,
+      failed_vends: 3,
+      active_machines: 3,
+      reporting_devices: 3,
+      online_devices: 2,
+      offline_devices: 1,
+      unassigned_devices: 0,
+    },
+    daily_trend: [
+      { date: '2026-09-06', units_sold: 5, failed_vends: 1, revenue_cents: 8200 },
+      { date: '2026-09-07', units_sold: 8, failed_vends: 0, revenue_cents: 13200 },
+      { date: '2026-09-08', units_sold: 7, failed_vends: 1, revenue_cents: 11900 },
+      { date: '2026-09-09', units_sold: 9, failed_vends: 1, revenue_cents: 15000 },
+    ],
+    by_branch: [
+      { branch: 'jhb', units_sold: 18, failed_vends: 2, revenue_cents: 30100 },
+      { branch: 'cpt', units_sold: 11, failed_vends: 1, revenue_cents: 18200 },
+    ],
+    top_items: [
+      { product_key: 'coffee-caramel', sku: 'CC01', product_name: 'Caramel Cappuccino', brand: 'Dallmayr', units_sold: 12, failed_vends: 1, revenue_cents: 20400 },
+      { product_key: 'porridge-instant', sku: 'IP01', product_name: 'Instant Porridge', brand: 'Dallmayr', units_sold: 9, failed_vends: 0, revenue_cents: 12600 },
+      { product_key: 'coffee-black', sku: 'BC01', product_name: 'Black Coffee', brand: 'Dallmayr', units_sold: 8, failed_vends: 2, revenue_cents: 15300 },
+    ],
+    top_machines: [
+      { machine_id: 'machine-1', machine_name: 'Belluno 01', serial_number: 'BEL-001', location: 'Johannesburg', branch: 'jhb', units_sold: 14, failed_vends: 2, revenue_cents: 23400 },
+      { machine_id: 'machine-2', machine_name: 'Belluno 02', serial_number: 'BEL-002', location: 'Cape Town', branch: 'cpt', units_sold: 9, failed_vends: 1, revenue_cents: 14600 },
+      { machine_id: 'machine-3', machine_name: 'Belluno 03', serial_number: 'BEL-003', location: 'Johannesburg', branch: 'jhb', units_sold: 6, failed_vends: 0, revenue_cents: 10300 },
+    ],
+    recent_sales: [],
+  };
+}
+
 async function installAuthenticatedTelemetryMock(page) {
   const session = makeSession();
   await installSupabaseAuthFixture(page, baseURL, session);
@@ -109,6 +150,10 @@ async function installAuthenticatedTelemetryMock(page) {
     }
     if (url.pathname === '/rest/v1/rpc/get_telemetry_dashboard') {
       await route.fulfill(jsonResponse({ device_states: [], active_faults: [] }));
+      return;
+    }
+    if (url.pathname === '/rest/v1/rpc/get_telemetry_reporting') {
+      await route.fulfill(jsonResponse(telemetryReportFixture()));
       return;
     }
     if (url.pathname.startsWith('/rest/v1/rpc/')) {
@@ -180,6 +225,37 @@ test('Fleet Overview and Machines stay inside the phone viewport with mobile pag
 
     await context.close();
   }
+});
+
+test('Telemetry Analytics charts support tap-to-pin details on mobile', async ({ browser }) => {
+  const { context, page } = await openMobilePage(browser, '/telemetry');
+
+  await expect(page.getByRole('heading', { name: 'Telemetry analytics', level: 1 })).toBeVisible({ timeout: 20_000 });
+  const lineChart = page.locator('[data-chart-interactive="line"]');
+  const barCharts = page.locator('[data-chart-interactive="bar"]');
+  const donutChart = page.locator('[data-chart-interactive="donut"]');
+  await expect(lineChart).toBeVisible();
+  await expect(barCharts).toHaveCount(3);
+  await expect(donutChart).toBeVisible();
+
+  const firstPoint = lineChart.locator('circle[role="button"]').first();
+  await firstPoint.click();
+  await expect(firstPoint).toHaveAttribute('aria-pressed', 'true');
+  await expect(lineChart.getByRole('status')).toContainText('Failed vends');
+
+  const firstBar = barCharts.first().getByRole('button').first();
+  await firstBar.click();
+  await expect(firstBar).toHaveAttribute('aria-pressed', 'true');
+  await expect(barCharts.first().getByRole('status')).toContainText('JHB');
+
+  const firstLegendItem = donutChart.getByRole('button').first();
+  await firstLegendItem.click();
+  await expect(firstLegendItem).toHaveAttribute('aria-pressed', 'true');
+  await expect(donutChart.getByRole('status')).toContainText('Online');
+
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+  expect(overflow).toBe(false);
+  await context.close();
 });
 
 test('new mobile More sheet exposes every telemetry route and closes after navigation', async ({ browser }) => {
