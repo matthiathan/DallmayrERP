@@ -3,7 +3,7 @@
  *
  * The telemetry shell and route owners are component-scoped. This registry keeps
  * only shared desktop compatibility layers that still support live surfaces.
- * The retired ERP dashboard presentation must not return here.
+ * Retired ERP dashboard and field-execution presentation must not return here.
  */
 @import '../../desktop-reference-layout.css';
 @import '../../desktop-layout-regression-fixes.css';
@@ -12,6 +12,5 @@
 @import '../../concentrix-operational-pages.css';
 @import '../../concentrix-specialist-workspaces.css';
 @import '../../concentrix-access-entry.css';
-@import '../../concentrix-execution-details.css';
 @import '../../concentrix-final-audit.css';
 @import '../../canonical-shell-utilities.css';
