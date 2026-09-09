@@ -115,9 +115,10 @@ for (const retiredPresentationFile of [
 
 for (const retiredSourcePath of [
   'components/boards',
+  'components/features/MondayMyWorkWorkspace.tsx',
 ]) {
   if (await exists(retiredSourcePath)) {
-    fail(`${retiredSourcePath} must remain removed; the customer-board ERP workspace is outside the telemetry application.`);
+    fail(`${retiredSourcePath} must remain removed; this ERP workspace is outside the telemetry application.`);
   }
 }
 
