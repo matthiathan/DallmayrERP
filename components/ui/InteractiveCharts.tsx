@@ -36,7 +36,7 @@ export function InteractiveLineChart({
   ariaLabel,
   valueLabel = 'Value',
   valueFormatter = defaultFormatter,
-  hint = 'Hover, focus or tap a point to inspect it. Tap again to pin the tooltip.',
+  hint,
 }: {
   data: InteractiveChartDatum[];
   ariaLabel: string;
@@ -71,7 +71,7 @@ export function InteractiveLineChart({
 
   return (
     <div className={styles.chart} data-chart-interactive="line">
-      <p className={styles.hint}>{hint}</p>
+      {hint ? <p className={styles.hint}>{hint}</p> : null}
       <div className={styles.lineStage} onPointerLeave={() => setHoveredKey(null)}>
         <svg aria-label={ariaLabel} className={styles.lineSvg} role="group" viewBox={`0 0 ${width} ${height}`}>
           {[0, 1, 2, 3].map((line) => {
@@ -91,6 +91,7 @@ export function InteractiveLineChart({
                 cx={point.x}
                 cy={point.y}
                 key={point.item.key}
+                onBlur={() => setHoveredKey(null)}
                 onClick={() => togglePin(point.item.key)}
                 onFocus={() => setHoveredKey(point.item.key)}
                 onKeyDown={(event) => {
@@ -99,7 +100,6 @@ export function InteractiveLineChart({
                   togglePin(point.item.key);
                 }}
                 onPointerEnter={() => setHoveredKey(point.item.key)}
-                onBlur={() => setHoveredKey(null)}
                 r={selected ? 6 : 4}
                 role="button"
                 tabIndex={0}
@@ -143,7 +143,7 @@ export function InteractiveHorizontalBars({
   ariaLabel,
   valueLabel = 'Value',
   valueFormatter = defaultFormatter,
-  hint = 'Hover, focus or tap a bar to inspect it. Tap again to pin the selection.',
+  hint,
 }: {
   data: InteractiveChartDatum[];
   ariaLabel: string;
@@ -161,10 +161,10 @@ export function InteractiveHorizontalBars({
 
   return (
     <div aria-label={ariaLabel} className={styles.chart} data-chart-interactive="bar" role="group">
-      <p className={styles.hint}>{hint}</p>
+      {hint ? <p className={styles.hint}>{hint}</p> : null}
       <div aria-live="polite" className={styles.barTooltip} role="status">
-        <strong>{active?.label ?? 'Select a bar'}</strong>
-        <span>{active ? `${valueFormatter(active.value)} ${valueLabel}` : 'Details appear here'}</span>
+        <strong>{active?.label ?? ariaLabel}</strong>
+        <span>{active ? `${valueFormatter(active.value)} ${valueLabel}` : 'Tap a bar for details'}</span>
       </div>
       <div className={styles.barChart} onPointerLeave={() => setHoveredKey(null)}>
         {data.map((item) => {
@@ -198,7 +198,7 @@ export function InteractiveDonutChart({
   ariaLabel,
   valueLabel = 'items',
   valueFormatter = defaultFormatter,
-  hint = 'Hover, focus or tap a segment or legend item to inspect it.',
+  hint,
 }: {
   data: InteractiveDonutDatum[];
   ariaLabel: string;
@@ -232,7 +232,7 @@ export function InteractiveDonutChart({
   return (
     <div aria-labelledby={titleId} className={styles.chart} data-chart-interactive="donut">
       <span className="sr-only" id={titleId}>{ariaLabel}</span>
-      <p className={styles.hint}>{hint}</p>
+      {hint ? <p className={styles.hint}>{hint}</p> : null}
       <div className={styles.donutLayout} onPointerLeave={() => setHoveredKey(null)}>
         <div className={styles.donutStage}>
           <svg aria-label={ariaLabel} className={styles.donutSvg} role="group" viewBox="0 0 220 220">
