@@ -56,7 +56,6 @@ for (const requiredActiveImport of [
   }
 }
 
-// The registry keeps an explicit mobile boundary, but the legacy implementation is disabled.
 const activeMobileBundle = await readFile(path.join(styles, 'active-mobile-workspaces.css'), 'utf8');
 if (/^\s*@import\s/m.test(activeMobileBundle)) {
   console.error('Legacy mobile workspace bundle must remain empty until the replacement mobile architecture is approved.');
@@ -190,9 +189,19 @@ for (const requiredDesktop of [
     process.exitCode = 1;
   }
 }
-if (/^\s*@import\s/m.test(responsiveAuthority)) {
-  console.error('Responsive application authority must remain empty during the mobile ground-up reset.');
-  process.exitCode = 1;
+for (const requiredResponsiveImport of [
+  "@import '../../responsive-runtime-authority.css'",
+  "@import '../../responsive-mobile-interactions.css'",
+  "@import '../../professional-finish.css'",
+  "@import '../../professional-finish-details.css'",
+  "@import '../../compact-desktop-authority.css'",
+  "@import '../connected-workflow-strip.css'",
+  "@import '../../responsive-mobile-tablet.css'",
+]) {
+  if (!responsiveAuthority.includes(requiredResponsiveImport)) {
+    console.error(`Responsive registry must retain cascade placeholder/import: ${requiredResponsiveImport}`);
+    process.exitCode = 1;
+  }
 }
 
 const appearanceRuntime = await readFile(path.join(root, 'app', 'canonical-appearance-runtime.css'), 'utf8');
