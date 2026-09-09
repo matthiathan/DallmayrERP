@@ -29,8 +29,13 @@ if (layoutCssImports.length !== 1 || layoutCssImports[0] !== './styles/index.css
 }
 
 const platformDirectory = 'components/telemetry-platform';
+const shellModulePath = `${platformDirectory}/TelemetryPlatformShell.module.css`;
+const shellOwner = await read('components/layout/AppShell.tsx');
+if (!shellOwner.includes("import styles from '@/components/telemetry-platform/TelemetryPlatformShell.module.css';")) {
+  fail('components/layout/AppShell.tsx must own the application shell through TelemetryPlatformShell.module.css.');
+}
+
 const requiredPairs = [
-  'TelemetryPlatformShell',
   'TelevendFleetDashboard',
   'MachineFleetBrowser',
   'MachineDetail',
@@ -59,7 +64,7 @@ for (const name of requiredPairs) {
   }
 }
 
-const shellStyles = await read(`${platformDirectory}/TelemetryPlatformShell.module.css`);
+const shellStyles = await read(shellModulePath);
 for (const requiredRule of [
   '--dallmayr-red: #c9151e;',
   '--dallmayr-red-dark: #a90f17;',
@@ -78,8 +83,8 @@ for (const requiredRule of [
 
 const platformFiles = await readdir(path.join(root, platformDirectory));
 const moduleFiles = platformFiles.filter((name) => name.endsWith('.module.css'));
-if (moduleFiles.length < requiredPairs.length) {
-  fail(`Expected at least ${requiredPairs.length} telemetry CSS modules; found ${moduleFiles.length}.`);
+if (moduleFiles.length < requiredPairs.length + 1) {
+  fail(`Expected at least ${requiredPairs.length + 1} telemetry CSS modules; found ${moduleFiles.length}.`);
 }
 
 const forbiddenLegacyTokens = [
