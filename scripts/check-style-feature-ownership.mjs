@@ -130,6 +130,13 @@ for (const retiredSourcePath of [
   'components/features/DailyServicePlanner.tsx',
   'components/features/MachineAssetBoard.tsx',
   'components/features/PreventiveMaintenanceBoard.tsx',
+  'components/features/DataMatchingWorkbench.tsx',
+  'components/features/FinanceServiceCoverage.tsx',
+  'components/features/InventoryPlanningBoard.tsx',
+  'components/features/OperationsDispatchOverview.tsx',
+  'components/features/ProfessionalSignalsPanel.tsx',
+  'components/features/StockScannerPanel.tsx',
+  'components/features/StockTraceabilityBoard.tsx',
 ]) {
   if (await exists(retiredSourcePath)) {
     fail(`${retiredSourcePath} must remain removed; this ERP workspace is outside the telemetry application.`);
