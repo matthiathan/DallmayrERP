@@ -58,7 +58,7 @@ for (const requiredActiveImport of [
 
 const activeMobileBundle = await readFile(path.join(styles, 'active-mobile-workspaces.css'), 'utf8');
 if (/^\s*@import\s/m.test(activeMobileBundle)) {
-  console.error('Legacy mobile workspace bundle must remain empty until the replacement mobile architecture is approved.');
+  console.error('Legacy mobile workspace bundle must remain empty; the replacement shell belongs to the canonical responsive authorities.');
   process.exitCode = 1;
 }
 
@@ -124,6 +124,10 @@ for (const obsoleteHook of [
     process.exitCode = 1;
   }
 }
+if (!appShell.includes('MobileTelemetryShell')) {
+  console.error('Current AppShell must mount the replacement MobileTelemetryShell boundary.');
+  process.exitCode = 1;
+}
 
 try {
   await access(path.join(root, 'components', 'layout', 'MobileNavigation.tsx'));
@@ -131,6 +135,27 @@ try {
   process.exitCode = 1;
 } catch (error) {
   if (error?.code !== 'ENOENT') throw error;
+}
+
+const mobileTelemetryShell = await readFile(path.join(root, 'components', 'layout', 'MobileTelemetryShell.tsx'), 'utf8');
+for (const requiredMobileContract of [
+  'data-mobile-shell="v1"',
+  'Primary mobile navigation',
+  'telemetry-mobile-bottom-nav',
+  'telemetry-mobile-menu',
+  'mobile-account-menu-target',
+  'navigationIconKind',
+]) {
+  if (!mobileTelemetryShell.includes(requiredMobileContract)) {
+    console.error(`Replacement mobile shell is missing contract marker: ${requiredMobileContract}`);
+    process.exitCode = 1;
+  }
+}
+for (const retiredMobileHook of ['MobileNavigationDrawer', 'MobileQuickBar', 'mobile-nav-portal-root', 'mobile-quick-bar']) {
+  if (mobileTelemetryShell.includes(retiredMobileHook)) {
+    console.error(`Replacement mobile shell must not reuse retired mobile hook: ${retiredMobileHook}`);
+    process.exitCode = 1;
+  }
 }
 
 const desktopNavigation = await readFile(path.join(root, 'components', 'layout', 'DesktopNavigationRail.tsx'), 'utf8');
@@ -246,18 +271,40 @@ for (const requiredRule of [':focus-visible', '@media (prefers-reduced-motion: r
   }
 }
 
-for (const resetResponsivePath of [
-  path.join(root, 'app', 'responsive-runtime-authority.css'),
-  path.join(root, 'app', 'responsive-mobile-interactions.css'),
-  path.join(root, 'app', 'responsive-mobile-tablet.css'),
+const responsiveRuntime = await readFile(path.join(root, 'app', 'responsive-runtime-authority.css'), 'utf8');
+for (const requiredRule of [
+  '.telemetry-mobile-shell',
+  '.telemetry-mobile-header',
+  '.telemetry-mobile-bottom-nav',
+  '.application-header,',
+  '.dallmayr-sidebar',
+  '@media (max-width: 900px)',
 ]) {
-  const source = await readFile(resetResponsivePath, 'utf8');
-  const withoutComments = source.replace(/\/\*[\s\S]*?\*\//g, '').trim();
-  if (withoutComments.length > 0) {
-    console.error(`${path.relative(root, resetResponsivePath)} must remain an empty reset placeholder until mobile is rebuilt.`);
+  if (!responsiveRuntime.includes(requiredRule)) {
+    console.error(`Replacement mobile runtime authority is missing ${requiredRule}.`);
     process.exitCode = 1;
   }
 }
 
+const responsiveInteractions = await readFile(path.join(root, 'app', 'responsive-mobile-interactions.css'), 'utf8');
+for (const requiredRule of [
+  '.telemetry-mobile-menu-layer',
+  '.telemetry-mobile-menu-backdrop',
+  '.telemetry-mobile-menu-panel',
+  '@media (prefers-reduced-motion: reduce)',
+]) {
+  if (!responsiveInteractions.includes(requiredRule)) {
+    console.error(`Replacement mobile interaction authority is missing ${requiredRule}.`);
+    process.exitCode = 1;
+  }
+}
+
+const reservedTabletAuthority = await readFile(path.join(root, 'app', 'responsive-mobile-tablet.css'), 'utf8');
+const reservedTabletWithoutComments = reservedTabletAuthority.replace(/\/\*[\s\S]*?\*\//g, '').trim();
+if (reservedTabletWithoutComments.length > 0) {
+  console.error('app/responsive-mobile-tablet.css must remain reserved until page-family/tablet adaptation begins.');
+  process.exitCode = 1;
+}
+
 if (process.exitCode) process.exit(process.exitCode);
-console.log('Style guard passed: desktop application authorities remain intact while the legacy mobile web implementation stays removed and its responsive boundaries remain empty.');
+console.log('Style guard passed: desktop authorities remain intact and the new telemetry mobile shell owns the canonical responsive runtime without restoring legacy mobile layers.');
