@@ -42,6 +42,7 @@ const requiredPairs = [
   'MachineIdentityProfilePanel',
   'AlarmCenter',
   'TelemetryAnalytics',
+  'TelemetryReports',
   'ComparisonLineChart',
   'SpecialistWorkspaceFrame',
 ];
