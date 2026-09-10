@@ -12,7 +12,9 @@ test('machine fleet exposes operational attention filters and persisted views', 
   assert.match(fleet, /unconnected/);
   assert.match(fleet, /active_faults/);
   assert.match(fleet, /FILTER_STORAGE_KEY/);
-  assert.match(fleet, /window\.localStorage\.setItem/);
+  assert.match(fleet, /safeLocalStorageGet/);
+  assert.match(fleet, /safeLocalStorageSet/);
+  assert.doesNotMatch(fleet, /window\.localStorage/);
   assert.match(fleet, /Clear saved filters/);
   assert.match(fleet, /Automatic · unmatched/);
   assert.match(fleet, /telemetry\/test-center\?device=/);
