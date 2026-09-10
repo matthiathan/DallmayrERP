@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const workspace = fs.readFileSync(new URL('../../components/features/ProductMappingWorkspace.tsx', import.meta.url), 'utf8');
 const migration = fs.readFileSync(new URL('../../supabase/migrations/20260910093555_product_mapping_operational_workspace.sql', import.meta.url), 'utf8');
+const resolutionMigration = fs.readFileSync(new URL('../../supabase/migrations/20260910094155_product_mapping_effective_profile_resolution.sql', import.meta.url), 'utf8');
 
 test('product mapping workspace exposes operational completeness and unmapped selection controls', () => {
   assert.match(workspace, /Mapping completeness/i);
@@ -26,4 +27,14 @@ test('product mapping backend exposes completeness, observed unmapped selections
   assert.match(migration, /on conflict \(profile_id, button_number\)/i);
   assert.match(migration, /revoke insert, update, delete on public\.product_mapping_history from authenticated/i);
   assert.match(migration, /to authenticated/i);
+});
+
+test('sales product labels resolve through the effective automatic or manual decoder profile', () => {
+  assert.match(resolutionMigration, /create or replace function public\.resolve_effective_telemetry_profile_key/i);
+  assert.match(resolutionMigration, /profile_assignment_method/i);
+  assert.match(resolutionMigration, /applied_config\s*->>\s*'profile_id'/i);
+  assert.match(resolutionMigration, /reported_machine_model/i);
+  assert.match(resolutionMigration, /resolve_mapped_product_name\(new\.machine_id, new\.device_id, new\.selection_code\)/i);
+  assert.match(resolutionMigration, /before insert or update of machine_id, device_id, selection_code/i);
+  assert.match(resolutionMigration, /private\.refresh_product_mapping_sales/i);
 });
