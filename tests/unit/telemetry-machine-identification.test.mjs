@@ -8,6 +8,7 @@ const ingest = fs.readFileSync(new URL('../../supabase/functions/telemetry-inges
 const config = fs.readFileSync(new URL('../../supabase/functions/telemetry-config/index.ts', import.meta.url), 'utf8');
 const panel = fs.readFileSync(new URL('../../components/telemetry-platform/MachineIdentityProfilePanel.tsx', import.meta.url), 'utf8');
 const detail = fs.readFileSync(new URL('../../components/telemetry-platform/MachineDetail.tsx', import.meta.url), 'utf8');
+const testCenter = fs.readFileSync(new URL('../../components/features/TelemetryTestCenter.tsx', import.meta.url), 'utf8');
 
 test('machine identity evidence is persisted without changing the machine master', () => {
   for (const column of [
@@ -60,4 +61,10 @@ test('machine product mapping follows the effective decoder profile', () => {
   assert.match(detail, /effectiveProfileKey/);
   assert.match(detail, /get_machine_model_button_map/);
   assert.match(detail, /const modelKey = effectiveProfileKey \|\| nextMachine\.model/);
+});
+
+test('machine identity action deep-links to the selected Test Center device', () => {
+  assert.match(panel, /telemetry\/test-center\?device=/);
+  assert.match(testCenter, /URLSearchParams\(window\.location\.search\)/);
+  assert.match(testCenter, /item\.device_code === requestedDeviceCode/);
 });
