@@ -34,6 +34,18 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: Generate V6.8.48 ESP32 telemetry firmware
+        run: npm run firmware:generate:v648
+
+      - name: Publish V6.8.48 ESP32 telemetry firmware
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dallmayr-telemetry-v6-8-48
+          path: firmware/DallmayrTelemetryV6_8_48/DallmayrTelemetryV6_8_48.ino
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Check feature flag contracts
         run: npm run feature:check
 
