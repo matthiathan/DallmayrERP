@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
@@ -44,6 +45,49 @@ type FleetModel = {
   configured: boolean;
 };
 
+type OperationalProfile = {
+  id: string;
+  model_key: string;
+  display_name: string;
+  button_count: number;
+  mapped_count: number;
+  unmapped_count: number;
+  completeness_percent: number;
+  inactive_product_count: number;
+  machine_count: number;
+  active_device_count: number;
+  updated_at: string;
+};
+
+type UnmappedSelection = {
+  device_id: string;
+  device_code: string;
+  machine_id: string | null;
+  machine_name: string | null;
+  machine_model: string | null;
+  profile_key: string | null;
+  selection_code: string;
+  sold_total: number;
+  failed_total: number;
+  last_seen_at: string;
+};
+
+type OperationalSummary = {
+  profiles: OperationalProfile[];
+  unmapped_selections: UnmappedSelection[];
+};
+
+type HistoryRow = {
+  id: number;
+  model_key: string;
+  event_type: string;
+  button_number: number | null;
+  selection_code: string | null;
+  product_name: string | null;
+  source_model_key: string | null;
+  changed_at: string;
+};
+
 const PAGE_SIZE = 1000;
 const DEFAULT_BUTTON_COUNT = 12;
 const MIN_BUTTON_COUNT = 1;
@@ -55,6 +99,27 @@ function modelKey(model: string | null, machineName: string | null) {
 
 function normalise(value: string) {
   return value.trim().toLocaleLowerCase('en-ZA');
+}
+
+function formatWhen(value: string | null | undefined) {
+  if (!value) return 'Never';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown';
+  return new Intl.DateTimeFormat('en-ZA', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
+}
+
+function historyLabel(eventType: string) {
+  switch (eventType) {
+    case 'baseline': return 'Existing mapping';
+    case 'map_insert': return 'Mapping added';
+    case 'map_update': return 'Mapping changed';
+    case 'map_delete': return 'Mapping removed';
+    case 'copy': return 'Profile copied';
+    default: return eventType.replaceAll('_', ' ');
+  }
 }
 
 async function loadFleetModels() {
@@ -111,15 +176,21 @@ export function ProductMappingWorkspace() {
   const [products, setProducts] = useState<ProductRecord[]>([]);
   const [profiles, setProfiles] = useState<ProfileRecord[]>([]);
   const [fleetModels, setFleetModels] = useState<Map<string, { key: string; count: number }>>(new Map());
+  const [operational, setOperational] = useState<OperationalSummary>({ profiles: [], unmapped_selections: [] });
+  const [history, setHistory] = useState<HistoryRow[]>([]);
   const [selectedModel, setSelectedModel] = useState('');
   const [buttonCount, setButtonCount] = useState(DEFAULT_BUTTON_COUNT);
   const [buttons, setButtons] = useState<ButtonDraft[]>(mappingDraft(DEFAULT_BUTTON_COUNT, []));
   const [newProductName, setNewProductName] = useState('');
   const [productDrafts, setProductDrafts] = useState<Record<string, string>>({});
   const [modelSearch, setModelSearch] = useState('');
+  const [copySourceModel, setCopySourceModel] = useState('');
+  const [copyConfirmed, setCopyConfirmed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMap, setLoadingMap] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [savingMap, setSavingMap] = useState(false);
+  const [copyingMap, setCopyingMap] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -130,29 +201,38 @@ export function ProductMappingWorkspace() {
     const client = getSupabaseClient();
 
     try {
-      const [productResult, profileResult, modelCounts] = await Promise.all([
+      const [productResult, profileResult, modelCounts, operationalResult] = await Promise.all([
         client.from('products').select('id,product_name,is_active,updated_at').order('product_name'),
         client.from('machine_model_profiles').select('id,model_key,display_name,button_count,updated_at').order('display_name'),
         loadFleetModels(),
+        client.rpc('get_product_mapping_operational_summary'),
       ]);
 
       if (productResult.error) throw productResult.error;
       if (profileResult.error) throw profileResult.error;
+      if (operationalResult.error) throw operationalResult.error;
 
       const nextProducts = (productResult.data ?? []) as ProductRecord[];
       const nextProfiles = (profileResult.data ?? []) as ProfileRecord[];
+      const nextOperational = (operationalResult.data ?? {}) as Partial<OperationalSummary>;
       setProducts(nextProducts);
       setProfiles(nextProfiles);
       setFleetModels(modelCounts);
+      setOperational({
+        profiles: Array.isArray(nextOperational.profiles) ? nextOperational.profiles : [],
+        unmapped_selections: Array.isArray(nextOperational.unmapped_selections) ? nextOperational.unmapped_selections : [],
+      });
       setProductDrafts(Object.fromEntries(nextProducts.map((product) => [product.id, product.product_name])));
 
       setSelectedModel((current) => {
         if (current) return current;
+        const firstAttentionProfile = (nextOperational.profiles ?? [])
+          .find((profile) => profile.unmapped_count > 0 || profile.inactive_product_count > 0)?.model_key;
         const belluno = Array.from(modelCounts.values()).find((entry) => normalise(entry.key) === 'sielaff belluno');
         const firstProfile = nextProfiles[0]?.model_key;
         const firstFleetModel = Array.from(modelCounts.values())
           .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key))[0]?.key;
-        return belluno?.key ?? firstProfile ?? firstFleetModel ?? '';
+        return firstAttentionProfile ?? belluno?.key ?? firstProfile ?? firstFleetModel ?? '';
       });
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Could not load product mapping data.');
@@ -185,13 +265,21 @@ export function ProductMappingWorkspace() {
     [profiles, selectedModel],
   );
 
-  const selectedMachineCount = fleetModels.get(normalise(selectedModel))?.count ?? 0;
+  const selectedOperational = useMemo(
+    () => operational.profiles.find((profile) => normalise(profile.model_key) === normalise(selectedModel)) ?? null,
+    [operational.profiles, selectedModel],
+  );
+
+  const selectedMachineCount = fleetModels.get(normalise(selectedModel))?.count ?? selectedOperational?.machine_count ?? 0;
+  const configuredProfiles = operational.profiles.length;
+  const completeProfiles = operational.profiles.filter((profile) => profile.unmapped_count === 0 && profile.inactive_product_count === 0).length;
+  const attentionProfiles = operational.profiles.filter((profile) => profile.unmapped_count > 0 || profile.inactive_product_count > 0).length;
+  const mappedButtons = buttons.filter((row) => row.productId).length;
 
   const loadMap = useCallback(async (model: string) => {
     if (!model) return;
     setLoadingMap(true);
     setError(null);
-    setNotice(null);
 
     try {
       const { data, error: mapError } = await getSupabaseClient().rpc('get_machine_model_button_map', {
@@ -211,9 +299,32 @@ export function ProductMappingWorkspace() {
     }
   }, [profiles]);
 
+  const loadHistory = useCallback(async (model: string) => {
+    if (!model) {
+      setHistory([]);
+      return;
+    }
+    setLoadingHistory(true);
+    try {
+      const { data, error: historyError } = await getSupabaseClient().rpc('get_product_mapping_history', {
+        p_model_key: model,
+        p_limit: 40,
+      });
+      if (historyError) throw historyError;
+      setHistory((data ?? []) as HistoryRow[]);
+    } catch (historyLoadError) {
+      setError(historyLoadError instanceof Error ? historyLoadError.message : 'Could not load mapping history.');
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, []);
+
   useEffect(() => {
+    if (!selectedModel) return;
     loadMap(selectedModel).catch(() => undefined);
-  }, [loadMap, selectedModel]);
+    loadHistory(selectedModel).catch(() => undefined);
+    setCopyConfirmed(false);
+  }, [loadHistory, loadMap, selectedModel]);
 
   function changeButtonCount(value: number) {
     const nextCount = clampButtonCount(value);
@@ -238,6 +349,15 @@ export function ProductMappingWorkspace() {
     setButtons((current) => current.map((row) => (
       row.buttonNumber === buttonNumber ? { ...row, ...patch } : row
     )));
+  }
+
+  function openUnmappedProfile(row: UnmappedSelection) {
+    if (!row.profile_key) {
+      setError(`Selection ${row.selection_code} has no effective decoder profile yet. Assign or detect a profile on the machine first.`);
+      return;
+    }
+    setSelectedModel(row.profile_key);
+    setNotice(`Opened ${row.profile_key}. Map observed telemetry selection ${row.selection_code} to the correct physical button and product.`);
   }
 
   async function saveMapping() {
@@ -278,10 +398,38 @@ export function ProductMappingWorkspace() {
       );
       await loadBase();
       await loadMap(selectedModel);
+      await loadHistory(selectedModel);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save the machine model mapping.');
     } finally {
       setSavingMap(false);
+    }
+  }
+
+  async function copyMapping() {
+    if (!selectedModel || !copySourceModel || !copyConfirmed) return;
+    setError(null);
+    setNotice(null);
+    setCopyingMap(true);
+
+    try {
+      const { data, error: copyError } = await getSupabaseClient().rpc('copy_machine_model_profile_mappings', {
+        p_source_model_key: copySourceModel,
+        p_target_model_key: selectedModel,
+      });
+      if (copyError) throw copyError;
+      const result = (data ?? {}) as { mapping_count?: number; refreshed_sales_rows?: number };
+      setNotice(
+        `Copied ${Number(result.mapping_count ?? 0)} mappings from ${copySourceModel} to ${selectedModel}. ${Number(result.refreshed_sales_rows ?? 0)} existing telemetry sales rows were relabelled. Review the target before using it on a different machine variant.`,
+      );
+      setCopyConfirmed(false);
+      await loadBase();
+      await loadMap(selectedModel);
+      await loadHistory(selectedModel);
+    } catch (copyError) {
+      setError(copyError instanceof Error ? copyError.message : 'Could not copy the profile mapping.');
+    } finally {
+      setCopyingMap(false);
     }
   }
 
@@ -345,11 +493,11 @@ export function ProductMappingWorkspace() {
   if (loading) return <HamsterLoader label="Loading products and machine models" />;
 
   return (
-    <section className="fleet-route-page">
+    <section className="fleet-route-page" data-product-mapping-workspace="operational-v2">
       <header className="fleet-page-heading">
         <div>
           <h1>Products</h1>
-          <p>Maintain the product catalog and map each machine model&apos;s physical buttons and telemetry selections once for the whole fleet.</p>
+          <p>Maintain the product catalog, map machine selections once per decoder profile, and surface live telemetry selections that still need mapping.</p>
         </div>
         <button className="fleet-button secondary" onClick={() => loadBase()} type="button">
           <NavigationIcon kind="telemetry" />
@@ -366,10 +514,33 @@ export function ProductMappingWorkspace() {
 
       {notice ? (
         <div className="fleet-banner" role="status">
-          <strong>Saved.</strong>
+          <strong>Updated.</strong>
           <span>{notice}</span>
         </div>
       ) : null}
+
+      <div className="grid grid-4">
+        <section className="fleet-panel">
+          <span>Mapping completeness</span>
+          <h2>{completeProfiles} / {configuredProfiles}</h2>
+          <p>Configured profiles with every button mapped to an active product.</p>
+        </section>
+        <section className="fleet-panel">
+          <span>Needs mapping</span>
+          <h2>{attentionProfiles}</h2>
+          <p>Profiles with open button slots or inactive mapped products.</p>
+        </section>
+        <section className="fleet-panel">
+          <span>Unmapped selections</span>
+          <h2>{operational.unmapped_selections.length}</h2>
+          <p>Observed live counter selections that do not currently resolve to a product.</p>
+        </section>
+        <section className="fleet-panel">
+          <span>Product catalog</span>
+          <h2>{products.length}</h2>
+          <p>{products.filter((product) => product.is_active).length} active products available for mapping.</p>
+        </section>
+      </div>
 
       <div className="grid grid-2">
         <section className="fleet-panel">
@@ -443,10 +614,10 @@ export function ProductMappingWorkspace() {
 
         <section className="fleet-panel">
           <header className="fleet-table-heading">
-            <div><span>Fleet model</span><h2>Choose machine model</h2></div>
+            <div><span>Decoder profile</span><h2>Choose machine model</h2></div>
             <span>{modelOptions.length} models</span>
           </header>
-          <p>A mapping applies automatically to every machine whose model exactly matches the selected profile. Similar variants such as Belluno and Belluno Pro remain separate.</p>
+          <p>A mapping applies to machines using this effective decoder profile. Automatic identification and manual profile assignment both resolve into the same product map.</p>
           <label>
             <span>Find model</span>
             <input
@@ -459,11 +630,15 @@ export function ProductMappingWorkspace() {
             <span>Machine model</span>
             <select onChange={(event) => setSelectedModel(event.target.value)} value={selectedModel}>
               <option value="">Choose model</option>
-              {modelOptions.map((entry) => (
-                <option key={normalise(entry.key)} value={entry.key}>
-                  {entry.key} · {entry.count} machine{entry.count === 1 ? '' : 's'}{entry.configured ? ' · configured' : ''}
-                </option>
-              ))}
+              {modelOptions.map((entry) => {
+                const stats = operational.profiles.find((profile) => normalise(profile.model_key) === normalise(entry.key));
+                const status = stats ? ` · ${stats.mapped_count}/${stats.button_count} mapped` : '';
+                return (
+                  <option key={normalise(entry.key)} value={entry.key}>
+                    {entry.key} · {entry.count} machine{entry.count === 1 ? '' : 's'}{entry.configured ? ' · configured' : ''}{status}
+                  </option>
+                );
+              })}
             </select>
           </label>
           {selectedModel ? (
@@ -471,16 +646,96 @@ export function ProductMappingWorkspace() {
               <div><dt>Selected profile</dt><dd>{selectedModel}</dd></div>
               <div><dt>Affects</dt><dd>{selectedMachineCount.toLocaleString('en-ZA')} current machine{selectedMachineCount === 1 ? '' : 's'}</dd></div>
               <div><dt>Profile status</dt><dd>{selectedProfile ? 'Configured' : 'New mapping'}</dd></div>
-              <div><dt>Buttons</dt><dd>{buttonCount}</dd></div>
+              <div><dt>Mapping completeness</dt><dd>{selectedOperational ? `${selectedOperational.mapped_count} / ${selectedOperational.button_count} · ${selectedOperational.completeness_percent}%` : `${mappedButtons} / ${buttonCount}`}</dd></div>
+              <div><dt>Active devices using profile</dt><dd>{selectedOperational?.active_device_count ?? 0}</dd></div>
+              <div><dt>Attention</dt><dd>{selectedOperational && (selectedOperational.unmapped_count > 0 || selectedOperational.inactive_product_count > 0) ? 'Needs mapping' : selectedProfile ? 'Complete' : 'Needs mapping'}</dd></div>
             </dl>
           ) : null}
+
+          <hr />
+          <div>
+            <strong>Copy mapping</strong>
+            <p>Use a verified compatible profile as a starting point. This replaces the target profile&apos;s button count and mappings, so review the target before saving it for field use.</p>
+            <label>
+              <span>Copy from profile</span>
+              <select onChange={(event) => { setCopySourceModel(event.target.value); setCopyConfirmed(false); }} value={copySourceModel}>
+                <option value="">Choose source profile</option>
+                {operational.profiles
+                  .filter((profile) => normalise(profile.model_key) !== normalise(selectedModel) && profile.mapped_count > 0)
+                  .map((profile) => (
+                    <option key={profile.id} value={profile.model_key}>
+                      {profile.display_name} · {profile.mapped_count}/{profile.button_count} mapped
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label>
+              <input
+                checked={copyConfirmed}
+                disabled={!copySourceModel || !selectedModel}
+                onChange={(event) => setCopyConfirmed(event.target.checked)}
+                type="checkbox"
+              />
+              <span>I understand this replaces the current target mapping.</span>
+            </label>
+            <button
+              className="fleet-button secondary"
+              disabled={!selectedModel || !copySourceModel || !copyConfirmed || copyingMap}
+              onClick={copyMapping}
+              type="button"
+            >
+              {copyingMap ? 'Copying mapping…' : 'Copy mapping to selected profile'}
+            </button>
+          </div>
         </section>
       </div>
 
       <section className="fleet-panel fleet-table-panel">
         <header className="fleet-table-heading">
+          <div><span>Live telemetry queue</span><h2>Unmapped selections</h2></div>
+          <span>{operational.unmapped_selections.length} observed</span>
+        </header>
+        <p>These selection codes have real sold or failed counter activity but no matching product in their effective profile. They are never silently relabelled.</p>
+        {operational.unmapped_selections.length === 0 ? (
+          <div className="fleet-empty-state">
+            <strong>No observed selections need mapping</strong>
+            <p>All currently observed counter selections resolve to configured product mappings, or no live counters have been received yet.</p>
+          </div>
+        ) : (
+          <div className="fleet-table-scroll">
+            <table className="fleet-machine-table">
+              <thead><tr><th>Machine / device</th><th>Effective profile</th><th>Selection</th><th>Observed counters</th><th>Last seen</th><th>Action</th></tr></thead>
+              <tbody>
+                {operational.unmapped_selections.map((row) => (
+                  <tr key={`${row.device_id}:${row.selection_code}`}>
+                    <td>
+                      <strong>{row.machine_name || row.machine_model || 'Unassigned machine'}</strong>
+                      <span>{row.device_code}</span>
+                    </td>
+                    <td>{row.profile_key || <span className="fleet-status-pill is-warning"><i />Needs profile</span>}</td>
+                    <td><strong>{row.selection_code}</strong></td>
+                    <td><strong>{Number(row.sold_total ?? 0).toLocaleString('en-ZA')} sold</strong><span>{Number(row.failed_total ?? 0).toLocaleString('en-ZA')} failed</span></td>
+                    <td>{formatWhen(row.last_seen_at)}</td>
+                    <td>
+                      <div className="fleet-heading-actions">
+                        <button className="fleet-button secondary" onClick={() => openUnmappedProfile(row)} type="button">
+                          Open profile
+                        </button>
+                        {row.machine_id ? <Link className="fleet-button secondary" href={`/machines/${row.machine_id}`}>Machine</Link> : null}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="fleet-panel fleet-table-panel">
+        <header className="fleet-table-heading">
           <div><span>Button map</span><h2>{selectedModel || 'Choose a machine model'}</h2></div>
-          <span>{buttons.filter((row) => row.productId).length} of {buttonCount} mapped</span>
+          <span>{mappedButtons} of {buttonCount} mapped</span>
         </header>
 
         {!selectedModel ? (
@@ -523,11 +778,11 @@ export function ProductMappingWorkspace() {
                     Add button
                   </button>
                 </div>
-                <p>Add or remove buttons to match this exact machine model. Changes take effect fleet-wide when you save the model mapping.</p>
+                <p>Add or remove buttons to match this exact machine model. Changes take effect fleet-wide when you save the profile mapping.</p>
               </div>
               <div>
-                <strong>{selectedMachineCount.toLocaleString('en-ZA')} machines</strong>
-                <p>Saving this profile affects all current and future machines with the exact model <strong>{selectedModel}</strong>.</p>
+                <strong>{selectedMachineCount.toLocaleString('en-ZA')} machines · {selectedOperational?.active_device_count ?? 0} active devices</strong>
+                <p>The machine dashboard resolves cup counters through this effective profile rather than inventing labels for unknown selections.</p>
               </div>
             </div>
 
@@ -563,9 +818,12 @@ export function ProductMappingWorkspace() {
                         </td>
                         <td>
                           {product ? (
-                            <><strong>{product.product_name}</strong><span>{row.selectionCode}</span></>
+                            <>
+                              <strong>{product.product_name}</strong>
+                              <span>{row.selectionCode}{product.is_active ? '' : ' · inactive product'}</span>
+                            </>
                           ) : (
-                            <span>Raw selection only</span>
+                            <span className="fleet-status-pill is-warning"><i />Needs mapping</span>
                           )}
                         </td>
                       </tr>
@@ -577,14 +835,46 @@ export function ProductMappingWorkspace() {
 
             <footer className="fleet-table-footer">
               <div className="fleet-table-footer-copy">
-                <strong>One profile, fleet-wide</strong>
-                <span>Button count and product mappings are stored per machine model. Removing buttons removes any mappings above the new count when this profile is saved.</span>
+                <strong>One decoder profile, fleet-wide</strong>
+                <span>Selection codes must be unique inside the profile. Removing buttons removes mappings above the new count when the profile is saved.</span>
               </div>
               <button className="fleet-button" disabled={savingMap} onClick={saveMapping} type="button">
                 {savingMap ? 'Saving mapping…' : 'Save model mapping'}
               </button>
             </footer>
           </>
+        )}
+      </section>
+
+      <section className="fleet-panel fleet-table-panel">
+        <header className="fleet-table-heading">
+          <div><span>Audit trail</span><h2>Mapping history</h2></div>
+          <span>{selectedModel || 'Choose a profile'}</span>
+        </header>
+        <p>Mapping inserts, removals, replacements and profile copies are recorded separately from telemetry so product-label changes remain traceable.</p>
+        {!selectedModel ? (
+          <div className="fleet-empty-state"><strong>Select a profile</strong><p>Choose a machine model to review its mapping history.</p></div>
+        ) : loadingHistory ? (
+          <HamsterLoader label={`Loading ${selectedModel} mapping history`} />
+        ) : history.length === 0 ? (
+          <div className="fleet-empty-state"><strong>No mapping history yet</strong><p>The first saved or copied mapping will appear here.</p></div>
+        ) : (
+          <div className="fleet-table-scroll">
+            <table className="fleet-machine-table">
+              <thead><tr><th>When</th><th>Change</th><th>Button</th><th>Selection</th><th>Product / source</th></tr></thead>
+              <tbody>
+                {history.map((row) => (
+                  <tr key={row.id}>
+                    <td>{formatWhen(row.changed_at)}</td>
+                    <td><strong>{historyLabel(row.event_type)}</strong></td>
+                    <td>{row.button_number ? `Button ${row.button_number}` : 'Profile'}</td>
+                    <td>{row.selection_code || '—'}</td>
+                    <td>{row.event_type === 'copy' ? `Copied from ${row.source_model_key || 'profile'}` : row.product_name || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </section>
