@@ -16,6 +16,7 @@ export const telemetryNavigationSections: NavSection[] = [
     heading: 'Telemetry',
     items: [
       { href: '/telemetry', label: 'Analytics', code: 'TEL01', roles: 'all', description: 'Item quantities, trends, failures and activity.' },
+      { href: '/telemetry/reports', label: 'Reports & Exports', code: 'TEL05', roles: 'all', description: 'Production sales, product, machine, fault, data-usage and fleet-readiness reports.' },
       { href: '/telemetry/test-center', label: 'Test Center', code: 'TEL04', roles: 'all', description: 'Temporary remote console and commissioning diagnostics.' },
       { href: '/map', label: 'Machine Map', code: 'TEL03', roles: 'all', description: 'Last known device locations and movement.' },
     ],
