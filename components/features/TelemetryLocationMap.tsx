@@ -30,6 +30,13 @@ type LocationRow = {
   active_fault_count: number;
   last_seen_at: string | null;
   last_transport: 'wifi' | 'cellular' | null;
+  expected_update_minutes: number | null;
+  offline_after_minutes: number | null;
+  update_deadline_at: string | null;
+  communication_status: string | null;
+  communication_error: boolean;
+  communication_error_code: string | null;
+  minutes_overdue: number | null;
   location_enabled: boolean;
   location_interval_minutes: number;
   location_min_move_m: number;
@@ -51,6 +58,7 @@ type LocationRow = {
 
 type MachinePoint = LocationRow & { latitude: number; longitude: number };
 type MapHealth = 'online' | 'stale' | 'fault' | 'offline';
+type TransportFilter = 'all' | 'wifi' | 'cellular' | 'unknown';
 type MachineProperties = {
   deviceId: string;
   machineId: string;
@@ -60,7 +68,7 @@ type MachineProperties = {
   moved: number;
 };
 
-const MAP_REFRESH_MS = 15_000;
+const MAP_REFRESH_MS = 30_000;
 const TABLE_PAGE_SIZE = 100;
 const OPEN_FREE_MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 const SOUTH_AFRICA_CENTER: [number, number] = [22.9375, -30.5595];
@@ -84,13 +92,24 @@ function formatTime(value: Date | null) {
   return value.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-function online(lastSeen: string | null) {
+function legacyOnline(lastSeen: string | null) {
   return Boolean(lastSeen && Date.now() - new Date(lastSeen).getTime() <= 30 * 60 * 1000);
 }
 
+function communicationOnline(row: LocationRow) {
+  if (row.communication_status === 'online') return true;
+  if (row.communication_status === 'offline' || row.communication_error) return false;
+  return legacyOnline(row.last_seen_at);
+}
+
+function hasMachineFault(row: LocationRow) {
+  const communicationFaultContribution = row.communication_error ? 1 : 0;
+  return row.active_fault_count > communicationFaultContribution || ['fault', 'critical'].includes(row.machine_status);
+}
+
 function mapHealth(row: LocationRow): MapHealth {
-  if (row.active_fault_count > 0 || ['fault', 'critical'].includes(row.machine_status)) return 'fault';
-  if (!online(row.last_seen_at)) return 'offline';
+  if (!communicationOnline(row)) return 'offline';
+  if (hasMachineFault(row)) return 'fault';
   if (row.location_stale) return 'stale';
   return 'online';
 }
@@ -108,6 +127,12 @@ function sourceLabel(source: string | null) {
   return source.charAt(0).toUpperCase() + source.slice(1);
 }
 
+function transportLabel(transport: LocationRow['last_transport']) {
+  if (transport === 'wifi') return 'Wi-Fi';
+  if (transport === 'cellular') return 'Cellular';
+  return 'Unknown';
+}
+
 function locationAge(row: LocationRow) {
   const value = row.location_fix_at ?? row.location_received_at;
   if (!value) return 'No fix';
@@ -116,6 +141,49 @@ function locationAge(row: LocationRow) {
   if (ageMs < 3_600_000) return `${Math.floor(ageMs / 60_000)} min ago`;
   if (ageMs < 86_400_000) return `${Math.floor(ageMs / 3_600_000)} hr ago`;
   return `${Math.floor(ageMs / 86_400_000)} day(s) ago`;
+}
+
+function csvCell(value: unknown) {
+  const text = value === null || value === undefined ? '' : String(value);
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function exportLocationCsv(rows: LocationRow[]) {
+  const headers = [
+    'Device', 'Machine', 'Serial', 'Branch', 'Health', 'Communication status', 'Communication error',
+    'Minutes overdue', 'Expected update minutes', 'Offline after minutes', 'Transport', 'Latitude', 'Longitude',
+    'Location source', 'Accuracy metres', 'Stale location', 'Movement detected', 'Active faults', 'Last seen', 'Last fix',
+  ];
+  const body = rows.map((row) => [
+    row.device_code,
+    row.machine_name ?? '',
+    row.serial_number ?? '',
+    row.branch,
+    mapHealth(row),
+    row.communication_status ?? (communicationOnline(row) ? 'online' : 'offline'),
+    row.communication_error ? row.communication_error_code ?? 'true' : '',
+    row.minutes_overdue ?? '',
+    row.expected_update_minutes ?? '',
+    row.offline_after_minutes ?? '',
+    row.last_transport ?? '',
+    row.latitude ?? '',
+    row.longitude ?? '',
+    row.location_source ?? '',
+    row.accuracy_m ?? '',
+    row.location_stale,
+    row.movement_detected,
+    row.active_fault_count,
+    row.last_seen_at ?? '',
+    row.location_fix_at ?? row.location_received_at ?? '',
+  ]);
+  const csv = [headers, ...body].map((line) => line.map(csvCell).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `dallmayr-machine-locations-${new Date().toISOString().slice(0, 10)}.csv`;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 function pointCollection(points: MachinePoint[]): FeatureCollection<GeoJsonPoint, MachineProperties> {
@@ -371,9 +439,13 @@ function TelemetryMapCanvas({
             <header><div><span>{selected.device_code}</span><h3>{machineLabel(selected)}</h3></div><button aria-label="Close machine map details" onClick={() => onSelect(null)} type="button">×</button></header>
             <StatusBadge value={mapHealth(selected)} />
             <dl>
+              <div><dt>Communication</dt><dd>{selected.communication_status ?? (communicationOnline(selected) ? 'online' : 'offline')}{selected.communication_error ? ` · ${selected.minutes_overdue ?? 0} min overdue` : ''}</dd></div>
+              <div><dt>Transport</dt><dd>{transportLabel(selected.last_transport)}</dd></div>
               <div><dt>Coordinates</dt><dd>{selected.latitude.toFixed(6)}, {selected.longitude.toFixed(6)}</dd></div>
               <div><dt>Location source</dt><dd>{sourceLabel(selected.location_source)}</dd></div>
               <div><dt>Accuracy</dt><dd>{selected.accuracy_m === null ? 'Not reported' : `±${Math.round(selected.accuracy_m)} m`}</dd></div>
+              <div><dt>Last heartbeat</dt><dd>{formatDate(selected.last_seen_at)}</dd></div>
+              <div><dt>Update deadline</dt><dd>{formatDate(selected.update_deadline_at)}</dd></div>
               <div><dt>Last fix</dt><dd>{formatDate(selected.location_fix_at ?? selected.location_received_at)}</dd></div>
               <div><dt>Movement</dt><dd>{selected.movement_detected ? `Moved ${Math.round(selected.distance_from_previous_m ?? 0)} m` : 'Stationary'}</dd></div>
               <div><dt>Active faults</dt><dd>{selected.active_fault_count}</dd></div>
@@ -404,7 +476,7 @@ export function TelemetryLocationPreview() {
   }, []);
 
   if (loading) return <div className="fleet-map-preview-loading"><HamsterLoader label="Loading machine map" /></div>;
-  if (points.length === 0) return <div className="fleet-empty-state"><strong>No mapped machines yet</strong><p>Locations will appear after a site coordinate or GNSS fix is available.</p></div>;
+  if (points.length === 0) return <div className="fleet-empty-state"><strong>No mapped machines yet</strong><p>Locations will appear after a site coordinate or device location fix is available.</p></div>;
   return <TelemetryMapCanvas compact onSelect={() => undefined} points={points} selectedDeviceId={null} />;
 }
 
@@ -418,6 +490,7 @@ export function TelemetryLocationMap() {
   const [search, setSearch] = useState('');
   const [movedOnly, setMovedOnly] = useState(false);
   const [health, setHealth] = useState<'all' | MapHealth>('all');
+  const [transport, setTransport] = useState<TransportFilter>('all');
   const [tablePage, setTablePage] = useState(1);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -451,7 +524,7 @@ export function TelemetryLocationMap() {
       setLoading(false);
     });
     const interval = window.setInterval(() => {
-      load(true).catch(() => undefined);
+      if (document.visibilityState === 'visible') load(true).catch(() => undefined);
     }, MAP_REFRESH_MS);
     return () => window.clearInterval(interval);
   }, [load]);
@@ -480,11 +553,12 @@ export function TelemetryLocationMap() {
     return rows.filter((row) => {
       if (movedOnly && !row.movement_detected) return false;
       if (health !== 'all' && mapHealth(row) !== health) return false;
+      if (transport !== 'all' && (row.last_transport ?? 'unknown') !== transport) return false;
       if (!needle) return true;
       return [row.device_code, row.machine_name, row.serial_number, row.branch]
         .some((value) => value?.toLowerCase().includes(needle));
     });
-  }, [health, movedOnly, rows, search]);
+  }, [health, movedOnly, rows, search, transport]);
 
   const points = useMemo(() => filtered.filter((row): row is MachinePoint => (
     row.has_location && typeof row.latitude === 'number' && typeof row.longitude === 'number'
@@ -498,7 +572,7 @@ export function TelemetryLocationMap() {
 
   useEffect(() => {
     setTablePage(1);
-  }, [health, movedOnly, search]);
+  }, [health, movedOnly, search, transport]);
 
   useEffect(() => {
     setTablePage((current) => Math.min(current, tablePageCount));
@@ -508,22 +582,25 @@ export function TelemetryLocationMap() {
     counts[mapHealth(row)] += 1;
     return counts;
   }, { online: 0, stale: 0, fault: 0, offline: 0 } as Record<MapHealth, number>), [rows]);
-  const liveGpsCount = rows.filter((row) => row.location_source === 'gnss' && row.has_location && !row.location_stale).length;
+  const communicationOnlineCount = rows.filter(communicationOnline).length;
+  const communicationOfflineCount = rows.length - communicationOnlineCount;
+  const machineFaultCount = rows.filter(hasMachineFault).length;
+  const deviceLocationCount = rows.filter((row) => row.has_location && row.location_source && row.location_source !== 'site').length;
   const locationCount = rows.filter((row) => row.has_location).length;
 
   return (
     <section className="fleet-route-page telemetry-map-page">
       <header className="fleet-page-heading">
-        <div><h1>Machine locations</h1><p>Live machine health, faults and connectivity across South Africa.</p></div>
+        <div><h1>Machine locations</h1><p>Live machine health, communication deadlines and location state across South Africa.</p></div>
         <button className="fleet-button secondary" type="button" disabled={loading || refreshing} onClick={() => load(false)}><NavigationIcon kind="telemetry" />{refreshing ? 'Refreshing…' : 'Refresh map'}</button>
       </header>
 
       <section aria-label="Machine location summary" className="fleet-metric-grid">
         <article className="fleet-metric-card"><span className="fleet-metric-icon is-blue"><NavigationIcon kind="tool" /></span><div><span>Total machines</span><strong>{machineCount.toLocaleString('en-ZA')}</strong></div><small>Complete machine register</small></article>
-        <article className="fleet-metric-card"><span className="fleet-metric-icon is-green"><NavigationIcon kind="pin" /></span><div><span>Located</span><strong>{locationCount.toLocaleString('en-ZA')}</strong></div><small>Site or GNSS position available</small></article>
-        <article className="fleet-metric-card"><span className="fleet-metric-icon is-green"><NavigationIcon kind="telemetry" /></span><div><span>Online</span><strong>{healthCounts.online.toLocaleString('en-ZA')}</strong></div><small>Heartbeat within 30 minutes</small></article>
-        <article className="fleet-metric-card"><span className="fleet-metric-icon is-red"><NavigationIcon kind="bell" /></span><div><span>Faults</span><strong>{healthCounts.fault.toLocaleString('en-ZA')}</strong></div><small>Machines requiring attention</small></article>
-        <article className="fleet-metric-card"><span className="fleet-metric-icon is-grey"><NavigationIcon kind="telemetry" /></span><div><span>Offline</span><strong>{healthCounts.offline.toLocaleString('en-ZA')}</strong></div><small>No recent device contact</small></article>
+        <article className="fleet-metric-card"><span className="fleet-metric-icon is-green"><NavigationIcon kind="pin" /></span><div><span>Located</span><strong>{locationCount.toLocaleString('en-ZA')}</strong></div><small>Site or device position available</small></article>
+        <article className="fleet-metric-card"><span className="fleet-metric-icon is-green"><NavigationIcon kind="telemetry" /></span><div><span>Online</span><strong>{communicationOnlineCount.toLocaleString('en-ZA')}</strong></div><small>Within each device reporting deadline</small></article>
+        <article className="fleet-metric-card"><span className="fleet-metric-icon is-red"><NavigationIcon kind="bell" /></span><div><span>Faults</span><strong>{machineFaultCount.toLocaleString('en-ZA')}</strong></div><small>Machine faults requiring attention</small></article>
+        <article className="fleet-metric-card"><span className="fleet-metric-icon is-grey"><NavigationIcon kind="telemetry" /></span><div><span>Offline</span><strong>{communicationOfflineCount.toLocaleString('en-ZA')}</strong></div><small>Past the configured reporting deadline</small></article>
       </section>
 
       <section className="neo-card spatial-card telemetry-location-card">
@@ -533,9 +610,9 @@ export function TelemetryLocationMap() {
           <p>Drag, zoom and select status-coloured machine dots. Nearby machines automatically group into numbered clusters.</p>
           <div className="telemetry-map-summary">
             <strong>{locationCount.toLocaleString('en-ZA')}</strong><span>located</span>
-            <strong>{liveGpsCount.toLocaleString('en-ZA')}</strong><span>live GPS</span>
-            <strong>{healthCounts.online.toLocaleString('en-ZA')}</strong><span>online</span>
-            <strong>{healthCounts.fault.toLocaleString('en-ZA')}</strong><span>faults</span>
+            <strong>{deviceLocationCount.toLocaleString('en-ZA')}</strong><span>device fixes</span>
+            <strong>{communicationOnlineCount.toLocaleString('en-ZA')}</strong><span>online</span>
+            <strong>{healthCounts.stale.toLocaleString('en-ZA')}</strong><span>stale positions</span>
           </div>
           <small>Last refreshed {formatTime(lastUpdated)}{refreshing ? ' · refreshing…' : ''}</small>
         </div>
@@ -548,11 +625,13 @@ export function TelemetryLocationMap() {
       <div className="telemetry-map-filters">
         <label className="fleet-search"><input aria-label="Search machine locations" placeholder="Search machine, serial, device or branch" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
         <label><span>Connection health</span><select value={health} onChange={(event) => setHealth(event.target.value as typeof health)}><option value="all">All statuses</option><option value="online">Online</option><option value="stale">Stale location</option><option value="fault">Fault</option><option value="offline">Offline</option></select></label>
+        <label><span>Network</span><select value={transport} onChange={(event) => setTransport(event.target.value as TransportFilter)}><option value="all">All networks</option><option value="wifi">Wi-Fi</option><option value="cellular">Cellular</option><option value="unknown">Unknown</option></select></label>
         <label className="telemetry-map-checkbox"><input type="checkbox" checked={movedOnly} onChange={(event) => setMovedOnly(event.target.checked)} /><span>Moved machines only</span></label>
+        <button className="fleet-button secondary" disabled={filtered.length === 0} onClick={() => exportLocationCsv(filtered)} type="button">Export location CSV</button>
       </div>
 
       {!loading && rows.length === 0 ? <div className="fleet-empty-state"><strong>No telemetry devices</strong><p>No active telemetry devices are registered.</p></div> : null}
-      {!loading && rows.length > 0 && points.length === 0 ? <div className="fleet-banner is-error"><strong>No mapped machines match the filters.</strong><span>Add coordinates to the ERP site or wait for a GNSS fix from the telemetry device.</span></div> : null}
+      {!loading && rows.length > 0 && points.length === 0 ? <div className="fleet-banner is-error"><strong>No mapped machines match the filters.</strong><span>Add coordinates to the ERP site or wait for a location fix from the telemetry device.</span></div> : null}
       {points.length > 0 ? <TelemetryMapCanvas points={points} selectedDeviceId={selectedDeviceId} onSelect={setSelectedDeviceId} /> : null}
 
       {filtered.length > 0 ? (
@@ -577,14 +656,14 @@ export function TelemetryLocationMap() {
                           <select aria-label={`Movement threshold for ${row.device_code}`} disabled={rowSaving} value={row.location_min_move_m} onChange={(event) => updateLocationControl(row, { minMove: Number(event.target.value) })}><option value={25}>Movement: 25 m</option><option value={50}>Movement: 50 m</option><option value={100}>Movement: 100 m</option><option value={250}>Movement: 250 m</option><option value={500}>Movement: 500 m</option></select>
                         </div>
                       </td>
-                      <td><strong>{locationAge(row)}</strong><span>{formatDate(row.location_fix_at ?? row.location_received_at)} · Device {online(row.last_seen_at) ? 'online' : 'offline'}</span></td>
+                      <td><strong>{locationAge(row)}</strong><span>{formatDate(row.location_fix_at ?? row.location_received_at)} · Device {row.communication_status ?? (communicationOnline(row) ? 'online' : 'offline')}{row.communication_error ? ` · ${row.minutes_overdue ?? 0} min overdue` : ''}</span></td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-          <footer className="fleet-table-footer"><div className="fleet-table-footer-copy"><strong>Showing {firstTableRow.toLocaleString('en-ZA')}–{lastTableRow.toLocaleString('en-ZA')} of {filtered.length.toLocaleString('en-ZA')}</strong><span>Map data refreshes every 15 seconds.</span></div><div aria-label="Location table pagination" className="fleet-table-pagination"><button disabled={currentTablePage === 1} onClick={() => setTablePage((current) => Math.max(1, current - 1))} type="button">Previous</button><span>Page {currentTablePage} of {tablePageCount}</span><button disabled={currentTablePage === tablePageCount} onClick={() => setTablePage((current) => Math.min(tablePageCount, current + 1))} type="button">Next</button></div></footer>
+          <footer className="fleet-table-footer"><div className="fleet-table-footer-copy"><strong>Showing {firstTableRow.toLocaleString('en-ZA')}–{lastTableRow.toLocaleString('en-ZA')} of {filtered.length.toLocaleString('en-ZA')}</strong><span>Map data refreshes every 30 seconds while this page is visible.</span></div><div aria-label="Location table pagination" className="fleet-table-pagination"><button disabled={currentTablePage === 1} onClick={() => setTablePage((current) => Math.max(1, current - 1))} type="button">Previous</button><span>Page {currentTablePage} of {tablePageCount}</span><button disabled={currentTablePage === tablePageCount} onClick={() => setTablePage((current) => Math.min(tablePageCount, current + 1))} type="button">Next</button></div></footer>
         </div>
       ) : null}
       </section>
