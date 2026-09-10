@@ -17,6 +17,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { formatLocalDate } from '@/lib/dates/local-date';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type LocationRow = {
@@ -181,7 +182,7 @@ function exportLocationCsv(rows: LocationRow[]) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = `dallmayr-machine-locations-${new Date().toISOString().slice(0, 10)}.csv`;
+  anchor.download = `dallmayr-machine-locations-${formatLocalDate()}.csv`;
   anchor.click();
   URL.revokeObjectURL(url);
 }
