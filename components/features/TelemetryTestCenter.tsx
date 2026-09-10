@@ -260,7 +260,8 @@ export function TelemetryTestCenter() {
       const requestedDevice = requestedDeviceCode
         ? normalized.find((item) => item.device_code === requestedDeviceCode)?.id
         : undefined;
-      return requestedDevice ?? current ?? normalized[0]?.id ?? '';
+      const currentStillExists = Boolean(current) && normalized.some((item) => item.id === current);
+      return requestedDevice ?? (currentStillExists ? current : normalized[0]?.id ?? '');
     });
 
     const machineIds = [...new Set(normalized.map((item) => item.machine_id).filter((value): value is string => Boolean(value)))];
