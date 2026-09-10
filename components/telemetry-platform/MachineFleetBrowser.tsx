@@ -6,6 +6,7 @@ import { MachineCreateImportControls } from '@/components/features/MachineCreate
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { SignalStrengthIndicator } from '@/components/ui/SignalStrengthIndicator';
+import { safeLocalStorageGet, safeLocalStorageRemove, safeLocalStorageSet } from '@/lib/browserStorage';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import styles from './MachineFleetBrowser.module.css';
 
@@ -136,7 +137,7 @@ export function MachineFleetBrowser() {
 
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem(FILTER_STORAGE_KEY);
+      const raw = safeLocalStorageGet(FILTER_STORAGE_KEY);
       if (raw) {
         const saved = JSON.parse(raw) as Partial<SavedFleetView>;
         const savedSearch = typeof saved.search === 'string' ? saved.search.trim() : '';
@@ -146,7 +147,7 @@ export function MachineFleetBrowser() {
         setStatus(isFleetFilterStatus(saved.status) ? saved.status : 'all');
       }
     } catch {
-      window.localStorage.removeItem(FILTER_STORAGE_KEY);
+      safeLocalStorageRemove(FILTER_STORAGE_KEY);
     } finally {
       setFiltersReady(true);
     }
@@ -164,7 +165,7 @@ export function MachineFleetBrowser() {
   useEffect(() => {
     if (!filtersReady) return;
     const saved: SavedFleetView = { search: searchInput.trim(), branch, status };
-    window.localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(saved));
+    safeLocalStorageSet(FILTER_STORAGE_KEY, JSON.stringify(saved));
   }, [branch, filtersReady, searchInput, status]);
 
   const loadFleet = useCallback(async (quiet = false, pageOverride?: number) => {
