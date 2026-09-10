@@ -60,6 +60,10 @@ function validDateOrNull(value: unknown) {
   return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : null;
 }
 
+function boundedText(value: unknown, maxLength: number) {
+  return typeof value === 'string' && value.trim() ? value.trim().slice(0, maxLength) : null;
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders });
   if (request.method !== 'POST') return jsonResponse({ accepted: false, message: 'POST is required.' }, 405);
@@ -75,11 +79,6 @@ Deno.serve(async (request: Request) => {
   const rawBodyBytes = new TextEncoder().encode(rawBodyText).byteLength;
   if (rawBodyBytes > MAX_BODY_BYTES) return jsonResponse({ accepted: false, message: 'Payload is too large.' }, 413);
 
-  // Field hardware can occasionally surface raw modem/control bytes inside a
-  // JSON string (for example an Air780EU identity response containing 0x1D).
-  // Those bytes are illegal in JSON and make JSON.parse reject the entire
-  // telemetry/debug batch. Strip only disallowed C0 controls before parsing;
-  // preserve legal JSON whitespace (TAB, LF, CR) and all printable content.
   const bodyText = rawBodyText.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
 
   let payload: Record<string, unknown>;
@@ -102,15 +101,6 @@ Deno.serve(async (request: Request) => {
   if (!device || device.status !== 'active') return jsonResponse({ accepted: false, message: 'Unknown or inactive telemetry device.' }, 401);
   if (!constantTimeEqual(await sha256Hex(deviceKey), device.credential_hash)) return jsonResponse({ accepted: false, message: 'Invalid telemetry device credentials.' }, 401);
 
-  // Remote Test Center log batches are isolated from production telemetry
-  // ingestion. They are accepted only for an active, unexpired session owned by
-  // this authenticated device and are capped to keep cellular use bounded.
-  //
-  // V6.8.41 field diagnostics showed the device entering the 1.5s debug upload
-  // cadence while the server still routed the request through normal telemetry
-  // ingestion. Recognize the explicit debug shape as well as the type marker so
-  // field logs cannot be lost if an intermediary/serializer omits or alters the
-  // top-level type value.
   const isDebugLogBatch = payload.type === 'debug_log_batch'
     || (
       typeof payload.test_session_id === 'string'
@@ -304,6 +294,33 @@ Deno.serve(async (request: Request) => {
   if (cellularCsq !== null) patch.cellular_csq = cellularCsq;
   if (typeof payload.cellular_operator === 'string') patch.cellular_operator = String(payload.cellular_operator).slice(0, 120);
   if (typeof payload.cellular_model === 'string') patch.cellular_model = String(payload.cellular_model).slice(0, 120);
+
+  if (!isSimulation) {
+    const identity = payload.machine_identity && typeof payload.machine_identity === 'object' && !Array.isArray(payload.machine_identity)
+      ? payload.machine_identity as Record<string, unknown>
+      : null;
+    const reportedInterface = boundedText(payload.machine_interface, 40);
+    const reportedSerial = boundedText(identity?.serial ?? payload.machine_serial, 160);
+    const reportedModel = boundedText(identity?.model, 160);
+    const reportedRevision = boundedText(identity?.revision, 80);
+    const reportedAsset = boundedText(identity?.asset, 160);
+    const identitySource = boundedText(identity?.source, 40);
+    const profileFingerprint = boundedText(identity?.profile_fingerprint, 160);
+    const hasIdentityEvidence = Boolean(
+      reportedInterface || reportedSerial || reportedModel || reportedRevision
+      || reportedAsset || identitySource || profileFingerprint
+    );
+
+    if (reportedInterface) patch.reported_machine_interface = reportedInterface.toLowerCase();
+    if (reportedSerial) patch.reported_machine_serial = reportedSerial;
+    if (reportedModel) patch.reported_machine_model = reportedModel;
+    if (reportedRevision) patch.reported_machine_revision = reportedRevision;
+    if (reportedAsset) patch.reported_machine_asset = reportedAsset;
+    if (identitySource) patch.reported_machine_identity_source = identitySource.toLowerCase();
+    if (profileFingerprint) patch.reported_machine_profile_fingerprint = profileFingerprint;
+    if (hasIdentityEvidence) patch.reported_machine_identity_at = new Date().toISOString();
+  }
+
   if (Object.keys(patch).length > 0) await supabase.from('telemetry_devices').update(patch).eq('id', device.id);
 
   if (!isSimulation && payload.type !== 'location_update') {
@@ -347,8 +364,6 @@ Deno.serve(async (request: Request) => {
       p_balance_text: typeof prepaid.balance_text === 'string' ? prepaid.balance_text.slice(0, 1000) : null,
       p_query_status: status,
       p_error_text: typeof prepaid.error === 'string' ? prepaid.error.slice(0, 500) : null,
-      // ESP32 uptime is not wall-clock time. The database uses receipt time when
-      // the device cannot provide a valid ISO timestamp.
       p_checked_at: validDateOrNull(prepaid.checked_at),
     });
     prepaidBalanceResult = response.data;
