@@ -175,7 +175,7 @@ test('rebuilt machine detail workspace exposes telemetry, identity, lifetime cup
 
   await detail.getByRole('button', { name: 'Events' }).click();
   await expect(detail.getByText('MDB_TIMEOUT', { exact: true })).toBeVisible();
-  await detail.getByRole('button', { name: 'Device' }).click();
+  await detail.getByRole('button', { name: 'Device', exact: true }).click();
   await expect(detail.getByRole('heading', { name: 'DALL-TEL-001' })).toBeVisible();
   await expect(detail.getByText('ESP32S3-TEST-001', { exact: true })).toBeVisible();
   await expect(detail.getByText('Reporting mode', { exact: true })).toBeVisible();
