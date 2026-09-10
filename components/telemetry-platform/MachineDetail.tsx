@@ -366,6 +366,23 @@ export function MachineDetail({ machineId }: { machineId: string }) {
         </div>
       </header>
 
+      {machine ? <section className={styles.actionStrip} aria-label="Machine quick actions">
+        <div className={styles.actionFacts}>
+          <div><span>Device</span><strong>{device?.device_code ?? 'Not assigned'}</strong></div>
+          <div><span>Network</span><strong>{device?.last_transport === 'wifi' ? 'Wi-Fi' : device?.last_transport === 'cellular' ? 'Cellular' : 'Not reported'}</strong></div>
+          <div><span>Last contact</span><strong>{age(device?.last_heartbeat_at ?? device?.last_seen_at ?? null)}</strong></div>
+          <div><span>Open faults</span><strong className={openFaults.length ? styles.actionAlert : ''}>{openFaults.length}</strong></div>
+        </div>
+        <div className={styles.actionLinks}>
+          <button onClick={() => setTab('events')} type="button">Fault history</button>
+          <button onClick={() => setTab('device')} type="button">Device & profile</button>
+          {device?.device_code ? <Link href={`/telemetry/test-center?device=${encodeURIComponent(device.device_code)}`}>Test Center</Link> : null}
+          <Link href="/telemetry/devices">Device Management</Link>
+          <Link href="/products">Product mappings</Link>
+          <button disabled={loading} onClick={() => void load()} type="button">{loading ? 'Refreshing…' : 'Refresh now'}</button>
+        </div>
+      </section> : null}
+
       {error ? <div className={styles.error} role="alert">{error}</div> : null}
       {loading && !machine ? <HamsterLoader label="Loading machine dashboard" /> : null}
 
