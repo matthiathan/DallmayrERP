@@ -39,6 +39,7 @@ const requiredPairs = [
   'TelevendFleetDashboard',
   'MachineFleetBrowser',
   'MachineDetail',
+  'MachineIdentityProfilePanel',
   'AlarmCenter',
   'TelemetryAnalytics',
   'ComparisonLineChart',
