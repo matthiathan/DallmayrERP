@@ -23,6 +23,7 @@ for (const href of [
   "href: '/machines'",
   "href: '/alerts'",
   "href: '/telemetry'",
+  "href: '/telemetry/reports'",
   "href: '/telemetry/test-center'",
   "href: '/map'",
   "href: '/products'",
