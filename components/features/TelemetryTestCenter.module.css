@@ -1,0 +1,515 @@
+.workspace {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.notice {
+  padding: 11px 14px;
+  border: 1px solid color-mix(in srgb, var(--user-accent) 34%, var(--content-border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--user-accent) 8%, var(--content-surface));
+  color: var(--content-strong);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.stalePill {
+  border-color: #c58518 !important;
+}
+
+.statusJourney {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(100px, 1fr)) minmax(240px, 1.5fr);
+  gap: 8px;
+  align-items: stretch;
+  padding: 10px;
+  border: 1px solid var(--content-border);
+  border-radius: 14px;
+  background: var(--content-surface);
+}
+
+.statusStep {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--content-border) 76%, transparent);
+  border-radius: 10px;
+  color: var(--content-subtle);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.statusStep i {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: var(--content-border);
+}
+
+.statusStepDone {
+  color: var(--content-muted);
+}
+
+.statusStepDone i {
+  background: #3c9c67;
+}
+
+.statusStepActive {
+  border-color: var(--user-accent);
+  background: color-mix(in srgb, var(--user-accent) 9%, var(--content-surface-raised));
+  color: var(--content-strong);
+}
+
+.statusStepActive i {
+  background: var(--user-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--user-accent) 16%, transparent);
+}
+
+.statusDetail {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 5px 8px 5px 14px;
+  border-left: 1px solid var(--content-border);
+  min-width: 0;
+}
+
+.statusDetail strong {
+  color: var(--content-strong);
+  font-size: 13px;
+}
+
+.statusDetail span {
+  color: var(--content-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.configurationCard {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--content-border);
+  border-radius: 12px;
+  background: var(--content-surface-raised);
+}
+
+.sectionHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.sectionHeading span,
+.historyHeader span {
+  color: var(--content-subtle);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.sectionHeading strong {
+  color: var(--content-strong);
+  font-size: 13px;
+}
+
+.configList {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.configList div {
+  display: grid;
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--content-border) 52%, transparent);
+}
+
+.configList div:last-child {
+  border-bottom: 0;
+}
+
+.configList dt {
+  color: var(--content-subtle);
+  font-size: 11px;
+}
+
+.configList dd {
+  margin: 0;
+  color: var(--content-strong);
+  font-size: 11px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.configurationCard small {
+  color: var(--content-muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.readOnlyBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid #a77a30;
+  border-radius: 11px;
+  background: color-mix(in srgb, #a77a30 10%, var(--content-surface));
+}
+
+.readOnlyBanner div {
+  display: grid;
+  gap: 2px;
+}
+
+.readOnlyBanner strong {
+  color: var(--content-strong);
+}
+
+.readOnlyBanner span {
+  color: var(--content-muted);
+  font-size: 12px;
+}
+
+.readOnlyBanner button,
+.historyHeader button,
+.historyItem button {
+  border: 1px solid var(--content-border);
+  border-radius: 9px;
+  padding: 7px 10px;
+  background: var(--content-surface-raised);
+  color: var(--content-strong);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.logTools {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0;
+}
+
+.logSearch {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.logSearch svg {
+  position: absolute;
+  left: 11px;
+  width: 16px;
+  height: 16px;
+  color: var(--content-subtle);
+  pointer-events: none;
+}
+
+.logSearch input {
+  min-height: 38px;
+  padding-left: 35px;
+}
+
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filterButton,
+.filterButtonActive {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 31px;
+  padding: 5px 9px;
+  border: 1px solid var(--content-border);
+  border-radius: 999px;
+  background: var(--content-surface-raised);
+  color: var(--content-muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.filterButton span,
+.filterButtonActive span {
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--content-border) 22%, transparent);
+  color: var(--content-strong);
+  font-size: 10px;
+  text-align: center;
+}
+
+.filterButtonActive {
+  border-color: var(--user-accent);
+  background: color-mix(in srgb, var(--user-accent) 11%, var(--content-surface));
+  color: var(--content-strong);
+}
+
+.logResultMeta {
+  color: var(--content-subtle);
+  font-size: 11px;
+  text-align: right;
+}
+
+.terminal {
+  min-height: 440px;
+}
+
+.importantVend,
+.importantFault,
+.importantIdentity {
+  position: relative;
+}
+
+.importantVend::before,
+.importantFault::before,
+.importantIdentity::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 2px;
+  width: 3px;
+  border-radius: 2px;
+}
+
+.importantVend::before {
+  background: #3c9c67;
+}
+
+.importantFault::before {
+  background: #c94848;
+}
+
+.importantIdentity::before {
+  background: var(--user-accent);
+}
+
+.commandHistory {
+  display: grid;
+  gap: 9px;
+  padding-top: 13px;
+  border-top: 1px solid var(--content-border);
+}
+
+.commandHistory p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.commandList {
+  display: grid;
+  gap: 6px;
+}
+
+.commandRow {
+  display: grid;
+  grid-template-columns: minmax(160px, .8fr) auto minmax(200px, 1.2fr);
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--content-border) 70%, transparent);
+  border-radius: 9px;
+  background: var(--content-surface-raised);
+}
+
+.commandRow > div {
+  display: grid;
+  gap: 1px;
+}
+
+.commandRow strong {
+  color: var(--content-strong);
+  font-size: 11px;
+}
+
+.commandRow span,
+.commandRow small {
+  color: var(--content-muted);
+  font-size: 10px;
+}
+
+.commandStatus {
+  display: inline-flex;
+  justify-content: center;
+  min-width: 68px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-weight: 900;
+}
+
+.commandSuccess {
+  background: color-mix(in srgb, #3c9c67 16%, transparent);
+  color: #7bd9a4 !important;
+}
+
+.commandFailed {
+  background: color-mix(in srgb, #c94848 16%, transparent);
+  color: #ef8f8f !important;
+}
+
+.commandDelayed {
+  background: color-mix(in srgb, #c58518 16%, transparent);
+  color: #e4ba61 !important;
+}
+
+.commandPending {
+  background: color-mix(in srgb, var(--user-accent) 12%, transparent);
+  color: var(--content-accent-text) !important;
+}
+
+.historyPanel {
+  display: grid;
+  gap: 12px;
+}
+
+.historyHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.historyHeader > div {
+  display: grid;
+  gap: 2px;
+}
+
+.historyHeader h2 {
+  margin: 0;
+  color: var(--content-strong);
+  font-size: 18px;
+}
+
+.historyList {
+  display: grid;
+  gap: 6px;
+}
+
+.historyItem {
+  display: grid;
+  grid-template-columns: minmax(190px, 1.3fr) minmax(110px, .6fr) minmax(100px, .5fr) minmax(170px, .9fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--content-border);
+  border-radius: 10px;
+  background: var(--content-surface-raised);
+}
+
+.historyItemActive {
+  border-color: var(--user-accent);
+  box-shadow: inset 3px 0 0 var(--user-accent);
+}
+
+.historyItem > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.historyItem span {
+  color: var(--content-subtle);
+  font-size: 10px;
+}
+
+.historyItem strong,
+.historyItem code {
+  color: var(--content-strong);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.historyItem button:disabled {
+  opacity: .55;
+  cursor: default;
+}
+
+@media (max-width: 1100px) {
+  .statusJourney {
+    grid-template-columns: repeat(5, minmax(90px, 1fr));
+  }
+
+  .statusDetail {
+    grid-column: 1 / -1;
+    border-left: 0;
+    border-top: 1px solid var(--content-border);
+    padding: 9px 4px 2px;
+  }
+
+  .historyItem {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .historyItem button {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  .statusJourney {
+    display: flex;
+    overflow-x: auto;
+    align-items: stretch;
+    scroll-snap-type: x proximity;
+  }
+
+  .statusStep {
+    flex: 0 0 132px;
+    scroll-snap-align: start;
+  }
+
+  .statusDetail {
+    flex: 0 0 min(280px, 82vw);
+    border-top: 0;
+    border-left: 1px solid var(--content-border);
+    padding: 5px 8px 5px 12px;
+  }
+
+  .filterBar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .filterButton,
+  .filterButtonActive {
+    flex: 0 0 auto;
+  }
+
+  .terminal {
+    min-height: 360px;
+  }
+
+  .commandRow {
+    grid-template-columns: 1fr auto;
+  }
+
+  .commandRow small {
+    grid-column: 1 / -1;
+  }
+
+  .historyItem {
+    grid-template-columns: 1fr;
+  }
+
+  .historyItem button {
+    grid-column: auto;
+    width: 100%;
+  }
+}
