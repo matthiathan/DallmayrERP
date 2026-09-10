@@ -48,14 +48,17 @@ test('Test Center provides session history, archived viewing and full diagnostic
   assert.match(workspace, /\.from\('telemetry_test_sessions'\)[\s\S]*\.limit\(12\)/);
 });
 
-test('Test Center shows command completion, failures and delayed device response without expanding the command allowlist', () => {
+test('Test Center shows command completion, failures and delayed device response while keeping the explicit command allowlist', () => {
   assert.match(workspace, /telemetry_test_commands/);
   assert.match(workspace, /response_note/);
   assert.match(workspace, /Delayed/);
   assert.match(workspace, /30 seconds/);
   assert.match(workspace, /rpc\('queue_telemetry_test_command'/);
+
+  const allowlist = workspace.match(/const SAFE_COMMANDS = \[([\s\S]*?)\] as const;/)?.[1] ?? '';
   for (const command of ['STATUS', 'MACHINE IDENTITY', 'CUP COUNTERS', 'DATA USAGE', 'CELL PPP STATUS', 'WIRING', 'HELP']) {
-    assert.match(workspace, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.match(allowlist, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
-  assert.doesNotMatch(workspace, /AT\+CFUN|AT\+CUSD|ARBITRARY AT/i);
+  assert.doesNotMatch(allowlist, /AT\+CFUN|AT\+CUSD|AT\+HTTP|MODEM AT/i);
+  assert.match(workspace, /No arbitrary AT commands or machine-control commands are exposed remotely/i);
 });
