@@ -6,6 +6,7 @@ import { SignalStrengthIndicator } from '@/components/ui/SignalStrengthIndicator
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { ComparisonLineChart, type ComparisonPoint } from './ComparisonLineChart';
+import { MachineIdentityProfilePanel } from './MachineIdentityProfilePanel';
 import styles from './MachineDetail.module.css';
 
 type Period = 'day' | 'week' | 'month' | 'six_months';
@@ -228,7 +229,11 @@ export function MachineDetail({ machineId }: { machineId: string }) {
 
       const nextDevice = deviceData as Device | null;
       const range = reportWindow(period);
-      const modelKey = nextMachine.model ?? nextMachine.machine_name ?? '';
+      const { data: identityData } = await client.rpc('get_telemetry_machine_identity', { p_machine_id: machineId });
+      const effectiveProfileKey = identityData && typeof identityData === 'object' && !Array.isArray(identityData)
+        ? String((identityData as Record<string, unknown>).effective_profile_key ?? '')
+        : '';
+      const modelKey = effectiveProfileKey || nextMachine.model || nextMachine.machine_name || '';
 
       const [siteQuery, customerQuery, faultQuery, salesQuery, mappingQuery] = await Promise.all([
         nextMachine.site_id
@@ -383,6 +388,8 @@ export function MachineDetail({ machineId }: { machineId: string }) {
             <Metric helper="Last 30 days" label="Data used" tone="amber" value={bytes(usedBytes)} />
           </section>
 
+          <MachineIdentityProfilePanel machineId={machineId} />
+
           <section className={styles.grid}>
             <article className={`${styles.card} ${styles.chartCard}`}>
               <header className={`${styles.cardHeader} ${styles.redHeader}`}><div><span>{periods[period]}</span><h2>Vend activity</h2></div><strong>{units} vends</strong></header>
@@ -425,11 +432,14 @@ export function MachineDetail({ machineId }: { machineId: string }) {
 
         {tab === 'events' ? <section className={styles.card}><header className={`${styles.cardHeader} ${styles.redHeader}`}><div><span>Machine events</span><h2>Fault & recovery history</h2></div><strong>{faults.length}</strong></header><div className={styles.faultList}>{faults.map((fault) => <div className={styles.faultRow} key={fault.id}><strong>{fault.fault_code}</strong><b>{fault.cleared_at ? 'Resolved' : fault.severity}</b><span>{fault.detail ?? fault.source} · {dateTime(fault.last_seen_at)}</span></div>)}{!faults.length ? <div className={styles.empty}>No fault events recorded.</div> : null}</div></section> : null}
 
-        {tab === 'device' ? <section className={styles.gridThree}>
-          <article className={styles.card}><header className={`${styles.cardHeader} ${styles.redHeader}`}><div><span>Telemetry unit</span><h2>{device?.device_code ?? 'No device assigned'}</h2></div></header><dl className={styles.detailList}><div><dt>Hardware UID</dt><dd>{device?.hardware_uid ?? 'Not reported'}</dd></div><div><dt>Profile</dt><dd>{device?.profile_id ?? 'Auto-detect'}</dd></div><div><dt>Reporting mode</dt><dd>{device?.telemetry_mode ? device.telemetry_mode[0].toUpperCase() + device.telemetry_mode.slice(1) : 'Not reported'}</dd></div><div><dt>Link status</dt><dd>{device?.machine_link_status ?? 'Not reported'}</dd></div><div><dt>Link method</dt><dd>{device?.machine_link_method ?? 'Not reported'}</dd></div><div><dt>Reported serial</dt><dd>{device?.reported_machine_serial ?? 'Not reported'}</dd></div></dl></article>
-          <article className={styles.card}><header className={styles.cardHeader}><div><span>Transport</span><h2>Connection state</h2></div></header><dl className={styles.detailList}><div><dt>Preference</dt><dd>{device?.transport_preference ?? 'Auto'}</dd></div><div><dt>Current path</dt><dd>{device?.last_transport ?? 'Not reported'}</dd></div><div><dt>Wi-Fi RSSI</dt><dd>{device?.wifi_rssi != null ? `${device.wifi_rssi} dBm` : '—'}</dd></div><div><dt>Cellular CSQ</dt><dd>{device?.cellular_csq != null ? `${device.cellular_csq} CSQ` : '—'}</dd></div><div><dt>Modem</dt><dd>{device?.cellular_model ?? 'Not reported'}</dd></div></dl></article>
-          <article className={styles.card}><header className={styles.cardHeader}><div><span>Synchronization</span><h2>Device timestamps</h2></div></header><dl className={styles.detailList}><div><dt>Last heartbeat</dt><dd>{dateTime(device?.last_heartbeat_at ?? null)}</dd></div><div><dt>Last upload</dt><dd>{dateTime(device?.last_upload_at ?? null)}</dd></div><div><dt>Last counter</dt><dd>{dateTime(device?.last_counter_at ?? null)}</dd></div><div><dt>Config sent</dt><dd>{dateTime(device?.last_config_at ?? null)}</dd></div><div><dt>Config ack</dt><dd>{dateTime(device?.last_config_ack_at ?? null)}</dd></div></dl></article>
-        </section> : null}
+        {tab === 'device' ? <>
+          <MachineIdentityProfilePanel machineId={machineId} />
+          <section className={styles.gridThree}>
+            <article className={styles.card}><header className={`${styles.cardHeader} ${styles.redHeader}`}><div><span>Telemetry unit</span><h2>{device?.device_code ?? 'No device assigned'}</h2></div></header><dl className={styles.detailList}><div><dt>Hardware UID</dt><dd>{device?.hardware_uid ?? 'Not reported'}</dd></div><div><dt>Profile assignment</dt><dd>{device?.profile_id ?? 'Automatic'}</dd></div><div><dt>Reporting mode</dt><dd>{device?.telemetry_mode ? device.telemetry_mode[0].toUpperCase() + device.telemetry_mode.slice(1) : 'Not reported'}</dd></div><div><dt>Link status</dt><dd>{device?.machine_link_status ?? 'Not reported'}</dd></div><div><dt>Link method</dt><dd>{device?.machine_link_method ?? 'Not reported'}</dd></div><div><dt>Reported serial</dt><dd>{device?.reported_machine_serial ?? 'Not reported'}</dd></div></dl></article>
+            <article className={styles.card}><header className={styles.cardHeader}><div><span>Transport</span><h2>Connection state</h2></div></header><dl className={styles.detailList}><div><dt>Preference</dt><dd>{device?.transport_preference ?? 'Auto'}</dd></div><div><dt>Current path</dt><dd>{device?.last_transport ?? 'Not reported'}</dd></div><div><dt>Wi-Fi RSSI</dt><dd>{device?.wifi_rssi != null ? `${device.wifi_rssi} dBm` : '—'}</dd></div><div><dt>Cellular CSQ</dt><dd>{device?.cellular_csq != null ? `${device.cellular_csq} CSQ` : '—'}</dd></div><div><dt>Modem</dt><dd>{device?.cellular_model ?? 'Not reported'}</dd></div></dl></article>
+            <article className={styles.card}><header className={styles.cardHeader}><div><span>Synchronization</span><h2>Device timestamps</h2></div></header><dl className={styles.detailList}><div><dt>Last heartbeat</dt><dd>{dateTime(device?.last_heartbeat_at ?? null)}</dd></div><div><dt>Last upload</dt><dd>{dateTime(device?.last_upload_at ?? null)}</dd></div><div><dt>Last counter</dt><dd>{dateTime(device?.last_counter_at ?? null)}</dd></div><div><dt>Config sent</dt><dd>{dateTime(device?.last_config_at ?? null)}</dd></div><div><dt>Config ack</dt><dd>{dateTime(device?.last_config_ack_at ?? null)}</dd></div></dl></article>
+          </section>
+        </> : null}
 
         <footer className={styles.footer}><span>Auto-refresh every 30 seconds</span><span>Updated {updated ? updated.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'}</span></footer>
       </> : null}
