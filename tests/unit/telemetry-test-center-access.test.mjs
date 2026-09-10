@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 const migration = fs.readFileSync(new URL('../../supabase/migrations/20260910081226_telemetry_test_center_authenticated_access.sql', import.meta.url), 'utf8');
+const deviceReadMigration = fs.readFileSync(new URL('../../supabase/migrations/20260910082313_telemetry_devices_authenticated_read.sql', import.meta.url), 'utf8');
 const workspace = fs.readFileSync(new URL('../../components/features/TelemetryTestCenter.tsx', import.meta.url), 'utf8');
 
 test('Remote Test Center is available to active authenticated app users without role gating', () => {
@@ -14,6 +15,13 @@ test('Remote Test Center is available to active authenticated app users without 
   assert.match(migration, /to authenticated\s+using \(public\.is_active_app_user\(\)\)/i);
   assert.match(migration, /requested_by = \(select auth\.uid\(\)\)/i);
   assert.match(migration, /created_by = \(select auth\.uid\(\)\)/i);
+});
+
+test('active authenticated users can resolve telemetry devices for Test Center', () => {
+  assert.match(deviceReadMigration, /drop policy if exists telemetry_devices_read_admin_exec/i);
+  assert.match(deviceReadMigration, /create policy telemetry_devices_authenticated_read/i);
+  assert.match(deviceReadMigration, /for select\s+to authenticated\s+using \(public\.is_active_app_user\(\)\)/i);
+  assert.doesNotMatch(deviceReadMigration, /current_app_role\(\)/i);
 });
 
 test('Remote Test Center keeps the operational safety envelope', () => {
