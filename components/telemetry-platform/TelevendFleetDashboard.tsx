@@ -66,6 +66,26 @@ type UsageRow = {
 
 type BalanceRow = { device_id: string; remaining_bytes: number | null; alert_level: string; is_stale: boolean };
 
+type FleetLocationRow = {
+  device_id: string;
+  device_code: string;
+  machine_id: string | null;
+  machine_name: string | null;
+  serial_number: string | null;
+  branch: string;
+  active_fault_count: number;
+  last_seen_at: string | null;
+  last_transport: 'wifi' | 'cellular' | null;
+  latitude: number | null;
+  longitude: number | null;
+  location_source: string | null;
+  location_stale: boolean;
+  has_location: boolean;
+  communication_status: string | null;
+  communication_error: boolean;
+  minutes_overdue: number | null;
+};
+
 type ViewData = {
   report: ReportingPayload;
   history: ReportingPayload;
@@ -73,6 +93,8 @@ type ViewData = {
   faultHistory: FaultHistoryRow[];
   usage: UsageRow[];
   balances: BalanceRow[];
+  locations: FleetLocationRow[];
+  machineCount: number;
 };
 
 const periods: Array<{ value: Period; label: string }> = [
@@ -114,6 +136,11 @@ function timeAgo(value: string) {
   return `${Math.floor(hours / 24)}d`;
 }
 
+function csvCell(value: unknown) {
+  const text = value === null || value === undefined ? '' : String(value);
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
 function usageValue(row: UsageRow) {
   if (n(row.modem_sample_count) > 0) return n(row.measured_modem_bytes);
   if (n(row.device_application_sample_count) > 0) return n(row.device_application_bytes);
@@ -153,7 +180,7 @@ function Ring({ label, value, percent, tone, legend }: { label: string; value: n
       <div className={`${styles.ring} ${ringClass}`} style={{ '--ring-value': `${Math.max(2, Math.min(100, percent))}%` } as CSSProperties}>
         <div className={styles.ringCenter}><span>{label}</span><strong>{value.toLocaleString('en-ZA')}</strong></div>
       </div>
-      <div className={styles.ringLegend}>{legend.map((item, index) => <span key={item}><i />{index === 0 ? item : item}</span>)}</div>
+      <div className={styles.ringLegend}>{legend.map((item) => <span key={item}><i />{item}</span>)}</div>
     </div>
   );
 }
@@ -185,13 +212,15 @@ export function TelevendFleetDashboard() {
     const faultFrom = new Date();
     faultFrom.setDate(faultFrom.getDate() - 30);
 
-    const [reportResult, historyResult, dashboardResult, faultResult, usageResult, balanceResult] = await Promise.all([
+    const [reportResult, historyResult, dashboardResult, faultResult, usageResult, balanceResult, locationResult, machineCountResult] = await Promise.all([
       client.rpc('get_telemetry_reporting', { p_period: period, p_branch: 'all', p_dataset: 'production' }),
       client.rpc('get_telemetry_reporting', { p_period: 'six_months', p_branch: 'all', p_dataset: 'production' }),
       client.rpc('get_telemetry_dashboard', { p_period: 'today', p_branch: 'all' }),
       client.from('telemetry_fault_events').select('id,fault_code,severity,started_at,cleared_at').gte('started_at', faultFrom.toISOString()).order('started_at', { ascending: false }).limit(5000),
       client.rpc('get_telemetry_data_usage', { p_days: 30 }),
       client.rpc('get_telemetry_prepaid_balances'),
+      client.rpc('get_telemetry_location_map'),
+      client.from('machines').select('id', { count: 'exact', head: true }),
     ]);
 
     const errors = [reportResult.error, historyResult.error, dashboardResult.error].filter(Boolean);
@@ -204,6 +233,8 @@ export function TelevendFleetDashboard() {
       faultHistory: faultResult.error ? [] : ((faultResult.data ?? []) as FaultHistoryRow[]),
       usage: usageResult.error ? [] : ((usageResult.data ?? []) as UsageRow[]),
       balances: balanceResult.error ? [] : ((balanceResult.data ?? []) as BalanceRow[]),
+      locations: locationResult.error ? [] : ((locationResult.data ?? []) as FleetLocationRow[]),
+      machineCount: machineCountResult.error ? 0 : (machineCountResult.count ?? 0),
     });
     setUpdated(new Date());
     setLoading(false);
@@ -211,7 +242,12 @@ export function TelevendFleetDashboard() {
   }, [period]);
 
   useEffect(() => { load().catch((loadError) => { setError(loadError instanceof Error ? loadError.message : 'Could not load telemetry overview.'); setLoading(false); setRefreshing(false); }); }, [load]);
-  useEffect(() => { const timer = window.setInterval(() => load(true).catch(() => undefined), 30_000); return () => window.clearInterval(timer); }, [load]);
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') load(true).catch(() => undefined);
+    }, 30_000);
+    return () => window.clearInterval(timer);
+  }, [load]);
 
   const report = data?.report ?? {};
   const summary = report.summary ?? {};
@@ -254,8 +290,60 @@ export function TelevendFleetDashboard() {
   const avgWifi = devices.map((device) => device.wifi_rssi).filter((value): value is number => typeof value === 'number').reduce((sum, value, _, array) => sum + value / array.length, 0);
   const avgCell = devices.map((device) => device.cellular_csq).filter((value): value is number => typeof value === 'number').reduce((sum, value, _, array) => sum + value / array.length, 0);
 
+  const locations = data?.locations ?? [];
+  const machineCount = data?.machineCount ?? 0;
+  const assignedDevices = locations.filter((row) => Boolean(row.machine_id)).length;
+  const mappedDevices = locations.filter((row) => row.has_location && typeof row.latitude === 'number' && typeof row.longitude === 'number').length;
+  const staleLocations = locations.filter((row) => row.has_location && row.location_stale).length;
+  const communicationErrors = locations.filter((row) => row.communication_error).length;
+  const unknownNetwork = Math.max(0, devices.length - wifi - cellular);
+  const assignmentCoverage = machineCount ? Math.min(100, assignedDevices / machineCount * 100) : 0;
+  const locationCoverage = reportingDevices ? Math.min(100, mappedDevices / reportingDevices * 100) : 0;
+  const networkCoverage = devices.length ? Math.min(100, (wifi + cellular) / devices.length * 100) : 0;
+  const communicationHealth = locations.length ? Math.max(0, 100 - communicationErrors / locations.length * 100) : 0;
+
   const topProducts = report.top_items ?? [];
   const recentSales = report.recent_sales ?? [];
+
+  const exportFleetSnapshot = () => {
+    if (!locations.length) return;
+    const usageByDevice = new Map(usage.map((row) => [row.device_id, row]));
+    const balanceByDevice = new Map(balances.map((row) => [row.device_id, row]));
+    const headers = [
+      'Device', 'Machine', 'Serial', 'Branch', 'Communication', 'Minutes overdue', 'Transport',
+      'Latitude', 'Longitude', 'Location source', 'Location stale', 'Active faults',
+      '30-day data bytes', 'Prepaid remaining bytes', 'Last seen',
+    ];
+    const body = locations.map((row) => {
+      const usageRow = usageByDevice.get(row.device_id);
+      const balance = balanceByDevice.get(row.device_id);
+      return [
+        row.device_code,
+        row.machine_name ?? '',
+        row.serial_number ?? '',
+        row.branch,
+        row.communication_status ?? (row.communication_error ? 'offline' : ''),
+        row.minutes_overdue ?? '',
+        row.last_transport ?? '',
+        row.latitude ?? '',
+        row.longitude ?? '',
+        row.location_source ?? '',
+        row.location_stale,
+        row.active_fault_count,
+        usageRow ? usageValue(usageRow) : '',
+        balance?.remaining_bytes ?? '',
+        row.last_seen_at ?? '',
+      ];
+    });
+    const csv = [headers, ...body].map((line) => line.map(csvCell).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `dallmayr-fleet-snapshot-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <section className={styles.dashboard} data-fleet-dashboard="televend-v3">
@@ -263,6 +351,7 @@ export function TelevendFleetDashboard() {
         <div className={styles.toolbarTitle}><i /><strong>Fleet dashboard</strong><span>{report.date_from ?? '—'} – {report.date_to ?? '—'}</span></div>
         <div className={styles.toolbarActions}>
           <label><span>Period</span><select value={period} onChange={(event) => setPeriod(event.target.value as Period)}>{periods.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+          <button disabled={!locations.length} onClick={exportFleetSnapshot} type="button">Export fleet CSV</button>
           <button disabled={refreshing} onClick={() => load(true)} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button>
         </div>
       </div>
@@ -278,6 +367,13 @@ export function TelevendFleetDashboard() {
           <Metric helper={`${failed.toLocaleString('en-ZA')} failed vends`} label="Vend success" tone={success >= 98 ? 'green' : success >= 95 ? 'amber' : 'red'} value={`${success.toFixed(1)}%`} />
           <Metric helper={`${critical} critical · ${warning} warning`} label="Active alarms" tone={active ? 'red' : 'green'} value={active.toLocaleString('en-ZA')} />
           <Metric helper={`${reportingDevices} telemetry devices`} label="Machines reporting" tone="amber" value={n(summary.active_machines).toLocaleString('en-ZA')} />
+        </section>
+
+        <section className={styles.telemetryRow} aria-label="Fleet operational readiness">
+          <article className={styles.telemetryCard}><header><span>Machine-device linking</span><strong>{assignedDevices.toLocaleString('en-ZA')} / {machineCount.toLocaleString('en-ZA')}</strong></header><div className={styles.meter}><i style={{ width: `${assignmentCoverage}%` }} /></div><small>{n(summary.unassigned_devices).toLocaleString('en-ZA')} active devices unassigned · <Link href="/telemetry/devices">Device management ›</Link></small></article>
+          <article className={styles.telemetryCard}><header><span>Map coverage</span><strong>{locationCoverage.toFixed(0)}%</strong></header><div className={styles.meter}><i style={{ width: `${locationCoverage}%` }} /></div><small>{mappedDevices.toLocaleString('en-ZA')} devices located · {staleLocations.toLocaleString('en-ZA')} stale · <Link href="/map">Fleet map ›</Link></small></article>
+          <article className={styles.telemetryCard}><header><span>Communication deadlines</span><strong>{communicationErrors.toLocaleString('en-ZA')} overdue</strong></header><div className={styles.meter}><i style={{ width: `${communicationHealth}%` }} /></div><small>Uses each device reporting schedule · <Link href="/machines">Investigate machines ›</Link></small></article>
+          <article className={styles.telemetryCard}><header><span>Network visibility</span><strong>{networkCoverage.toFixed(0)}%</strong></header><div className={styles.meter}><i style={{ width: `${networkCoverage}%` }} /></div><small>{wifi} Wi-Fi · {cellular} cellular · {unknownNetwork} unknown</small></article>
         </section>
 
         <section className={styles.grid}>
