@@ -92,7 +92,7 @@ async function installMock(page) {
       id: 'machine-1', branch: 'jhb', customer_id: 'customer-1', site_id: 'site-1', asset_tag: 'AST-001', serial_number: 'BEL-001', machine_barcode: 'QR-BEL-001', machine_name: 'Belluno 01', model: 'Belluno', status: 'active', current_custodian: null, manufacturer: 'Dallmayr', condition: 'good', criticality: 'standard', installed_at: '2026-01-10T08:00:00.000Z', last_service_at: '2026-08-01T08:00:00.000Z', next_service_at: '2026-10-01T08:00:00.000Z',
     }));
     if (url.pathname === '/rest/v1/telemetry_devices') return route.fulfill(jsonResponse({
-      id: 'device-1', device_code: 'DALL-TEL-001', status: 'active', profile_id: 'belluno-mdb', firmware_version: '6.8.41', wifi_rssi: -58, cellular_csq: 24, cellular_operator: 'Vodacom', cellular_model: 'Air780EU', last_transport: 'cellular', transport_preference: 'cellular', telemetry_mode: 'live', last_seen_at: new Date().toISOString(), last_upload_at: new Date().toISOString(), last_counter_at: new Date().toISOString(), last_heartbeat_at: new Date().toISOString(), last_config_at: new Date().toISOString(), last_config_ack_at: new Date().toISOString(), hardware_uid: 'ESP32S3-TEST-001', reported_machine_serial: 'BEL-001', machine_link_status: 'linked', machine_link_method: 'automatic',
+      id: 'device-1', device_code: 'DALL-TEL-001', status: 'active', profile_id: null, firmware_version: '6.8.41', wifi_rssi: -58, cellular_csq: 24, cellular_operator: 'Vodacom', cellular_model: 'Air780EU', last_transport: 'cellular', transport_preference: 'cellular', telemetry_mode: 'live', last_seen_at: new Date().toISOString(), last_upload_at: new Date().toISOString(), last_counter_at: new Date().toISOString(), last_heartbeat_at: new Date().toISOString(), last_config_at: new Date().toISOString(), last_config_ack_at: new Date().toISOString(), hardware_uid: 'ESP32S3-TEST-001', reported_machine_serial: 'BEL-001', machine_link_status: 'linked', machine_link_method: 'automatic',
     }));
     if (url.pathname === '/rest/v1/customer_sites') return route.fulfill(jsonResponse({ id: 'site-1', site_name: 'Johannesburg Test Site', address: '1 Test Road, Johannesburg', latitude: -26.2041, longitude: 28.0473 }));
     if (url.pathname === '/rest/v1/customers') return route.fulfill(jsonResponse({ id: 'customer-1', customer_name: 'Test Customer', customer_code: 'TC001' }));
@@ -111,6 +111,13 @@ async function installMock(page) {
       { selection_code: '03', sold_total: 74, failed_total: 1, revenue_cents_total: 111000, updated_at: '2026-09-09T05:55:00.000Z' },
       { selection_code: '04', sold_total: 22, failed_total: 0, revenue_cents_total: 0, updated_at: '2026-09-09T05:55:00.000Z' },
     ]));
+    if (url.pathname === '/rest/v1/rpc/get_telemetry_machine_identity') return route.fulfill(jsonResponse({
+      machine: { id: 'machine-1', name: 'Belluno 01', model: 'Belluno', manufacturer: 'Dallmayr', serial_number: 'BEL-001', asset_tag: 'AST-001', barcode: 'QR-BEL-001' },
+      device: { id: 'device-1', device_code: 'DALL-TEL-001', reported_serial: 'BEL-001', reported_model: 'Belluno', reported_revision: 'R2', reported_asset: 'AST-001', identity_source: 'dex_id1', profile_fingerprint: 'VMC-BELLUNO-001', protocol: 'mdb', identity_at: '2026-09-09T05:55:00.000Z', machine_link_status: 'linked', machine_link_method: 'automatic', profile_id: null, profile_assignment_method: 'automatic', profile_updated_at: null, last_config_ack_at: '2026-09-09T05:55:00.000Z', applied_profile_id: 'Belluno' },
+      profile_options: [{ id: 'profile-1', model_key: 'Belluno', display_name: 'Belluno', button_count: 12, updated_at: '2026-09-09T05:55:00.000Z' }],
+      recommended_profile: { id: 'profile-1', model_key: 'Belluno', display_name: 'Belluno', button_count: 12, updated_at: '2026-09-09T05:55:00.000Z', score: 100, reason: 'Detected machine model exactly matches the profile.' },
+      effective_profile_key: 'Belluno', confidence: 'high', conflicts: [], evidence: [{ type: 'protocol', value: 'MDB' }, { type: 'serial', value: 'BEL-001' }, { type: 'model', value: 'Belluno' }], profile_pending: false,
+    }));
     if (url.pathname === '/rest/v1/rpc/get_machine_model_button_map') return route.fulfill(jsonResponse([
       { profile_id: 'profile-1', model_key: 'Belluno', display_name: 'Belluno', button_count: 12, button_number: 1, selection_code: '01', product_id: 'product-1', product_name: 'Caramel Cappuccino', product_active: true },
       { profile_id: 'profile-1', model_key: 'Belluno', display_name: 'Belluno', button_count: 12, button_number: 2, selection_code: '02', product_id: 'product-2', product_name: 'Instant Porridge', product_active: true },
@@ -125,7 +132,7 @@ async function installMock(page) {
   });
 }
 
-test('rebuilt machine detail workspace exposes telemetry, lifetime cup counters and device diagnostics on mobile', async ({ browser }) => {
+test('rebuilt machine detail workspace exposes telemetry, identity, lifetime cup counters and device diagnostics on mobile', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   const page = await context.newPage();
   await installMock(page);
@@ -138,6 +145,14 @@ test('rebuilt machine detail workspace exposes telemetry, lifetime cup counters 
   await expect(detail.getByText('Lifetime cups', { exact: true })).toBeVisible();
   await expect(detail.getByText('Data used', { exact: true })).toBeVisible();
   await expect(detail.getByRole('img', { name: /Cellular signal high/i })).toBeVisible();
+
+  const identity = detail.locator('[data-machine-identification="ready"]');
+  await expect(identity).toBeVisible();
+  await expect(identity.getByText('Detected protocol', { exact: true })).toBeVisible();
+  await expect(identity.getByText('MDB', { exact: true }).first()).toBeVisible();
+  await expect(identity.getByText('High confidence', { exact: true })).toBeVisible();
+  await expect(identity.getByText('Automatic selection', { exact: true })).toBeVisible();
+  await expect(identity.getByText('Belluno', { exact: true }).first()).toBeVisible();
 
   const chart = detail.locator('[data-chart-interactive="comparison-line"]');
   await expect(chart).toBeVisible();
@@ -165,6 +180,7 @@ test('rebuilt machine detail workspace exposes telemetry, lifetime cup counters 
   await expect(detail.getByText('ESP32S3-TEST-001', { exact: true })).toBeVisible();
   await expect(detail.getByText('Reporting mode', { exact: true })).toBeVisible();
   await expect(detail.getByText('Live', { exact: true })).toBeVisible();
+  await expect(detail.locator('[data-machine-identification="ready"]')).toBeVisible();
 
   const overflow = await page.evaluate(() => ({
     document: document.documentElement.scrollWidth > document.documentElement.clientWidth,
