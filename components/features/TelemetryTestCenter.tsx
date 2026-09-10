@@ -141,7 +141,15 @@ export function TelemetryTestCenter() {
 
     const normalized = (deviceRows ?? []) as DeviceRecord[];
     setDevices(normalized);
-    setSelectedDeviceId((current) => current || normalized[0]?.id || '');
+    const requestedDeviceCode = typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('device')?.trim() ?? ''
+      : '';
+    setSelectedDeviceId((current) => {
+      const requestedDevice = requestedDeviceCode
+        ? normalized.find((item) => item.device_code === requestedDeviceCode)?.id
+        : undefined;
+      return requestedDevice ?? current ?? normalized[0]?.id ?? '';
+    });
 
     const machineIds = [...new Set(normalized.map((item) => item.machine_id).filter((value): value is string => Boolean(value)))];
     if (machineIds.length > 0) {
