@@ -5,6 +5,13 @@ import test from 'node:test';
 const workspace = fs.readFileSync(new URL('../../components/features/TelemetryTestCenter.tsx', import.meta.url), 'utf8');
 const styles = fs.readFileSync(new URL('../../components/features/TelemetryTestCenter.module.css', import.meta.url), 'utf8');
 
+test('Test Center selects a valid active device by default and preserves an explicit deep link', () => {
+  assert.match(workspace, /requestedDeviceCode/);
+  assert.match(workspace, /currentStillExists/);
+  assert.match(workspace, /normalized\[0\]\?\.id/);
+  assert.doesNotMatch(workspace, /requestedDevice \?\? current \?\? normalized\[0\]/);
+});
+
 test('Test Center exposes the complete remote session state journey', () => {
   for (const label of ['Connecting', 'Device acknowledged', 'Streaming', 'Stale', 'Ended']) {
     assert.match(workspace, new RegExp(label, 'i'));
