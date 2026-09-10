@@ -211,12 +211,13 @@ export function TelevendFleetDashboard() {
     const client = getSupabaseClient();
     const faultFrom = new Date();
     faultFrom.setDate(faultFrom.getDate() - 30);
+    const faultFromBusinessDate = `${formatLocalDate(faultFrom)}T00:00:00+02:00`;
 
     const [reportResult, historyResult, dashboardResult, faultResult, usageResult, balanceResult, locationResult, machineCountResult] = await Promise.all([
       client.rpc('get_telemetry_reporting', { p_period: period, p_branch: 'all', p_dataset: 'production' }),
       client.rpc('get_telemetry_reporting', { p_period: 'six_months', p_branch: 'all', p_dataset: 'production' }),
       client.rpc('get_telemetry_dashboard', { p_period: 'today', p_branch: 'all' }),
-      client.from('telemetry_fault_events').select('id,fault_code,severity,started_at,cleared_at').gte('started_at', faultFrom.toISOString()).order('started_at', { ascending: false }).limit(5000),
+      client.from('telemetry_fault_events').select('id,fault_code,severity,started_at,cleared_at').gte('started_at', faultFromBusinessDate).order('started_at', { ascending: false }).limit(5000),
       client.rpc('get_telemetry_data_usage', { p_days: 30 }),
       client.rpc('get_telemetry_prepaid_balances'),
       client.rpc('get_telemetry_location_map'),
@@ -340,7 +341,7 @@ export function TelevendFleetDashboard() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `dallmayr-fleet-snapshot-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.download = `dallmayr-fleet-snapshot-${formatLocalDate()}.csv`;
     anchor.click();
     URL.revokeObjectURL(url);
   };
