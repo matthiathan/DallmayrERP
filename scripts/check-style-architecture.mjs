@@ -43,6 +43,7 @@ const requiredPairs = [
   'AlarmCenter',
   'TelemetryAnalytics',
   'TelemetryReports',
+  'TelemetryConfigSyncPanel',
   'ComparisonLineChart',
   'SpecialistWorkspaceFrame',
 ];
