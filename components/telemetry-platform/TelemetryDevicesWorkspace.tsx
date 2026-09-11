@@ -9,6 +9,7 @@ import { SignalStrengthIndicator } from '@/components/ui/SignalStrengthIndicator
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { collectSupabasePagesResult } from '@/lib/supabase/collect-pages';
 import { deviceConfigSyncState, deviceConnectionState } from '@/lib/telemetry/device-health';
+import { DeviceRegisterPagination } from './DeviceRegisterPagination';
 import { TelemetryConfigSyncPanel } from './TelemetryConfigSyncPanel';
 import styles from './TelemetryDevicesWorkspace.module.css';
 
@@ -187,6 +188,8 @@ export function TelemetryDevicesWorkspace() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [transportFilter, setTransportFilter] = useState('all');
   const [modeFilter, setModeFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
 
   const [machineId, setMachineId] = useState('');
   const [machineSearch, setMachineSearch] = useState('');
@@ -289,9 +292,12 @@ export function TelemetryDevicesWorkspace() {
     if (requestedDeviceHandled.current || !devices.length) return;
     requestedDeviceHandled.current = true;
     const deviceCode = new URLSearchParams(window.location.search).get('device');
-    const requested = devices.find((device) => device.device_code === deviceCode);
-    if (requested) setSelectedId(requested.id);
-  }, [devices]);
+    const requestedIndex = devices.findIndex((device) => device.device_code === deviceCode);
+    if (requestedIndex >= 0) {
+      setSelectedId(devices[requestedIndex].id);
+      setPage(Math.floor(requestedIndex / pageSize) + 1);
+    }
+  }, [devices, pageSize]);
   useEffect(() => {
     const refresh = () => { if (document.visibilityState === 'visible') void load(false); };
     const timer = globalThis.setInterval(refresh, 15_000);
@@ -341,6 +347,20 @@ export function TelemetryDevicesWorkspace() {
     const machine = device.machine_id ? machines[device.machine_id] : null;
     return [device.device_code, device.hardware_uid, device.firmware_version, device.cellular_operator, device.profile_id, machineLabel(machine)].join(' ').toLowerCase().includes(term);
   }), [devices, machines, modeFilter, modes, search, statusFilter, transportFilter]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const pageRows = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [modeFilter, search, statusFilter, transportFilter]);
+
+  useEffect(() => {
+    setPage((current) => Math.min(current, pageCount));
+  }, [pageCount]);
 
   async function searchMachines(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -438,12 +458,12 @@ export function TelemetryDevicesWorkspace() {
       <select aria-label="Filter transport" value={transportFilter} onChange={(event) => setTransportFilter(event.target.value)}><option value="all">All networks</option><option value="wifi">Wi-Fi</option><option value="cellular">Cellular</option></select>
       <select aria-label="Filter reporting mode" value={modeFilter} onChange={(event) => setModeFilter(event.target.value)}><option value="all">All modes</option><option value="live">Live</option><option value="daily">Daily</option><option value="monthly">Monthly</option></select>
       <button className={styles.refresh} disabled={loading} onClick={() => void load(false)} type="button"><NavigationIcon kind="telemetry" />Refresh</button>
-      <small>{filtered.length.toLocaleString('en-ZA')} shown · updated {lastUpdated ? lastUpdated.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '—'}</small>
+      <small>{filtered.length.toLocaleString('en-ZA')} matching · {devices.length.toLocaleString('en-ZA')} controllers · updated {lastUpdated ? lastUpdated.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '—'}</small>
     </section>
 
     {loading && !devices.length ? <HamsterLoader label="Loading telemetry devices" /> : <section className={styles.register}>
       <div className={styles.tableWrap}><table><thead><tr><th>Device</th><th>Machine</th><th>State</th><th>Network</th><th>Signal</th><th>Reporting</th><th>30-day data</th><th>SIM remaining</th><th>Last contact</th><th /></tr></thead><tbody>
-        {filtered.map((device) => {
+        {pageRows.map((device) => {
           const state = statusKey(device);
           const deviceUsage = usage[device.id];
           const balance = prepaid[device.id];
@@ -462,8 +482,16 @@ export function TelemetryDevicesWorkspace() {
           </tr>;
         })}
       </tbody></table></div>
-      <div className={styles.mobileCards}>{filtered.map((device) => { const state = statusKey(device); const deviceUsage = usage[device.id]; const balance = prepaid[device.id]; const machine = device.machine_id ? machines[device.machine_id] : null; return <button className={styles.deviceCard} key={device.id} onClick={() => setSelectedId(device.id)} type="button"><div><strong>{device.device_code}</strong><span className={`${styles.pill} ${styles[state]}`}><i />{state}</span></div><span>{machineLabel(machine)}</span><dl><div><dt>Network</dt><dd>{device.last_transport ?? '—'}</dd></div><div><dt>Data</dt><dd>{formatBytes(actualUsage(deviceUsage))}</dd></div><div><dt>SIM</dt><dd>{balance?.remaining_bytes != null ? formatBytes(balance.remaining_bytes) : '—'}</dd></div><div><dt>Seen</dt><dd>{age(device.last_heartbeat_at ?? device.last_seen_at)}</dd></div></dl></button>; })}</div>
+      <div className={styles.mobileCards}>{pageRows.map((device) => { const state = statusKey(device); const deviceUsage = usage[device.id]; const balance = prepaid[device.id]; const machine = device.machine_id ? machines[device.machine_id] : null; return <button className={styles.deviceCard} key={device.id} onClick={() => setSelectedId(device.id)} type="button"><div><strong>{device.device_code}</strong><span className={`${styles.pill} ${styles[state]}`}><i />{state}</span></div><span>{machineLabel(machine)}</span><dl><div><dt>Network</dt><dd>{device.last_transport ?? '—'}</dd></div><div><dt>Data</dt><dd>{formatBytes(actualUsage(deviceUsage))}</dd></div><div><dt>SIM</dt><dd>{balance?.remaining_bytes != null ? formatBytes(balance.remaining_bytes) : '—'}</dd></div><div><dt>Seen</dt><dd>{age(device.last_heartbeat_at ?? device.last_seen_at)}</dd></div></dl></button>; })}</div>
       {!filtered.length ? <div className={styles.empty}>No telemetry devices match these filters.</div> : null}
+      {filtered.length ? <DeviceRegisterPagination
+        onPageChange={setPage}
+        onPageSizeChange={(nextPageSize) => { setPageSize(nextPageSize); setPage(1); }}
+        page={page}
+        pageCount={pageCount}
+        pageSize={pageSize}
+        total={filtered.length}
+      /> : null}
     </section>}
 
     {selected ? <aside className={styles.drawer} aria-label={`Manage ${selected.device_code}`}>

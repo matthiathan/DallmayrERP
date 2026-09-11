@@ -1,0 +1,129 @@
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--telemetry-border, #e5e8ed);
+  background: var(--telemetry-surface-soft, #fafbfc);
+}
+
+.summary {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  color: var(--telemetry-muted, #707a89);
+  font-size: 11px;
+}
+
+.summary strong {
+  color: var(--telemetry-ink, #202631);
+  font-size: 12px;
+}
+
+.pageSize {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--telemetry-muted, #707a89);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pageSize select {
+  min-height: 34px;
+  border: 1px solid var(--telemetry-border, #d7dce5);
+  border-radius: 8px;
+  background: var(--telemetry-surface, #fff);
+  color: var(--telemetry-ink, #171b24);
+  padding: 0 9px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.controls button {
+  min-height: 34px;
+  border: 1px solid var(--telemetry-border, #d7dce5);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: var(--telemetry-surface, #fff);
+  color: var(--telemetry-ink, #202631);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.controls button:disabled {
+  opacity: .42;
+  cursor: not-allowed;
+}
+
+.controls button:focus-visible,
+.pageSize select:focus-visible {
+  outline: 2px solid #bb1e28;
+  outline-offset: 2px;
+}
+
+.pageNumber {
+  min-width: 88px;
+  color: var(--telemetry-muted, #707a89);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .pagination {
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .summary {
+    flex: 1 1 100%;
+  }
+
+  .pageSize {
+    flex: 0 0 auto;
+  }
+
+  .controls {
+    flex: 1 1 auto;
+    justify-content: flex-end;
+  }
+
+  .controls button:first-child,
+  .controls button:last-child {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .pagination {
+    display: grid;
+    grid-template-columns: 1fr auto;
+  }
+
+  .summary {
+    grid-column: 1 / -1;
+  }
+
+  .controls {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+  }
+
+  .pageNumber {
+    flex: 1;
+  }
+}
