@@ -1,0 +1,53 @@
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>
+'@
+        $styles = @'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="1"><fill><patternFill patternType="none"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs></styleSheet>
+'@
+
+        $rows = [Text.StringBuilder]::new()
+        $headers = @('Number','Scanned','UID','ID (dec)','Reverse DEC','Card type')
+        $rowNo = 1
+        [void]$rows.Append(('<row r="{0}">' -f $rowNo))
+        for ($c=0; $c -lt $headers.Count; $c++) {
+            $col = [char](65+$c)
+            $v = Escape-Xml $headers[$c]
+            [void]$rows.Append(('<c r="{0}{1}" t="inlineStr"><is><t>{2}</t></is></c>' -f $col,$rowNo,$v))
+        }
+        [void]$rows.Append('</row>')
+
+        foreach ($x in @($Script:Scans)) {
+            $rowNo++
+            $vals = @([string]$x.number,[string]$x.timestamp,[string]$x.uid,[string]$x.id_dec,[string]$x.reverse_dec,[string]$x.card_type)
+            [void]$rows.Append(('<row r="{0}">' -f $rowNo))
+            for ($c=0; $c -lt $vals.Count; $c++) {
+                $col = [char](65+$c)
+                $v = Escape-Xml $vals[$c]
+                [void]$rows.Append(('<c r="{0}{1}" t="inlineStr"><is><t>{2}</t></is></c>' -f $col,$rowNo,$v))
+            }
+            [void]$rows.Append('</row>')
+        }
+
+        $sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols><col min="1" max="1" width="10" customWidth="1"/><col min="2" max="2" width="22" customWidth="1"/><col min="3" max="3" width="22" customWidth="1"/><col min="4" max="5" width="18" customWidth="1"/><col min="6" max="6" width="24" customWidth="1"/></cols><sheetData>' + $rows.ToString() + '</sheetData></worksheet>'
+
+        Write-Utf8NoBom (Join-Path $tempRoot '[Content_Types].xml') $contentTypes
+        Write-Utf8NoBom (Join-Path $tempRoot '_rels\.rels') $rels
+        Write-Utf8NoBom (Join-Path $tempRoot 'xl\workbook.xml') $workbook
+        Write-Utf8NoBom (Join-Path $tempRoot 'xl\_rels\workbook.xml.rels') $workbookRels
+        Write-Utf8NoBom (Join-Path $tempRoot 'xl\styles.xml') $styles
+        Write-Utf8NoBom (Join-Path $tempRoot 'xl\worksheets\sheet1.xml') $sheet
+
+        if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+        Compress-Archive -Path (Join-Path $tempRoot '*') -DestinationPath $zipPath -CompressionLevel Optimal
+        return [IO.File]::ReadAllBytes($zipPath)
+    } finally {
+        try { Remove-Item $tempRoot -Recurse -Force -ErrorAction SilentlyContinue } catch {}
+        try { Remove-Item $zipPath -Force -ErrorAction SilentlyContinue } catch {}
+    }
+}
+
+function Send-HttpResponse($Client, [int]$Status, [string]$ContentType, [byte[]]$Body, [hashtable]$ExtraHeaders = @{}) {
+    $stream = $Client.GetStream()
+    $reason = switch ($Status) { 200 {'OK'} 204 {'No Content'} 404 {'Not Found'} default {'OK'} }
+    $headers = "HTTP/1.1 $Status $reason`r`nContent-Type: $ContentType`r`nContent-Length: $($Body.Length)`r`nCache-Control: no-store`r`nConnection: close`r`n"
+    foreach ($k in $ExtraHeaders.Keys) { $headers += "$k`: $($ExtraHeaders[$k])`r`n" }
