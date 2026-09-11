@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { telemetryNavigationSections } from '@/components/layout/appShellNavigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type SearchResult = {
@@ -48,23 +49,15 @@ export function GlobalSearch({
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const requestRef = useRef(0);
 
-  const availablePages = useMemo<SearchResult[]>(() => {
-    const focusedPages = [
-      { href: '/', label: 'Fleet Overview', section: 'Monitoring', description: 'Fleet health, sales, faults and connectivity.' },
-      { href: '/machines', label: 'Machines', section: 'Monitoring', description: 'Every machine and connected device.' },
-      { href: '/alerts', label: 'Alerts', section: 'Monitoring', description: 'Current machine faults and offline devices.' },
-      { href: '/telemetry', label: 'Analytics', section: 'Telemetry', description: 'Item quantities, trends and activity.' },
-      { href: '/map', label: 'Machine Map', section: 'Telemetry', description: 'Last known telemetry device positions.' },
-      { href: '/telemetry/devices', label: 'Device Management', section: 'Management', description: 'Assign and manage telemetry controllers.' },
-    ];
-    return focusedPages.map((item) => ({
+  const availablePages = useMemo<SearchResult[]>(() => telemetryNavigationSections.flatMap((section) => (
+    section.items.map((item) => ({
       id: item.href,
       type: 'Page' as const,
       title: item.label,
-      subtitle: `${item.section} • ${item.description}`,
+      subtitle: `${section.heading} • ${item.description ?? 'Telemetry workspace page.'}`,
       href: item.href,
-    }));
-  }, []);
+    }))
+  )), []);
 
   const pageResults = useMemo(() => {
     const term = safeFilterTerm(query);
@@ -73,7 +66,7 @@ export function GlobalSearch({
       includesTerm(page.title, term)
       || includesTerm(page.subtitle, term)
       || includesTerm(page.href.replaceAll('/', ' '), term)
-    )).slice(0, 10);
+    )).slice(0, 12);
   }, [availablePages, query]);
 
   const results = useMemo(
@@ -207,20 +200,23 @@ export function GlobalSearch({
     <div className="global-search-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeSearch(); }}>
       <section aria-label="Find a machine, telemetry device or monitoring page" aria-modal="true" className="global-search-dialog" id={GLOBAL_SEARCH_DIALOG_ID} ref={dialogRef} role="dialog">
         <div className="global-search-input-row">
-          <input aria-label="Search machines, serial numbers, QR numbers or telemetry devices" onChange={(event) => setQuery(event.target.value)} placeholder="Search machine, serial, QR number or device ID..." ref={inputRef} type="search" value={query} />
+          <input aria-label="Search machines, serial numbers, QR numbers, telemetry devices or pages" onChange={(event) => setQuery(event.target.value)} placeholder="Search machine, serial, QR, device ID or page..." ref={inputRef} type="search" value={query} />
           <button aria-label="Close search" className="button secondary" onClick={closeSearch} type="button">Close</button>
         </div>
         <div className="global-search-quick-actions">
           <Link href="/machines" onClick={closeSearch}>Find a machine</Link>
           <Link href="/alerts" onClick={closeSearch}>Active alerts</Link>
           <Link href="/telemetry" onClick={closeSearch}>Sales analytics</Link>
+          <Link href="/telemetry/reports" onClick={closeSearch}>Reports & exports</Link>
+          <Link href="/telemetry/test-center" onClick={closeSearch}>Test Center</Link>
           <Link href="/map" onClick={closeSearch}>Machine map</Link>
+          <Link href="/products" onClick={closeSearch}>Products</Link>
           <Link href="/telemetry/devices" onClick={closeSearch}>Manage devices</Link>
         </div>
         <div aria-live="polite" className="global-search-results">
           {loading ? <div className="global-search-state">Searching records…</div> : null}
           {error ? <div className="error" role="alert">{error}</div> : null}
-          {!loading && !error && query.trim().length < 2 ? <div className="global-search-state">Type at least two characters to search by machine name, serial number, QR number or device ID.</div> : null}
+          {!loading && !error && query.trim().length < 2 ? <div className="global-search-state">Type at least two characters to search by page, machine name, serial number, QR number or device ID.</div> : null}
           {!loading && query.trim().length >= 2 && results.length === 0 ? <div className="global-search-state">No matching pages or records found. Check the spelling or try a different identifier.</div> : null}
           {results.map((result) => <Link className="global-search-result" href={result.href} key={`${result.type}-${result.id}`} onClick={closeSearch}><span className="global-search-result-type">{result.type}</span><strong>{result.title}</strong><span>{result.subtitle}</span></Link>)}
         </div>
