@@ -96,7 +96,7 @@ export function MobileTelemetryShell({
 
         <div className={styles.mobileActions}>
           <div className={styles.mobileSearch}>
-            <GlobalSearch triggerLabel="Search machine, serial, QR or device ID" />
+            <GlobalSearch triggerLabel="Search machine, device or page" />
           </div>
           <Link aria-label="Open alerts" className={styles.mobileAction} href="/alerts">
             <NavigationIcon kind="bell" />
