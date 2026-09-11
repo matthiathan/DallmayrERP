@@ -35,4 +35,7 @@ test('finished device workspace retains fleet operations and safety controls', (
   assert.match(workspace, /TelemetryEnrollmentWindowControl/);
   assert.match(workspace, /SignalStrengthIndicator/);
   assert.match(workspace, /At least one transport must remain enabled/);
+  assert.match(workspace, /data-device-health-summary="v1"/);
+  assert.match(workspace, /Confirmed device contact within 30 min/);
+  assert.match(workspace, /deviceConfigSyncState/);
 });

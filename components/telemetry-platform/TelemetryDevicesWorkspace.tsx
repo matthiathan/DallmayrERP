@@ -7,6 +7,7 @@ import { AccessibleDialog } from '@/components/ui/AccessibleDialog';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { SignalStrengthIndicator } from '@/components/ui/SignalStrengthIndicator';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { deviceConfigSyncState, deviceConnectionState } from '@/lib/telemetry/device-health';
 import { TelemetryConfigSyncPanel } from './TelemetryConfigSyncPanel';
 import styles from './TelemetryDevicesWorkspace.module.css';
 
@@ -108,10 +109,6 @@ function age(value: string | null) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-function isOnline(value: string | null) {
-  return Boolean(value && Date.now() - new Date(value).getTime() <= 30 * 60 * 1000);
-}
-
 function actualUsage(usage: Usage | null | undefined) {
   if (!usage) return 0;
   if (Number(usage.modem_sample_count ?? 0) > 0) return Number(usage.measured_modem_bytes ?? 0);
@@ -133,8 +130,30 @@ function machineLabel(machine: Machine | null | undefined) {
 }
 
 function statusKey(device: Device) {
-  if (device.status !== 'active') return 'disabled';
-  return isOnline(device.last_heartbeat_at ?? device.last_seen_at) ? 'online' : 'offline';
+  return deviceConnectionState(device).key;
+}
+
+function transportLabel(transport: Device['last_transport']) {
+  if (transport === 'wifi') return 'Wi-Fi';
+  if (transport === 'cellular') return 'Cellular';
+  return 'Not reported';
+}
+
+function transportDetail(device: Device) {
+  if (device.last_transport === 'cellular') return device.cellular_operator ? `Operator ${device.cellular_operator}` : 'Carrier not reported';
+  if (device.last_transport === 'wifi') return device.wifi_rssi === null ? 'Wi-Fi signal not reported' : `RSSI ${device.wifi_rssi} dBm`;
+  return 'No recent network reported';
+}
+
+function usageDetail(usage: Usage | null | undefined, projection: number) {
+  const source = !usage
+    ? 'No usage samples received'
+    : Number(usage.modem_sample_count ?? 0) > 0
+      ? 'Modem bytes measured'
+      : Number(usage.device_application_sample_count ?? 0) > 0
+        ? 'Device application traffic'
+        : 'Server-observed traffic';
+  return `${source} · projects ${formatBytes(projection)}/month`;
 }
 
 function Stat({ label, value, detail, tone = 'neutral' }: { label: string; value: string; detail: string; tone?: 'neutral' | 'green' | 'red' | 'amber' | 'blue' }) {
@@ -256,7 +275,7 @@ export function TelemetryDevicesWorkspace() {
 
   const metrics = useMemo(() => {
     const active = devices.filter((device) => device.status === 'active');
-    const online = active.filter((device) => isOnline(device.last_heartbeat_at ?? device.last_seen_at)).length;
+    const online = active.filter((device) => deviceConnectionState(device).key === 'online').length;
     const cellular = active.filter((device) => device.last_transport === 'cellular').length;
     const lowData = Object.values(prepaid).filter((row) => ['low', 'critical', 'depleted'].includes(row.alert_level)).length;
     const totalUsage = Object.values(usage).reduce((sum, row) => sum + actualUsage(row), 0);
@@ -344,7 +363,9 @@ export function TelemetryDevicesWorkspace() {
 
   const selectedUsed = actualUsage(selectedUsage);
   const selectedProjected = projectedUsage(selectedUsage);
-  const selectedStatus = selected ? statusKey(selected) : 'offline';
+  const selectedHealth = selected ? deviceConnectionState(selected) : null;
+  const selectedConfig = selected ? deviceConfigSyncState(selected) : null;
+  const selectedStatus = selectedHealth?.key ?? 'offline';
   const currentMachine = machineId ? (machineResults.find((row) => row.id === machineId) ?? machines[machineId] ?? null) : null;
   const machineOptions = currentMachine && !machineResults.some((row) => row.id === currentMachine.id) ? [currentMachine, ...machineResults] : machineResults;
 
@@ -398,10 +419,10 @@ export function TelemetryDevicesWorkspace() {
     </section>}
 
     {selected ? <aside className={styles.drawer} aria-label={`Manage ${selected.device_code}`}>
-      <header className={styles.drawerHeader}><div><span>Telemetry controller</span><h2>{selected.device_code}</h2><p><span className={`${styles.pill} ${styles[selectedStatus]}`}><i />{selectedStatus}</span> · {selected.last_transport ?? 'No active network'} · {age(selected.last_heartbeat_at ?? selected.last_seen_at)}</p></div><button aria-label="Close device settings" onClick={() => setSelectedId(null)} type="button">×</button></header>
+      <header className={styles.drawerHeader}><div><span>Telemetry controller</span><h2>{selected.device_code}</h2><p><span className={`${styles.pill} ${styles[selectedStatus]}`}><i />{selectedHealth?.label ?? 'Offline'}</span> · {transportLabel(selected.last_transport)} · {age(selectedHealth?.contactAt ?? null)}</p></div><button aria-label="Close device settings" onClick={() => setSelectedId(null)} type="button">×</button></header>
 
       <div className={styles.drawerBody}>
-        <section className={styles.controlSection}><div className={styles.sectionTitle}><span>Live state</span><h3>Device health</h3></div><div className={styles.healthGrid}><div><span>Signal</span><strong>{selected.last_transport ? <SignalStrengthIndicator cellularCsq={selected.cellular_csq} transport={selected.last_transport} wifiRssi={selected.wifi_rssi} /> : '—'}</strong></div><div><span>Firmware</span><strong>{selected.firmware_version ?? 'Unknown'}</strong></div><div><span>30-day data</span><strong>{formatBytes(selectedUsed)}</strong></div><div><span>Projection</span><strong>{formatBytes(selectedProjected)}</strong></div></div></section>
+        <section className={styles.controlSection} data-device-health-summary="v1"><div className={styles.sectionTitle}><span>Live state</span><h3>Device health</h3></div><div className={styles.healthGrid}><div><span>Communication</span><strong>{selectedHealth?.label ?? 'Offline'}</strong><small>{selectedHealth?.key === 'online' ? 'Confirmed device contact within 30 min' : selectedHealth?.key === 'disabled' ? 'Controller is disabled' : selectedHealth?.contactAt ? 'No confirmed device contact in 30 min' : 'No telemetry contact has been recorded'}</small></div><div><span>Last contact</span><strong>{age(selectedHealth?.contactAt ?? null)}</strong><small>{formatDate(selectedHealth?.contactAt ?? null)}</small></div><div><span>Transport</span><strong>{transportLabel(selected.last_transport)}</strong><small>{transportDetail(selected)}</small></div><div><span>Signal</span><strong>{selected.last_transport ? <SignalStrengthIndicator cellularCsq={selected.cellular_csq} transport={selected.last_transport} wifiRssi={selected.wifi_rssi} /> : '—'}</strong><small>{selected.last_transport ? 'Active transport measurement' : 'Awaiting network telemetry'}</small></div><div><span>Configuration</span><strong>{selectedConfig?.label ?? 'Not reported'}</strong><small>{selectedConfig?.timestamp ? formatDate(selectedConfig.timestamp) : 'No device configuration has been queued'}</small></div><div><span>Data use · 30 days</span><strong>{formatBytes(selectedUsed)}</strong><small>{usageDetail(selectedUsage, selectedProjected)}</small></div></div></section>
 
         <section className={styles.controlSection}><div className={styles.sectionTitle}><span>Assignment</span><h3>Machine link</h3></div><div className={styles.currentMachine}>{machineLabel(currentMachine)}</div><form className={styles.machineSearch} onSubmit={searchMachines}><input placeholder="Machine name, serial or asset tag" value={machineSearch} onChange={(event) => setMachineSearch(event.target.value)} /><button disabled={searchingMachines} type="submit">{searchingMachines ? 'Searching…' : 'Find'}</button></form>{machineOptions.length ? <select value={machineId} onChange={(event) => setMachineId(event.target.value)}><option value="">Unassign device</option>{machineOptions.map((machine) => <option key={machine.id} value={machine.id}>{machineLabel(machine)}</option>)}</select> : <button className={styles.unassign} onClick={() => setMachineId('')} type="button">Clear assignment</button>}</section>
 

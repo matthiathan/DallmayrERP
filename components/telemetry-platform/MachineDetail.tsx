@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { SignalStrengthIndicator } from '@/components/ui/SignalStrengthIndicator';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { deviceConfigSyncState, deviceConnectionState } from '@/lib/telemetry/device-health';
 import { ComparisonLineChart, type ComparisonPoint } from './ComparisonLineChart';
 import { MachineIdentityProfilePanel } from './MachineIdentityProfilePanel';
 import styles from './MachineDetail.module.css';
@@ -154,14 +155,9 @@ function age(value: string | null) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-function connectionState(device: Device | null) {
-  if (!device) return { key: 'offline', label: 'No telemetry device' };
-  const heartbeat = device.last_heartbeat_at ?? device.last_seen_at;
-  if (!heartbeat) return { key: 'offline', label: 'Never connected' };
-  const elapsed = Date.now() - new Date(heartbeat).getTime();
-  if (elapsed <= 30 * 60 * 1000) return { key: 'online', label: 'Online' };
-  if (elapsed <= 24 * 60 * 60 * 1000) return { key: 'delayed', label: 'Delayed' };
-  return { key: 'offline', label: 'Offline' };
+function connectionState(device: Device | null): ReturnType<typeof deviceConnectionState> | { key: 'offline'; label: 'No telemetry device'; contactAt: null } {
+  if (!device) return { key: 'offline', label: 'No telemetry device', contactAt: null };
+  return deviceConnectionState(device);
 }
 
 function actualUsage(usage: Usage | null) {
@@ -302,6 +298,7 @@ export function MachineDetail({ machineId }: { machineId: string }) {
   const lifeUnits = counters.reduce((sum, row) => sum + row.sold_total, 0);
   const openFaults = faults.filter((fault) => !fault.cleared_at);
   const state = connectionState(device);
+  const configState = device ? deviceConfigSyncState(device) : null;
 
   const aggregateProducts = useCallback((rows: Sale[]) => {
     const map = new Map<string, { key: string; label: string; units: number; failed: number; revenue: number }>();
@@ -427,7 +424,7 @@ export function MachineDetail({ machineId }: { machineId: string }) {
               <div><dt>Model</dt><dd>{machine.model ?? 'Not recorded'}</dd></div><div><dt>Manufacturer</dt><dd>{machine.manufacturer ?? 'Not recorded'}</dd></div><div><dt>QR code</dt><dd>{machine.machine_barcode ?? machine.asset_tag ?? 'Not recorded'}</dd></div><div><dt>Condition</dt><dd>{machine.condition ?? machine.status}</dd></div><div><dt>Client</dt><dd>{customer?.customer_name ?? 'Not assigned'}</dd></div><div><dt>Location</dt><dd>{site?.address ?? machine.current_custodian ?? 'Not recorded'}</dd></div>
             </dl></article>
             <article className={styles.card}><header className={styles.cardHeader}><div><span>Connectivity</span><h2>Telemetry health</h2></div></header><dl className={styles.detailList}>
-              <div><dt>Transport</dt><dd>{device?.last_transport === 'wifi' ? 'Wi-Fi' : device?.last_transport === 'cellular' ? 'Cellular' : 'Not reported'}</dd></div><div><dt>Signal</dt><dd className={styles.signalRow}>{device ? <SignalStrengthIndicator cellularCsq={device.cellular_csq} transport={device.last_transport} wifiRssi={device.wifi_rssi} /> : null}</dd></div><div><dt>Last contact</dt><dd>{age(device?.last_heartbeat_at ?? device?.last_seen_at ?? null)}</dd></div><div><dt>Firmware</dt><dd>{device?.firmware_version ?? 'Not reported'}</dd></div><div><dt>Operator</dt><dd>{device?.cellular_operator ?? 'Not reported'}</dd></div>
+              <div><dt>Transport</dt><dd>{device?.last_transport === 'wifi' ? 'Wi-Fi' : device?.last_transport === 'cellular' ? 'Cellular' : 'Not reported'}</dd></div><div><dt>Signal</dt><dd className={styles.signalRow}>{device ? <SignalStrengthIndicator cellularCsq={device.cellular_csq} transport={device.last_transport} wifiRssi={device.wifi_rssi} /> : null}</dd></div><div><dt>Last contact</dt><dd>{age(state.contactAt ?? null)}</dd></div><div><dt>Configuration</dt><dd>{configState?.label ?? 'Not reported'}</dd></div><div><dt>Firmware</dt><dd>{device?.firmware_version ?? 'Not reported'}</dd></div><div><dt>Operator</dt><dd>{device?.cellular_operator ?? 'Not reported'}</dd></div>
             </dl></article>
             <article className={styles.card}><header className={styles.cardHeader}><div><span>SIM & data</span><h2>Connectivity usage</h2></div></header><dl className={styles.detailList}>
               <div><dt>30-day transfer</dt><dd>{bytes(usedBytes)}</dd></div><div><dt>Monthly projection</dt><dd>{bytes(projectedBytes)}</dd></div><div><dt>Prepaid remaining</dt><dd>{prepaid?.remaining_bytes != null ? bytes(prepaid.remaining_bytes) : 'Awaiting balance'}</dd></div><div><dt>Balance status</dt><dd>{prepaid?.alert_level ?? prepaid?.query_status ?? 'Not reported'}</dd></div>

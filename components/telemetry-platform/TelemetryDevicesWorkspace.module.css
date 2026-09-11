@@ -325,6 +325,7 @@
 .balanceHero span { display: block; margin-bottom: 6px; color: #7a8391; font-size: 10px; font-weight: 800; text-transform: uppercase; }
 .healthGrid strong,
 .balanceHero strong { display: block; overflow: hidden; font-size: 13px; text-overflow: ellipsis; }
+.healthGrid small { display: block; margin-top: 5px; color: var(--telemetry-muted, #737d8d); font-size: 10px; line-height: 1.35; }
 .balanceHero strong { font-size: 21px; letter-spacing: -.03em; }
 .balanceWarning { border-color: rgba(171, 93, 0, .28) !important; background: rgba(171, 93, 0, .06) !important; color: #9b5700; }
 
