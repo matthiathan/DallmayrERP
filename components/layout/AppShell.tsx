@@ -83,7 +83,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <strong>{activeTitle}</strong>
         </div>
         <div className={styles.searchSlot}>
-          <GlobalSearch triggerLabel="Search machine, serial, QR or device ID" />
+          <GlobalSearch triggerLabel="Search machine, device or page" />
         </div>
         <div className={styles.topbarActions}>
           <div className={styles.headerChip}><NavigationIcon kind="pin" />South Africa</div>
