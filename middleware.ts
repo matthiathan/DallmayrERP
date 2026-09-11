@@ -6,7 +6,7 @@ import {
   shouldRememberAuth,
 } from '@/lib/supabase/authPersistence';
 
-const PUBLIC_AUTH_ROUTES = ['/login', '/reset-password'];
+const PUBLIC_AUTH_ROUTES = ['/login', '/reset-password', '/rfid-scanner'];
 const SESSION_RESPONSE_HEADERS = ['cache-control', 'expires', 'pragma'] as const;
 const E2E_AUTH_HEADER = 'x-dallmayr-e2e-auth';
 
