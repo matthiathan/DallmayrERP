@@ -51,3 +51,27 @@ test('telemetry reporting access migration aligns read-only RPCs to active authe
   assert.match(migration, /revoke all on function public\.get_telemetry_reporting\(text,text,text\) from public, anon/);
   assert.match(migration, /grant execute on function public\.get_telemetry_reporting\(text,text,text\) to authenticated, service_role/);
 });
+
+test('branch filters scope device availability and simulation state with the same machine or site branch contract', async () => {
+  const migration = await read('supabase/migrations/20260911051000_telemetry_reporting_branch_device_scope.sql');
+
+  assert.match(migration, /device_scope as \(/);
+  assert.match(migration, /left join public\.customer_sites cs on cs\.id = coalesce\(d\.site_id, m\.site_id\)/);
+  assert.match(migration, /lower\(coalesce\(m\.branch, cs\.branch, ''\)\) = v_branch/);
+  assert.match(migration, /'reporting_devices', \(select count\(\*\) from device_scope\)/);
+  assert.match(migration, /from device_scope ds\s+cross join lateral public\.get_telemetry_connectivity_state\(ds\.id\) c/);
+  assert.match(migration, /join device_scope ds on ds\.id = ms\.device_id/);
+  assert.match(migration, /'unassigned_devices', \(select count\(\*\) from device_scope where machine_id is null\)/);
+});
+
+test('global search derives pages from the canonical telemetry navigation and exposes specialist workspaces', async () => {
+  const search = await read('components/ui/GlobalSearch.tsx');
+
+  assert.match(search, /import \{ telemetryNavigationSections \} from '@\/components\/layout\/appShellNavigation';/);
+  assert.match(search, /telemetryNavigationSections\.flatMap/);
+  assert.doesNotMatch(search, /const focusedPages =/);
+  assert.match(search, /href="\/telemetry\/reports"/);
+  assert.match(search, /href="\/telemetry\/test-center"/);
+  assert.match(search, /href="\/products"/);
+  assert.match(search, /Reports & exports/);
+});
