@@ -57,6 +57,10 @@ function Try-ConnectSerial {
             $Script:SerialMessage = 'Connected'
             $Script:LastHostReply = Get-Date
             Write-Log "Connected to $port"
+
+            # Open the scanning website as soon as the reader is detected.
+            # If the page is already active, LastUiSeen prevents duplicate windows.
+            Open-ManagerPageIfNeeded
             return
         } catch {
             try { if ($null -ne $sp) { $sp.Dispose() } } catch {}
