@@ -97,7 +97,7 @@ export function TelemetryConfigSyncPanel({ deviceId }: { deviceId: string }) {
   const latest = payload?.history?.[0] ?? null;
   const copy = statusCopy(latest);
   const applied = latest?.applied_config ?? payload?.applied_config ?? {};
-  const appliedEntries = useMemo(() => [
+  const appliedEntries = useMemo<Array<[string, unknown]>>(() => ([
     ['mode', applied.mode],
     ['transport_preference', applied.transport_preference],
     ['wifi_enabled', applied.wifi_enabled],
@@ -105,7 +105,7 @@ export function TelemetryConfigSyncPanel({ deviceId }: { deviceId: string }) {
     ['location_enabled', applied.location_enabled],
     ['location_interval_minutes', applied.location_interval_minutes],
     ['location_min_move_m', applied.location_min_move_m],
-  ].filter(([, value]) => value !== undefined), [applied]);
+  ] as Array<[string, unknown]>).filter(([, value]) => value !== undefined), [applied]);
   const differences = latest ? Object.entries(latest.differences ?? {}) : [];
   const unreported = latest?.unreported_fields ?? [];
 
