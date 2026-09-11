@@ -83,6 +83,30 @@ forbid(
 requireText(
   'global search',
   globalSearch,
+  "import { telemetryNavigationSections } from '@/components/layout/appShellNavigation';",
+  'global search must derive page results from the canonical telemetry navigation catalogue.',
+);
+requireText(
+  'global search',
+  globalSearch,
+  'telemetryNavigationSections.flatMap',
+  'global search must enumerate every telemetry navigation page instead of a separate partial list.',
+);
+forbid(
+  'global search',
+  globalSearch,
+  'const focusedPages =',
+  'global search must not maintain a second hard-coded page catalogue.',
+);
+requireText(
+  'global search',
+  globalSearch,
+  'href="/telemetry/reports"',
+  'reports and exports must be reachable from global search quick actions.',
+);
+requireText(
+  'global search',
+  globalSearch,
   "client.from('telemetry_devices')",
   'global search must search telemetry devices for every authenticated account.',
 );
@@ -93,4 +117,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Telemetry navigation contract passed: the rebuilt authenticated workspace exposes all telemetry pages without role gates.');
+console.log('Telemetry navigation contract passed: the rebuilt authenticated workspace and global search expose all telemetry pages without role gates.');
