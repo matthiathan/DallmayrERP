@@ -1,0 +1,37 @@
+.top{display:flex;gap:16px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px}
+h1{margin:0;font-size:30px}.sub{margin-top:6px;color:#64727d}.card{background:#fff;border:1px solid #dce4e9;border-radius:15px;padding:18px;box-shadow:0 4px 15px rgba(0,0,0,.045);margin-bottom:14px}
+.actions{display:flex;gap:9px;flex-wrap:wrap}button,a.btn{border:0;border-radius:9px;padding:10px 14px;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;display:inline-block}
+.primary{background:#17212b;color:#fff}.secondary{background:#e9eef2;color:#17212b}.danger{background:#fdeaea;color:#a02727}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:12px;margin:14px 0}.stat{background:#fff;border:1px solid #dce4e9;border-radius:12px;padding:14px}.stat .n{font-size:27px;font-weight:800}.stat .l{font-size:12px;color:#687782;text-transform:uppercase;letter-spacing:.04em}
+.status{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:7px 10px;background:#edf2f5;font-size:13px;font-weight:700}.dot{width:9px;height:9px;border-radius:50%;background:#aab4bc}.status.on .dot{background:#198754}.status.off .dot{background:#c43c3c}
+.modeRow{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}.modeTitle{font-size:16px;font-weight:800}.modeHelp{color:#697983;font-size:13px;margin-top:4px;max-width:760px}.switches{display:flex;gap:9px;flex-wrap:wrap}
+.modeBtn.active{background:#17212b;color:#fff}.modeBtn.inactive{background:#e9eef2;color:#17212b}.warn{margin-top:12px;padding:10px 12px;border-radius:9px;background:#fff6df;color:#725514;font-size:13px;display:none}
+.tableWrap{overflow:auto}.empty{padding:36px;text-align:center;color:#70808c}table{width:100%;border-collapse:collapse;min-width:930px}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #edf0f2;font-size:14px}th{font-size:12px;text-transform:uppercase;letter-spacing:.045em;color:#6a7883;background:#fafbfc;position:sticky;top:0}.rev{font-family:Consolas,monospace;font-weight:800;font-size:15px}.uid{font-family:Consolas,monospace}.copy{border:0;background:#eef2f5;border-radius:7px;padding:6px 8px;cursor:pointer;margin-left:7px}
+@media(max-width:700px){body{padding:12px}.stats{grid-template-columns:1fr}.top{display:block}.actions{margin-top:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><h1>Dallmayr RFID Card Manager</h1><div class="sub">Composite USB CDC + HID · localhost scanner · 10-digit Nayax reverse DEC · v4</div></div>
+    <div class="actions"><a class="btn secondary" href="/export.csv">Export CSV</a><a class="btn primary" href="/export.xlsx">Export Excel</a><button class="danger" onclick="clearScans()">Clear list</button></div>
+  </div>
+
+  <div class="card">
+    <div class="modeRow">
+      <div>
+        <div class="modeTitle">Reader output mode</div>
+        <div class="modeHelp">Localhost always records every card. Keyboard Wedge is optional and types the 10-digit Reverse DEC into whichever Windows application currently has focus.</div>
+      </div>
+      <div class="switches">
+        <button id="hidBtn" class="modeBtn inactive" onclick="toggleHid()">Keyboard Wedge: Off</button>
+        <button id="enterBtn" class="modeBtn active" onclick="toggleEnter()">Enter after scan: On</button>
+      </div>
+    </div>
+    <div id="hidWarn" class="warn">Keyboard Wedge is ON. A scan will type into the currently focused application as well as being recorded here.</div>
+  </div>
+
+  <div class="card">
+    <span id="status" class="status off"><span class="dot"></span><span>Waiting for RFID reader...</span></span>
+    <div class="stats">
+      <div class="stat"><div id="total" class="n">0</div><div class="l">Total scans</div></div>
