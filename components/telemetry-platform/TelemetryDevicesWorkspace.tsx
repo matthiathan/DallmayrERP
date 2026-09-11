@@ -7,6 +7,7 @@ import { AccessibleDialog } from '@/components/ui/AccessibleDialog';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { SignalStrengthIndicator } from '@/components/ui/SignalStrengthIndicator';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { collectSupabasePagesResult } from '@/lib/supabase/collect-pages';
 import { deviceConfigSyncState, deviceConnectionState } from '@/lib/telemetry/device-health';
 import { TelemetryConfigSyncPanel } from './TelemetryConfigSyncPanel';
 import styles from './TelemetryDevicesWorkspace.module.css';
@@ -84,6 +85,8 @@ type Prepaid = {
 };
 
 const DEVICE_SELECT = 'id,device_code,hardware_uid,machine_id,site_id,profile_id,status,firmware_version,last_seen_at,last_upload_at,last_counter_at,last_heartbeat_at,last_config_at,last_config_ack_at,last_transport,transport_preference,wifi_enabled,cellular_enabled,wifi_rssi,cellular_csq,cellular_operator,mdb_master_polarity,mdb_slave_polarity,mdb_pin_swap,location_override,location_interval_minutes,location_min_move_m,updated_at';
+const MACHINE_SELECT = 'id,branch,site_id,serial_number,machine_name,model';
+const MACHINE_LOOKUP_BATCH_SIZE = 100;
 
 function formatBytes(value: number | null | undefined) {
   const amount = Number(value ?? 0);
@@ -210,11 +213,29 @@ export function TelemetryDevicesWorkspace() {
     if (showLoader) setLoading(true);
     setError(null);
     const client = getSupabaseClient();
+
+    const deviceRows = collectSupabasePagesResult<Device>(async (from, to) => {
+      const { data, error: pageError } = await client
+        .from('telemetry_devices')
+        .select(DEVICE_SELECT)
+        .order('device_code', { ascending: true })
+        .range(from, to);
+      return { data: (data ?? []) as Device[], error: pageError };
+    });
+    const usageRows = collectSupabasePagesResult<Usage>(async (from, to) => {
+      const { data, error: pageError } = await client.rpc('get_telemetry_data_usage', { p_days: 30 }).range(from, to);
+      return { data: (data ?? []) as Usage[], error: pageError };
+    });
+    const prepaidRows = collectSupabasePagesResult<Prepaid>(async (from, to) => {
+      const { data, error: pageError } = await client.rpc('get_telemetry_prepaid_balances').range(from, to);
+      return { data: (data ?? []) as Prepaid[], error: pageError };
+    });
+
     const [deviceQuery, dashboardQuery, usageQuery, prepaidQuery] = await Promise.all([
-      client.from('telemetry_devices').select(DEVICE_SELECT).order('device_code'),
+      deviceRows,
       client.rpc('get_telemetry_dashboard', { p_period: 'today', p_branch: 'all' }),
-      client.rpc('get_telemetry_data_usage', { p_days: 30 }),
-      client.rpc('get_telemetry_prepaid_balances'),
+      usageRows,
+      prepaidRows,
     ]);
 
     if (deviceQuery.error) {
@@ -223,19 +244,38 @@ export function TelemetryDevicesWorkspace() {
       return;
     }
 
-    const rows = (deviceQuery.data ?? []) as Device[];
+    const rows = deviceQuery.data;
     setDevices(rows);
     setSelectedId((current) => current && rows.some((row) => row.id === current) ? current : null);
 
     const dashboard = (dashboardQuery.data ?? {}) as { device_states?: Array<{ device_id: string; telemetry_mode?: TelemetryMode }> };
     setModes(Object.fromEntries((dashboard.device_states ?? []).map((row) => [row.device_id, row.telemetry_mode ?? 'live'])));
-    setUsage(Object.fromEntries(((usageQuery.error ? [] : usageQuery.data ?? []) as Usage[]).map((row) => [row.device_id, row])));
-    setPrepaid(Object.fromEntries(((prepaidQuery.error ? [] : prepaidQuery.data ?? []) as Prepaid[]).map((row) => [row.device_id, row])));
+    setUsage(Object.fromEntries((usageQuery.error ? [] : usageQuery.data).map((row) => [row.device_id, row])));
+    setPrepaid(Object.fromEntries((prepaidQuery.error ? [] : prepaidQuery.data).map((row) => [row.device_id, row])));
+
+    const auxiliaryErrors = [dashboardQuery.error, usageQuery.error, prepaidQuery.error].filter(Boolean);
+    if (auxiliaryErrors.length) {
+      setError(auxiliaryErrors[0]?.message ?? 'Some telemetry device details could not be loaded.');
+    }
 
     const machineIds = [...new Set(rows.map((row) => row.machine_id).filter((value): value is string => Boolean(value)))];
     if (machineIds.length) {
-      const { data: machineRows } = await client.from('machines').select('id,branch,site_id,serial_number,machine_name,model').in('id', machineIds);
-      setMachines(Object.fromEntries(((machineRows ?? []) as Machine[]).map((row) => [row.id, row])));
+      const machineBatches: string[][] = [];
+      for (let start = 0; start < machineIds.length; start += MACHINE_LOOKUP_BATCH_SIZE) {
+        machineBatches.push(machineIds.slice(start, start + MACHINE_LOOKUP_BATCH_SIZE));
+      }
+      const machineResults = await Promise.all(machineBatches.map(async (ids) => {
+        const { data, error: machineError } = await client.from('machines').select(MACHINE_SELECT).in('id', ids);
+        return { data: (data ?? []) as Machine[], error: machineError };
+      }));
+      const firstMachineError = machineResults.find((result) => result.error)?.error;
+      if (firstMachineError) {
+        setMachines({});
+        setError(firstMachineError.message ?? 'Machine assignment details could not be loaded.');
+      } else {
+        const machineRows = machineResults.flatMap((result) => result.data);
+        setMachines(Object.fromEntries(machineRows.map((row) => [row.id, row])));
+      }
     } else {
       setMachines({});
     }
