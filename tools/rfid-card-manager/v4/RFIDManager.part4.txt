@@ -1,0 +1,102 @@
+        try { if ($Script:Serial.IsOpen) { $Script:Serial.Close() } } catch {}
+        try { $Script:Serial.Dispose() } catch {}
+    }
+    $Script:Serial = $null
+    $Script:SerialPortName = ''
+}
+
+function Try-ConnectSerial {
+    if ($null -ne $Script:Serial -and $Script:Serial.IsOpen) { return }
+    if (((Get-Date) - $Script:LastPortProbe).TotalSeconds -lt 1.0) { return }
+    $Script:LastPortProbe = Get-Date
+
+    foreach ($port in (Get-ArduinoCandidates)) {
+        $sp = $null
+        try {
+            $sp = [IO.Ports.SerialPort]::new($port, $Script:Baud, [IO.Ports.Parity]::None, 8, [IO.Ports.StopBits]::One)
+            $sp.NewLine = "`n"
+            $sp.ReadTimeout = 60
+            $sp.WriteTimeout = 500
+            $sp.DtrEnable = $true
+            $sp.RtsEnable = $false
+            $sp.Open()
+            Start-Sleep -Milliseconds 300
+
+            # Probe the port. We only claim it if the firmware identifies itself as
+            # this RFID reader; that prevents unrelated COM devices opening the site.
+            $sp.WriteLine('HOST|RFID_MANAGER|4|OK')
+            $sp.WriteLine('PING|RFID_MANAGER|4')
+            $validReader = $false
+            $detectedFirmware = ''
+            $deadline = (Get-Date).AddMilliseconds(1800)
+
+            while ((Get-Date) -lt $deadline) {
+                if ($sp.BytesToRead -gt 0) {
+                    $probeLine = $sp.ReadLine().Trim()
+                    if ($probeLine -like 'HELLO|RFID_READER|4*') {
+                        $validReader = $true
+                        $pp = $probeLine -split '\|'
+                        if ($pp.Count -ge 3) { $detectedFirmware = $pp[2] }
+                        break
+                    }
+                    if ($probeLine -like 'HELLO|RFID_READER|3*') {
+                        $validReader = $true
+                        $detectedFirmware = '3.x'
+                        break
+                    }
+                    if ($probeLine -like 'PONG|RFID_READER|4*' -or
+                        $probeLine -like 'PONG|RFID_READER|3*' -or
+                        $probeLine -like 'STATUS|HOST_CONNECTED*') {
+                        $validReader = $true
+                        break
+                    }
+                } else {
+                    Start-Sleep -Milliseconds 35
+                }
+            }
+
+            if (-not $validReader) {
+                try { $sp.Close() } catch {}
+                try { $sp.Dispose() } catch {}
+                continue
+            }
+
+            $Script:Serial = $sp
+            $Script:SerialPortName = $port
+            $Script:SerialMessage = 'Connected'
+            if ($detectedFirmware) { $Script:DeviceFirmware = $detectedFirmware }
+            $Script:LastHostReply = Get-Date
+            Write-Log "Verified Dallmayr RFID reader on $port"
+
+            if ($Script:DeviceFirmware -eq '3.x') {
+                $sp.WriteLine('HOST|RFID_MANAGER|3|OK')
+            } else {
+                $sp.WriteLine('HOST|RFID_MANAGER|4|OK')
+                Send-ReaderMode
+                $sp.WriteLine('GET|STATUS')
+            }
+
+            # The scanning website opens immediately after verified USB detection.
+            Open-ManagerPageIfNeeded
+            return
+        } catch {
+            try { if ($null -ne $sp) { $sp.Dispose() } } catch {}
+        }
+    }
+    $Script:SerialMessage = 'Waiting for Dallmayr RFID reader...'
+}
+
+function Send-HostOk {
+    if ($null -eq $Script:Serial -or -not $Script:Serial.IsOpen) { return }
+    try {
+        $Script:Serial.WriteLine('HOST|RFID_MANAGER|4|OK')
+        $Script:LastHostReply = Get-Date
+    } catch {
+        Write-Log "Serial write failed: $($_.Exception.Message)"
+        Close-Serial
+    }
+}
+
+function Send-ReaderMode {
+    if ($null -eq $Script:Serial -or -not $Script:Serial.IsOpen) { return }
+    try {
