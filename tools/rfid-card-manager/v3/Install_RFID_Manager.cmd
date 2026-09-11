@@ -42,7 +42,8 @@ echo.
 echo Installation complete.
 echo.
 echo Plug in / leave the UNO R4 connected. The manager will answer the
-echo reader handshake automatically. Scan a card to open localhost.
+echo reader handshake automatically and open http://localhost:8765 as soon
+echo as the reader is detected. You do not need to scan a card first.
 echo.
 echo Local page: http://localhost:8765
 start "" "http://localhost:8765"
