@@ -1,0 +1,69 @@
+    $unique = @($copy | ForEach-Object { $_.reverse_dec } | Where-Object { $_ } | Select-Object -Unique).Count
+    $reversed = @($copy | Sort-Object number -Descending)
+    $state = [ordered]@{
+        serial = [ordered]@{
+            connected = ($null -ne $Script:Serial -and $Script:Serial.IsOpen)
+            port = $Script:SerialPortName
+            message = $Script:SerialMessage
+        }
+        device = [ordered]@{
+            firmware = $Script:DeviceFirmware
+            usb = 'CDC + HID'
+            hid_reported = [bool]$Script:DeviceHidEnabled
+            enter_reported = [bool]$Script:DeviceHidAppendEnter
+        }
+        hid = [ordered]@{
+            enabled = [bool]$Script:HidEnabled
+            append_enter = [bool]$Script:HidAppendEnter
+        }
+        total = $copy.Count
+        unique = $unique
+        latest = $latest
+        scans = $reversed
+        version = $Script:Version
+    }
+    return ($state | ConvertTo-Json -Depth 7 -Compress)
+}
+
+function Get-CsvBytes {
+    $sb = [Text.StringBuilder]::new()
+    [void]$sb.AppendLine('Number,Scanned,UID,ID (dec),Reverse DEC,Card type')
+    foreach ($x in @($Script:Scans)) {
+        $vals = @($x.number,$x.timestamp,$x.uid,$x.id_dec,$x.reverse_dec,$x.card_type) | ForEach-Object {
+            '"' + ([string]$_).Replace('"','""') + '"'
+        }
+        [void]$sb.AppendLine(($vals -join ','))
+    }
+    $utf8Bom = [byte[]](0xEF,0xBB,0xBF)
+    $body = [Text.Encoding]::UTF8.GetBytes($sb.ToString())
+    $all = New-Object byte[] ($utf8Bom.Length + $body.Length)
+    [Array]::Copy($utf8Bom,0,$all,0,$utf8Bom.Length)
+    [Array]::Copy($body,0,$all,$utf8Bom.Length,$body.Length)
+    return $all
+}
+
+function Write-Utf8NoBom([string]$Path, [string]$Text) {
+    $parent = Split-Path -Parent $Path
+    if ($parent) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }
+    [IO.File]::WriteAllText($Path, $Text, [Text.UTF8Encoding]::new($false))
+}
+
+function Get-XlsxBytes {
+    $tempRoot = Join-Path $env:TEMP ("rfid_xlsx_" + [guid]::NewGuid().ToString('N'))
+    $zipPath = "$tempRoot.zip"
+    New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
+    try {
+        $contentTypes = @'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>
+'@
+        $rels = @'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>
+'@
+        $workbook = @'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="RFID Scans" sheetId="1" r:id="rId1"/></sheets></workbook>
+'@
+        $workbookRels = @'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
