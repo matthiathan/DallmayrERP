@@ -1,0 +1,93 @@
+        $Script:Serial.WriteLine($(if ($Script:HidEnabled) { 'MODE|HID|ON' } else { 'MODE|HID|OFF' }))
+        $Script:Serial.WriteLine($(if ($Script:HidAppendEnter) { 'MODE|ENTER|ON' } else { 'MODE|ENTER|OFF' }))
+    } catch {
+        Write-Log "Could not apply reader mode: $($_.Exception.Message)"
+        Close-Serial
+    }
+}
+
+function Open-ManagerPageIfNeeded {
+    if (((Get-Date) - $Script:LastUiSeen).TotalSeconds -le 4.0) { return }
+    try {
+        $edge = Get-Command msedge.exe -ErrorAction SilentlyContinue
+        if ($edge) { Start-Process 'msedge.exe' -ArgumentList "--new-window $($Script:Url)" }
+        else { Start-Process $Script:Url }
+        $Script:BrowserOpened = $true
+    } catch {
+        try { Start-Process $Script:Url } catch {}
+    }
+}
+
+function Add-Scan([string]$Line) {
+    $parts = $Line -split '\|', 5
+    if ($parts.Count -ne 5 -or $parts[0] -ne 'RFID') { return }
+
+    $reverse = ([string]$parts[3]).Trim()
+    while ($reverse.Length -lt 10) { $reverse = '0' + $reverse }
+    if ($reverse.Length -gt 10) { $reverse = $reverse.Substring($reverse.Length - 10) }
+
+    $rec = [PSCustomObject]@{
+        number      = $Script:Scans.Count + 1
+        timestamp   = (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+        uid         = ([string]$parts[1]).Trim()
+        id_dec      = ([string]$parts[2]).Trim()
+        reverse_dec = $reverse
+        card_type   = ([string]$parts[4]).Trim()
+    }
+    $Script:Scans += $rec
+    Save-Scans
+    Write-Log "Scan $($rec.number): $($rec.reverse_dec)"
+    Open-ManagerPageIfNeeded
+}
+
+function Poll-Serial {
+    Try-ConnectSerial
+    if ($null -eq $Script:Serial -or -not $Script:Serial.IsOpen) { return }
+
+    try {
+        for ($i = 0; $i -lt 16; $i++) {
+            if ($Script:Serial.BytesToRead -le 0) { break }
+            $line = $Script:Serial.ReadLine().Trim()
+            if (-not $line) { continue }
+
+            if ($line -like 'HELLO|RFID_READER|4*') {
+                $parts = $line -split '\|'
+                if ($parts.Count -ge 3) { $Script:DeviceFirmware = $parts[2] }
+                Send-HostOk
+                Send-ReaderMode
+                $Script:Serial.WriteLine('GET|STATUS')
+            } elseif ($line -like 'HELLO|RFID_READER|3*') {
+                $Script:DeviceFirmware = '3.x'
+                try { $Script:Serial.WriteLine('HOST|RFID_MANAGER|3|OK') } catch {}
+            } elseif ($line -eq 'PING|RFID_READER|4') {
+                $Script:Serial.WriteLine('PONG|RFID_MANAGER|4')
+                $Script:LastHostReply = Get-Date
+            } elseif ($line -eq 'PING|RFID_READER|3') {
+                $Script:Serial.WriteLine('PONG|RFID_MANAGER|3')
+                $Script:LastHostReply = Get-Date
+            } elseif ($line -like 'DEVICE|STATUS|*') {
+                if ($line -match 'HID=([01])') { $Script:DeviceHidEnabled = ($matches[1] -eq '1') }
+                if ($line -match 'ENTER=([01])') { $Script:DeviceHidAppendEnter = ($matches[1] -eq '1') }
+            } elseif ($line -like 'RFID|*') {
+                Add-Scan $line
+            } elseif ($line -like 'ERROR|*') {
+                $Script:SerialMessage = $line
+                Write-Log $line
+            }
+        }
+
+        if (((Get-Date) - $Script:LastPing).TotalSeconds -ge 4.0) {
+            $Script:Serial.WriteLine('PING|RFID_MANAGER|4')
+            $Script:LastPing = Get-Date
+        }
+    } catch {
+        Write-Log "Serial disconnected: $($_.Exception.Message)"
+        $Script:SerialMessage = 'Reader disconnected; reconnecting...'
+        $Script:DeviceFirmware = ''
+        Close-Serial
+    }
+}
+
+function Get-StateJson {
+    $copy = @($Script:Scans)
+    $latest = if ($copy.Count -gt 0) { [string]$copy[-1].reverse_dec } else { '' }
