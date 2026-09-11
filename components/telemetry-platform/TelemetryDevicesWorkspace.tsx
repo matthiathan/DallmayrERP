@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TelemetryEnrollmentWindowControl } from '@/components/features/TelemetryEnrollmentWindowControl';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { AccessibleDialog } from '@/components/ui/AccessibleDialog';
@@ -178,6 +178,7 @@ export function TelemetryDevicesWorkspace() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const requestedDeviceHandled = useRef(false);
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -244,6 +245,13 @@ export function TelemetryDevicesWorkspace() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    if (requestedDeviceHandled.current || !devices.length) return;
+    requestedDeviceHandled.current = true;
+    const deviceCode = new URLSearchParams(window.location.search).get('device');
+    const requested = devices.find((device) => device.device_code === deviceCode);
+    if (requested) setSelectedId(requested.id);
+  }, [devices]);
   useEffect(() => {
     const refresh = () => { if (document.visibilityState === 'visible') void load(false); };
     const timer = globalThis.setInterval(refresh, 15_000);

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'r
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { ComparisonLineChart, type ComparisonPoint } from './ComparisonLineChart';
 import { formatLocalDate } from '@/lib/dates/local-date';
+import { buildFleetAttentionItems, type FleetAttentionItem, type FleetAttentionDevice } from '@/lib/telemetry/fleet-attention';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import styles from './TelevendFleetDashboard.module.css';
 
@@ -94,6 +95,7 @@ type ViewData = {
   usage: UsageRow[];
   balances: BalanceRow[];
   locations: FleetLocationRow[];
+  attentionDevices: FleetAttentionDevice[] | null;
   machineCount: number;
 };
 
@@ -126,8 +128,11 @@ function shortDate(value: string) {
   return new Date(`${value}T00:00:00`).toLocaleDateString('en-ZA', { day: '2-digit', month: '2-digit' });
 }
 
-function timeAgo(value: string) {
-  const seconds = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 1000));
+function timeAgo(value: string | null | undefined) {
+  if (!value) return 'never';
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return 'unknown';
+  const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
   if (seconds < 60) return `${seconds}s`;
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m`;
@@ -197,6 +202,20 @@ function Gauge({ title, value, percent, label }: { title: string; value: string;
   );
 }
 
+function attentionTitle(item: FleetAttentionItem) {
+  if (item.kind === 'offline') return item.occurredAt ? 'Controller offline' : 'Controller has never contacted DallmayrERP';
+  if (item.kind === 'config') return 'Configuration awaiting device ACK';
+  if (item.kind === 'sim_balance') return item.balanceAlert === 'depleted' ? 'SIM balance depleted' : item.balanceAlert === 'critical' ? 'SIM balance critical' : 'SIM balance low';
+  return item.lastTransport ? `${item.lastTransport === 'wifi' ? 'Wi-Fi' : 'Cellular'} signal not reported` : 'Network transport not reported';
+}
+
+function attentionDetail(item: FleetAttentionItem) {
+  if (item.kind === 'offline') return item.occurredAt ? `Last confirmed device contact ${timeAgo(item.occurredAt)} ago.` : 'No heartbeat, upload, seen event, or configuration acknowledgement has been received.';
+  if (item.kind === 'config') return `Configuration was sent ${timeAgo(item.occurredAt)} ago and has not been acknowledged.`;
+  if (item.kind === 'sim_balance') return `${bytes(item.remainingBytes)} remaining. ${item.balanceAlert === 'low' ? 'Plan a top-up.' : 'Top up this SIM now.'}`;
+  return 'The controller is online, but its active network or signal strength has not been reported.';
+}
+
 export function TelevendFleetDashboard() {
   const [period, setPeriod] = useState<Period>('week');
   const [data, setData] = useState<ViewData | null>(null);
@@ -213,7 +232,7 @@ export function TelevendFleetDashboard() {
     faultFrom.setDate(faultFrom.getDate() - 30);
     const faultFromBusinessDate = `${formatLocalDate(faultFrom)}T00:00:00+02:00`;
 
-    const [reportResult, historyResult, dashboardResult, faultResult, usageResult, balanceResult, locationResult, machineCountResult] = await Promise.all([
+    const [reportResult, historyResult, dashboardResult, faultResult, usageResult, balanceResult, locationResult, attentionDevicesResult, machineCountResult] = await Promise.all([
       client.rpc('get_telemetry_reporting', { p_period: period, p_branch: 'all', p_dataset: 'production' }),
       client.rpc('get_telemetry_reporting', { p_period: 'six_months', p_branch: 'all', p_dataset: 'production' }),
       client.rpc('get_telemetry_dashboard', { p_period: 'today', p_branch: 'all' }),
@@ -221,6 +240,7 @@ export function TelevendFleetDashboard() {
       client.rpc('get_telemetry_data_usage', { p_days: 30 }),
       client.rpc('get_telemetry_prepaid_balances'),
       client.rpc('get_telemetry_location_map'),
+      client.from('telemetry_devices').select('id,device_code,machine_id,status,last_heartbeat_at,last_seen_at,last_upload_at,last_config_at,last_config_ack_at,last_transport,wifi_rssi,cellular_csq,cellular_operator').order('device_code'),
       client.from('machines').select('id', { count: 'exact', head: true }),
     ]);
 
@@ -235,6 +255,7 @@ export function TelevendFleetDashboard() {
       usage: usageResult.error ? [] : ((usageResult.data ?? []) as UsageRow[]),
       balances: balanceResult.error ? [] : ((balanceResult.data ?? []) as BalanceRow[]),
       locations: locationResult.error ? [] : ((locationResult.data ?? []) as FleetLocationRow[]),
+      attentionDevices: attentionDevicesResult.error ? null : ((attentionDevicesResult.data ?? []) as FleetAttentionDevice[]),
       machineCount: machineCountResult.error ? 0 : (machineCountResult.count ?? 0),
     });
     setUpdated(new Date());
@@ -292,6 +313,15 @@ export function TelevendFleetDashboard() {
   const avgCell = devices.map((device) => device.cellular_csq).filter((value): value is number => typeof value === 'number').reduce((sum, value, _, array) => sum + value / array.length, 0);
 
   const locations = data?.locations ?? [];
+  const attentionUnavailable = Boolean(data && data.attentionDevices === null);
+  const attentionItems = useMemo(
+    () => buildFleetAttentionItems(data?.attentionDevices ?? [], data?.balances ?? []),
+    [data?.attentionDevices, data?.balances],
+  );
+  const locationByDevice = useMemo(
+    () => new Map((data?.locations ?? []).map((location) => [location.device_id, location])),
+    [data?.locations],
+  );
   const machineCount = data?.machineCount ?? 0;
   const assignedDevices = locations.filter((row) => Boolean(row.machine_id)).length;
   const mappedDevices = locations.filter((row) => row.has_location && typeof row.latitude === 'number' && typeof row.longitude === 'number').length;
@@ -368,6 +398,32 @@ export function TelevendFleetDashboard() {
           <Metric helper={`${failed.toLocaleString('en-ZA')} failed vends`} label="Vend success" tone={success >= 98 ? 'green' : success >= 95 ? 'amber' : 'red'} value={`${success.toFixed(1)}%`} />
           <Metric helper={`${critical} critical · ${warning} warning`} label="Active alarms" tone={active ? 'red' : 'green'} value={active.toLocaleString('en-ZA')} />
           <Metric helper={`${reportingDevices} telemetry devices`} label="Machines reporting" tone="amber" value={n(summary.active_machines).toLocaleString('en-ZA')} />
+        </section>
+
+        <section className={styles.attentionCard} aria-label="Fleet attention queue" data-fleet-attention-queue="v1">
+          <header className={styles.attentionHeader}>
+            <div><span>Fleet attention queue</span><h2>Operational exceptions</h2></div>
+            <strong>{attentionUnavailable ? 'Unavailable' : `${attentionItems.length.toLocaleString('en-ZA')} ${attentionItems.length === 1 ? 'item' : 'items'}`}</strong>
+          </header>
+          {attentionUnavailable ? <div className={styles.attentionEmpty}>Current device attention could not be loaded. <Link href="/telemetry/devices">Open device management ›</Link></div> : attentionItems.length ? <div className={styles.attentionList}>{attentionItems.slice(0, 8).map((item) => {
+            const location = locationByDevice.get(item.deviceId);
+            const machineId = item.machineId ?? location?.machine_id ?? null;
+            const machineName = location?.machine_name ?? location?.serial_number ?? (machineId ? 'Linked machine' : 'Unassigned device');
+            const toneClass = item.severity === 'critical' ? styles.attentionCritical : styles.attentionWarning;
+            return <article className={styles.attentionRow} key={item.id}>
+              <i className={toneClass} aria-hidden="true" />
+              <div className={styles.attentionBody}>
+                <div><strong>{attentionTitle(item)}</strong><span>{item.deviceCode} · {machineName}</span></div>
+                <p>{attentionDetail(item)}</p>
+              </div>
+              <nav className={styles.attentionActions} aria-label={`${item.deviceCode} actions`}>
+                {machineId ? <Link href={`/machines/${machineId}`}>Machine</Link> : null}
+                <Link href={`/telemetry/devices?device=${encodeURIComponent(item.deviceCode)}`}>Device</Link>
+                <Link href={`/telemetry/test-center?device=${encodeURIComponent(item.deviceCode)}`}>Test Center</Link>
+              </nav>
+            </article>;
+          })}</div> : <div className={styles.attentionEmpty}>No active offline, pending configuration, SIM-balance, or signal-reporting exceptions.</div>}
+          {attentionItems.length > 8 ? <footer className={styles.attentionFooter}>Showing the first 8 of {attentionItems.length.toLocaleString('en-ZA')} items. <Link href="/telemetry/devices">Review all devices ›</Link></footer> : null}
         </section>
 
         <section className={styles.telemetryRow} aria-label="Fleet operational readiness">
