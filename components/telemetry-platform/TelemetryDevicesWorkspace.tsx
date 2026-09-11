@@ -7,6 +7,7 @@ import { AccessibleDialog } from '@/components/ui/AccessibleDialog';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { SignalStrengthIndicator } from '@/components/ui/SignalStrengthIndicator';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { TelemetryConfigSyncPanel } from './TelemetryConfigSyncPanel';
 import styles from './TelemetryDevicesWorkspace.module.css';
 
 type TelemetryMode = 'live' | 'daily' | 'monthly';
@@ -292,48 +293,32 @@ export function TelemetryDevicesWorkspace() {
     if (!wifiEnabled && !cellularEnabled) { setError('At least one transport must remain enabled.'); return; }
     if (warningMb <= criticalMb || criticalMb < 0) { setError('The prepaid warning threshold must be greater than the critical threshold.'); return; }
     const client = getSupabaseClient();
-    const selectedMachine = machineResults.find((row) => row.id === machineId) ?? machines[machineId] ?? null;
     setSaving(true); setError(null); setMessage(null);
 
-    const { error: rowError } = await client.from('telemetry_devices').update({
-      machine_id: machineId || null,
-      site_id: selectedMachine?.site_id ?? null,
-      status: deviceStatus,
-      location_override: locationOverride.trim() || null,
-      mdb_master_polarity: masterPolarity,
-      mdb_slave_polarity: slavePolarity,
-      mdb_pin_swap: pinSwap,
-      updated_at: new Date().toISOString(),
-    }).eq('id', selected.id);
-    if (rowError) { setError(rowError.message); setSaving(false); return; }
-
-    const { error: controlError } = await client.rpc('set_telemetry_device_control', {
+    const { error: saveError } = await client.rpc('save_telemetry_device_configuration', {
+      p_device_id: selected.id,
       p_device_code: selected.device_code,
+      p_machine_id: machineId || null,
+      p_status: deviceStatus,
       p_mode: reportingMode,
       p_transport_preference: transport,
       p_wifi_enabled: wifiEnabled,
       p_cellular_enabled: cellularEnabled,
-    });
-    if (controlError) { setError(controlError.message); setSaving(false); return; }
-
-    const { error: locationError } = await client.rpc('set_telemetry_device_location_control', {
-      p_device_code: selected.device_code,
+      p_mdb_master_polarity: masterPolarity,
+      p_mdb_slave_polarity: slavePolarity,
+      p_mdb_pin_swap: pinSwap,
       p_location_enabled: true,
+      p_location_override: locationOverride.trim() || null,
       p_location_interval_minutes: locationInterval,
       p_location_min_move_m: movementThreshold,
-    });
-    if (locationError) { setError(locationError.message); setSaving(false); return; }
-
-    const { error: prepaidError } = await client.rpc('set_telemetry_prepaid_balance_control', {
-      p_device_code: selected.device_code,
       p_warning_megabytes: warningMb,
       p_critical_megabytes: criticalMb,
-      p_check_interval_minutes: balanceInterval,
-      p_stale_after_minutes: balanceInterval * 2,
+      p_balance_check_interval_minutes: balanceInterval,
+      p_balance_stale_after_minutes: balanceInterval * 2,
     });
-    if (prepaidError) { setError(prepaidError.message); setSaving(false); return; }
+    if (saveError) { setError(saveError.message); setSaving(false); return; }
 
-    setMessage(`${selected.device_code} configuration saved. The device will apply it on its next configuration sync.`);
+    setMessage(`${selected.device_code} configuration saved atomically. Sync status will update when the controller fetches and acknowledges it.`);
     await load(false);
     setSaving(false);
   }
@@ -363,7 +348,7 @@ export function TelemetryDevicesWorkspace() {
   const currentMachine = machineId ? (machineResults.find((row) => row.id === machineId) ?? machines[machineId] ?? null) : null;
   const machineOptions = currentMachine && !machineResults.some((row) => row.id === currentMachine.id) ? [currentMachine, ...machineResults] : machineResults;
 
-  return <section className={styles.workspace} data-telemetry-devices="v2">
+  return <section className={styles.workspace} data-telemetry-devices="v3">
     {error ? <div className={`${styles.banner} ${styles.bannerError}`} role="alert"><strong>Device management error</strong><span>{error}</span></div> : null}
     {message ? <div className={`${styles.banner} ${styles.bannerSuccess}`} role="status"><strong>Saved</strong><span>{message}</span></div> : null}
 
@@ -427,6 +412,8 @@ export function TelemetryDevicesWorkspace() {
         <section className={styles.controlSection}><div className={styles.sectionTitle}><span>Aggregation</span><h3>Reporting</h3></div><div className={styles.twoFields}><label className={styles.field}><span>Counter mode</span><select value={reportingMode} onChange={(event) => setReportingMode(event.target.value as TelemetryMode)}><option value="live">Live</option><option value="daily">Daily</option><option value="monthly">Monthly</option></select></label><label className={styles.field}><span>Location interval</span><select value={locationInterval} onChange={(event) => setLocationInterval(Number(event.target.value))}><option value={1}>1 minute</option><option value={5}>5 minutes</option><option value={15}>15 minutes</option><option value={30}>30 minutes</option><option value={60}>1 hour</option><option value={1440}>Daily</option></select></label><label className={styles.field}><span>Movement threshold</span><select value={movementThreshold} onChange={(event) => setMovementThreshold(Number(event.target.value))}><option value={25}>±25 m</option><option value={50}>±50 m</option><option value={100}>±100 m</option><option value={250}>±250 m</option><option value={500}>±500 m</option></select></label><label className={styles.field}><span>Location override</span><input placeholder="Use machine site by default" value={locationOverride} onChange={(event) => setLocationOverride(event.target.value)} /></label></div></section>
 
         <section className={styles.controlSection}><div className={styles.sectionTitle}><span>Vodacom prepaid</span><h3>Data balance</h3></div><div className={styles.balanceHero}><div><span>Used · 30 days</span><strong>{formatBytes(selectedUsed)}</strong></div><div className={selectedPrepaid && ['low', 'critical', 'depleted'].includes(selectedPrepaid.alert_level) ? styles.balanceWarning : undefined}><span>Remaining</span><strong>{selectedPrepaid?.remaining_bytes != null ? formatBytes(selectedPrepaid.remaining_bytes) : 'Unavailable'}</strong></div></div><div className={styles.threeFields}><label className={styles.field}><span>Low warning · MB</span><input min={1} type="number" value={warningMb} onChange={(event) => setWarningMb(Number(event.target.value))} /></label><label className={styles.field}><span>Critical · MB</span><input min={0} type="number" value={criticalMb} onChange={(event) => setCriticalMb(Number(event.target.value))} /></label><label className={styles.field}><span>Check interval</span><select value={balanceInterval} onChange={(event) => setBalanceInterval(Number(event.target.value))}><option value={60}>1 hour</option><option value={180}>3 hours</option><option value={360}>6 hours</option><option value={720}>12 hours</option><option value={1440}>Daily</option></select></label></div><button className={styles.secondaryAction} disabled={checkingBalance || selectedPrepaid?.request_pending || selectedPrepaid?.query_status === 'unsupported_modem_firmware'} onClick={() => void checkBalance()} type="button">{selectedPrepaid?.query_status === 'unsupported_modem_firmware' ? 'Carrier balance unavailable' : selectedPrepaid?.request_pending ? 'Balance check queued' : checkingBalance ? 'Queuing…' : 'Check balance now'}</button><small>Vodacom billing remains authoritative. Air780EU firmware may not expose prepaid USSD balance queries.</small></section>
+
+        <TelemetryConfigSyncPanel key={`${selected.id}:${selected.updated_at}`} deviceId={selected.id} />
 
         <section className={styles.controlSection}><div className={styles.sectionTitle}><span>Administration</span><h3>Device status</h3></div><label className={styles.field}><span>Controller state</span><select value={deviceStatus} onChange={(event) => setDeviceStatus(event.target.value as DeviceStatus)}><option value="active">Active</option><option value="disabled">Disabled</option></select></label><dl className={styles.audit}><div><dt>Hardware UID</dt><dd>{selected.hardware_uid ?? 'Not reported'}</dd></div><div><dt>Profile</dt><dd>{selected.profile_id ?? 'Automatic'}</dd></div><div><dt>Config sent</dt><dd>{formatDate(selected.last_config_at)}</dd></div><div><dt>Config ACK</dt><dd>{formatDate(selected.last_config_ack_at)}</dd></div></dl><button className={styles.deleteButton} onClick={() => { setDeleteConfirmation(''); setDeleteOpen(true); }} type="button">Delete telemetry device</button></section>
       </div>
