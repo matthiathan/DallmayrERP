@@ -1,0 +1,107 @@
+# RFID Localhost Manager v3.0
+# Dependency-free Windows companion for Arduino UNO R4 RFID reader.
+# Uses only Windows PowerShell/.NET: no Python, no pip, no Arduino Wi-Fi.
+
+$ErrorActionPreference = 'Stop'
+
+$Script:Version = '3.0'
+$Script:HostAddress = '127.0.0.1'
+$Script:Port = 8765
+$Script:Url = "http://localhost:$($Script:Port)/"
+$Script:Baud = 115200
+$Script:InstallRoot = Join-Path $env:LOCALAPPDATA 'Dallmayr\RFIDCardManager'
+$Script:DataFile = Join-Path $Script:InstallRoot 'rfid_scans.json'
+$Script:LogFile = Join-Path $Script:InstallRoot 'manager.log'
+$Script:Scans = @()
+$Script:Serial = $null
+$Script:SerialPortName = ''
+$Script:SerialMessage = 'Waiting for Arduino UNO R4...'
+$Script:LastPortProbe = [DateTime]::MinValue
+$Script:LastHostReply = [DateTime]::MinValue
+$Script:LastUiSeen = [DateTime]::MinValue
+$Script:LastPing = [DateTime]::MinValue
+$Script:BrowserOpened = $false
+$Script:Listener = $null
+
+New-Item -ItemType Directory -Force -Path $Script:InstallRoot | Out-Null
+
+function Write-Log([string]$Text) {
+    try {
+        $line = "{0} {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Text
+        Add-Content -LiteralPath $Script:LogFile -Value $line -Encoding UTF8
+    } catch {}
+}
+
+function Load-Scans {
+    if (-not (Test-Path -LiteralPath $Script:DataFile)) { return }
+    try {
+        $raw = Get-Content -LiteralPath $Script:DataFile -Raw -Encoding UTF8
+        if ($raw.Trim()) {
+            $data = $raw | ConvertFrom-Json
+            if ($null -ne $data) { $Script:Scans = @($data) }
+        }
+    } catch {
+        Write-Log "Could not load scan history: $($_.Exception.Message)"
+        $Script:Scans = @()
+    }
+}
+
+function Save-Scans {
+    try {
+        $json = ConvertTo-Json -InputObject @($Script:Scans) -Depth 5
+        [IO.File]::WriteAllText($Script:DataFile, $json, [Text.UTF8Encoding]::new($false))
+    } catch {
+        Write-Log "Could not save scan history: $($_.Exception.Message)"
+    }
+}
+
+function Escape-Html([string]$Text) {
+    return [System.Net.WebUtility]::HtmlEncode([string]$Text)
+}
+
+function Escape-Xml([string]$Text) {
+    if ($null -eq $Text) { return '' }
+    return [System.Security.SecurityElement]::Escape([string]$Text)
+}
+
+function Get-IndexHtml {
+@'
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RFID Card Manager</title>
+<style>
+:root{font-family:Inter,Segoe UI,Arial,sans-serif;color:#15202b;background:#eef2f5}
+*{box-sizing:border-box}body{margin:0;padding:24px}.wrap{max-width:1220px;margin:0 auto}
+.top{display:flex;gap:16px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px}
+h1{margin:0;font-size:30px}.sub{margin-top:6px;color:#64727d}.card{background:#fff;border:1px solid #dce4e9;border-radius:15px;padding:18px;box-shadow:0 4px 15px rgba(0,0,0,.045)}
+.actions{display:flex;gap:9px;flex-wrap:wrap}button,a.btn{border:0;border-radius:9px;padding:10px 14px;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;display:inline-block}
+.primary{background:#17212b;color:#fff}.secondary{background:#e9eef2;color:#17212b}.danger{background:#fdeaea;color:#a02727}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:12px;margin:14px 0}.stat{background:#fff;border:1px solid #dce4e9;border-radius:12px;padding:14px}.stat .n{font-size:27px;font-weight:800}.stat .l{font-size:12px;color:#687782;text-transform:uppercase;letter-spacing:.04em}
+.status{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:7px 10px;background:#edf2f5;font-size:13px;font-weight:700}.dot{width:9px;height:9px;border-radius:50%;background:#aab4bc}.status.on .dot{background:#198754}.status.off .dot{background:#c43c3c}
+.tableWrap{overflow:auto}.empty{padding:36px;text-align:center;color:#70808c}table{width:100%;border-collapse:collapse;min-width:930px}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #edf0f2;font-size:14px}th{font-size:12px;text-transform:uppercase;letter-spacing:.045em;color:#6a7883;background:#fafbfc;position:sticky;top:0}.rev{font-family:Consolas,monospace;font-weight:800;font-size:15px}.uid{font-family:Consolas,monospace}.copy{border:0;background:#eef2f5;border-radius:7px;padding:6px 8px;cursor:pointer;margin-left:7px}
+@media(max-width:700px){body{padding:12px}.stats{grid-template-columns:1fr}.top{display:block}.actions{margin-top:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><h1>RFID Card Manager</h1><div class="sub">USB localhost mode · 10-digit Nayax reverse DEC · v3</div></div>
+    <div class="actions"><a class="btn secondary" href="/export.csv">Export CSV</a><a class="btn primary" href="/export.xlsx">Export Excel</a><button class="danger" onclick="clearScans()">Clear list</button></div>
+  </div>
+  <div class="card">
+    <span id="status" class="status off"><span class="dot"></span><span>Waiting for Arduino...</span></span>
+    <div class="stats">
+      <div class="stat"><div id="total" class="n">0</div><div class="l">Total scans</div></div>
+      <div class="stat"><div id="unique" class="n">0</div><div class="l">Unique cards</div></div>
+      <div class="stat"><div id="latest" class="n" style="font-size:20px">—</div><div class="l">Latest reverse DEC</div></div>
+    </div>
+    <div class="tableWrap"><table><thead><tr><th>#</th><th>Scanned</th><th>UID</th><th>ID (dec)</th><th>Reverse DEC</th><th>Card type</th></tr></thead><tbody id="rows"></tbody></table><div id="empty" class="empty">Scan a card. It will appear here automatically.</div></div>
+  </div>
+</div>
+<script>
+let lastSignature='';
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
+function copyText(v){navigator.clipboard.writeText(v);}
