@@ -1,0 +1,48 @@
+      <div class="stat"><div id="unique" class="n">0</div><div class="l">Unique cards</div></div>
+      <div class="stat"><div id="latest" class="n" style="font-size:20px">—</div><div class="l">Latest reverse DEC</div></div>
+    </div>
+    <div class="tableWrap"><table><thead><tr><th>#</th><th>Scanned</th><th>UID</th><th>ID (dec)</th><th>Reverse DEC</th><th>Card type</th></tr></thead><tbody id="rows"></tbody></table><div id="empty" class="empty">Scan a card. It will appear here automatically.</div></div>
+  </div>
+</div>
+<script>
+let lastSignature='',state=null;
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
+function copyText(v){navigator.clipboard.writeText(v);}
+function renderModes(s){
+  const hb=document.getElementById('hidBtn'), eb=document.getElementById('enterBtn'), w=document.getElementById('hidWarn');
+  hb.textContent='Keyboard Wedge: '+(s.hid.enabled?'On':'Off'); hb.className='modeBtn '+(s.hid.enabled?'active':'inactive');
+  eb.textContent='Enter after scan: '+(s.hid.append_enter?'On':'Off'); eb.className='modeBtn '+(s.hid.append_enter?'active':'inactive');
+  w.style.display=s.hid.enabled?'block':'none';
+}
+async function toggleHid(){if(!state)return;await fetch(state.hid.enabled?'/api/hid/off':'/api/hid/on',{method:'POST'});await refresh();}
+async function toggleEnter(){if(!state)return;await fetch(state.hid.append_enter?'/api/enter/off':'/api/enter/on',{method:'POST'});await refresh();}
+async function refresh(){try{const r=await fetch('/api/state',{cache:'no-store'});const s=await r.json();state=s;renderModes(s);const st=document.getElementById('status');st.className='status '+(s.serial.connected?'on':'off');st.innerHTML='<span class="dot"></span><span>'+esc(s.serial.connected?('Composite reader connected on '+s.serial.port+(s.device.firmware?(' · FW '+s.device.firmware):'')):s.serial.message)+'</span>';document.getElementById('total').textContent=s.total;document.getElementById('unique').textContent=s.unique;document.getElementById('latest').textContent=s.latest||'—';const sig=s.total+'|'+s.latest+'|'+(s.scans[0]?.timestamp||'');if(sig!==lastSignature){lastSignature=sig;const rows=document.getElementById('rows');rows.innerHTML='';document.getElementById('empty').style.display=s.scans.length?'none':'block';s.scans.forEach(x=>{const tr=document.createElement('tr');tr.innerHTML='<td>'+esc(x.number)+'</td><td>'+esc(x.timestamp)+'</td><td class="uid">'+esc(x.uid)+'</td><td>'+esc(x.id_dec)+'</td><td class="rev">'+esc(x.reverse_dec)+'<button class="copy" onclick="copyText(\''+esc(x.reverse_dec)+'\')">Copy</button></td><td>'+esc(x.card_type)+'</td>';rows.appendChild(tr);});}}catch(e){const st=document.getElementById('status');st.className='status off';st.innerHTML='<span class="dot"></span><span>Local service disconnected</span>';}}
+async function clearScans(){if(!confirm('Clear all saved scan records?'))return;await fetch('/api/clear',{method:'POST'});lastSignature='';refresh();}
+refresh();setInterval(refresh,800);
+</script>
+</body></html>
+'@
+}
+
+function Get-ArduinoCandidates {
+    $result = @()
+    try {
+        $entities = Get-CimInstance Win32_PnPEntity -ErrorAction Stop | Where-Object {
+            $_.Name -match '\(COM\d+\)' -and (
+                $_.Name -match 'Arduino|UNO R4' -or
+                $_.PNPDeviceID -match 'VID_2341|VID_2A03'
+            )
+        }
+        foreach ($e in $entities) {
+            if ($e.Name -match '\((COM\d+)\)') { $result += $matches[1] }
+        }
+    } catch {}
+
+    if ($result.Count -eq 0) {
+        try { $result = @([IO.Ports.SerialPort]::GetPortNames() | Sort-Object) } catch {}
+    }
+    return @($result | Select-Object -Unique)
+}
+
+function Close-Serial {
+    if ($null -ne $Script:Serial) {
