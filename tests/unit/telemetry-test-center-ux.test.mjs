@@ -55,6 +55,15 @@ test('Test Center provides session history, archived viewing and full diagnostic
   assert.match(workspace, /\.from\('telemetry_test_sessions'\)[\s\S]*\.limit\(12\)/);
 });
 
+test('Test Center opens retained diagnostic evidence when no live session exists', () => {
+  assert.match(workspace, /function preferredArchivedSession\(sessions: TestSession\[\]\)/);
+  assert.match(workspace, /sessions\.find\(\(item\) => Boolean\(item\.last_log_at\)\) \?\? sessions\[0\] \?\? null/);
+  assert.match(workspace, /active !== null \|\| !archived/);
+  assert.match(workspace, /setViewedSessionId\(archivedSession\.id\)/);
+  assert.match(workspace, /Showing the latest archived session with captured device output/);
+  assert.match(workspace, /setViewedSessionId\(\(current\) => current \?\? updated\.id\)/);
+});
+
 test('Test Center shows command completion, failures and delayed device response while keeping the explicit command allowlist', () => {
   assert.match(workspace, /telemetry_test_commands/);
   assert.match(workspace, /response_note/);

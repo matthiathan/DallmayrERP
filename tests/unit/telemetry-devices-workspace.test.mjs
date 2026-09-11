@@ -11,7 +11,7 @@ test('telemetry devices route uses the finished device workspace directly', () =
   assert.match(page, /TelemetryDevicesWorkspace/);
   assert.doesNotMatch(page, /AdminTelemetryDevices/);
   assert.doesNotMatch(page, /MdbPinOrderControl/);
-  assert.match(workspace, /data-telemetry-devices="v2"/);
+  assert.match(workspace, /data-telemetry-devices="v3"/);
 });
 
 test('MDB pin order is connected from database through device UI and config API', () => {
@@ -26,9 +26,10 @@ test('MDB pin order is connected from database through device UI and config API'
 });
 
 test('finished device workspace retains fleet operations and safety controls', () => {
-  assert.match(workspace, /set_telemetry_device_control/);
-  assert.match(workspace, /set_telemetry_device_location_control/);
-  assert.match(workspace, /set_telemetry_prepaid_balance_control/);
+  assert.match(workspace, /save_telemetry_device_configuration/);
+  assert.match(workspace, /p_mdb_pin_swap: pinSwap/);
+  assert.match(workspace, /p_location_interval_minutes: locationInterval/);
+  assert.match(workspace, /p_warning_megabytes: warningMb/);
   assert.match(workspace, /request_telemetry_prepaid_balance/);
   assert.match(workspace, /delete_telemetry_device/);
   assert.match(workspace, /TelemetryEnrollmentWindowControl/);

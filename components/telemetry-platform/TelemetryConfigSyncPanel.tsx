@@ -96,7 +96,10 @@ export function TelemetryConfigSyncPanel({ deviceId }: { deviceId: string }) {
 
   const latest = payload?.history?.[0] ?? null;
   const copy = statusCopy(latest);
-  const applied = latest?.applied_config ?? payload?.applied_config ?? {};
+  const applied = useMemo(
+    () => latest?.applied_config ?? payload?.applied_config ?? {},
+    [latest?.applied_config, payload?.applied_config],
+  );
   const appliedEntries = useMemo<Array<[string, unknown]>>(() => ([
     ['mode', applied.mode],
     ['transport_preference', applied.transport_preference],

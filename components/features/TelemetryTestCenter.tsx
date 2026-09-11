@@ -201,6 +201,10 @@ function commandVisualStatus(command: TestCommand, now: number) {
     : { label: 'Pending', tone: styles.commandPending };
 }
 
+function preferredArchivedSession(sessions: TestSession[]) {
+  return sessions.find((item) => Boolean(item.last_log_at)) ?? sessions[0] ?? null;
+}
+
 export function TelemetryTestCenter() {
   const client = useMemo(() => getSupabaseClient(), []);
   const [devices, setDevices] = useState<DeviceRecord[]>([]);
@@ -277,10 +281,10 @@ export function TelemetryTestCenter() {
     setLoading(false);
   }, [client]);
 
-  const loadActiveSession = useCallback(async (deviceId: string) => {
+  const loadActiveSession = useCallback(async (deviceId: string): Promise<TestSession | null | undefined> => {
     if (!deviceId) {
       setSession(null);
-      return;
+      return null;
     }
     const { data, error: sessionError } = await client
       .from('telemetry_test_sessions')
@@ -295,18 +299,19 @@ export function TelemetryTestCenter() {
     if (sessionError) {
       setError(sessionError.message);
       setSession(null);
-      return;
+      return undefined;
     }
     const active = (data ?? null) as TestSession | null;
     setSession(active);
     setRawMdb(active?.raw_mdb ?? true);
     setRawDex(active?.raw_dex ?? true);
+    return active;
   }, [client]);
 
-  const loadSessionHistory = useCallback(async (deviceId: string) => {
+  const loadSessionHistory = useCallback(async (deviceId: string): Promise<TestSession[] | undefined> => {
     if (!deviceId) {
       setHistorySessions([]);
-      return;
+      return [];
     }
     const { data, error: historyError } = await client
       .from('telemetry_test_sessions')
@@ -316,9 +321,11 @@ export function TelemetryTestCenter() {
       .limit(12);
     if (historyError) {
       setError(historyError.message);
-      return;
+      return undefined;
     }
-    setHistorySessions((data ?? []) as TestSession[]);
+    const sessions = (data ?? []) as TestSession[];
+    setHistorySessions(sessions);
+    return sessions;
   }, [client]);
 
   const loadLogs = useCallback(async (sessionId: string) => {
@@ -352,6 +359,7 @@ export function TelemetryTestCenter() {
   useEffect(() => { void loadFleet(); }, [loadFleet]);
 
   useEffect(() => {
+    let cancelled = false;
     setError(null);
     setNotice(null);
     setViewedSessionId(null);
@@ -361,7 +369,14 @@ export function TelemetryTestCenter() {
     setPausedCount(0);
     setLogs([]);
     setCommands([]);
-    void Promise.all([loadActiveSession(selectedDeviceId), loadSessionHistory(selectedDeviceId)]);
+    void Promise.all([loadActiveSession(selectedDeviceId), loadSessionHistory(selectedDeviceId)]).then(([active, archived]) => {
+      if (cancelled || active !== null || !archived) return;
+      const archivedSession = preferredArchivedSession(archived);
+      if (!archivedSession) return;
+      setViewedSessionId(archivedSession.id);
+      setNotice('Showing the latest archived session with captured device output.');
+    });
+    return () => { cancelled = true; };
   }, [loadActiveSession, loadSessionHistory, selectedDeviceId]);
 
   useEffect(() => {
@@ -410,6 +425,10 @@ export function TelemetryTestCenter() {
       const updated = (data ?? null) as TestSession | null;
       if (!updated || updated.status !== 'active' || new Date(updated.expires_at).getTime() <= Date.now()) {
         setSession(null);
+        if (updated) {
+          setHistorySessions((current) => [updated, ...current.filter((item) => item.id !== updated.id)].slice(0, 12));
+          setViewedSessionId((current) => current ?? updated.id);
+        }
         void loadSessionHistory(selectedDeviceId);
       } else {
         setSession(updated);

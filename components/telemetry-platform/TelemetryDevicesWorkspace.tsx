@@ -273,7 +273,7 @@ export function TelemetryDevicesWorkspace() {
     if (!term) return true;
     const machine = device.machine_id ? machines[device.machine_id] : null;
     return [device.device_code, device.hardware_uid, device.firmware_version, device.cellular_operator, device.profile_id, machineLabel(machine)].join(' ').toLowerCase().includes(term);
-  }), [devices, machineId, machines, modeFilter, modes, search, statusFilter, transportFilter]);
+  }), [devices, machines, modeFilter, modes, search, statusFilter, transportFilter]);
 
   async function searchMachines(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
