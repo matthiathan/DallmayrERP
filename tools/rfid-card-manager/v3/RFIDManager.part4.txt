@@ -1,0 +1,101 @@
+        Write-Utf8NoBom (Join-Path $tempRoot '[Content_Types].xml') $contentTypes
+        Write-Utf8NoBom (Join-Path $tempRoot '_rels\.rels') $rels
+        Write-Utf8NoBom (Join-Path $tempRoot 'xl\workbook.xml') $workbook
+        Write-Utf8NoBom (Join-Path $tempRoot 'xl\_rels\workbook.xml.rels') $workbookRels
+        Write-Utf8NoBom (Join-Path $tempRoot 'xl\styles.xml') $styles
+        Write-Utf8NoBom (Join-Path $tempRoot 'xl\worksheets\sheet1.xml') $sheet
+
+        if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+        Compress-Archive -Path (Join-Path $tempRoot '*') -DestinationPath $zipPath -CompressionLevel Optimal
+        return [IO.File]::ReadAllBytes($zipPath)
+    } finally {
+        try { Remove-Item $tempRoot -Recurse -Force -ErrorAction SilentlyContinue } catch {}
+        try { Remove-Item $zipPath -Force -ErrorAction SilentlyContinue } catch {}
+    }
+}
+
+function Send-HttpResponse($Client, [int]$Status, [string]$ContentType, [byte[]]$Body, [hashtable]$ExtraHeaders = @{}) {
+    $stream = $Client.GetStream()
+    $reason = switch ($Status) { 200 {'OK'} 204 {'No Content'} 404 {'Not Found'} default {'OK'} }
+    $headers = "HTTP/1.1 $Status $reason`r`nContent-Type: $ContentType`r`nContent-Length: $($Body.Length)`r`nCache-Control: no-store`r`nConnection: close`r`n"
+    foreach ($k in $ExtraHeaders.Keys) { $headers += "$k`: $($ExtraHeaders[$k])`r`n" }
+    $headers += "`r`n"
+    $hb = [Text.Encoding]::ASCII.GetBytes($headers)
+    $stream.Write($hb,0,$hb.Length)
+    if ($Body.Length -gt 0) { $stream.Write($Body,0,$Body.Length) }
+    $stream.Flush()
+}
+
+function Handle-HttpClient($Client) {
+    try {
+        $stream = $Client.GetStream()
+        $reader = [IO.StreamReader]::new($stream, [Text.Encoding]::ASCII, $false, 4096, $true)
+        $first = $reader.ReadLine()
+        if (-not $first) { return }
+        while ($true) { $h = $reader.ReadLine(); if ($null -eq $h -or $h -eq '') { break } }
+        $parts = $first.Split(' ')
+        if ($parts.Count -lt 2) { return }
+        $method = $parts[0].ToUpperInvariant()
+        $path = $parts[1].Split('?')[0]
+
+        switch ("$method $path") {
+            'GET /' {
+                $Script:LastUiSeen = Get-Date
+                $body = [Text.Encoding]::UTF8.GetBytes((Get-IndexHtml))
+                Send-HttpResponse $Client 200 'text/html; charset=utf-8' $body
+            }
+            'GET /api/state' {
+                $Script:LastUiSeen = Get-Date
+                $body = [Text.Encoding]::UTF8.GetBytes((Get-StateJson))
+                Send-HttpResponse $Client 200 'application/json; charset=utf-8' $body
+            }
+            'POST /api/clear' {
+                $Script:Scans = @()
+                Save-Scans
+                $body = [Text.Encoding]::UTF8.GetBytes('{"ok":true}')
+                Send-HttpResponse $Client 200 'application/json; charset=utf-8' $body
+            }
+            'GET /export.csv' {
+                $name = 'RFID_Scans_' + (Get-Date -Format 'yyyyMMdd_HHmmss') + '.csv'
+                Send-HttpResponse $Client 200 'text/csv; charset=utf-8' (Get-CsvBytes) @{ 'Content-Disposition' = "attachment; filename=$name" }
+            }
+            'GET /export.xlsx' {
+                $name = 'RFID_Scans_' + (Get-Date -Format 'yyyyMMdd_HHmmss') + '.xlsx'
+                Send-HttpResponse $Client 200 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' (Get-XlsxBytes) @{ 'Content-Disposition' = "attachment; filename=$name" }
+            }
+            default {
+                $body = [Text.Encoding]::UTF8.GetBytes('Not found')
+                Send-HttpResponse $Client 404 'text/plain; charset=utf-8' $body
+            }
+        }
+    } catch {
+        Write-Log "HTTP error: $($_.Exception.Message)"
+    } finally {
+        try { $Client.Close() } catch {}
+    }
+}
+
+function Start-LocalServer {
+    $Script:Listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, $Script:Port)
+    $Script:Listener.Start()
+    Write-Log "Localhost server started on $($Script:Url)"
+}
+
+Load-Scans
+Start-LocalServer
+Write-Log "RFID Localhost Manager v$($Script:Version) started"
+
+try {
+    while ($true) {
+        Poll-Serial
+        while ($Script:Listener.Pending()) {
+            $client = $Script:Listener.AcceptTcpClient()
+            Handle-HttpClient $client
+        }
+        Start-Sleep -Milliseconds 20
+    }
+} finally {
+    Close-Serial
+    try { $Script:Listener.Stop() } catch {}
+    Write-Log 'RFID Localhost Manager stopped'
+}
