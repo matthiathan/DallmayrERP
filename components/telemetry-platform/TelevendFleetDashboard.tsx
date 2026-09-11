@@ -7,6 +7,7 @@ import { ComparisonLineChart, type ComparisonPoint } from './ComparisonLineChart
 import { formatLocalDate } from '@/lib/dates/local-date';
 import { buildFleetAttentionItems, type FleetAttentionItem, type FleetAttentionDevice } from '@/lib/telemetry/fleet-attention';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { collectSupabasePagesResult } from '@/lib/supabase/collect-pages';
 import styles from './TelevendFleetDashboard.module.css';
 
 type Period = 'day' | 'week' | 'month' | 'six_months';
@@ -105,6 +106,8 @@ const periods: Array<{ value: Period; label: string }> = [
   { value: 'month', label: 'Last 30 days' },
   { value: 'six_months', label: 'Last 6 months' },
 ];
+
+const ATTENTION_DEVICE_SELECT = 'id,device_code,machine_id,status,last_heartbeat_at,last_seen_at,last_upload_at,last_config_at,last_config_ack_at,last_transport,wifi_rssi,cellular_csq,cellular_operator';
 
 function n(value: unknown) {
   const parsed = Number(value ?? 0);
@@ -232,15 +235,36 @@ export function TelevendFleetDashboard() {
     faultFrom.setDate(faultFrom.getDate() - 30);
     const faultFromBusinessDate = `${formatLocalDate(faultFrom)}T00:00:00+02:00`;
 
+    const usageRows = collectSupabasePagesResult<UsageRow>(async (from, to) => {
+      const { data, error: pageError } = await client.rpc('get_telemetry_data_usage', { p_days: 30 }).range(from, to);
+      return { data: (data ?? []) as UsageRow[], error: pageError };
+    });
+    const balanceRows = collectSupabasePagesResult<BalanceRow>(async (from, to) => {
+      const { data, error: pageError } = await client.rpc('get_telemetry_prepaid_balances').range(from, to);
+      return { data: (data ?? []) as BalanceRow[], error: pageError };
+    });
+    const locationRows = collectSupabasePagesResult<FleetLocationRow>(async (from, to) => {
+      const { data, error: pageError } = await client.rpc('get_telemetry_location_map').range(from, to);
+      return { data: (data ?? []) as FleetLocationRow[], error: pageError };
+    });
+    const attentionDeviceRows = collectSupabasePagesResult<FleetAttentionDevice>(async (from, to) => {
+      const { data, error: pageError } = await client
+        .from('telemetry_devices')
+        .select(ATTENTION_DEVICE_SELECT)
+        .order('device_code', { ascending: true })
+        .range(from, to);
+      return { data: (data ?? []) as FleetAttentionDevice[], error: pageError };
+    });
+
     const [reportResult, historyResult, dashboardResult, faultResult, usageResult, balanceResult, locationResult, attentionDevicesResult, machineCountResult] = await Promise.all([
       client.rpc('get_telemetry_reporting', { p_period: period, p_branch: 'all', p_dataset: 'production' }),
       client.rpc('get_telemetry_reporting', { p_period: 'six_months', p_branch: 'all', p_dataset: 'production' }),
       client.rpc('get_telemetry_dashboard', { p_period: 'today', p_branch: 'all' }),
       client.from('telemetry_fault_events').select('id,fault_code,severity,started_at,cleared_at').gte('started_at', faultFromBusinessDate).order('started_at', { ascending: false }).limit(5000),
-      client.rpc('get_telemetry_data_usage', { p_days: 30 }),
-      client.rpc('get_telemetry_prepaid_balances'),
-      client.rpc('get_telemetry_location_map'),
-      client.from('telemetry_devices').select('id,device_code,machine_id,status,last_heartbeat_at,last_seen_at,last_upload_at,last_config_at,last_config_ack_at,last_transport,wifi_rssi,cellular_csq,cellular_operator').order('device_code'),
+      usageRows,
+      balanceRows,
+      locationRows,
+      attentionDeviceRows,
       client.from('machines').select('id', { count: 'exact', head: true }),
     ]);
 
@@ -252,10 +276,10 @@ export function TelevendFleetDashboard() {
       history: (historyResult.data ?? {}) as ReportingPayload,
       dashboard: (dashboardResult.data ?? {}) as DashboardPayload,
       faultHistory: faultResult.error ? [] : ((faultResult.data ?? []) as FaultHistoryRow[]),
-      usage: usageResult.error ? [] : ((usageResult.data ?? []) as UsageRow[]),
-      balances: balanceResult.error ? [] : ((balanceResult.data ?? []) as BalanceRow[]),
-      locations: locationResult.error ? [] : ((locationResult.data ?? []) as FleetLocationRow[]),
-      attentionDevices: attentionDevicesResult.error ? null : ((attentionDevicesResult.data ?? []) as FleetAttentionDevice[]),
+      usage: usageResult.error ? [] : usageResult.data,
+      balances: balanceResult.error ? [] : balanceResult.data,
+      locations: locationResult.error ? [] : locationResult.data,
+      attentionDevices: attentionDevicesResult.error ? null : attentionDevicesResult.data,
       machineCount: machineCountResult.error ? 0 : (machineCountResult.count ?? 0),
     });
     setUpdated(new Date());
