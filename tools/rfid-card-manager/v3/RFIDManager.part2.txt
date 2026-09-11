@@ -1,0 +1,137 @@
+async function refresh(){try{const r=await fetch('/api/state',{cache:'no-store'});const s=await r.json();const st=document.getElementById('status');st.className='status '+(s.serial.connected?'on':'off');st.innerHTML='<span class="dot"></span><span>'+esc(s.serial.connected?('Reader connected on '+s.serial.port):s.serial.message)+'</span>';document.getElementById('total').textContent=s.total;document.getElementById('unique').textContent=s.unique;document.getElementById('latest').textContent=s.latest||'—';const sig=s.total+'|'+s.latest+'|'+(s.scans[0]?.timestamp||'');if(sig!==lastSignature){lastSignature=sig;const rows=document.getElementById('rows');rows.innerHTML='';document.getElementById('empty').style.display=s.scans.length?'none':'block';s.scans.forEach(x=>{const tr=document.createElement('tr');tr.innerHTML='<td>'+esc(x.number)+'</td><td>'+esc(x.timestamp)+'</td><td class="uid">'+esc(x.uid)+'</td><td>'+esc(x.id_dec)+'</td><td class="rev">'+esc(x.reverse_dec)+'<button class="copy" onclick="copyText(\''+esc(x.reverse_dec)+'\')">Copy</button></td><td>'+esc(x.card_type)+'</td>';rows.appendChild(tr);});}}catch(e){const st=document.getElementById('status');st.className='status off';st.innerHTML='<span class="dot"></span><span>Local service disconnected</span>';}}
+async function clearScans(){if(!confirm('Clear all saved scan records?'))return;await fetch('/api/clear',{method:'POST'});lastSignature='';refresh();}
+refresh();setInterval(refresh,900);
+</script>
+</body></html>
+'@
+}
+
+function Get-ArduinoCandidates {
+    $result = @()
+    try {
+        $entities = Get-CimInstance Win32_PnPEntity -ErrorAction Stop | Where-Object {
+            $_.Name -match '\(COM\d+\)' -and (
+                $_.Name -match 'Arduino|UNO R4' -or
+                $_.PNPDeviceID -match 'VID_2341|VID_2A03'
+            )
+        }
+        foreach ($e in $entities) {
+            if ($e.Name -match '\((COM\d+)\)') { $result += $matches[1] }
+        }
+    } catch {}
+
+    if ($result.Count -eq 0) {
+        try { $result = @([IO.Ports.SerialPort]::GetPortNames() | Sort-Object) } catch {}
+    }
+    return @($result | Select-Object -Unique)
+}
+
+function Close-Serial {
+    if ($null -ne $Script:Serial) {
+        try { if ($Script:Serial.IsOpen) { $Script:Serial.Close() } } catch {}
+        try { $Script:Serial.Dispose() } catch {}
+    }
+    $Script:Serial = $null
+    $Script:SerialPortName = ''
+}
+
+function Try-ConnectSerial {
+    if ($null -ne $Script:Serial -and $Script:Serial.IsOpen) { return }
+    if (((Get-Date) - $Script:LastPortProbe).TotalSeconds -lt 1.2) { return }
+    $Script:LastPortProbe = Get-Date
+
+    foreach ($port in (Get-ArduinoCandidates)) {
+        try {
+            $sp = [IO.Ports.SerialPort]::new($port, $Script:Baud, [IO.Ports.Parity]::None, 8, [IO.Ports.StopBits]::One)
+            $sp.NewLine = "`n"
+            $sp.ReadTimeout = 30
+            $sp.WriteTimeout = 500
+            $sp.DtrEnable = $true
+            $sp.RtsEnable = $false
+            $sp.Open()
+            Start-Sleep -Milliseconds 350
+            $sp.DiscardInBuffer()
+            $sp.WriteLine('HOST|RFID_MANAGER|3|OK')
+            $Script:Serial = $sp
+            $Script:SerialPortName = $port
+            $Script:SerialMessage = 'Connected'
+            $Script:LastHostReply = Get-Date
+            Write-Log "Connected to $port"
+            return
+        } catch {
+            try { if ($null -ne $sp) { $sp.Dispose() } } catch {}
+        }
+    }
+    $Script:SerialMessage = 'Waiting for Arduino UNO R4...'
+}
+
+function Send-HostOk {
+    if ($null -eq $Script:Serial -or -not $Script:Serial.IsOpen) { return }
+    try {
+        $Script:Serial.WriteLine('HOST|RFID_MANAGER|3|OK')
+        $Script:LastHostReply = Get-Date
+    } catch {
+        Write-Log "Serial write failed: $($_.Exception.Message)"
+        Close-Serial
+    }
+}
+
+function Open-ManagerPageIfNeeded {
+    if (((Get-Date) - $Script:LastUiSeen).TotalSeconds -le 4.0) { return }
+    try {
+        $edge = Get-Command msedge.exe -ErrorAction SilentlyContinue
+        if ($edge) { Start-Process 'msedge.exe' -ArgumentList "--new-window $($Script:Url)" }
+        else { Start-Process $Script:Url }
+        $Script:BrowserOpened = $true
+    } catch {
+        try { Start-Process $Script:Url } catch {}
+    }
+}
+
+function Add-Scan([string]$Line) {
+    $parts = $Line -split '\|', 5
+    if ($parts.Count -ne 5 -or $parts[0] -ne 'RFID') { return }
+
+    $reverse = ([string]$parts[3]).Trim()
+    while ($reverse.Length -lt 10) { $reverse = '0' + $reverse }
+    if ($reverse.Length -gt 10) { $reverse = $reverse.Substring($reverse.Length - 10) }
+
+    $rec = [PSCustomObject]@{
+        number      = $Script:Scans.Count + 1
+        timestamp   = (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+        uid         = ([string]$parts[1]).Trim()
+        id_dec      = ([string]$parts[2]).Trim()
+        reverse_dec = $reverse
+        card_type   = ([string]$parts[4]).Trim()
+    }
+    $Script:Scans += $rec
+    Save-Scans
+    Write-Log "Scan $($rec.number): $($rec.reverse_dec)"
+    Open-ManagerPageIfNeeded
+}
+
+function Poll-Serial {
+    Try-ConnectSerial
+    if ($null -eq $Script:Serial -or -not $Script:Serial.IsOpen) { return }
+
+    try {
+        for ($i = 0; $i -lt 12; $i++) {
+            if ($Script:Serial.BytesToRead -le 0) { break }
+            $line = $Script:Serial.ReadLine().Trim()
+            if (-not $line) { continue }
+
+            if ($line -like 'HELLO|RFID_READER|3*') {
+                Send-HostOk
+            } elseif ($line -eq 'PING|RFID_READER|3') {
+                $Script:Serial.WriteLine('PONG|RFID_MANAGER|3')
+                $Script:LastHostReply = Get-Date
+            } elseif ($line -like 'RFID|*') {
+                Add-Scan $line
+            } elseif ($line -like 'ERROR|*') {
+                $Script:SerialMessage = $line
+                Write-Log $line
+            }
+        }
+
+        if (((Get-Date) - $Script:LastPing).TotalSeconds -ge 4.0) {
+            $Script:Serial.WriteLine('PING|RFID_MANAGER|3')
