@@ -1,0 +1,108 @@
+# RFID Localhost Manager v4.0 - Composite USB
+# Dependency-free Windows companion for Arduino UNO R4 RFID reader.
+# Uses only Windows PowerShell/.NET: no Python, no pip, no Arduino Wi-Fi.
+
+$ErrorActionPreference = 'Stop'
+
+$Script:Version = '4.0'
+$Script:HostAddress = '127.0.0.1'
+$Script:Port = 8765
+$Script:Url = "http://localhost:$($Script:Port)/"
+$Script:Baud = 115200
+$Script:InstallRoot = Join-Path $env:LOCALAPPDATA 'Dallmayr\RFIDCardManager'
+$Script:DataFile = Join-Path $Script:InstallRoot 'rfid_scans.json'
+$Script:LogFile = Join-Path $Script:InstallRoot 'manager.log'
+$Script:SettingsFile = Join-Path $Script:InstallRoot 'settings.json'
+$Script:HidEnabled = $false
+$Script:HidAppendEnter = $true
+$Script:DeviceHidEnabled = $false
+$Script:DeviceHidAppendEnter = $true
+$Script:DeviceFirmware = ''
+$Script:Scans = @()
+$Script:Serial = $null
+$Script:SerialPortName = ''
+$Script:SerialMessage = 'Waiting for Arduino UNO R4...'
+$Script:LastPortProbe = [DateTime]::MinValue
+$Script:LastHostReply = [DateTime]::MinValue
+$Script:LastUiSeen = [DateTime]::MinValue
+$Script:LastPing = [DateTime]::MinValue
+$Script:BrowserOpened = $false
+$Script:Listener = $null
+
+New-Item -ItemType Directory -Force -Path $Script:InstallRoot | Out-Null
+
+function Write-Log([string]$Text) {
+    try {
+        $line = "{0} {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Text
+        Add-Content -LiteralPath $Script:LogFile -Value $line -Encoding UTF8
+    } catch {}
+}
+
+function Load-Scans {
+    if (-not (Test-Path -LiteralPath $Script:DataFile)) { return }
+    try {
+        $raw = Get-Content -LiteralPath $Script:DataFile -Raw -Encoding UTF8
+        if ($raw.Trim()) {
+            $data = $raw | ConvertFrom-Json
+            if ($null -ne $data) { $Script:Scans = @($data) }
+        }
+    } catch {
+        Write-Log "Could not load scan history: $($_.Exception.Message)"
+        $Script:Scans = @()
+    }
+}
+
+function Save-Scans {
+    try {
+        $json = ConvertTo-Json -InputObject @($Script:Scans) -Depth 5
+        [IO.File]::WriteAllText($Script:DataFile, $json, [Text.UTF8Encoding]::new($false))
+    } catch {
+        Write-Log "Could not save scan history: $($_.Exception.Message)"
+    }
+}
+
+function Load-Settings {
+    if (-not (Test-Path -LiteralPath $Script:SettingsFile)) { return }
+    try {
+        $raw = Get-Content -LiteralPath $Script:SettingsFile -Raw -Encoding UTF8
+        if (-not $raw.Trim()) { return }
+        $s = $raw | ConvertFrom-Json
+        if ($null -ne $s.hid_enabled) { $Script:HidEnabled = [bool]$s.hid_enabled }
+        if ($null -ne $s.hid_append_enter) { $Script:HidAppendEnter = [bool]$s.hid_append_enter }
+    } catch {
+        Write-Log "Could not load settings: $($_.Exception.Message)"
+    }
+}
+
+function Save-Settings {
+    try {
+        $s = [ordered]@{
+            hid_enabled = [bool]$Script:HidEnabled
+            hid_append_enter = [bool]$Script:HidAppendEnter
+        } | ConvertTo-Json -Compress
+        [IO.File]::WriteAllText($Script:SettingsFile, $s, [Text.UTF8Encoding]::new($false))
+    } catch {
+        Write-Log "Could not save settings: $($_.Exception.Message)"
+    }
+}
+
+function Escape-Html([string]$Text) {
+    return [System.Net.WebUtility]::HtmlEncode([string]$Text)
+}
+
+function Escape-Xml([string]$Text) {
+    if ($null -eq $Text) { return '' }
+    return [System.Security.SecurityElement]::Escape([string]$Text)
+}
+
+function Get-IndexHtml {
+@'
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dallmayr RFID Card Manager</title>
+<style>
+:root{font-family:Inter,Segoe UI,Arial,sans-serif;color:#15202b;background:#eef2f5}
+*{box-sizing:border-box}body{margin:0;padding:24px}.wrap{max-width:1220px;margin:0 auto}
