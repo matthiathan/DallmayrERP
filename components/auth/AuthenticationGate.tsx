@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 
-const PUBLIC_AUTH_ROUTES = ['/login', '/reset-password'];
+const PUBLIC_AUTH_ROUTES = ['/login', '/reset-password', '/rfid-scanner'];
 
 function isPublicAuthRoute(pathname: string) {
   return PUBLIC_AUTH_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
