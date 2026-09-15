@@ -7,8 +7,9 @@ const styles = fs.readFileSync(new URL('../../components/features/TelemetryTestC
 
 test('Test Center selects a valid active device by default and preserves an explicit deep link', () => {
   assert.match(workspace, /requestedDeviceCode/);
-  assert.match(workspace, /currentStillExists/);
+  assert.match(workspace, /normalized\.some\(\(item\) => item\.id === current\)/);
   assert.match(workspace, /normalized\[0\]\?\.id/);
+  assert.match(workspace, /device\.device_code\.toLocaleLowerCase/);
   assert.doesNotMatch(workspace, /requestedDevice \?\? current \?\? normalized\[0\]/);
 });
 
