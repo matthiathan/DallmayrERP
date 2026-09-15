@@ -52,7 +52,9 @@ test('profile assignment keeps manual override authoritative and shares one auto
   assert.match(migration, /set_telemetry_device_profile/);
   assert.match(migration, /v_method not in \('automatic','manual'\)/);
   assert.match(evidenceMigration, /profile_assignment_method, 'automatic'\) = 'manual'/i);
-  assert.match(evidenceMigration, /'profile_resolution', 'manual'/i);
+  assert.match(evidenceMigration, /v_resolution := 'manual'/i);
+  assert.match(evidenceMigration, /'profile_assignment_method', 'manual'/i);
+  assert.match(evidenceMigration, /'profile_resolution', v_resolution/i);
   assert.match(evidenceMigration, /get_telemetry_machine_identity/i);
   assert.match(evidenceMigration, /resolve_telemetry_device_profile\(v_device\.id\)/i);
   assert.match(evidenceMigration, /Serial mismatch/);
@@ -71,6 +73,7 @@ test('identity evidence registry and resolver keep anonymous callers out', () =>
   assert.match(evidenceMigration, /revoke all on public\.machine_model_profile_identity_evidence from anon/i);
   assert.match(evidenceMigration, /revoke all on function public\.resolve_telemetry_device_profile\(uuid\) from public, anon/i);
   assert.match(evidenceMigration, /grant execute on function public\.resolve_telemetry_device_profile\(uuid\) to authenticated, service_role/i);
+  assert.match(evidenceMigration, /auth\.uid\(\) is not null and public\.current_app_role\(\) is null/i);
 });
 
 test('machine dashboard exposes identification evidence, conflicts and profile controls', () => {
@@ -81,10 +84,12 @@ test('machine dashboard exposes identification evidence, conflicts and profile c
   assert.match(panel, /Effective profile/);
   assert.match(panel, /Identity requires attention/);
   assert.match(panel, /Automatic selection/);
+  assert.match(panel, /Automatic · ambiguous/);
   assert.match(panel, /Manual override/);
   assert.match(panel, /set_telemetry_device_profile/);
   assert.match(panel, /Manage machine profiles & product mappings/);
   assert.match(panel, /Open this device in Test Center/);
+  assert.doesNotMatch(panel, /score \{recommendation\.score\}\/100/);
 });
 
 test('machine product mapping follows the effective decoder profile', () => {
