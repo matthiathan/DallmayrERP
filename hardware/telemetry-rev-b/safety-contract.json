@@ -1,7 +1,7 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "hardware_revision": "telemetry-rev-b-isolated",
-  "status": "cad-input-definition",
+  "status": "mdb-front-end-validation-definition",
   "field_use_allowed": false,
   "manufacturing_release_allowed": false,
   "machine_supply": {
@@ -15,6 +15,29 @@
     "minimum_output_current_a": 3,
     "minimum_output_power_w": 15,
     "minimum_isolation_vdc": 1500
+  },
+  "mdb_bus": {
+    "baud": 9600,
+    "bit_time_us_nominal": 104.167,
+    "vmc_master_tx_min_source_ma_active_at_4v": 100,
+    "vmc_master_tx_max_leakage_ua_inactive": 100,
+    "vmc_master_rx_min_input_ma_active_at_1v": 15,
+    "vmc_master_rx_max_input_ma_inactive": 1,
+    "peripheral_rx_max_input_ma_active_at_4v": 15,
+    "peripheral_rx_max_input_ua_inactive": 100,
+    "peripheral_tx_min_sink_ma_active_at_1v": 15,
+    "peripheral_tx_max_leakage_ua_inactive": 30
+  },
+  "mdb_sniffer_validation_targets": {
+    "additional_line_loading_ua_target_max": 50,
+    "normal_signal_threshold_v_target_min": 2.0,
+    "normal_signal_threshold_v_target_max": 3.0,
+    "raw_input_hysteresis_mv_target_min": 100,
+    "raw_input_hysteresis_mv_target_max": 400,
+    "raw_to_gpio_propagation_us_target_max": 5.0,
+    "normal_bus_range_protection_must_not_conduct": true,
+    "zero_active_drive_paths_to_mdb": true,
+    "checksum_decode_errors_allowed_in_10000_replay_frames": 0
   },
   "firmware_pin_contract": {
     "cell_rx_gpio": 1,
@@ -31,6 +54,9 @@
     "MDB_MASTER_RX_RAW",
     "MDB_MASTER_TX_RAW",
     "MDB_COMM_COMMON",
+    "MDB_SENSE_5V",
+    "MDB_TX_SENSE_LOGIC",
+    "MDB_RX_SENSE_LOGIC",
     "DEX_RS232_TX_MACHINE",
     "DEX_RS232_RX_MACHINE",
     "DEX_RS232_COMMON",
@@ -55,6 +81,7 @@
     ["MACH_PWR_RETURN", "USB_GND"],
     ["MDB_COMM_COMMON", "LOGIC_GND"],
     ["MDB_COMM_COMMON", "USB_GND"],
+    ["MDB_SENSE_5V", "ISO_5V"],
     ["DEX_RS232_COMMON", "LOGIC_GND"],
     ["DEX_RS232_COMMON", "USB_GND"],
     ["DEX_ISO_GND", "LOGIC_GND"],
@@ -68,6 +95,9 @@
     "surge_transient_protection",
     "input_filter",
     "isolated_18_75v_to_5v_power",
+    "isolated_mdb_sense_power",
+    "dual_high_impedance_mdb_comparator",
+    "dual_mdb_digital_isolator",
     "isolated_passive_mdb_master_tx_receiver",
     "isolated_passive_mdb_master_rx_receiver",
     "isolated_rs232_dex_interface",
@@ -91,8 +121,11 @@
     "dex_transceiver_part": "candidate_pinout_verified",
     "dex_logic_translation_topology": "locked",
     "dex_logic_translation_parts": "candidate",
-    "mdb_master_tx_sensing_values": "validation",
-    "mdb_master_rx_sensing_values": "validation",
+    "mdb_sense_power_topology": "candidate_locked_for_evt",
+    "mdb_comparator_topology": "candidate_locked_for_evt",
+    "mdb_digital_isolation_topology": "candidate_locked_for_evt",
+    "mdb_master_tx_input_network_values": "validation",
+    "mdb_master_rx_input_network_values": "validation",
     "usb_domain_separation": "locked",
     "pcb_outline": "not_locked"
   },
@@ -106,6 +139,9 @@
     "adm3251e_charge_pump_capacitance_uf": 0.1,
     "adm3251e_vcc_bypass_uf": 0.1,
     "adm3251e_viso_external_load_allowed": false,
+    "mdb_sense_supply_negative_tied_only_to_mdb_comm_common": true,
+    "mdb_comparator_outputs_cross_digital_isolator_before_esp32": true,
+    "mdb_input_divider_and_hysteresis_values_frozen": false,
     "cad_connection_table_present": true
   },
   "candidate_components": {
@@ -117,6 +153,35 @@
       "isolation": "2.25kV",
       "recommended_fast_blow_fuse_a": 2,
       "remote_logic": "negative",
+      "locked_for_production": false
+    },
+    "mdb_sense_power": {
+      "manufacturer": "Murata Power Solutions",
+      "part": "NXF1S0505MC",
+      "input": "5V logic domain",
+      "output": "regulated isolated 5V/200mA/1W",
+      "isolation": "3kVDC",
+      "secondary_reference": "MDB_COMM_COMMON",
+      "locked_for_production": false
+    },
+    "mdb_comparator": {
+      "manufacturer": "Texas Instruments",
+      "part": "TLV3202-Q1",
+      "channels": 2,
+      "supply": "2.7-5.5V",
+      "propagation_delay_ns_typ": 40,
+      "input_bias_na_max": 0.05,
+      "powered_from": "MDB_SENSE_5V",
+      "locked_for_production": false
+    },
+    "mdb_digital_isolator": {
+      "manufacturer": "Texas Instruments",
+      "part": "ISO7720",
+      "channels": 2,
+      "direction": "machine-side comparators to ESP32 only",
+      "supply_range": "2.25-5.5V per side",
+      "data_rate": "100Mbps",
+      "isolation": "up to 5kVrms by package",
       "locked_for_production": false
     },
     "isolated_dex": {
@@ -154,6 +219,10 @@
     "42_5v_power_test": false,
     "controlled_high_line_transient_test": false,
     "cellular_load_test": false,
+    "mdb_passive_loading_test": false,
+    "mdb_threshold_margin_test": false,
+    "mdb_timing_test": false,
+    "mdb_10000_frame_decode_test": false,
     "mdb_simulator_test": false,
     "dex_logic_level_test": false,
     "dex_test": false,
