@@ -66,5 +66,7 @@ test('machine product mapping follows the effective decoder profile', () => {
 test('machine identity action deep-links to the selected Test Center device', () => {
   assert.match(panel, /telemetry\/test-center\?device=/);
   assert.match(testCenter, /URLSearchParams\(window\.location\.search\)/);
-  assert.match(testCenter, /item\.device_code === requestedDeviceCode/);
+  assert.match(testCenter, /requestedDeviceCode/);
+  assert.match(testCenter, /item\.device_code\.toLocaleLowerCase/);
+  assert.match(testCenter, /search\.trim\(\)\.toLocaleLowerCase/);
 });
