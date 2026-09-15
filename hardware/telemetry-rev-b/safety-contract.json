@@ -1,7 +1,7 @@
 {
-  "schema_version": 6,
+  "schema_version": 5,
   "hardware_revision": "telemetry-rev-b-isolated",
-  "status": "mdb-sense-evt-daughterboard-defined",
+  "status": "mdb-evt-population-candidate",
   "field_use_allowed": false,
   "manufacturing_release_allowed": false,
   "machine_supply": {
