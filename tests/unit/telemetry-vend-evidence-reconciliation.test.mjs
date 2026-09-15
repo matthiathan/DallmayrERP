@@ -6,12 +6,16 @@ const migration = fs.readFileSync(
   new URL('../../supabase/migrations/20260915133500_telemetry_vend_evidence_reconciliation.sql', import.meta.url),
   'utf8',
 );
+const ambiguityMigration = fs.readFileSync(
+  new URL('../../supabase/migrations/20260915134000_preserve_identity_ambiguity_in_product_mapping.sql', import.meta.url),
+  'utf8',
+);
 
 const recordFunction = migration.match(
   /create or replace function public\.record_telemetry_vend_evidence[\s\S]*?\$function\$;/i,
 )?.[0] ?? '';
 
-const profileHelper = migration.match(
+const authoritativeProfileHelper = ambiguityMigration.match(
   /create or replace function public\.resolve_effective_telemetry_profile_key[\s\S]*?\$function\$;/i,
 )?.[0] ?? '';
 
@@ -50,16 +54,24 @@ test('V4 adds vend evidence without bypassing selection learn mode or the proven
   assert.match(v3CompatibilityFunction, /ingest_telemetry_payload_v4/i);
 });
 
-test('existing product mapping API delegates profile choice to the unified machine identity scorer', () => {
+test('existing product mapping API delegates profile choice to the unified scorer and preserves ambiguity', () => {
   assert.match(
-    profileHelper,
+    authoritativeProfileHelper,
     /resolve_effective_telemetry_profile_key\(\s*p_device_id uuid,\s*p_machine_id uuid\s*\)/si,
   );
-  assert.match(profileHelper, /resolve_telemetry_device_profile\(v_device_id\)/i);
-  assert.match(profileHelper, /effective_profile_key/i);
-  assert.doesNotMatch(migration, /drop function public\.resolve_mapped_product_name/i);
+  assert.match(authoritativeProfileHelper, /resolve_telemetry_device_profile\(v_device_id\)/i);
+  assert.match(authoritativeProfileHelper, /effective_profile_key/i);
+  assert.match(
+    authoritativeProfileHelper,
+    /if v_device_id is not null then[\s\S]*return v_profile_key;[\s\S]*end if;/i,
+  );
+  assert.match(
+    ambiguityMigration,
+    /automatic_ambiguous \/ automatic_unmatched must not be bypassed/i,
+  );
+  assert.doesNotMatch(migration + ambiguityMigration, /drop function public\.resolve_mapped_product_name/i);
   assert.doesNotMatch(
-    migration,
+    migration + ambiguityMigration,
     /create or replace function public\.resolve_mapped_product_name/i,
   );
   assert.match(
