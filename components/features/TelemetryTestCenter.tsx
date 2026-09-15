@@ -25,14 +25,10 @@ type DeviceRecord = {
   mdb_master_polarity: 'auto' | 'normal' | 'inverted' | null;
   mdb_slave_polarity: 'auto' | 'normal' | 'inverted' | null;
   mdb_pin_swap: boolean;
-};
-
-type MachineRecord = {
-  id: string;
   machine_name: string | null;
-  model: string | null;
-  serial_number: string | null;
-  asset_tag: string | null;
+  machine_model: string | null;
+  machine_serial_number: string | null;
+  machine_asset_tag: string | null;
 };
 
 type TestSession = {
@@ -97,10 +93,23 @@ const LOG_FILTERS: Array<{ key: LogFilter; label: string }> = [
 
 const SESSION_COLUMNS = 'id,device_id,status,raw_mdb,raw_dex,started_at,expires_at,acknowledged_at,last_device_contact_at,last_log_at,ended_at';
 const COMMAND_COLUMNS = 'id,session_id,command,status,created_at,completed_at,response_note';
+const LOG_WINDOW = 500;
+const RECOVERY_PAGE_SIZE = 200;
+const MAX_RECOVERY_PAGES = 3;
 
 function normalizeRpcRow<T>(value: T | T[] | null): T | null {
   if (!value) return null;
   return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
+function mergeLogRows(current: DebugLog[], incoming: DebugLog[]) {
+  if (incoming.length === 0) return current;
+  const byId = new Map<number, DebugLog>();
+  current.forEach((row) => byId.set(row.id, row));
+  incoming.forEach((row) => byId.set(row.id, row));
+  return Array.from(byId.values())
+    .sort((left, right) => left.id - right.id)
+    .slice(-LOG_WINDOW);
 }
 
 function formatUptime(value: number | null) {
@@ -208,8 +217,8 @@ function preferredArchivedSession(sessions: TestSession[]) {
 export function TelemetryTestCenter() {
   const client = useMemo(() => getSupabaseClient(), []);
   const [devices, setDevices] = useState<DeviceRecord[]>([]);
-  const [machines, setMachines] = useState<Record<string, MachineRecord>>({});
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
+  const [deviceSearch, setDeviceSearch] = useState('');
   const [session, setSession] = useState<TestSession | null>(null);
   const [historySessions, setHistorySessions] = useState<TestSession[]>([]);
   const [viewedSessionId, setViewedSessionId] = useState<string | null>(null);
@@ -220,6 +229,7 @@ export function TelemetryTestCenter() {
   const [busy, setBusy] = useState(false);
   const [commandBusy, setCommandBusy] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchingDevices, setSearchingDevices] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [paused, setPaused] = useState(false);
@@ -231,53 +241,42 @@ export function TelemetryTestCenter() {
   const terminalRef = useRef<HTMLDivElement>(null);
   const pausedRef = useRef(false);
   const pausedBufferRef = useRef<DebugLog[]>([]);
+  const recoveryCursorRef = useRef(0);
+  const initialDeviceLoadRef = useRef(false);
 
   const selectedDevice = devices.find((item) => item.id === selectedDeviceId) ?? null;
-  const selectedMachine = selectedDevice?.machine_id ? machines[selectedDevice.machine_id] ?? null : null;
   const viewedSession = viewedSessionId ? historySessions.find((item) => item.id === viewedSessionId) ?? null : null;
   const displaySession = viewedSession ?? session;
   const isArchivedView = Boolean(viewedSession && (!session || viewedSession.id !== session.id));
   const journeyState = deriveJourneyState(displaySession, now);
   const activeJourneyState = deriveJourneyState(session, now);
 
-  const loadFleet = useCallback(async () => {
-    setLoading(true);
+  const loadDevices = useCallback(async (search: string, initial = false) => {
+    if (initial) setLoading(true);
+    setSearchingDevices(true);
     setError(null);
-    const { data: deviceRows, error: deviceError } = await client
-      .from('telemetry_devices')
-      .select('id,device_code,machine_id,status,firmware_version,last_seen_at,last_transport,wifi_rssi,cellular_csq,cellular_operator,profile_id,profile_assignment_method,reported_machine_interface,reported_machine_model,last_config_ack_at,applied_config,mdb_master_polarity,mdb_slave_polarity,mdb_pin_swap')
-      .eq('status', 'active')
-      .order('device_code', { ascending: true });
-
+    const { data, error: deviceError } = await client.rpc('search_telemetry_test_devices', {
+      p_search: search.trim(),
+      p_limit: 75,
+    });
     if (deviceError) {
       setError(deviceError.message);
+      setSearchingDevices(false);
       setLoading(false);
       return;
     }
 
-    const normalized = (deviceRows ?? []) as DeviceRecord[];
+    const normalized = (data ?? []) as DeviceRecord[];
     setDevices(normalized);
-    const requestedDeviceCode = typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search).get('device')?.trim() ?? ''
-      : '';
     setSelectedDeviceId((current) => {
-      const requestedDevice = requestedDeviceCode
-        ? normalized.find((item) => item.device_code === requestedDeviceCode)?.id
+      const exact = search.trim()
+        ? normalized.find((item) => item.device_code.toLocaleLowerCase('en-ZA') === search.trim().toLocaleLowerCase('en-ZA'))?.id
         : undefined;
-      const currentStillExists = Boolean(current) && normalized.some((item) => item.id === current);
-      return requestedDevice ?? (currentStillExists ? current : normalized[0]?.id ?? '');
+      if (exact) return exact;
+      if (current && normalized.some((item) => item.id === current)) return current;
+      return normalized[0]?.id ?? '';
     });
-
-    const machineIds = [...new Set(normalized.map((item) => item.machine_id).filter((value): value is string => Boolean(value)))];
-    if (machineIds.length > 0) {
-      const { data: machineRows } = await client
-        .from('machines')
-        .select('id,machine_name,model,serial_number,asset_tag')
-        .in('id', machineIds);
-      const byId: Record<string, MachineRecord> = {};
-      ((machineRows ?? []) as MachineRecord[]).forEach((machine) => { byId[machine.id] = machine; });
-      setMachines(byId);
-    }
+    setSearchingDevices(false);
     setLoading(false);
   }, [client]);
 
@@ -328,19 +327,55 @@ export function TelemetryTestCenter() {
     return sessions;
   }, [client]);
 
-  const loadLogs = useCallback(async (sessionId: string) => {
-    const { data, error: logError } = await client
-      .from('telemetry_debug_logs')
-      .select('id,session_id,device_id,boot_id,device_sequence,device_uptime_ms,category,message,received_at')
-      .eq('session_id', sessionId)
-      .order('id', { ascending: false })
-      .limit(500);
+  const loadInitialLogs = useCallback(async (sessionId: string) => {
+    const { data, error: logError } = await client.rpc('get_telemetry_test_logs', {
+      p_session_id: sessionId,
+      p_after_id: 0,
+      p_limit: LOG_WINDOW,
+    });
     if (logError) {
       setError(logError.message);
       return;
     }
-    setLogs(((data ?? []) as DebugLog[]).reverse());
+    const rows = (data ?? []) as DebugLog[];
+    recoveryCursorRef.current = rows.at(-1)?.id ?? 0;
+    setLogs(rows);
   }, [client]);
+
+  const bufferOrAppendLogs = useCallback((rows: DebugLog[]) => {
+    if (rows.length === 0) return;
+    if (pausedRef.current) {
+      pausedBufferRef.current = mergeLogRows(pausedBufferRef.current, rows);
+      setPausedCount(pausedBufferRef.current.length);
+      return;
+    }
+    setLogs((current) => mergeLogRows(current, rows));
+  }, []);
+
+  const recoverLogs = useCallback(async (sessionId: string) => {
+    let cursor = recoveryCursorRef.current;
+    const recovered: DebugLog[] = [];
+
+    for (let page = 0; page < MAX_RECOVERY_PAGES; page += 1) {
+      const { data, error: recoveryError } = await client.rpc('get_telemetry_test_logs', {
+        p_session_id: sessionId,
+        p_after_id: recoveryCursorRef.current,
+        p_limit: RECOVERY_PAGE_SIZE,
+      });
+      if (recoveryError) {
+        setError(recoveryError.message);
+        return;
+      }
+      const rows = (data ?? []) as DebugLog[];
+      if (rows.length === 0) break;
+      recovered.push(...rows);
+      cursor = rows[rows.length - 1]?.id ?? cursor;
+      recoveryCursorRef.current = cursor;
+      if (rows.length < RECOVERY_PAGE_SIZE) break;
+    }
+
+    bufferOrAppendLogs(recovered);
+  }, [bufferOrAppendLogs, client]);
 
   const loadCommands = useCallback(async (sessionId: string) => {
     const { data, error: commandError } = await client
@@ -356,7 +391,22 @@ export function TelemetryTestCenter() {
     setCommands((data ?? []) as TestCommand[]);
   }, [client]);
 
-  useEffect(() => { void loadFleet(); }, [loadFleet]);
+  useEffect(() => {
+    const requestedDeviceCode = typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('device')?.trim() ?? ''
+      : '';
+    setDeviceSearch(requestedDeviceCode);
+    initialDeviceLoadRef.current = true;
+    void loadDevices(requestedDeviceCode, true);
+  }, [loadDevices]);
+
+  useEffect(() => {
+    if (!initialDeviceLoadRef.current || loading || session) return;
+    const timer = window.setTimeout(() => {
+      void loadDevices(deviceSearch, false);
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [deviceSearch, loadDevices, loading, session]);
 
   useEffect(() => {
     let cancelled = false;
@@ -365,6 +415,7 @@ export function TelemetryTestCenter() {
     setViewedSessionId(null);
     pausedBufferRef.current = [];
     pausedRef.current = false;
+    recoveryCursorRef.current = 0;
     setPaused(false);
     setPausedCount(0);
     setLogs([]);
@@ -381,14 +432,16 @@ export function TelemetryTestCenter() {
 
   useEffect(() => {
     if (!displaySession?.id) {
+      recoveryCursorRef.current = 0;
       setLogs([]);
       setCommands([]);
       return;
     }
+    recoveryCursorRef.current = 0;
     setLogs([]);
     setCommands([]);
-    void Promise.all([loadLogs(displaySession.id), loadCommands(displaySession.id)]);
-  }, [displaySession?.id, loadCommands, loadLogs]);
+    void Promise.all([loadInitialLogs(displaySession.id), loadCommands(displaySession.id)]);
+  }, [displaySession?.id, loadCommands, loadInitialLogs]);
 
   useEffect(() => {
     if (!session?.id) return;
@@ -405,13 +458,7 @@ export function TelemetryTestCenter() {
         },
         (payload) => {
           if (viewedSessionId) return;
-          const row = payload.new as DebugLog;
-          if (pausedRef.current) {
-            if (!pausedBufferRef.current.some((item) => item.id === row.id)) pausedBufferRef.current.push(row);
-            setPausedCount(pausedBufferRef.current.length);
-            return;
-          }
-          setLogs((current) => current.some((item) => item.id === row.id) ? current : [...current.slice(-499), row]);
+          bufferOrAppendLogs([payload.new as DebugLog]);
         },
       )
       .subscribe();
@@ -433,8 +480,10 @@ export function TelemetryTestCenter() {
       } else {
         setSession(updated);
         setHistorySessions((current) => [updated, ...current.filter((item) => item.id !== updated.id)].slice(0, 12));
-        if (!pausedRef.current && !viewedSessionId) void loadLogs(updated.id);
-        if (!viewedSessionId) void loadCommands(updated.id);
+        if (!viewedSessionId) {
+          void recoverLogs(updated.id);
+          void loadCommands(updated.id);
+        }
       }
     }, 5000);
 
@@ -442,7 +491,7 @@ export function TelemetryTestCenter() {
       window.clearInterval(sessionPoll);
       void client.removeChannel(channel);
     };
-  }, [client, loadCommands, loadLogs, loadSessionHistory, selectedDeviceId, session?.id, viewedSessionId]);
+  }, [bufferOrAppendLogs, client, loadCommands, loadSessionHistory, recoverLogs, selectedDeviceId, session?.id, viewedSessionId]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -490,6 +539,7 @@ export function TelemetryTestCenter() {
     const created = normalizeRpcRow(data as TestSession | TestSession[] | null);
     setSession(created);
     setViewedSessionId(null);
+    recoveryCursorRef.current = 0;
     setLogs([]);
     setCommands([]);
     if (created) {
@@ -542,12 +592,7 @@ export function TelemetryTestCenter() {
     if (paused) {
       const pending = pausedBufferRef.current;
       pausedBufferRef.current = [];
-      setLogs((current) => {
-        const byId = new Map<number, DebugLog>();
-        current.forEach((row) => byId.set(row.id, row));
-        pending.forEach((row) => byId.set(row.id, row));
-        return Array.from(byId.values()).sort((left, right) => left.id - right.id).slice(-500);
-      });
+      setLogs((current) => mergeLogRows(current, pending));
       setPausedCount(0);
       pausedRef.current = false;
       setPaused(false);
@@ -571,9 +616,7 @@ export function TelemetryTestCenter() {
 
   const exportSession = () => {
     if (!displaySession) return;
-    const device = selectedDevice;
-    const machine = selectedMachine;
-    const pinMap = device?.mdb_pin_swap
+    const pinMap = selectedDevice?.mdb_pin_swap
       ? 'Swapped: GPIO5 Master-TX / GPIO4 Master-RX'
       : 'Standard: GPIO4 Master-TX / GPIO5 Master-RX';
     const header = [
@@ -583,18 +626,18 @@ export function TelemetryTestCenter() {
       `Session status: ${displaySession.status}`,
       `Session started: ${displaySession.started_at}`,
       `Session ended: ${displaySession.ended_at ?? 'active'}`,
-      `Device: ${device?.device_code ?? 'unknown'}`,
-      `Firmware: ${device?.firmware_version ?? 'unknown'}`,
-      `Machine: ${machine?.machine_name ?? machine?.model ?? 'not linked'}`,
-      `Machine serial: ${machine?.serial_number ?? machine?.asset_tag ?? 'unknown'}`,
-      `Reported model: ${device?.reported_machine_model ?? 'unknown'}`,
-      `Protocol: ${device?.reported_machine_interface ?? 'unknown'}`,
-      `Profile mode: ${device?.profile_assignment_method ?? 'automatic'}`,
-      `Requested profile: ${device?.profile_id ?? 'automatic'}`,
-      `Applied profile: ${appliedProfile(device) ?? 'unknown'}`,
+      `Device: ${selectedDevice?.device_code ?? 'unknown'}`,
+      `Firmware: ${selectedDevice?.firmware_version ?? 'unknown'}`,
+      `Machine: ${selectedDevice?.machine_name ?? selectedDevice?.machine_model ?? 'not linked'}`,
+      `Machine serial: ${selectedDevice?.machine_serial_number ?? selectedDevice?.machine_asset_tag ?? 'unknown'}`,
+      `Reported model: ${selectedDevice?.reported_machine_model ?? 'unknown'}`,
+      `Protocol: ${selectedDevice?.reported_machine_interface ?? 'unknown'}`,
+      `Profile mode: ${selectedDevice?.profile_assignment_method ?? 'automatic'}`,
+      `Requested profile: ${selectedDevice?.profile_id ?? 'automatic'}`,
+      `Applied profile: ${appliedProfile(selectedDevice) ?? 'unknown'}`,
       `MDB pin order: ${pinMap}`,
-      `Master polarity: ${device?.mdb_master_polarity ?? 'auto'}`,
-      `Slave polarity: ${device?.mdb_slave_polarity ?? 'auto'}`,
+      `Master polarity: ${selectedDevice?.mdb_master_polarity ?? 'auto'}`,
+      `Slave polarity: ${selectedDevice?.mdb_slave_polarity ?? 'auto'}`,
       '',
       'COMMANDS',
       ...commands.map((item) => `${item.created_at}  ${item.command}  ${commandVisualStatus(item, now).label}${item.response_note ? `  ${item.response_note}` : ''}`),
@@ -607,7 +650,7 @@ export function TelemetryTestCenter() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `dallmayr-test-center-${device?.device_code ?? 'device'}-${displaySession.id.slice(0, 8)}-${new Date().toISOString().replace(/[:.]/g, '-')}.log`;
+    anchor.download = `dallmayr-test-center-${selectedDevice?.device_code ?? 'device'}-${displaySession.id.slice(0, 8)}-${new Date().toISOString().replace(/[:.]/g, '-')}.log`;
     anchor.click();
     URL.revokeObjectURL(url);
   };
@@ -670,15 +713,32 @@ export function TelemetryTestCenter() {
       <div className="test-center-layout">
         <aside className="fleet-panel test-center-sidebar">
           <label className="test-center-field">
+            <span>Find telemetry device</span>
+            <input
+              disabled={Boolean(session)}
+              onChange={(event) => setDeviceSearch(event.target.value)}
+              placeholder="Device, machine, serial or asset tag…"
+              type="search"
+              value={deviceSearch}
+            />
+            <small>{searchingDevices ? 'Searching…' : `${devices.length} matching active device${devices.length === 1 ? '' : 's'}`}</small>
+          </label>
+
+          <label className="test-center-field">
             <span>Telemetry device</span>
-            <select disabled={Boolean(session)} onChange={(event) => setSelectedDeviceId(event.target.value)} value={selectedDeviceId}>
-              {devices.map((device) => <option key={device.id} value={device.id}>{device.device_code}</option>)}
+            <select disabled={Boolean(session) || devices.length === 0} onChange={(event) => setSelectedDeviceId(event.target.value)} value={selectedDeviceId}>
+              {devices.length === 0 ? <option value="">No matching active devices</option> : null}
+              {devices.map((device) => (
+                <option key={device.id} value={device.id}>
+                  {device.device_code}{device.machine_model ? ` — ${device.machine_model}` : ''}
+                </option>
+              ))}
             </select>
           </label>
 
           <div className="test-center-device-card">
-            <div><span>Machine</span><strong>{selectedMachine?.machine_name ?? selectedMachine?.model ?? 'Not linked'}</strong></div>
-            <div><span>Serial</span><strong>{selectedMachine?.serial_number ?? selectedMachine?.asset_tag ?? '—'}</strong></div>
+            <div><span>Machine</span><strong>{selectedDevice?.machine_name ?? selectedDevice?.machine_model ?? 'Not linked'}</strong></div>
+            <div><span>Serial</span><strong>{selectedDevice?.machine_serial_number ?? selectedDevice?.machine_asset_tag ?? '—'}</strong></div>
             <div><span>Firmware</span><strong>{selectedDevice?.firmware_version ?? 'Unknown'}</strong></div>
             <div><span>Transport</span><strong>{selectedDevice?.last_transport ?? 'Unknown'}</strong></div>
             <div><span>Operator</span><strong>{selectedDevice?.cellular_operator ?? '—'}</strong></div>
