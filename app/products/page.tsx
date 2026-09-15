@@ -1,5 +1,6 @@
 import { FleetMachineSelectionCatalog } from '@/components/features/FleetMachineSelectionCatalog';
 import { ProductMappingWorkspace } from '@/components/features/ProductMappingWorkspace';
+import { SelectionLearnModePanel } from '@/components/features/SelectionLearnModePanel';
 import { AppShell } from '@/components/layout/AppShell';
 import { SpecialistWorkspaceFrame } from '@/components/telemetry-platform/SpecialistWorkspaceFrame';
 
@@ -12,6 +13,7 @@ export default function ProductsPage() {
         title="Products"
       >
         <FleetMachineSelectionCatalog />
+        <SelectionLearnModePanel />
         <ProductMappingWorkspace />
       </SpecialistWorkspaceFrame>
     </AppShell>
