@@ -6,9 +6,9 @@ const workspace = fs.readFileSync(new URL('../../components/features/ProductMapp
 const migration = fs.readFileSync(new URL('../../supabase/migrations/20260910093555_product_mapping_operational_workspace.sql', import.meta.url), 'utf8');
 const resolutionMigration = fs.readFileSync(new URL('../../supabase/migrations/20260910094155_product_mapping_effective_profile_resolution.sql', import.meta.url), 'utf8');
 
-test('product mapping workspace exposes operational completeness and unmapped selection controls', () => {
+test('product mapping workspace exposes operational completeness and observed selection controls', () => {
   assert.match(workspace, /Mapping completeness/i);
-  assert.match(workspace, /Unmapped selections/i);
+  assert.match(workspace, /Observed selection codes/i);
   assert.match(workspace, /Needs mapping/i);
   assert.match(workspace, /Copy mapping/i);
   assert.match(workspace, /Mapping history/i);

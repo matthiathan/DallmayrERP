@@ -13,7 +13,7 @@ test('server middleware validates Supabase claims before protected pages render'
   assert.match(middleware, /createServerClient/);
   assert.match(middleware, /supabase\.auth\.getClaims\(\)/);
   assert.doesNotMatch(middleware, /supabase\.auth\.getSession\(\)/);
-  assert.match(middleware, /PUBLIC_AUTH_ROUTES = \['\/login', '\/reset-password'\]/);
+  assert.match(middleware, /PUBLIC_AUTH_ROUTES = \['\/login', '\/reset-password', '\/rfid-scanner'\]/);
   assert.match(middleware, /loginUrl\.pathname = '\/login'/);
   assert.match(middleware, /loginUrl\.searchParams\.set\('next'/);
   assert.match(middleware, /redirectWithSession/);

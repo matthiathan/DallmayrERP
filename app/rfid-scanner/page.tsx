@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/browserStorage';
 import styles from './rfid-scanner.module.css';
 
 type ScanRecord = {
@@ -61,24 +62,20 @@ export default function RfidScannerPage() {
 
   useEffect(() => {
     try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
+      const stored = safeLocalStorageGet(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored) as ScanRecord[];
         if (Array.isArray(parsed)) setScans(parsed);
       }
     } catch {
-      // Ignore invalid or unavailable browser storage.
+      // Ignore invalid saved scan data.
     }
     setReady(true);
   }, []);
 
   useEffect(() => {
     if (!ready) return;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(scans));
-    } catch {
-      // Scanning still works when storage is unavailable.
-    }
+    safeLocalStorageSet(STORAGE_KEY, JSON.stringify(scans));
   }, [ready, scans]);
 
   useEffect(() => {

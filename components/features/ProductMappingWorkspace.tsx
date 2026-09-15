@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
+import { getMachineButtonPreset } from '@/lib/telemetry/machine-button-presets';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type ProductRecord = {
@@ -88,8 +89,18 @@ type HistoryRow = {
   changed_at: string;
 };
 
+type ObservedCode = {
+  selectionCode: string;
+  deviceCode: string;
+  machineLabel: string;
+  profileKey: string | null;
+  soldTotal: number;
+  failedTotal: number;
+  lastSeenAt: string;
+};
+
 const PAGE_SIZE = 1000;
-const DEFAULT_BUTTON_COUNT = 12;
+const DEFAULT_BUTTON_COUNT = 1;
 const MIN_BUTTON_COUNT = 1;
 const MAX_BUTTON_COUNT = 100;
 
@@ -166,10 +177,37 @@ function mappingDraft(buttonCount: number, rows: MapRow[]) {
     const existing = byButton.get(buttonNumber);
     return {
       buttonNumber,
-      selectionCode: existing?.selection_code?.trim() || `MDB-${buttonNumber}`,
+      selectionCode: existing?.selection_code?.trim() || '',
       productId: existing?.product_id ?? '',
     };
   });
+}
+
+function observedCodesFromRows(rows: UnmappedSelection[]) {
+  const byCode = new Map<string, ObservedCode>();
+
+  rows.forEach((row) => {
+    const selectionCode = row.selection_code.trim();
+    if (!selectionCode) return;
+    const key = normalise(selectionCode);
+    const next: ObservedCode = {
+      selectionCode,
+      deviceCode: row.device_code,
+      machineLabel: row.machine_name || row.machine_model || 'Unassigned machine',
+      profileKey: row.profile_key,
+      soldTotal: Number(row.sold_total ?? 0),
+      failedTotal: Number(row.failed_total ?? 0),
+      lastSeenAt: row.last_seen_at,
+    };
+    const current = byCode.get(key);
+    if (!current || new Date(next.lastSeenAt).getTime() > new Date(current.lastSeenAt).getTime()) {
+      byCode.set(key, next);
+    }
+  });
+
+  return Array.from(byCode.values()).sort((a, b) => (
+    new Date(b.lastSeenAt).getTime() - new Date(a.lastSeenAt).getTime()
+  ));
 }
 
 export function ProductMappingWorkspace() {
@@ -186,6 +224,7 @@ export function ProductMappingWorkspace() {
   const [modelSearch, setModelSearch] = useState('');
   const [copySourceModel, setCopySourceModel] = useState('');
   const [copyConfirmed, setCopyConfirmed] = useState(false);
+  const [pendingSelectionCode, setPendingSelectionCode] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadingMap, setLoadingMap] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -270,6 +309,8 @@ export function ProductMappingWorkspace() {
     [operational.profiles, selectedModel],
   );
 
+  const selectedPreset = useMemo(() => getMachineButtonPreset(selectedModel), [selectedModel]);
+  const observedCodes = useMemo(() => observedCodesFromRows(operational.unmapped_selections), [operational.unmapped_selections]);
   const selectedMachineCount = fleetModels.get(normalise(selectedModel))?.count ?? selectedOperational?.machine_count ?? 0;
   const configuredProfiles = operational.profiles.length;
   const completeProfiles = operational.profiles.filter((profile) => profile.unmapped_count === 0 && profile.inactive_product_count === 0).length;
@@ -289,7 +330,8 @@ export function ProductMappingWorkspace() {
 
       const rows = (data ?? []) as MapRow[];
       const profile = rows[0] ?? profiles.find((item) => normalise(item.model_key) === normalise(model));
-      const nextCount = clampButtonCount(Number(profile?.button_count ?? DEFAULT_BUTTON_COUNT));
+      const preset = getMachineButtonPreset(model);
+      const nextCount = clampButtonCount(Number(profile?.button_count ?? preset?.buttonCount ?? DEFAULT_BUTTON_COUNT));
       setButtonCount(nextCount);
       setButtons(mappingDraft(nextCount, rows));
     } catch (mapLoadError) {
@@ -331,7 +373,7 @@ export function ProductMappingWorkspace() {
     setButtonCount(nextCount);
     setButtons((current) => Array.from({ length: nextCount }, (_, index) => {
       const buttonNumber = index + 1;
-      return current[index] ?? { buttonNumber, selectionCode: `MDB-${buttonNumber}`, productId: '' };
+      return current[index] ?? { buttonNumber, selectionCode: '', productId: '' };
     }));
   }
 
@@ -351,13 +393,21 @@ export function ProductMappingWorkspace() {
     )));
   }
 
-  function openUnmappedProfile(row: UnmappedSelection) {
+  function captureObservedSelection(row: UnmappedSelection) {
+    setPendingSelectionCode(row.selection_code);
+    setNotice(
+      `Captured ${row.selection_code}. Choose the correct machine model, then assign it to the physical button that produced it. The detected profile (${row.profile_key || 'none'}) is not changed automatically.`,
+    );
+  }
+
+  function openDetectedProfile(row: UnmappedSelection) {
     if (!row.profile_key) {
-      setError(`Selection ${row.selection_code} has no effective decoder profile yet. Assign or detect a profile on the machine first.`);
+      setError(`Selection ${row.selection_code} has no effective decoder profile yet. Choose the correct machine model manually.`);
       return;
     }
     setSelectedModel(row.profile_key);
-    setNotice(`Opened ${row.profile_key}. Map observed telemetry selection ${row.selection_code} to the correct physical button and product.`);
+    setPendingSelectionCode(row.selection_code);
+    setNotice(`Opened detected profile ${row.profile_key} and captured ${row.selection_code}. Verify the physical machine before assigning it.`);
   }
 
   async function saveMapping() {
@@ -369,7 +419,7 @@ export function ProductMappingWorkspace() {
     const codes = mapped.map((row) => normalise(row.selectionCode));
 
     if (mapped.some((row) => !row.selectionCode.trim())) {
-      setError('Every mapped button needs a telemetry selection code.');
+      setError('Every mapped product needs the telemetry selection code observed from the machine.');
       return;
     }
 
@@ -394,8 +444,9 @@ export function ProductMappingWorkspace() {
 
       const result = (data ?? {}) as { mapping_count?: number; refreshed_sales_rows?: number };
       setNotice(
-        `Saved ${buttonCount} buttons and ${Number(result.mapping_count ?? mapped.length)} product mappings for ${selectedModel}. ${Number(result.refreshed_sales_rows ?? 0)} existing telemetry sales rows were relabelled.`,
+        `Saved ${buttonCount} physical buttons and ${Number(result.mapping_count ?? mapped.length)} product mappings for ${selectedModel}. ${Number(result.refreshed_sales_rows ?? 0)} existing telemetry sales rows were relabelled where the effective profile matched.`,
       );
+      setPendingSelectionCode('');
       await loadBase();
       await loadMap(selectedModel);
       await loadHistory(selectedModel);
@@ -420,7 +471,7 @@ export function ProductMappingWorkspace() {
       if (copyError) throw copyError;
       const result = (data ?? {}) as { mapping_count?: number; refreshed_sales_rows?: number };
       setNotice(
-        `Copied ${Number(result.mapping_count ?? 0)} mappings from ${copySourceModel} to ${selectedModel}. ${Number(result.refreshed_sales_rows ?? 0)} existing telemetry sales rows were relabelled. Review the target before using it on a different machine variant.`,
+        `Copied ${Number(result.mapping_count ?? 0)} mappings from ${copySourceModel} to ${selectedModel}. ${Number(result.refreshed_sales_rows ?? 0)} existing telemetry sales rows were relabelled. Review every physical button before field use.`,
       );
       setCopyConfirmed(false);
       await loadBase();
@@ -493,11 +544,11 @@ export function ProductMappingWorkspace() {
   if (loading) return <HamsterLoader label="Loading products and machine models" />;
 
   return (
-    <section className="fleet-route-page" data-product-mapping-workspace="operational-v2">
+    <section className="fleet-route-page" data-product-mapping-workspace="operational-v3">
       <header className="fleet-page-heading">
         <div>
           <h1>Products</h1>
-          <p>Maintain the product catalog, map machine selections once per decoder profile, and surface live telemetry selections that still need mapping.</p>
+          <p>Map each machine&apos;s physical selections to the raw telemetry codes it actually sends, then assign the Dallmayr product name.</p>
         </div>
         <button className="fleet-button secondary" onClick={() => loadBase()} type="button">
           <NavigationIcon kind="telemetry" />
@@ -519,6 +570,11 @@ export function ProductMappingWorkspace() {
         </div>
       ) : null}
 
+      <div className="fleet-banner" role="note">
+        <strong>Physical button numbers and MDB codes are separate.</strong>
+        <span>An XS Grande has 10 physical selections, but one of those selections can still be reported as MDB-14. Always map the observed telemetry code to the physical button that produced it.</span>
+      </div>
+
       <div className="grid grid-4">
         <section className="fleet-panel">
           <span>Mapping completeness</span>
@@ -531,9 +587,9 @@ export function ProductMappingWorkspace() {
           <p>Profiles with open button slots or inactive mapped products.</p>
         </section>
         <section className="fleet-panel">
-          <span>Unmapped selections</span>
-          <h2>{operational.unmapped_selections.length}</h2>
-          <p>Observed live counter selections that do not currently resolve to a product.</p>
+          <span>Observed raw codes</span>
+          <h2>{observedCodes.length}</h2>
+          <p>Unique live telemetry codes currently waiting to be assigned.</p>
         </section>
         <section className="fleet-panel">
           <span>Product catalog</span>
@@ -614,10 +670,10 @@ export function ProductMappingWorkspace() {
 
         <section className="fleet-panel">
           <header className="fleet-table-heading">
-            <div><span>Decoder profile</span><h2>Choose machine model</h2></div>
+            <div><span>Machine button library</span><h2>Choose machine model</h2></div>
             <span>{modelOptions.length} models</span>
           </header>
-          <p>A mapping applies to machines using this effective decoder profile. Automatic identification and manual profile assignment both resolve into the same product map.</p>
+          <p>Every machine model in the fleet can have its own physical button count and raw telemetry mapping. Verified models start with their known selection count; other models remain manually configurable.</p>
           <label>
             <span>Find model</span>
             <input
@@ -632,7 +688,8 @@ export function ProductMappingWorkspace() {
               <option value="">Choose model</option>
               {modelOptions.map((entry) => {
                 const stats = operational.profiles.find((profile) => normalise(profile.model_key) === normalise(entry.key));
-                const status = stats ? ` · ${stats.mapped_count}/${stats.button_count} mapped` : '';
+                const preset = getMachineButtonPreset(entry.key);
+                const status = stats ? ` · ${stats.mapped_count}/${stats.button_count} mapped` : preset ? ` · ${preset.buttonCount} verified buttons` : '';
                 return (
                   <option key={normalise(entry.key)} value={entry.key}>
                     {entry.key} · {entry.count} machine{entry.count === 1 ? '' : 's'}{entry.configured ? ' · configured' : ''}{status}
@@ -645,17 +702,28 @@ export function ProductMappingWorkspace() {
             <dl>
               <div><dt>Selected profile</dt><dd>{selectedModel}</dd></div>
               <div><dt>Affects</dt><dd>{selectedMachineCount.toLocaleString('en-ZA')} current machine{selectedMachineCount === 1 ? '' : 's'}</dd></div>
-              <div><dt>Profile status</dt><dd>{selectedProfile ? 'Configured' : 'New mapping'}</dd></div>
+              <div><dt>Profile status</dt><dd>{selectedProfile ? 'Configured' : selectedPreset ? 'Verified button preset' : 'New mapping'}</dd></div>
+              <div><dt>Physical selections</dt><dd>{buttonCount}{selectedPreset ? ' · verified preset' : selectedProfile ? ' · configured' : ' · verify manually'}</dd></div>
               <div><dt>Mapping completeness</dt><dd>{selectedOperational ? `${selectedOperational.mapped_count} / ${selectedOperational.button_count} · ${selectedOperational.completeness_percent}%` : `${mappedButtons} / ${buttonCount}`}</dd></div>
               <div><dt>Active devices using profile</dt><dd>{selectedOperational?.active_device_count ?? 0}</dd></div>
-              <div><dt>Attention</dt><dd>{selectedOperational && (selectedOperational.unmapped_count > 0 || selectedOperational.inactive_product_count > 0) ? 'Needs mapping' : selectedProfile ? 'Complete' : 'Needs mapping'}</dd></div>
             </dl>
+          ) : null}
+          {selectedPreset ? (
+            <div className="fleet-banner" role="note">
+              <strong>{selectedPreset.buttonCount} physical selections</strong>
+              <span>{selectedPreset.note}</span>
+            </div>
+          ) : selectedModel && !selectedProfile ? (
+            <div className="fleet-banner" role="note">
+              <strong>Button count not yet verified</strong>
+              <span>Set the physical selection count from the machine panel/manual before saving. DallmayrERP will not invent MDB codes for those buttons.</span>
+            </div>
           ) : null}
 
           <hr />
           <div>
             <strong>Copy mapping</strong>
-            <p>Use a verified compatible profile as a starting point. This replaces the target profile&apos;s button count and mappings, so review the target before saving it for field use.</p>
+            <p>Use a verified compatible profile as a starting point. This replaces the target profile&apos;s button count and mappings, so only copy between genuinely identical button layouts.</p>
             <label>
               <span>Copy from profile</span>
               <select onChange={(event) => { setCopySourceModel(event.target.value); setCopyConfirmed(false); }} value={copySourceModel}>
@@ -692,10 +760,10 @@ export function ProductMappingWorkspace() {
 
       <section className="fleet-panel fleet-table-panel">
         <header className="fleet-table-heading">
-          <div><span>Live telemetry queue</span><h2>Unmapped selections</h2></div>
-          <span>{operational.unmapped_selections.length} observed</span>
+          <div><span>Live telemetry queue</span><h2>Observed selection codes</h2></div>
+          <span>{operational.unmapped_selections.length} observations · {observedCodes.length} unique codes</span>
         </header>
-        <p>These selection codes have real sold or failed counter activity but no matching product in their effective profile. They are never silently relabelled.</p>
+        <p>These are raw codes seen in live vend counters. Capture a code first, then choose the physical machine model and button it belongs to. The currently detected profile is context only and is never trusted blindly.</p>
         {operational.unmapped_selections.length === 0 ? (
           <div className="fleet-empty-state">
             <strong>No observed selections need mapping</strong>
@@ -704,7 +772,7 @@ export function ProductMappingWorkspace() {
         ) : (
           <div className="fleet-table-scroll">
             <table className="fleet-machine-table">
-              <thead><tr><th>Machine / device</th><th>Effective profile</th><th>Selection</th><th>Observed counters</th><th>Last seen</th><th>Action</th></tr></thead>
+              <thead><tr><th>Machine / device</th><th>Detected profile</th><th>Raw code</th><th>Observed counters</th><th>Last seen</th><th>Action</th></tr></thead>
               <tbody>
                 {operational.unmapped_selections.map((row) => (
                   <tr key={`${row.device_id}:${row.selection_code}`}>
@@ -718,8 +786,11 @@ export function ProductMappingWorkspace() {
                     <td>{formatWhen(row.last_seen_at)}</td>
                     <td>
                       <div className="fleet-heading-actions">
-                        <button className="fleet-button secondary" onClick={() => openUnmappedProfile(row)} type="button">
-                          Open profile
+                        <button className="fleet-button" onClick={() => captureObservedSelection(row)} type="button">
+                          Capture code
+                        </button>
+                        <button className="fleet-button secondary" disabled={!row.profile_key} onClick={() => openDetectedProfile(row)} type="button">
+                          Open detected profile
                         </button>
                         {row.machine_id ? <Link className="fleet-button secondary" href={`/machines/${row.machine_id}`}>Machine</Link> : null}
                       </div>
@@ -734,22 +805,29 @@ export function ProductMappingWorkspace() {
 
       <section className="fleet-panel fleet-table-panel">
         <header className="fleet-table-heading">
-          <div><span>Button map</span><h2>{selectedModel || 'Choose a machine model'}</h2></div>
+          <div><span>Physical button map</span><h2>{selectedModel || 'Choose a machine model'}</h2></div>
           <span>{mappedButtons} of {buttonCount} mapped</span>
         </header>
 
         {!selectedModel ? (
           <div className="fleet-empty-state">
             <strong>Select a machine model</strong>
-            <p>Choose a model above to define its physical buttons and telemetry selection codes.</p>
+            <p>Choose a model above to define its physical buttons and the raw telemetry codes those buttons actually produce.</p>
           </div>
         ) : loadingMap ? (
           <HamsterLoader label={`Loading ${selectedModel} mapping`} />
         ) : (
           <>
+            {pendingSelectionCode ? (
+              <div className="fleet-banner" role="status">
+                <strong>Captured code: {pendingSelectionCode}</strong>
+                <span>Press “Assign {pendingSelectionCode}” on the physical button that produced it. This is how MDB-14 can correctly map to one of the XS Grande&apos;s 10 buttons.</span>
+              </div>
+            ) : null}
+
             <div className="fleet-filters">
               <div>
-                <strong>Number of buttons</strong>
+                <strong>Number of physical selections</strong>
                 <div className="fleet-heading-actions">
                   <button
                     aria-label={`Remove button ${buttonCount}`}
@@ -761,7 +839,7 @@ export function ProductMappingWorkspace() {
                     Remove button
                   </button>
                   <input
-                    aria-label="Number of buttons"
+                    aria-label="Number of physical buttons"
                     max={MAX_BUTTON_COUNT}
                     min={MIN_BUTTON_COUNT}
                     onChange={(event) => changeButtonCount(Number(event.target.value))}
@@ -778,29 +856,74 @@ export function ProductMappingWorkspace() {
                     Add button
                   </button>
                 </div>
-                <p>Add or remove buttons to match this exact machine model. Changes take effect fleet-wide when you save the profile mapping.</p>
+                <p>{selectedPreset ? selectedPreset.note : 'Set this to the actual number of physical or logical drink selections on this machine model.'}</p>
               </div>
               <div>
                 <strong>{selectedMachineCount.toLocaleString('en-ZA')} machines · {selectedOperational?.active_device_count ?? 0} active devices</strong>
-                <p>The machine dashboard resolves cup counters through this effective profile rather than inventing labels for unknown selections.</p>
+                <p>Raw MDB identifiers are learned from telemetry. Blank buttons remain blank until a real code is observed or entered.</p>
               </div>
             </div>
 
+            <datalist id="observed-telemetry-selection-codes">
+              {observedCodes.map((observed) => (
+                <option key={normalise(observed.selectionCode)} value={observed.selectionCode}>
+                  {observed.machineLabel} · {observed.deviceCode}
+                </option>
+              ))}
+            </datalist>
+
             <div className="fleet-table-scroll">
               <table className="fleet-machine-table">
-                <thead><tr><th>Button</th><th>Telemetry selection code</th><th>Product</th><th>Result</th></tr></thead>
+                <thead><tr><th>Physical button</th><th>Observed telemetry code</th><th>Product</th><th>Result</th></tr></thead>
                 <tbody>
                   {buttons.map((row) => {
                     const product = products.find((item) => item.id === row.productId);
+                    const observed = observedCodes.find((item) => normalise(item.selectionCode) === normalise(row.selectionCode));
                     return (
                       <tr key={row.buttonNumber}>
                         <td><strong>Button {row.buttonNumber}</strong></td>
                         <td>
                           <input
-                            aria-label={`Telemetry selection code for button ${row.buttonNumber}`}
+                            aria-label={`Telemetry selection code for physical button ${row.buttonNumber}`}
+                            list="observed-telemetry-selection-codes"
                             onChange={(event) => updateButton(row.buttonNumber, { selectionCode: event.target.value })}
+                            placeholder="e.g. MDB-14"
                             value={row.selectionCode}
                           />
+                          <select
+                            aria-label={`Observed telemetry code for physical button ${row.buttonNumber}`}
+                            onChange={(event) => {
+                              if (event.target.value) updateButton(row.buttonNumber, { selectionCode: event.target.value });
+                            }}
+                            value=""
+                          >
+                            <option value="">Use observed code…</option>
+                            {observedCodes.map((item) => (
+                              <option key={`${row.buttonNumber}:${normalise(item.selectionCode)}`} value={item.selectionCode}>
+                                {item.selectionCode} · {item.machineLabel}
+                              </option>
+                            ))}
+                          </select>
+                          {pendingSelectionCode ? (
+                            <button
+                              className="fleet-button secondary"
+                              onClick={() => {
+                                updateButton(row.buttonNumber, { selectionCode: pendingSelectionCode });
+                                setNotice(`Assigned ${pendingSelectionCode} to physical Button ${row.buttonNumber} on ${selectedModel}. Choose the product, then save the model mapping.`);
+                                setPendingSelectionCode('');
+                              }}
+                              type="button"
+                            >
+                              Assign {pendingSelectionCode}
+                            </button>
+                          ) : null}
+                          {observed ? (
+                            <span>Seen on {observed.machineLabel} · {observed.deviceCode} · {formatWhen(observed.lastSeenAt)}</span>
+                          ) : row.selectionCode ? (
+                            <span>Manual code · verify against live telemetry before fleet use.</span>
+                          ) : (
+                            <span>No code assigned yet.</span>
+                          )}
                         </td>
                         <td>
                           <select
@@ -817,11 +940,13 @@ export function ProductMappingWorkspace() {
                           </select>
                         </td>
                         <td>
-                          {product ? (
+                          {product && row.selectionCode.trim() ? (
                             <>
                               <strong>{product.product_name}</strong>
-                              <span>{row.selectionCode}{product.is_active ? '' : ' · inactive product'}</span>
+                              <span>Button {row.buttonNumber} ← {row.selectionCode}{product.is_active ? '' : ' · inactive product'}</span>
                             </>
+                          ) : product ? (
+                            <span className="fleet-status-pill is-warning"><i />Needs telemetry code</span>
                           ) : (
                             <span className="fleet-status-pill is-warning"><i />Needs mapping</span>
                           )}
@@ -835,8 +960,8 @@ export function ProductMappingWorkspace() {
 
             <footer className="fleet-table-footer">
               <div className="fleet-table-footer-copy">
-                <strong>One decoder profile, fleet-wide</strong>
-                <span>Selection codes must be unique inside the profile. Removing buttons removes mappings above the new count when the profile is saved.</span>
+                <strong>One physical layout, fleet-wide</strong>
+                <span>Selection codes must be unique inside the profile. DallmayrERP never assumes that MDB-N means physical Button N.</span>
               </div>
               <button className="fleet-button" disabled={savingMap} onClick={saveMapping} type="button">
                 {savingMap ? 'Saving mapping…' : 'Save model mapping'}
