@@ -1,8 +1,9 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "hardware_revision": "telemetry-rev-b-isolated",
-  "status": "architecture-validation",
+  "status": "pre-cad-schematic-definition",
   "field_use_allowed": false,
+  "manufacturing_release_allowed": false,
   "machine_supply": {
     "minimum_vdc": 20,
     "nominal_vdc": 34,
@@ -32,7 +33,8 @@
     "MDB_COMM_COMMON",
     "DEX_RS232_TX_MACHINE",
     "DEX_RS232_RX_MACHINE",
-    "DEX_RS232_COMMON"
+    "DEX_RS232_COMMON",
+    "DEX_ISO_GND"
   ],
   "logic_domain_nets": [
     "ISO_5V",
@@ -44,7 +46,9 @@
     "GPIO4_MDB_MONITOR",
     "GPIO5_MDB_MONITOR",
     "GPIO17_DEX_RX",
-    "GPIO18_DEX_TX"
+    "GPIO18_DEX_TX",
+    "DEX_TX_5V",
+    "DEX_RX_5V"
   ],
   "forbidden_direct_connections": [
     ["MACH_PWR_RETURN", "LOGIC_GND"],
@@ -53,6 +57,8 @@
     ["MDB_COMM_COMMON", "USB_GND"],
     ["DEX_RS232_COMMON", "LOGIC_GND"],
     ["DEX_RS232_COMMON", "USB_GND"],
+    ["DEX_ISO_GND", "LOGIC_GND"],
+    ["DEX_ISO_GND", "USB_GND"],
     ["MDB_MASTER_TX_RAW", "GPIO4_MDB_MONITOR"],
     ["MDB_MASTER_RX_RAW", "GPIO5_MDB_MONITOR"]
   ],
@@ -65,11 +71,29 @@
     "isolated_passive_mdb_master_tx_receiver",
     "isolated_passive_mdb_master_rx_receiver",
     "isolated_rs232_dex_interface",
+    "dex_3v3_to_5v_logic_translation",
+    "dex_5v_to_3v3_logic_translation",
     "logic_side_5v_bulk_capacitance",
     "logic_side_3v3_regulation",
     "machine_side_test_points",
     "logic_side_test_points"
   ],
+  "schematic_state": {
+    "mdb_connector_pinout": "locked",
+    "firmware_gpio_assignment": "locked",
+    "main_isolation_topology": "locked",
+    "power_converter_envelope": "locked",
+    "power_converter_part": "candidate",
+    "input_protection_topology": "locked",
+    "input_protection_values": "validation",
+    "dex_isolation_topology": "locked",
+    "dex_logic_translation_topology": "locked",
+    "dex_logic_translation_parts": "candidate",
+    "mdb_master_tx_sensing_values": "validation",
+    "mdb_master_rx_sensing_values": "validation",
+    "usb_domain_separation": "locked",
+    "pcb_outline": "not_locked"
+  },
   "candidate_components": {
     "isolated_power": {
       "manufacturer": "Murata Power Solutions",
@@ -82,7 +106,26 @@
     "isolated_dex": {
       "manufacturer": "Analog Devices",
       "part": "ADM3251E",
+      "logic_supply": "5V",
+      "isolation": "2.5kVrms",
       "function": "fully isolated 1Tx/1Rx RS-232 transceiver with isolated power",
+      "direct_esp32_connection_allowed": false,
+      "locked_for_production": false
+    },
+    "dex_up_translation": {
+      "manufacturer": "Texas Instruments",
+      "part": "SN74AHCT1G125",
+      "supply": "5V",
+      "direction": "ESP32 3.3V TX to ADM3251E 5V logic input",
+      "reason": "TTL-compatible input VIH=2.0V at 5V operation accepts ESP32 3.3V high",
+      "locked_for_production": false
+    },
+    "dex_down_translation": {
+      "manufacturer": "Texas Instruments",
+      "part": "SN74LVC1G17",
+      "supply": "3.3V",
+      "direction": "ADM3251E 5V logic output to ESP32 3.3V RX",
+      "reason": "input accepts up to 5.5V while output is limited to 3.3V supply",
       "locked_for_production": false
     }
   },
@@ -96,6 +139,7 @@
     "controlled_high_line_transient_test": false,
     "cellular_load_test": false,
     "mdb_simulator_test": false,
+    "dex_logic_level_test": false,
     "dex_test": false,
     "usb_isolation_test": false,
     "qualified_field_trial": false

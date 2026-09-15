@@ -13,6 +13,8 @@ This checklist must be completed before any Rev-B telemetry board is connected t
 - [ ] Confirm MDB pin 5 routes only to the MACHINE-side passive Master-TX sensing network.
 - [ ] Confirm MDB pin 6 routes only to the MACHINE-side communications reference.
 - [ ] Confirm DEX machine common remains on the isolated DEX side.
+- [ ] Confirm ADM3251E-class 5 V logic is not wired directly to ESP32 GPIO17/GPIO18.
+- [ ] Confirm the 3.3 V -> 5 V and 5 V -> 3.3 V DEX translator devices match the reviewed schematic/BOM.
 - [ ] Inspect the isolation barrier for solder bridges, copper pours, vias or component bodies that violate the intended separation.
 
 ## 2. Continuity / isolation checks — board unpowered
@@ -27,6 +29,8 @@ Required DMM results:
 - [ ] `MDB_COMM_COMMON` to `USB_GND`: no continuity.
 - [ ] `DEX_RS232_COMMON` to `LOGIC_GND`: no continuity.
 - [ ] `DEX_RS232_COMMON` to `USB_GND`: no continuity.
+- [ ] `DEX_ISO_GND` to `LOGIC_GND`: no continuity.
+- [ ] `DEX_ISO_GND` to `USB_GND`: no continuity.
 - [ ] MDB pin 4 raw to ESP32 GPIO5: no direct continuity.
 - [ ] MDB pin 5 raw to ESP32 GPIO4: no direct continuity.
 - [ ] USB shield/ground to machine-side test points: no unintended low-resistance path.
@@ -67,6 +71,9 @@ If 5 V droop is excessive, increase converter power margin and/or modem-side bul
 Use an MDB simulator or a known-good bench controller before a customer machine.
 
 - [ ] Verify the board never drives MDB pin 4 or pin 5.
+- [ ] Measure MDB idle current/voltage before attaching Rev-B.
+- [ ] Attach Rev-B and repeat the idle measurement; record the delta.
+- [ ] Verify active waveform levels/timing are not materially changed by either sensing channel.
 - [ ] Verify GPIO4 reproduces Master-TX traffic through the isolation path.
 - [ ] Verify GPIO5 reproduces Master-RX traffic through the isolation path.
 - [ ] Verify normal and inverted polarity settings still work in V6.8.49 or later.
@@ -74,12 +81,25 @@ Use an MDB simulator or a known-good bench controller before a customer machine.
 - [ ] Verify Learn Mode observations reach DallmayrERP.
 - [ ] Verify attaching the telemetry board does not change MDB bus voltage/current outside the simulator/controller acceptance limits.
 
+Do not lock the MDB sensing resistor/threshold values until these measurements pass for both directions independently.
+
 ## 6. DEX isolated-interface validation
 
+### Logic-side translation
+
+- [ ] Power `ISO_5V` and `3V3_LOGIC` from the reviewed Rev-B supply paths.
+- [ ] Drive ESP32 GPIO18 low/high and measure the SN74AHCT1G125 output into the isolated RS-232 transmitter logic input.
+- [ ] Confirm a GPIO18 high produces a valid near-5 V logic high and a low remains within the isolated transceiver low threshold.
+- [ ] Stimulate the isolated transceiver receiver and measure its approximately 5 V logic output before the down-translator.
+- [ ] Confirm the SN74LVC1G17 output presented to GPIO17 never exceeds the 3.3 V logic rail beyond normal device tolerances.
+- [ ] Confirm no translator is being back-powered when either 3V3_LOGIC or ISO_5V is absent.
+
+### RS-232 / isolation path
+
 - [ ] Verify DEX machine-side levels at the isolated transceiver input/output.
-- [ ] Verify ESP32 GPIO17 receives DEX data.
+- [ ] Verify ESP32 GPIO17 receives DEX data at 9600 baud.
 - [ ] Verify GPIO18 transmit is only enabled when the DEX protocol implementation requires it.
-- [ ] Verify machine-side DEX common remains isolated from LOGIC_GND.
+- [ ] Verify `DEX_ISO_GND` / machine-side DEX common remains isolated from LOGIC_GND and USB_GND.
 - [ ] Verify DEX identity/audit parsing in firmware.
 
 ## 7. USB / earth-path validation
@@ -91,6 +111,7 @@ With the Rev-B board powered from the bench MACHINE-side input:
 - [ ] Connect a laptop by USB.
 - [ ] Confirm no measurable DC continuity appears between laptop/USB ground and `MACH_PWR_RETURN`.
 - [ ] Confirm no measurable DC continuity appears between laptop/USB ground and `MDB_COMM_COMMON`.
+- [ ] Confirm no measurable DC continuity appears between laptop/USB ground and `DEX_ISO_GND`.
 - [ ] Repeat with the intended USB charger/service supply.
 - [ ] If an oscilloscope is used, use an isolation-safe measurement method appropriate to the circuit; never rely on a grounded probe clip across the isolation barrier.
 
@@ -116,11 +137,14 @@ For each prototype, record:
 - assembler/date
 - isolated DC/DC manufacturer/part/lot
 - DEX isolator manufacturer/part/lot
+- DEX up/down translator manufacturer/part/lot
 - measured continuity/isolation values
 - 20/34/42.5 V test results
 - cellular load-test result
+- MDB pre/post-attachment loading measurements
 - MDB simulator result
-- DEX result
+- DEX logic-level test result
+- DEX end-to-end result
 - USB isolation result
 - technician name/date for first live-machine trial
 
