@@ -1,7 +1,7 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "hardware_revision": "telemetry-rev-b-isolated",
-  "status": "pre-cad-schematic-definition",
+  "status": "cad-input-definition",
   "field_use_allowed": false,
   "manufacturing_release_allowed": false,
   "machine_supply": {
@@ -83,16 +83,30 @@
     "firmware_gpio_assignment": "locked",
     "main_isolation_topology": "locked",
     "power_converter_envelope": "locked",
-    "power_converter_part": "candidate",
+    "power_converter_part": "candidate_pinout_verified",
+    "input_fuse_rating": "candidate_from_converter_datasheet",
     "input_protection_topology": "locked",
     "input_protection_values": "validation",
     "dex_isolation_topology": "locked",
+    "dex_transceiver_part": "candidate_pinout_verified",
     "dex_logic_translation_topology": "locked",
     "dex_logic_translation_parts": "candidate",
     "mdb_master_tx_sensing_values": "validation",
     "mdb_master_rx_sensing_values": "validation",
     "usb_domain_separation": "locked",
     "pcb_outline": "not_locked"
+  },
+  "cad_inputs": {
+    "ps1_pinout_verified_against_family_datasheet": true,
+    "ps1_recommended_fast_blow_fuse_a": 2,
+    "ps1_recommended_primary_secondary_barrier_mm": 6.3,
+    "ps1_remote_logic": "negative",
+    "ps1_default_remote_connection": "pin6_to_pin2_via_0ohm",
+    "adm3251e_pinout_verified_against_current_datasheet": true,
+    "adm3251e_charge_pump_capacitance_uf": 0.1,
+    "adm3251e_vcc_bypass_uf": 0.1,
+    "adm3251e_viso_external_load_allowed": false,
+    "cad_connection_table_present": true
   },
   "candidate_components": {
     "isolated_power": {
@@ -101,6 +115,8 @@
       "input_vdc": "18-75",
       "output": "5V/3A/15W",
       "isolation": "2.25kV",
+      "recommended_fast_blow_fuse_a": 2,
+      "remote_logic": "negative",
       "locked_for_production": false
     },
     "isolated_dex": {
