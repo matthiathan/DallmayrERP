@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "hardware_revision": "telemetry-rev-b-isolated",
+  "status": "architecture-validation",
+  "field_use_allowed": false,
+  "machine_supply": {
+    "minimum_vdc": 20,
+    "nominal_vdc": 34,
+    "maximum_ripple_vdc": 42.5,
+    "high_line_peak_vdc": 45,
+    "converter_min_input_vdc": 18,
+    "converter_max_input_vdc": 75,
+    "isolated_output_vdc": 5,
+    "minimum_output_current_a": 3,
+    "minimum_output_power_w": 15,
+    "minimum_isolation_vdc": 1500
+  },
+  "firmware_pin_contract": {
+    "cell_rx_gpio": 1,
+    "cell_tx_gpio": 2,
+    "mdb_master_tx_monitor_gpio": 4,
+    "mdb_master_rx_monitor_gpio": 5,
+    "dex_rx_gpio": 17,
+    "dex_tx_gpio": 18,
+    "mdb_active_tx_allowed": false
+  },
+  "machine_domain_nets": [
+    "MACH_34V_IN",
+    "MACH_PWR_RETURN",
+    "MDB_MASTER_RX_RAW",
+    "MDB_MASTER_TX_RAW",
+    "MDB_COMM_COMMON",
+    "DEX_RS232_TX_MACHINE",
+    "DEX_RS232_RX_MACHINE",
+    "DEX_RS232_COMMON"
+  ],
+  "logic_domain_nets": [
+    "ISO_5V",
+    "3V3_LOGIC",
+    "LOGIC_GND",
+    "USB_GND",
+    "GPIO1_CELL_RX",
+    "GPIO2_CELL_TX",
+    "GPIO4_MDB_MONITOR",
+    "GPIO5_MDB_MONITOR",
+    "GPIO17_DEX_RX",
+    "GPIO18_DEX_TX"
+  ],
+  "forbidden_direct_connections": [
+    ["MACH_PWR_RETURN", "LOGIC_GND"],
+    ["MACH_PWR_RETURN", "USB_GND"],
+    ["MDB_COMM_COMMON", "LOGIC_GND"],
+    ["MDB_COMM_COMMON", "USB_GND"],
+    ["DEX_RS232_COMMON", "LOGIC_GND"],
+    ["DEX_RS232_COMMON", "USB_GND"],
+    ["MDB_MASTER_TX_RAW", "GPIO4_MDB_MONITOR"],
+    ["MDB_MASTER_RX_RAW", "GPIO5_MDB_MONITOR"]
+  ],
+  "required_blocks": [
+    "input_fuse_or_ptc",
+    "reverse_polarity_protection",
+    "surge_transient_protection",
+    "input_filter",
+    "isolated_18_75v_to_5v_power",
+    "isolated_passive_mdb_master_tx_receiver",
+    "isolated_passive_mdb_master_rx_receiver",
+    "isolated_rs232_dex_interface",
+    "logic_side_5v_bulk_capacitance",
+    "logic_side_3v3_regulation",
+    "machine_side_test_points",
+    "logic_side_test_points"
+  ],
+  "candidate_components": {
+    "isolated_power": {
+      "manufacturer": "Murata Power Solutions",
+      "part": "UEI15-050-Q48N-C",
+      "input_vdc": "18-75",
+      "output": "5V/3A/15W",
+      "isolation": "2.25kV",
+      "locked_for_production": false
+    },
+    "isolated_dex": {
+      "manufacturer": "Analog Devices",
+      "part": "ADM3251E",
+      "function": "fully isolated 1Tx/1Rx RS-232 transceiver with isolated power",
+      "locked_for_production": false
+    }
+  },
+  "release_gates": {
+    "schematic_review": false,
+    "pcb_layout_review": false,
+    "bare_board_isolation_test": false,
+    "20v_power_test": false,
+    "34v_power_test": false,
+    "42_5v_power_test": false,
+    "controlled_high_line_transient_test": false,
+    "cellular_load_test": false,
+    "mdb_simulator_test": false,
+    "dex_test": false,
+    "usb_isolation_test": false,
+    "qualified_field_trial": false
+  }
+}
