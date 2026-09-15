@@ -4,9 +4,11 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const contractPath = path.join(root, 'hardware/telemetry-rev-b/safety-contract.json');
+const schematicDefinitionPath = path.join(root, 'hardware/telemetry-rev-b/schematic-definition.md');
 const firmwarePath = path.join(root, 'firmware/DallmayrTelemetryV6_8_47/DallmayrTelemetryV6_8_47.ino');
 
 const contract = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
+const schematicDefinition = fs.readFileSync(schematicDefinitionPath, 'utf8');
 const firmware = fs.readFileSync(firmwarePath, 'utf8');
 const errors = [];
 
@@ -14,8 +16,9 @@ function requireCondition(condition, message) {
   if (!condition) errors.push(message);
 }
 
-requireCondition(contract.schema_version === 1, 'hardware contract schema_version must be 1');
+requireCondition(contract.schema_version === 2, 'hardware contract schema_version must be 2');
 requireCondition(contract.hardware_revision === 'telemetry-rev-b-isolated', 'unexpected hardware revision');
+requireCondition(contract.status === 'pre-cad-schematic-definition', 'Rev-B contract must remain in pre-CAD schematic definition state');
 
 const supply = contract.machine_supply ?? {};
 requireCondition(supply.converter_min_input_vdc <= 20, 'isolated converter must cover the 20 V MDB minimum');
@@ -34,6 +37,8 @@ for (const required of [
   'isolated_passive_mdb_master_tx_receiver',
   'isolated_passive_mdb_master_rx_receiver',
   'isolated_rs232_dex_interface',
+  'dex_3v3_to_5v_logic_translation',
+  'dex_5v_to_3v3_logic_translation',
 ]) {
   requireCondition(requiredBlocks.has(required), `missing required hardware block: ${required}`);
 }
@@ -52,6 +57,8 @@ for (const requiredPair of [
   ['MDB_COMM_COMMON', 'USB_GND'],
   ['DEX_RS232_COMMON', 'LOGIC_GND'],
   ['DEX_RS232_COMMON', 'USB_GND'],
+  ['DEX_ISO_GND', 'LOGIC_GND'],
+  ['DEX_ISO_GND', 'USB_GND'],
   ['MDB_MASTER_TX_RAW', 'GPIO4_MDB_MONITOR'],
   ['MDB_MASTER_RX_RAW', 'GPIO5_MDB_MONITOR'],
 ]) {
@@ -81,11 +88,28 @@ requireCondition(
   'firmware must keep DALLMAYR_MDB_ACTIVE_TX_ENABLED false',
 );
 
+const components = contract.candidate_components ?? {};
+requireCondition(components.isolated_dex?.direct_esp32_connection_allowed === false, 'ADM3251E-class DEX logic must never connect directly to ESP32 GPIO');
+requireCondition(components.dex_up_translation?.part === 'SN74AHCT1G125', 'DEX 3.3V->5V validation candidate must remain SN74AHCT1G125 until schematic review');
+requireCondition(components.dex_down_translation?.part === 'SN74LVC1G17', 'DEX 5V->3.3V validation candidate must remain SN74LVC1G17 until schematic review');
+requireCondition(schematicDefinition.includes('SN74AHCT1G125'), 'schematic definition must document the DEX up-translator');
+requireCondition(schematicDefinition.includes('SN74LVC1G17'), 'schematic definition must document the DEX down-translator');
+requireCondition(schematicDefinition.includes('No optocoupler LED resistor, comparator threshold, pull-up or clamp values are frozen'), 'schematic definition must keep MDB sensing values in validation state');
+
+const schematicState = contract.schematic_state ?? {};
+requireCondition(schematicState.mdb_master_tx_sensing_values === 'validation', 'MDB Master-TX sensing values must remain validation-only until bench data exists');
+requireCondition(schematicState.mdb_master_rx_sensing_values === 'validation', 'MDB Master-RX sensing values must remain validation-only until bench data exists');
+requireCondition(schematicState.pcb_outline === 'not_locked', 'PCB outline must not be locked before isolation/layout validation');
+
 const gates = Object.values(contract.release_gates ?? {});
 const allReleaseGatesPassed = gates.length > 0 && gates.every(Boolean);
 requireCondition(
   contract.field_use_allowed === allReleaseGatesPassed,
   'field_use_allowed may only become true when every release gate is true',
+);
+requireCondition(
+  contract.manufacturing_release_allowed === false,
+  'manufacturing_release_allowed must remain false during pre-CAD schematic definition',
 );
 
 if (errors.length) {
@@ -96,3 +120,4 @@ if (errors.length) {
 
 console.log('Telemetry Rev-B hardware contract passed.');
 console.log(`Field use allowed: ${contract.field_use_allowed ? 'YES' : 'NO - validation gates remain open'}`);
+console.log(`Manufacturing release allowed: ${contract.manufacturing_release_allowed ? 'YES' : 'NO - schematic/layout validation not complete'}`);
