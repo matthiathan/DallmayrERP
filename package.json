@@ -24,6 +24,7 @@
     "mobile:run:android": "npm run mobile:prepare && cap run android",
     "mobile:run:ios": "npm run mobile:prepare && cap run ios",
     "firmware:generate:v648": "node scripts/generate-telemetry-v6-8-48.mjs",
+    "firmware:generate:v649": "node scripts/generate-telemetry-v6-8-49.mjs",
     "lint": "next lint",
     "test": "node --test --import ./tests/unit/register-typescript-loader.mjs tests/unit/*.test.mjs",
     "test:unit": "node --test --import ./tests/unit/register-typescript-loader.mjs tests/unit/core-contracts.test.mjs",

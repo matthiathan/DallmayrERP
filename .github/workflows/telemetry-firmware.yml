@@ -4,10 +4,14 @@ on:
   push:
     paths:
       - 'firmware/**'
+      - 'scripts/generate-telemetry-v6-8-48.mjs'
+      - 'scripts/generate-telemetry-v6-8-49.mjs'
       - '.github/workflows/telemetry-firmware.yml'
   pull_request:
     paths:
       - 'firmware/**'
+      - 'scripts/generate-telemetry-v6-8-48.mjs'
+      - 'scripts/generate-telemetry-v6-8-49.mjs'
       - '.github/workflows/telemetry-firmware.yml'
   workflow_dispatch:
 
@@ -21,6 +25,14 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Generate V6.8.49 firmware
+        run: node scripts/generate-telemetry-v6-8-49.mjs
 
       - name: Install Arduino CLI
         uses: arduino/setup-arduino-cli@v2
@@ -36,7 +48,7 @@ jobs:
           arduino-cli compile
           --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=opi
           --warnings all
-          firmware/DallmayrTelemetryV6_8_47
+          firmware/DallmayrTelemetryV6_8_49
 
       - name: Compile Air780EU cellular diagnostic
         run: >-
