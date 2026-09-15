@@ -5,10 +5,16 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const contractPath = path.join(root, 'hardware/telemetry-rev-b/safety-contract.json');
 const schematicDefinitionPath = path.join(root, 'hardware/telemetry-rev-b/schematic-definition.md');
+const powerIntegrationPath = path.join(root, 'hardware/telemetry-rev-b/power-module-integration.md');
+const dexIntegrationPath = path.join(root, 'hardware/telemetry-rev-b/dex-interface-integration.md');
+const cadConnectionsPath = path.join(root, 'hardware/telemetry-rev-b/cad-connections.csv');
 const firmwarePath = path.join(root, 'firmware/DallmayrTelemetryV6_8_47/DallmayrTelemetryV6_8_47.ino');
 
 const contract = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
 const schematicDefinition = fs.readFileSync(schematicDefinitionPath, 'utf8');
+const powerIntegration = fs.readFileSync(powerIntegrationPath, 'utf8');
+const dexIntegration = fs.readFileSync(dexIntegrationPath, 'utf8');
+const cadConnections = fs.readFileSync(cadConnectionsPath, 'utf8');
 const firmware = fs.readFileSync(firmwarePath, 'utf8');
 const errors = [];
 
@@ -16,9 +22,9 @@ function requireCondition(condition, message) {
   if (!condition) errors.push(message);
 }
 
-requireCondition(contract.schema_version === 2, 'hardware contract schema_version must be 2');
+requireCondition(contract.schema_version === 3, 'hardware contract schema_version must be 3');
 requireCondition(contract.hardware_revision === 'telemetry-rev-b-isolated', 'unexpected hardware revision');
-requireCondition(contract.status === 'pre-cad-schematic-definition', 'Rev-B contract must remain in pre-CAD schematic definition state');
+requireCondition(contract.status === 'cad-input-definition', 'Rev-B contract must remain in CAD-input definition state');
 
 const supply = contract.machine_supply ?? {};
 requireCondition(supply.converter_min_input_vdc <= 20, 'isolated converter must cover the 20 V MDB minimum');
@@ -89,16 +95,53 @@ requireCondition(
 );
 
 const components = contract.candidate_components ?? {};
+requireCondition(components.isolated_power?.part === 'UEI15-050-Q48N-C', 'PS1 CAD candidate must remain UEI15-050-Q48N-C until EVT review');
+requireCondition(components.isolated_power?.recommended_fast_blow_fuse_a === 2, 'PS1 candidate must preserve the 2 A manufacturer-recommended fast-blow fuse input');
+requireCondition(components.isolated_power?.remote_logic === 'negative', 'PS1 N-suffix remote logic must remain negative');
 requireCondition(components.isolated_dex?.direct_esp32_connection_allowed === false, 'ADM3251E-class DEX logic must never connect directly to ESP32 GPIO');
 requireCondition(components.dex_up_translation?.part === 'SN74AHCT1G125', 'DEX 3.3V->5V validation candidate must remain SN74AHCT1G125 until schematic review');
 requireCondition(components.dex_down_translation?.part === 'SN74LVC1G17', 'DEX 5V->3.3V validation candidate must remain SN74LVC1G17 until schematic review');
-requireCondition(schematicDefinition.includes('SN74AHCT1G125'), 'schematic definition must document the DEX up-translator');
-requireCondition(schematicDefinition.includes('SN74LVC1G17'), 'schematic definition must document the DEX down-translator');
+
 requireCondition(schematicDefinition.includes('No optocoupler LED resistor, comparator threshold, pull-up or clamp values are frozen'), 'schematic definition must keep MDB sensing values in validation state');
+requireCondition(powerIntegration.includes('pin 6 REMOTE_ON_OFF'), 'power CAD input must define PS1 remote-control handling');
+requireCondition(powerIntegration.includes('2 A fast-blow'), 'power CAD input must preserve the UEI15 family fuse recommendation');
+requireCondition(powerIntegration.includes('6.3 mm'), 'power CAD input must preserve the Murata primary/secondary barrier guidance');
+requireCondition(dexIntegration.includes('SN74AHCT1G125'), 'DEX CAD input must include the 3.3V->5V translator');
+requireCondition(dexIntegration.includes('SN74LVC1G17'), 'DEX CAD input must include the 5V->3.3V translator');
+requireCondition(dexIntegration.includes('C_DEX_VISO'), 'DEX CAD input must include isolated-side VISO bypass');
+requireCondition(dexIntegration.includes('0.1 uF, >=16 V, between pin 18'), 'DEX CAD input must define the C1 charge-pump capacitor');
+
+const cad = contract.cad_inputs ?? {};
+requireCondition(cad.ps1_pinout_verified_against_family_datasheet === true, 'PS1 pinout must remain marked datasheet-verified');
+requireCondition(cad.ps1_recommended_fast_blow_fuse_a === 2, 'CAD contract must retain PS1 2 A fast-blow recommendation');
+requireCondition(cad.ps1_recommended_primary_secondary_barrier_mm >= 6.3, 'CAD contract must retain at least the 6.3 mm PS1 barrier guidance');
+requireCondition(cad.ps1_default_remote_connection === 'pin6_to_pin2_via_0ohm', 'PS1 N-suffix default remote connection must remain primary-side pin6-to-pin2');
+requireCondition(cad.adm3251e_pinout_verified_against_current_datasheet === true, 'ADM3251E pinout must remain marked datasheet-verified');
+requireCondition(cad.adm3251e_charge_pump_capacitance_uf === 0.1, 'ADM3251E charge-pump capacitance CAD input must remain 0.1uF');
+requireCondition(cad.adm3251e_viso_external_load_allowed === false, 'ADM3251E VISO must not be exposed as an external power source');
+requireCondition(cad.cad_connection_table_present === true, 'CAD connection table must remain required');
+
+for (const connection of [
+  'PS1,1 +VIN,PS1_VIN_PROTECTED,MACHINE',
+  'PS1,2 -VIN,MACH_PWR_RETURN,MACHINE',
+  'PS1,3 +VOUT,ISO_5V,LOGIC',
+  'PS1,5 -VOUT,LOGIC_GND,LOGIC',
+  'U_DEX,8 ROUT,DEX_RX_5V,LOGIC',
+  'U_DEX,9 TIN,DEX_TX_5V,LOGIC',
+  'U_DEX,11 GNDISO,DEX_ISO_GND,DEX_ISOLATED',
+  'U_DEX_UP,Y,DEX_TX_5V,LOGIC',
+  'U_DEX_DOWN,Y,DEX_RX_3V3,LOGIC',
+]) {
+  requireCondition(cadConnections.includes(connection), `CAD connection table missing required connection: ${connection}`);
+}
+
+requireCondition(!cadConnections.includes('U_DEX,8 ROUT,DEX_RX_3V3'), 'ADM3251E ROUT must not connect directly to ESP32 3.3V receive net');
+requireCondition(!cadConnections.includes('U_DEX,9 TIN,DEX_TX_3V3'), 'ESP32 3.3V transmit net must not connect directly to ADM3251E TIN');
 
 const schematicState = contract.schematic_state ?? {};
 requireCondition(schematicState.mdb_master_tx_sensing_values === 'validation', 'MDB Master-TX sensing values must remain validation-only until bench data exists');
 requireCondition(schematicState.mdb_master_rx_sensing_values === 'validation', 'MDB Master-RX sensing values must remain validation-only until bench data exists');
+requireCondition(schematicState.input_protection_values === 'validation', 'surge/reverse/filter values must remain validation-only until source/inrush data exists');
 requireCondition(schematicState.pcb_outline === 'not_locked', 'PCB outline must not be locked before isolation/layout validation');
 
 const gates = Object.values(contract.release_gates ?? {});
@@ -109,7 +152,7 @@ requireCondition(
 );
 requireCondition(
   contract.manufacturing_release_allowed === false,
-  'manufacturing_release_allowed must remain false during pre-CAD schematic definition',
+  'manufacturing_release_allowed must remain false during CAD-input definition',
 );
 
 if (errors.length) {
@@ -120,4 +163,4 @@ if (errors.length) {
 
 console.log('Telemetry Rev-B hardware contract passed.');
 console.log(`Field use allowed: ${contract.field_use_allowed ? 'YES' : 'NO - validation gates remain open'}`);
-console.log(`Manufacturing release allowed: ${contract.manufacturing_release_allowed ? 'YES' : 'NO - schematic/layout validation not complete'}`);
+console.log(`Manufacturing release allowed: ${contract.manufacturing_release_allowed ? 'YES' : 'NO - CAD/bench validation not complete'}`);
