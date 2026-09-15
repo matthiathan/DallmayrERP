@@ -54,6 +54,7 @@ type IdentityState = {
   profile_options: ProfileOption[];
   recommended_profile: null | (ProfileOption & { score: number; reason: string });
   effective_profile_key: string | null;
+  profile_resolution: 'manual' | 'automatic_match' | 'automatic_unmatched' | 'automatic_ambiguous' | null;
   confidence: 'high' | 'medium' | 'low' | 'unknown';
   conflicts: Conflict[];
   evidence: Evidence[];
@@ -130,7 +131,7 @@ export function MachineIdentityProfilePanel({ machineId }: { machineId: string }
       if (saveError) throw saveError;
       setNotice(assignmentMethod === 'manual'
         ? 'Manual decoder profile saved. The device will receive it on its next configuration sync.'
-        : 'Automatic profile selection enabled. The best matching profile will be resolved from machine evidence.');
+        : 'Automatic profile selection enabled. The best matching profile will be resolved from verified machine evidence.');
       await load();
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Could not save decoder profile.');
@@ -164,6 +165,11 @@ export function MachineIdentityProfilePanel({ machineId }: { machineId: string }
   const evidence = identity.evidence ?? [];
   const recommendation = identity.recommended_profile;
   const protocol = device.protocol ? device.protocol.toUpperCase() : 'Unknown';
+  const automaticResolution = identity.profile_resolution === 'automatic_ambiguous'
+    ? 'Automatic · ambiguous'
+    : recommendation
+      ? 'Automatic recommendation'
+      : 'Automatic · unmatched';
 
   return (
     <article className={styles.panel} data-machine-identification="ready">
@@ -181,7 +187,7 @@ export function MachineIdentityProfilePanel({ machineId }: { machineId: string }
 
       <section className={styles.summaryGrid}>
         <div className={styles.summaryItem}><span>Detected protocol</span><strong>{protocol}</strong><small>{device.identity_source ? `Source: ${titleCase(device.identity_source)}` : 'Awaiting protocol evidence'}</small></div>
-        <div className={styles.summaryItem}><span>Effective profile</span><strong>{effectiveProfile?.display_name ?? identity.effective_profile_key ?? 'No matching profile'}</strong><small>{device.profile_assignment_method === 'manual' ? 'Manual override' : recommendation ? 'Automatic recommendation' : 'Automatic · unmatched'}</small></div>
+        <div className={styles.summaryItem}><span>Effective profile</span><strong>{effectiveProfile?.display_name ?? identity.effective_profile_key ?? 'No matching profile'}</strong><small>{device.profile_assignment_method === 'manual' ? 'Manual override' : automaticResolution}</small></div>
         <div className={styles.summaryItem}><span>Machine link</span><strong>{titleCase(device.machine_link_status)}</strong><small>{device.machine_link_method ? titleCase(device.machine_link_method) : 'No automatic link method recorded'}</small></div>
         <div className={styles.summaryItem}><span>Configuration</span><strong>{identity.profile_pending ? 'Pending device sync' : 'Applied'}</strong><small>{identity.profile_pending ? `Applied: ${device.applied_profile_id ?? 'none'}` : `ACK ${formatDate(device.last_config_ack_at)}`}</small></div>
       </section>
@@ -228,9 +234,11 @@ export function MachineIdentityProfilePanel({ machineId }: { machineId: string }
           <span>Decoder profile assignment</span>
           <h3>{assignmentMethod === 'automatic' ? 'Automatic selection' : 'Manual override'}</h3>
           <p>{assignmentMethod === 'automatic'
-            ? recommendation?.reason ?? 'No current machine profile matches the available model evidence. You can create a profile in Products or apply a manual override.'
+            ? identity.profile_resolution === 'automatic_ambiguous'
+              ? 'More than one decoder profile matches the available evidence. Automatic assignment is withheld until stronger evidence is verified or a manual override is selected.'
+              : recommendation?.reason ?? 'No current machine profile matches the available evidence. You can create a profile in Products or apply a manual override.'
             : 'The selected profile overrides automatic matching until Automatic is enabled again.'}</p>
-          {recommendation ? <small>Recommended: <strong>{recommendation.display_name}</strong> · score {recommendation.score}/100 · {recommendation.button_count} buttons</small> : null}
+          {recommendation ? <small>Recommended: <strong>{recommendation.display_name}</strong> · evidence score {recommendation.score} · {recommendation.button_count} buttons</small> : null}
         </div>
 
         <div className={styles.controls}>

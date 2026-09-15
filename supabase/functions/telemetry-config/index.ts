@@ -33,20 +33,6 @@ function constantTimeEqual(left: string, right: string) {
   return difference === 0;
 }
 
-function normalizeModel(value: unknown) {
-  return typeof value === 'string' ? value.toLowerCase().replace(/[^a-z0-9]+/g, '') : '';
-}
-
-function profileMatchScore(candidate: string, modelKey: string, displayName: string) {
-  if (!candidate) return 0;
-  const key = normalizeModel(modelKey);
-  const display = normalizeModel(displayName);
-  if (candidate === key || candidate === display) return 100;
-  if (key.length >= 5 && (candidate.includes(key) || key.includes(candidate))) return 80;
-  if (display.length >= 5 && (candidate.includes(display) || display.includes(candidate))) return 80;
-  return 0;
-}
-
 function johannesburgParts(date: Date) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Africa/Johannesburg',
@@ -89,7 +75,7 @@ Deno.serve(async (request: Request) => {
 
   const { data: device, error: deviceError } = await supabase
     .from('telemetry_devices')
-    .select('id,device_code,status,credential_hash,machine_id,site_id,profile_id,profile_assignment_method,reported_machine_model,last_counter_at,last_heartbeat_at,transport_preference,wifi_enabled,cellular_enabled,mdb_master_polarity,mdb_slave_polarity,mdb_pin_swap,location_enabled,location_interval_minutes,location_min_move_m,last_location_at')
+    .select('id,device_code,status,credential_hash,machine_id,site_id,profile_id,profile_assignment_method,last_counter_at,last_heartbeat_at,transport_preference,wifi_enabled,cellular_enabled,mdb_master_polarity,mdb_slave_polarity,mdb_pin_swap,location_enabled,location_interval_minutes,location_min_move_m,last_location_at')
     .eq('device_code', deviceCode)
     .maybeSingle();
 
@@ -102,40 +88,18 @@ Deno.serve(async (request: Request) => {
   });
   if (policyError || !policy) return jsonResponse({ accepted: false, message: 'Could not resolve telemetry policy.' }, 503);
 
-  let effectiveProfileId = typeof device.profile_id === 'string' && device.profile_id.trim() ? device.profile_id.trim() : null;
-  let profileResolution = device.profile_assignment_method === 'manual' ? 'manual' : 'automatic_unmatched';
-  if (device.profile_assignment_method !== 'manual') {
-    let machineModel = '';
-    if (device.machine_id) {
-      const { data: assignedMachine } = await supabase
-        .from('machines')
-        .select('model,machine_name')
-        .eq('id', device.machine_id)
-        .maybeSingle();
-      machineModel = String(assignedMachine?.model ?? assignedMachine?.machine_name ?? '');
-    }
-
-    const detectedCandidate = normalizeModel(device.reported_machine_model);
-    const databaseCandidate = normalizeModel(machineModel);
-    const { data: profiles, error: profileError } = await supabase
-      .from('machine_model_profiles')
-      .select('model_key,display_name');
-    if (profileError) return jsonResponse({ accepted: false, message: 'Could not resolve machine decoder profiles.' }, 503);
-
-    let bestProfile: string | null = null;
-    let bestScore = 0;
-    for (const profile of profiles ?? []) {
-      const detectedScore = profileMatchScore(detectedCandidate, profile.model_key, profile.display_name);
-      const databaseScore = profileMatchScore(databaseCandidate, profile.model_key, profile.display_name);
-      const score = detectedScore > 0 ? detectedScore : databaseScore > 0 ? Math.min(databaseScore, 95) : 0;
-      if (score > bestScore) {
-        bestScore = score;
-        bestProfile = profile.model_key;
-      }
-    }
-    effectiveProfileId = bestScore >= 70 ? bestProfile : null;
-    profileResolution = effectiveProfileId ? 'automatic_match' : 'automatic_unmatched';
+  const { data: profileResult, error: profileError } = await supabase.rpc('resolve_telemetry_device_profile', {
+    p_device_id: device.id,
+  });
+  if (profileError || !profileResult) {
+    return jsonResponse({ accepted: false, message: 'Could not resolve machine decoder profile.' }, 503);
   }
+  const effectiveProfileId = typeof profileResult.effective_profile_key === 'string' && profileResult.effective_profile_key.trim()
+    ? profileResult.effective_profile_key.trim()
+    : null;
+  const profileResolution = typeof profileResult.profile_resolution === 'string'
+    ? profileResult.profile_resolution
+    : 'automatic_unmatched';
 
   const mode = String(policy.mode ?? 'live');
   const counterIntervalMinutes = Number(policy.counter_interval_minutes ?? 5);
