@@ -477,33 +477,48 @@ begin
     raise exception 'A provisioned DallmayrERP user is required.' using errcode = '42501';
   end if;
 
-  with evidence as (
+  with evidence_transactions as (
     select
       (e.occurred_at at time zone 'Africa/Johannesburg')::date as sales_date,
       e.device_id,
-      max(e.machine_id) as machine_id,
+      max(e.machine_id::text)::uuid as machine_id,
       e.selection_code,
+      e.correlation_key,
       max(e.product_name) filter (where e.product_name is not null) as product_name,
-      sum(e.quantity) filter (
+      max(e.quantity) filter (
         where e.source = 'mdb' and e.outcome = 'success'
           and e.evidence_type in ('vend_success','cash_sale')
       )::bigint as mdb_success_units,
-      sum(e.quantity) filter (
+      max(e.quantity) filter (
         where e.source = 'mdb' and e.outcome = 'failure'
           and e.evidence_type in ('vend_denied','vend_failure')
       )::bigint as mdb_failure_units,
-      sum(e.quantity) filter (where e.source = 'dex' and e.evidence_type = 'dex_sale_delta')::bigint as dex_units,
-      sum(e.quantity) filter (where e.source = 'machine' and e.evidence_type = 'machine_complete')::bigint as machine_success_units,
+      max(e.quantity) filter (where e.source = 'dex' and e.evidence_type = 'dex_sale_delta')::bigint as dex_units,
+      max(e.quantity) filter (where e.source = 'machine' and e.evidence_type = 'machine_complete')::bigint as machine_success_units,
       max(e.confidence_score)::integer as highest_confidence
     from public.telemetry_vend_evidence e
     where (e.occurred_at at time zone 'Africa/Johannesburg')::date >= v_from
       and (p_device_id is null or e.device_id = p_device_id)
-    group by 1, e.device_id, e.selection_code
+    group by 1, e.device_id, e.selection_code, e.correlation_key
+  ), evidence as (
+    select
+      et.sales_date,
+      et.device_id,
+      max(et.machine_id::text)::uuid as machine_id,
+      et.selection_code,
+      max(et.product_name) filter (where et.product_name is not null) as product_name,
+      coalesce(sum(et.mdb_success_units), 0)::bigint as mdb_success_units,
+      coalesce(sum(et.mdb_failure_units), 0)::bigint as mdb_failure_units,
+      coalesce(sum(et.dex_units), 0)::bigint as dex_units,
+      coalesce(sum(et.machine_success_units), 0)::bigint as machine_success_units,
+      coalesce(max(et.highest_confidence), 0)::integer as highest_confidence
+    from evidence_transactions et
+    group by et.sales_date, et.device_id, et.selection_code
   ), counters as (
     select
       s.sales_date,
       s.device_id,
-      max(s.machine_id) as machine_id,
+      max(s.machine_id::text)::uuid as machine_id,
       s.selection_code,
       max(s.product_name) filter (where s.product_name is not null) as product_name,
       sum(s.units_sold)::bigint as counter_units,
