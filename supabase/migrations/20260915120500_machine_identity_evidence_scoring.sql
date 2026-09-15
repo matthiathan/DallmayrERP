@@ -1,3 +1,16 @@
+create or replace function public.normalize_telemetry_identity_token(p_value text)
+returns text
+language sql
+immutable
+parallel safe
+set search_path = public, pg_temp
+as $$
+  select regexp_replace(lower(coalesce(btrim(p_value), '')), '[^a-z0-9]+', '', 'g');
+$$;
+
+revoke all on function public.normalize_telemetry_identity_token(text) from public, anon;
+grant execute on function public.normalize_telemetry_identity_token(text) to authenticated, service_role;
+
 create table if not exists public.machine_model_profile_identity_evidence (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid not null references public.machine_model_profiles(id) on delete cascade,
@@ -10,18 +23,20 @@ create table if not exists public.machine_model_profile_identity_evidence (
   constraint machine_model_profile_identity_evidence_type_check
     check (evidence_type in ('fingerprint', 'interface', 'model_alias', 'revision')),
   constraint machine_model_profile_identity_evidence_value_not_blank
-    check (btrim(evidence_value) <> '')
+    check (public.normalize_telemetry_identity_token(evidence_value) <> '')
 );
 
 create unique index if not exists machine_model_profile_identity_evidence_profile_value_uidx
   on public.machine_model_profile_identity_evidence (
     profile_id,
     evidence_type,
-    (lower(btrim(evidence_value)))
+    public.normalize_telemetry_identity_token(evidence_value)
   );
 
 create unique index if not exists machine_model_profile_identity_evidence_verified_fingerprint_uidx
-  on public.machine_model_profile_identity_evidence ((lower(btrim(evidence_value))))
+  on public.machine_model_profile_identity_evidence (
+    public.normalize_telemetry_identity_token(evidence_value)
+  )
   where evidence_type = 'fingerprint' and verified = true;
 
 create index if not exists machine_model_profile_identity_evidence_profile_idx
@@ -52,19 +67,6 @@ create policy machine_model_profile_identity_evidence_internal_write
   using (public.current_app_role() is not null)
   with check (public.current_app_role() is not null);
 
-create or replace function public.normalize_telemetry_identity_token(p_value text)
-returns text
-language sql
-immutable
-parallel safe
-set search_path = public, pg_temp
-as $$
-  select regexp_replace(lower(coalesce(btrim(p_value), '')), '[^a-z0-9]+', '', 'g');
-$$;
-
-revoke all on function public.normalize_telemetry_identity_token(text) from public, anon;
-grant execute on function public.normalize_telemetry_identity_token(text) to authenticated, service_role;
-
 create or replace function public.resolve_telemetry_device_profile(p_device_id uuid)
 returns jsonb
 language plpgsql
@@ -89,9 +91,8 @@ declare
   v_confidence text := 'unknown';
   v_effective_profile text := null;
   v_reason text := null;
-  v_role text := coalesce(current_setting('request.jwt.claim.role', true), '');
 begin
-  if v_role <> 'service_role' and public.current_app_role() is null then
+  if auth.uid() is not null and public.current_app_role() is null then
     raise exception 'A provisioned DallmayrERP user is required.' using errcode = '42501';
   end if;
 
@@ -258,7 +259,7 @@ begin
 
   v_top := v_candidates -> 0;
   v_top_score := coalesce((v_top ->> 'score')::integer, 0);
-  v_second_score := coalesce((v_candidates -> 1 ->> 'score')::integer, 0);
+  v_second_score := coalesce(((v_candidates -> 1) ->> 'score')::integer, 0);
   v_gap := greatest(0, v_top_score - v_second_score);
 
   if v_top_score < 80 then
