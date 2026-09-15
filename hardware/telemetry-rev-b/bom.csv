@@ -1,6 +1,10 @@
 RefDes,Function,Candidate part,Manufacturer,Minimum requirement,Status,Notes
 PS1,Main isolated DC/DC,UEI15-050-Q48N-C,Murata Power Solutions,"18-75V input; 5V 3A; >=15W; >=1.5kV isolation",Candidate,"Reference part is 15W / 5V 3A / 2.25kV isolation; validate modem burst current and thermal performance"
-U_DEX,Isolated DEX RS-232,ADM3251E,Analog Devices,"1Tx/1Rx fully isolated RS-232; >=9600 baud; integrated isolated power preferred",Candidate,"Replaces non-isolated SP3232 field interface on Rev-B"
+U_DEX,Isolated DEX RS-232,ADM3251E,Analog Devices,"1Tx/1Rx fully isolated RS-232; >=9600 baud; integrated isolated power preferred",Candidate,"5V logic-side device. Do not connect directly to ESP32 GPIO; use U_DEX_UP and U_DEX_DOWN"
+U_DEX_UP,DEX ESP32 TX 3.3V to 5V logic buffer,SN74AHCT1G125,Texas Instruments,"5V operation; input-high threshold <= ESP32 guaranteed 3.3V high",Candidate,"OE tied low; AHCT VIH=2.0V supports ESP32 3.3V output driving ADM3251E TIN"
+U_DEX_DOWN,DEX 5V receiver output to ESP32 3.3V buffer,SN74LVC1G17,Texas Instruments,"3.3V operation; input tolerant to >=5V",Candidate,"5.5V-tolerant input accepts ADM3251E ROUT while output remains 3.3V"
+C_DEX_UP,DEX up-translator decoupling,TBD,TBD,"Local ceramic decoupling per TI datasheet",Required,"Place at U_DEX_UP VCC"
+C_DEX_DOWN,DEX down-translator decoupling,TBD,TBD,"Local ceramic decoupling per TI datasheet",Required,"Place at U_DEX_DOWN VCC"
 F1,Input over-current protection,TBD,TBD,"Fuse or resettable protection sized to converter input/inrush and MDB source",To select,"Coordinate with converter inrush and machine MDB supply capability"
 Q_RP,Reverse-polarity protection,TBD,TBD,">=75V rating with adequate surge margin and low loss",To select,"Do not use a marginal 40-60V part on the raw MDB rail"
 D_TVS,Input transient clamp,TBD,TBD,"VRWM above normal/high-line rail; clamp compatible with converter absolute maximum",To select,"Select only after measuring source impedance and reviewing converter absolute maximum"
@@ -17,5 +21,6 @@ J_USB,USB service connector,TBD,TBD,"Logic-domain only",To select,"USB_GND must 
 TP_MACH_P,Machine rail test point,TBD,TBD,"MACH_34V_IN",Required,"Machine-side marking required"
 TP_MACH_R,Machine return test point,TBD,TBD,"MACH_PWR_RETURN",Required,"Machine-side marking required"
 TP_MDB_C,MDB comm common test point,TBD,TBD,"MDB_COMM_COMMON",Required,"Machine-side marking required"
+TP_DEX_G,DEX isolated common test point,TBD,TBD,"DEX_ISO_GND",Required,"DEX line-side marking required; must remain isolated from LOGIC_GND"
 TP_ISO5,Isolated 5V test point,TBD,TBD,"ISO_5V",Required,"Logic-side marking required"
 TP_LGND,Logic ground test point,TBD,TBD,"LOGIC_GND",Required,"Must remain isolated from machine-side references"
