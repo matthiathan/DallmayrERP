@@ -37,6 +37,9 @@ jobs:
       - name: Check telemetry hardware safety contract
         run: npm run hardware:check
 
+      - name: Check MDB sensing EVT fixture safety
+        run: node scripts/check-mdb-sense-evt-fixture.mjs
+
       - name: Generate V6.8.49 ESP32 telemetry firmware
         run: npm run firmware:generate:v649
 
