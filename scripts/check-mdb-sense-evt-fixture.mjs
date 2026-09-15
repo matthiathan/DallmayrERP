@@ -76,8 +76,14 @@ for (const requiredBomEntry of [
 }
 requireCondition(bom.includes('C_TX_IN,Optional Master-TX raw filter,10pF C0G/NP0,TBD,DNI'), 'TX input filter must remain DNI');
 requireCondition(bom.includes('C_RX_IN,Optional Master-RX raw filter,10pF C0G/NP0,TBD,DNI'), 'RX input filter must remain DNI');
-requireCondition(bom.includes('D_TX_PROTECT') && bom.includes('DNI/TBD'), 'TX raw protection must remain unpopulated/TBD');
-requireCondition(bom.includes('D_RX_PROTECT') && bom.includes('DNI/TBD'), 'RX raw protection must remain unpopulated/TBD');
+requireCondition(
+  bom.includes('D_TX_PROTECT,Master-TX protection footprint,TBD,TBD,DNI,'),
+  'TX raw protection must remain unpopulated/TBD',
+);
+requireCondition(
+  bom.includes('D_RX_PROTECT,Master-RX protection footprint,TBD,TBD,DNI,'),
+  'RX raw protection must remain unpopulated/TBD',
+);
 
 requireCondition(design.includes('MDB pins 1 (+34 V), 2 (Power Return) and 3 (N/C) do not exist'), 'daughterboard design must explicitly exclude MDB power pins');
 requireCondition(design.includes('Do not connect `LOGIC_GND` to `MDB_COMM_COMMON`'), 'daughterboard design must prohibit ground bridging');
