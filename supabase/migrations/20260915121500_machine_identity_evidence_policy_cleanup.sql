@@ -1,0 +1,2 @@
+drop policy if exists machine_model_profile_identity_evidence_internal_read
+  on public.machine_model_profile_identity_evidence;
