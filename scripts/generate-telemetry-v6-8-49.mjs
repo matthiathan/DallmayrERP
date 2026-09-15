@@ -80,7 +80,7 @@ export function transformTelemetryV649(input) {
   if (!source.includes('MDB_EVENT_SELECTION_OBSERVATION') || !source.includes('selection_observation')) {
     throw new Error('Generated V6.8.49 is missing selection Learn Mode.');
   }
-  if (!source.includes('DALLMAYR_MDB_ACTIVE_TX_ENABLED false')) {
+  if (!/DALLMAYR_MDB_ACTIVE_TX_ENABLED\s+false/.test(source)) {
     throw new Error('Generated V6.8.49 must retain passive-only MDB TX safety.');
   }
   if (source.includes('static const char* FIRMWARE_VERSION = "6.8.48-')) {
