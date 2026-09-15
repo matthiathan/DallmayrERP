@@ -13,7 +13,7 @@ const generated = transformTelemetryV649(baseFirmware);
 
 test('V6.8.49 keeps MDB passive while emitting selection lifecycle observations', () => {
   assert.match(generated, /6\.8\.49-esp32s3-air780eu-passive-mdb-selection-learn/);
-  assert.match(generated, /DALLMAYR_MDB_ACTIVE_TX_ENABLED false/);
+  assert.match(generated, /DALLMAYR_MDB_ACTIVE_TX_ENABLED\s+false/);
   assert.match(generated, /MDB_EVENT_SELECTION_OBSERVATION/);
   assert.match(generated, /"selection_observation"/);
   assert.match(generated, /MDB_SELECTION_REQUESTED/);
