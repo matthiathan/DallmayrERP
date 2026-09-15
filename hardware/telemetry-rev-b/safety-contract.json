@@ -1,7 +1,7 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "hardware_revision": "telemetry-rev-b-isolated",
-  "status": "mdb-front-end-validation-definition",
+  "status": "mdb-evt-population-candidate",
   "field_use_allowed": false,
   "manufacturing_release_allowed": false,
   "machine_supply": {
@@ -38,6 +38,27 @@
     "normal_bus_range_protection_must_not_conduct": true,
     "zero_active_drive_paths_to_mdb": true,
     "checksum_decode_errors_allowed_in_10000_replay_frames": 0
+  },
+  "mdb_evt_population_candidate": {
+    "sense_supply_nominal_v": 5.0,
+    "sense_supply_validation_min_v": 4.9,
+    "sense_supply_validation_max_v": 5.1,
+    "raw_series_ohm": 100000,
+    "reference_top_ohm": 100000,
+    "reference_bottom_ohm": 100000,
+    "feedback_ohm": 2200000,
+    "optional_input_cap_pf": 10,
+    "optional_input_cap_default": "DNI",
+    "reference_bypass_nf": 10,
+    "threshold_nominal_low_v": 2.386,
+    "threshold_nominal_high_v": 2.614,
+    "hysteresis_nominal_mv": 227,
+    "optional_rc_tau_us": 1.0,
+    "comparator_signal_input": "non_inverting",
+    "comparator_reference_input": "inverting",
+    "values_locked_for_production": false,
+    "protection_clamps_locked": false,
+    "bench_population_only": true
   },
   "firmware_pin_contract": {
     "cell_rx_gpio": 1,
@@ -124,8 +145,9 @@
     "mdb_sense_power_topology": "candidate_locked_for_evt",
     "mdb_comparator_topology": "candidate_locked_for_evt",
     "mdb_digital_isolation_topology": "candidate_locked_for_evt",
-    "mdb_master_tx_input_network_values": "validation",
-    "mdb_master_rx_input_network_values": "validation",
+    "mdb_master_tx_input_network_values": "evt_candidate_not_production",
+    "mdb_master_rx_input_network_values": "evt_candidate_not_production",
+    "mdb_raw_line_protection_values": "validation",
     "usb_domain_separation": "locked",
     "pcb_outline": "not_locked"
   },
@@ -141,7 +163,8 @@
     "adm3251e_viso_external_load_allowed": false,
     "mdb_sense_supply_negative_tied_only_to_mdb_comm_common": true,
     "mdb_comparator_outputs_cross_digital_isolator_before_esp32": true,
-    "mdb_input_divider_and_hysteresis_values_frozen": false,
+    "mdb_evt_population_values_present": true,
+    "mdb_input_values_locked_for_production": false,
     "cad_connection_table_present": true
   },
   "candidate_components": {

@@ -36,28 +36,34 @@ PS_MDB,VIN+,ISO_5V,LOGIC,NXF1S0505MC primary positive
 PS_MDB,VIN-,LOGIC_GND,LOGIC,NXF1S0505MC primary return
 PS_MDB,VOUT+,MDB_SENSE_5V,MDB_SENSE,Regulated isolated 5V for MDB comparator and isolator side 1 only
 PS_MDB,VOUT-,MDB_COMM_COMMON,MDB_SENSE,Secondary return tied only to MDB communications common
-R_MDB_TX_TOP,IN,MDB_MASTER_TX_RAW,MDB_SENSE,High-value protected input; value validation-only
-R_MDB_TX_TOP,OUT,MDB_TX_DIV,MDB_SENSE,To comparator channel A divider node
-R_MDB_TX_BOTTOM,1,MDB_TX_DIV,MDB_SENSE,Divider lower element
-R_MDB_TX_BOTTOM,2,MDB_COMM_COMMON,MDB_SENSE,Return; total line loading target <=50uA
-R_MDB_RX_TOP,IN,MDB_MASTER_RX_RAW,MDB_SENSE,High-value protected input; value validation-only
-R_MDB_RX_TOP,OUT,MDB_RX_DIV,MDB_SENSE,To comparator channel B divider node
-R_MDB_RX_BOTTOM,1,MDB_RX_DIV,MDB_SENSE,Divider lower element
-R_MDB_RX_BOTTOM,2,MDB_COMM_COMMON,MDB_SENSE,Return; total line loading target <=50uA
-R_MDB_REF_TOP,1,MDB_SENSE_5V,MDB_SENSE,Comparator reference divider top
-R_MDB_REF_TOP,2,MDB_THRESHOLD_REF,MDB_SENSE,Threshold node; exact value validation-only
-R_MDB_REF_BOTTOM,1,MDB_THRESHOLD_REF,MDB_SENSE,Comparator reference divider bottom
-R_MDB_REF_BOTTOM,2,MDB_COMM_COMMON,MDB_SENSE,Threshold reference return
+R_MDB_TX_SER,1,MDB_MASTER_TX_RAW,MDB_SENSE,100k bench-only raw series input candidate
+R_MDB_TX_SER,2,MDB_TX_SENSE_NODE,MDB_SENSE,To TLV3202-Q1 channel A non-inverting input
+R_MDB_RX_SER,1,MDB_MASTER_RX_RAW,MDB_SENSE,100k bench-only raw series input candidate
+R_MDB_RX_SER,2,MDB_RX_SENSE_NODE,MDB_SENSE,To TLV3202-Q1 channel B non-inverting input
+R_MDB_REF_TOP,1,MDB_SENSE_5V,MDB_SENSE,100k bench-only reference divider top
+R_MDB_REF_TOP,2,MDB_THRESHOLD_REF,MDB_SENSE,Nominal 2.5V reference at 5.0V sense supply
+R_MDB_REF_BOTTOM,1,MDB_THRESHOLD_REF,MDB_SENSE,100k bench-only reference divider bottom
+R_MDB_REF_BOTTOM,2,MDB_COMM_COMMON,MDB_SENSE,Reference return
+R_MDB_HYS_A,1,MDB_TX_SENSE_LOGIC,MDB_SENSE,2.2M positive feedback candidate
+R_MDB_HYS_A,2,MDB_TX_SENSE_NODE,MDB_SENSE,Calculated nominal raw hysteresis about 227mV
+R_MDB_HYS_B,1,MDB_RX_SENSE_LOGIC,MDB_SENSE,2.2M positive feedback candidate
+R_MDB_HYS_B,2,MDB_RX_SENSE_NODE,MDB_SENSE,Calculated nominal raw hysteresis about 227mV
+C_MDB_TX_IN,1,MDB_TX_SENSE_NODE,MDB_SENSE,10pF tuning footprint default DNI
+C_MDB_TX_IN,2,MDB_COMM_COMMON,MDB_SENSE,If populated nominal 100k x 10pF tau about 1us
+C_MDB_RX_IN,1,MDB_RX_SENSE_NODE,MDB_SENSE,10pF tuning footprint default DNI
+C_MDB_RX_IN,2,MDB_COMM_COMMON,MDB_SENSE,If populated nominal 100k x 10pF tau about 1us
+C_MDB_REF,1,MDB_THRESHOLD_REF,MDB_SENSE,10nF bench-only reference bypass candidate
+C_MDB_REF,2,MDB_COMM_COMMON,MDB_SENSE,Reference bypass return
+D_MDB_TX_PROTECT,NETWORK,MDB_MASTER_TX_RAW/MDB_TX_SENSE_NODE/MDB_COMM_COMMON,MDB_SENSE,DNI/TBD until low-leakage low-capacitance protection is validated
+D_MDB_RX_PROTECT,NETWORK,MDB_MASTER_RX_RAW/MDB_RX_SENSE_NODE/MDB_COMM_COMMON,MDB_SENSE,DNI/TBD until low-leakage low-capacitance protection is validated
 U_MDB_CMP,VCC,MDB_SENSE_5V,MDB_SENSE,TLV3202-Q1 candidate
 U_MDB_CMP,GND,MDB_COMM_COMMON,MDB_SENSE,MDB communications-domain reference only
-U_MDB_CMP,INA,MDB_TX_DIV,MDB_SENSE,Master-TX divided sense input
-U_MDB_CMP,INB,MDB_RX_DIV,MDB_SENSE,Master-RX divided sense input
-U_MDB_CMP,REF_A,MDB_THRESHOLD_REF,MDB_SENSE,Exact comparator polarity chosen after captured waveforms
-U_MDB_CMP,REF_B,MDB_THRESHOLD_REF,MDB_SENSE,Independent hysteresis allowed per channel
+U_MDB_CMP,INA+,MDB_TX_SENSE_NODE,MDB_SENSE,Master-TX signal input
+U_MDB_CMP,INA-,MDB_THRESHOLD_REF,MDB_SENSE,Master-TX reference input
+U_MDB_CMP,INB+,MDB_RX_SENSE_NODE,MDB_SENSE,Master-RX signal input
+U_MDB_CMP,INB-,MDB_THRESHOLD_REF,MDB_SENSE,Master-RX reference input
 U_MDB_CMP,OUTA,MDB_TX_SENSE_LOGIC,MDB_SENSE,Machine-side logic output only
 U_MDB_CMP,OUTB,MDB_RX_SENSE_LOGIC,MDB_SENSE,Machine-side logic output only
-R_MDB_HYS_A,NETWORK,MDB_TX_SENSE_LOGIC/MDB_TX_DIV,MDB_SENSE,Raw-equivalent hysteresis target 100-400mV; value validation-only
-R_MDB_HYS_B,NETWORK,MDB_RX_SENSE_LOGIC/MDB_RX_DIV,MDB_SENSE,Raw-equivalent hysteresis target 100-400mV; value validation-only
 U_MDB_ISO,VCC1,MDB_SENSE_5V,MDB_SENSE,ISO7720 machine-side supply
 U_MDB_ISO,GND1,MDB_COMM_COMMON,MDB_SENSE,ISO7720 machine-side return
 U_MDB_ISO,IN_A,MDB_TX_SENSE_LOGIC,MDB_SENSE,Comparator A to isolator only

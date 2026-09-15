@@ -8,7 +8,9 @@ const schematicDefinitionPath = path.join(root, 'hardware/telemetry-rev-b/schema
 const powerIntegrationPath = path.join(root, 'hardware/telemetry-rev-b/power-module-integration.md');
 const dexIntegrationPath = path.join(root, 'hardware/telemetry-rev-b/dex-interface-integration.md');
 const mdbIntegrationPath = path.join(root, 'hardware/telemetry-rev-b/mdb-interface-integration.md');
+const mdbEvtPath = path.join(root, 'hardware/telemetry-rev-b/mdb-evt-input-network.md');
 const mdbValidationPath = path.join(root, 'hardware/telemetry-rev-b/mdb-validation-matrix.csv');
+const bomPath = path.join(root, 'hardware/telemetry-rev-b/bom.csv');
 const cadConnectionsPath = path.join(root, 'hardware/telemetry-rev-b/cad-connections.csv');
 const firmwarePath = path.join(root, 'firmware/DallmayrTelemetryV6_8_47/DallmayrTelemetryV6_8_47.ino');
 
@@ -17,7 +19,9 @@ const schematicDefinition = fs.readFileSync(schematicDefinitionPath, 'utf8');
 const powerIntegration = fs.readFileSync(powerIntegrationPath, 'utf8');
 const dexIntegration = fs.readFileSync(dexIntegrationPath, 'utf8');
 const mdbIntegration = fs.readFileSync(mdbIntegrationPath, 'utf8');
+const mdbEvt = fs.readFileSync(mdbEvtPath, 'utf8');
 const mdbValidation = fs.readFileSync(mdbValidationPath, 'utf8');
+const bom = fs.readFileSync(bomPath, 'utf8');
 const cadConnections = fs.readFileSync(cadConnectionsPath, 'utf8');
 const firmware = fs.readFileSync(firmwarePath, 'utf8');
 const errors = [];
@@ -26,9 +30,16 @@ function requireCondition(condition, message) {
   if (!condition) errors.push(message);
 }
 
-requireCondition(contract.schema_version === 4, 'hardware contract schema_version must be 4');
+function nearlyEqual(actual, expected, tolerance, label) {
+  requireCondition(
+    Number.isFinite(actual) && Math.abs(actual - expected) <= tolerance,
+    `${label}: expected ${expected} +/- ${tolerance}, got ${actual}`,
+  );
+}
+
+requireCondition(contract.schema_version === 5, 'hardware contract schema_version must be 5');
 requireCondition(contract.hardware_revision === 'telemetry-rev-b-isolated', 'unexpected hardware revision');
-requireCondition(contract.status === 'mdb-front-end-validation-definition', 'Rev-B contract must remain in MDB front-end validation definition state');
+requireCondition(contract.status === 'mdb-evt-population-candidate', 'Rev-B contract must remain in MDB EVT population candidate state');
 
 const supply = contract.machine_supply ?? {};
 requireCondition(supply.converter_min_input_vdc <= 20, 'isolated converter must cover the 20 V MDB minimum');
@@ -49,9 +60,66 @@ const snifferTargets = contract.mdb_sniffer_validation_targets ?? {};
 requireCondition(snifferTargets.additional_line_loading_ua_target_max <= 50, 'Rev-B MDB observer loading target must remain <=50uA until bench validation');
 requireCondition(snifferTargets.normal_signal_threshold_v_target_min >= 1.5, 'MDB threshold target is implausibly low');
 requireCondition(snifferTargets.normal_signal_threshold_v_target_max <= 3.5, 'MDB threshold target is implausibly high');
+requireCondition(snifferTargets.raw_input_hysteresis_mv_target_min >= 50, 'MDB minimum hysteresis target is implausibly small');
+requireCondition(snifferTargets.raw_input_hysteresis_mv_target_max <= 500, 'MDB maximum hysteresis target is implausibly large');
 requireCondition(snifferTargets.raw_to_gpio_propagation_us_target_max <= 5, 'MDB raw-to-GPIO propagation target must remain <=5us');
 requireCondition(snifferTargets.zero_active_drive_paths_to_mdb === true, 'Rev-B MDB must have zero active drive paths');
 requireCondition(snifferTargets.checksum_decode_errors_allowed_in_10000_replay_frames === 0, 'MDB 10,000-frame validation must allow zero hardware-induced decode errors');
+
+// Recalculate the proposed Schmitt thresholds from the component values. This
+// prevents a documentation edit from silently drifting away from the actual EVT
+// population. Signal node is non-inverting; reference is inverting.
+const evt = contract.mdb_evt_population_candidate ?? {};
+for (const key of ['sense_supply_nominal_v', 'raw_series_ohm', 'reference_top_ohm', 'reference_bottom_ohm', 'feedback_ohm']) {
+  requireCondition(Number.isFinite(evt[key]) && evt[key] > 0, `MDB EVT value ${key} must be a positive number`);
+}
+requireCondition(evt.bench_population_only === true, 'MDB EVT values must remain bench-only');
+requireCondition(evt.values_locked_for_production === false, 'MDB EVT resistor values must not be production-locked');
+requireCondition(evt.protection_clamps_locked === false, 'MDB protection clamps must remain unfrozen pending measurements');
+requireCondition(evt.optional_input_cap_default === 'DNI', 'MDB optional input capacitors must remain DNI by default');
+requireCondition(evt.comparator_signal_input === 'non_inverting', 'MDB EVT signal input must remain non-inverting for the documented calculation');
+requireCondition(evt.comparator_reference_input === 'inverting', 'MDB EVT reference input must remain inverting for the documented calculation');
+
+const vcc = evt.sense_supply_nominal_v;
+const vref = vcc * evt.reference_bottom_ohm / (evt.reference_top_ohm + evt.reference_bottom_ohm);
+const ratio = evt.raw_series_ohm / evt.feedback_ohm;
+const thresholdLow = vref * (1 + ratio) - vcc * ratio; // comparator output high
+const thresholdHigh = vref * (1 + ratio);             // comparator output low
+const hysteresisV = thresholdHigh - thresholdLow;
+const hysteresisMv = hysteresisV * 1000;
+const rcTauUs = evt.raw_series_ohm * evt.optional_input_cap_pf * 1e-6;
+
+nearlyEqual(thresholdLow, evt.threshold_nominal_low_v, 0.005, 'MDB nominal lower threshold');
+nearlyEqual(thresholdHigh, evt.threshold_nominal_high_v, 0.005, 'MDB nominal upper threshold');
+nearlyEqual(hysteresisMv, evt.hysteresis_nominal_mv, 1.5, 'MDB nominal hysteresis');
+nearlyEqual(rcTauUs, evt.optional_rc_tau_us, 0.02, 'MDB optional input RC time constant');
+requireCondition(thresholdLow >= snifferTargets.normal_signal_threshold_v_target_min, 'MDB calculated lower threshold is below target window');
+requireCondition(thresholdHigh <= snifferTargets.normal_signal_threshold_v_target_max, 'MDB calculated upper threshold is above target window');
+requireCondition(hysteresisMv >= snifferTargets.raw_input_hysteresis_mv_target_min, 'MDB calculated hysteresis is below target');
+requireCondition(hysteresisMv <= snifferTargets.raw_input_hysteresis_mv_target_max, 'MDB calculated hysteresis is above target');
+requireCondition(rcTauUs <= snifferTargets.raw_to_gpio_propagation_us_target_max, 'optional MDB input RC alone exceeds total propagation target');
+requireCondition(rcTauUs <= mdbBus.bit_time_us_nominal / 20, 'optional MDB input RC is too large relative to MDB bit time');
+
+// Check rail tolerance using identical resistor ratios. Both thresholds must stay
+// inside the broad 2-3V EVT target over the proposed 4.9-5.1V sense rail window.
+for (const rail of [evt.sense_supply_validation_min_v, evt.sense_supply_validation_max_v]) {
+  const ref = rail * evt.reference_bottom_ohm / (evt.reference_top_ohm + evt.reference_bottom_ohm);
+  const low = ref * (1 + ratio) - rail * ratio;
+  const high = ref * (1 + ratio);
+  requireCondition(low >= snifferTargets.normal_signal_threshold_v_target_min, `MDB lower threshold ${low.toFixed(3)}V falls below target at ${rail}V sense rail`);
+  requireCondition(high <= snifferTargets.normal_signal_threshold_v_target_max, `MDB upper threshold ${high.toFixed(3)}V exceeds target at ${rail}V sense rail`);
+}
+
+// The ideal stable-state network itself should be far below the 50uA system
+// target. Protection leakage remains a bench measurement, not a calculated pass.
+function idealRawLineCurrentUa(rawV, outputV) {
+  const rs = evt.raw_series_ohm;
+  const rf = evt.feedback_ohm;
+  const nodeV = ((rawV / rs) + (outputV / rf)) / ((1 / rs) + (1 / rf));
+  return Math.abs((rawV - nodeV) / rs) * 1e6;
+}
+requireCondition(idealRawLineCurrentUa(4, vcc) < 1, 'ideal 4V-high MDB line loading should remain below 1uA');
+requireCondition(idealRawLineCurrentUa(1, 0) < 1, 'ideal 1V-low MDB line loading should remain below 1uA');
 
 const requiredBlocks = new Set(contract.required_blocks ?? []);
 for (const required of [
@@ -77,7 +145,6 @@ for (const [left, right] of contract.forbidden_direct_connections ?? []) {
   requireCondition(machineNets.has(left), `forbidden-connection machine net is not declared: ${left}`);
   requireCondition(logicNets.has(right), `forbidden-connection logic net is not declared: ${right}`);
 }
-
 for (const requiredPair of [
   ['MACH_PWR_RETURN', 'LOGIC_GND'],
   ['MACH_PWR_RETURN', 'USB_GND'],
@@ -91,8 +158,7 @@ for (const requiredPair of [
   ['MDB_MASTER_TX_RAW', 'GPIO4_MDB_MONITOR'],
   ['MDB_MASTER_RX_RAW', 'GPIO5_MDB_MONITOR'],
 ]) {
-  const found = (contract.forbidden_direct_connections ?? [])
-    .some(([left, right]) => left === requiredPair[0] && right === requiredPair[1]);
+  const found = (contract.forbidden_direct_connections ?? []).some(([left, right]) => left === requiredPair[0] && right === requiredPair[1]);
   requireCondition(found, `missing forbidden direct connection: ${requiredPair.join(' -> ')}`);
 }
 
@@ -105,7 +171,6 @@ const pinContracts = [
   ['dex_rx_gpio', 17, 'static const int DEX_RX_PIN  = 17;'],
   ['dex_tx_gpio', 18, 'static const int DEX_TX_PIN  = 18;'],
 ];
-
 for (const [key, expected, sourceNeedle] of pinContracts) {
   requireCondition(pins[key] === expected, `${key} must remain GPIO${expected}`);
   requireCondition(firmware.includes(sourceNeedle), `firmware pin contract drifted: ${sourceNeedle}`);
@@ -125,7 +190,7 @@ requireCondition(components.isolated_dex?.direct_esp32_connection_allowed === fa
 requireCondition(components.dex_up_translation?.part === 'SN74AHCT1G125', 'DEX 3.3V->5V validation candidate must remain SN74AHCT1G125 until schematic review');
 requireCondition(components.dex_down_translation?.part === 'SN74LVC1G17', 'DEX 5V->3.3V validation candidate must remain SN74LVC1G17 until schematic review');
 
-requireCondition(schematicDefinition.includes('No optocoupler LED resistor, comparator threshold, pull-up or clamp values are frozen'), 'schematic definition must keep MDB input values in validation state');
+requireCondition(schematicDefinition.includes('No optocoupler LED resistor, comparator threshold, pull-up or clamp values are frozen'), 'base schematic definition must still identify MDB values as a validation concern');
 requireCondition(powerIntegration.includes('pin 6 REMOTE_ON_OFF'), 'power CAD input must define PS1 remote-control handling');
 requireCondition(powerIntegration.includes('2 A fast-blow'), 'power CAD input must preserve the UEI15 family fuse recommendation');
 requireCondition(powerIntegration.includes('6.3 mm'), 'power CAD input must preserve the Murata primary/secondary barrier guidance');
@@ -136,6 +201,11 @@ requireCondition(mdbIntegration.includes('TLV3202-Q1'), 'MDB integration must in
 requireCondition(mdbIntegration.includes('ISO7720'), 'MDB integration must include the dual digital isolator');
 requireCondition(mdbIntegration.includes('<=50 uA'), 'MDB integration must document the conservative loading target');
 requireCondition(mdbIntegration.includes('10,000'), 'MDB integration must document the replay/decode validation size');
+requireCondition(mdbEvt.includes('100 kΩ'), 'MDB EVT population must document 100k raw/reference candidates');
+requireCondition(mdbEvt.includes('2.2 MΩ'), 'MDB EVT population must document 2.2M positive feedback');
+requireCondition(mdbEvt.includes('DNI by default'), 'MDB EVT raw input capacitors must default to DNI');
+requireCondition(mdbEvt.includes('2.386 V'), 'MDB EVT document must state calculated lower threshold');
+requireCondition(mdbEvt.includes('2.614 V'), 'MDB EVT document must state calculated upper threshold');
 
 for (const requiredTest of ['MDB-LD-02', 'MDB-LD-06', 'MDB-TH-05', 'MDB-TM-01', 'MDB-TM-02', 'MDB-DP-01', 'MDB-ISO-04']) {
   requireCondition(mdbValidation.includes(requiredTest), `MDB validation matrix missing ${requiredTest}`);
@@ -151,7 +221,8 @@ requireCondition(cad.adm3251e_charge_pump_capacitance_uf === 0.1, 'ADM3251E char
 requireCondition(cad.adm3251e_viso_external_load_allowed === false, 'ADM3251E VISO must not be exposed as an external power source');
 requireCondition(cad.mdb_sense_supply_negative_tied_only_to_mdb_comm_common === true, 'MDB sensing supply return must remain MDB_COMM_COMMON only');
 requireCondition(cad.mdb_comparator_outputs_cross_digital_isolator_before_esp32 === true, 'MDB comparator outputs must cross an isolator before ESP32');
-requireCondition(cad.mdb_input_divider_and_hysteresis_values_frozen === false, 'MDB divider/hysteresis values must remain unfrozen before bench data');
+requireCondition(cad.mdb_evt_population_values_present === true, 'CAD contract must identify the bench-only MDB EVT population');
+requireCondition(cad.mdb_input_values_locked_for_production === false, 'MDB EVT values must remain unlocked for production');
 requireCondition(cad.cad_connection_table_present === true, 'CAD connection table must remain required');
 
 for (const connection of [
@@ -161,6 +232,13 @@ for (const connection of [
   'PS1,5 -VOUT,LOGIC_GND,LOGIC',
   'PS_MDB,VOUT+,MDB_SENSE_5V,MDB_SENSE',
   'PS_MDB,VOUT-,MDB_COMM_COMMON,MDB_SENSE',
+  'R_MDB_TX_SER,1,MDB_MASTER_TX_RAW,MDB_SENSE',
+  'R_MDB_TX_SER,2,MDB_TX_SENSE_NODE,MDB_SENSE',
+  'R_MDB_RX_SER,1,MDB_MASTER_RX_RAW,MDB_SENSE',
+  'R_MDB_HYS_A,2,MDB_TX_SENSE_NODE,MDB_SENSE',
+  'R_MDB_HYS_B,2,MDB_RX_SENSE_NODE,MDB_SENSE',
+  'U_MDB_CMP,INA+,MDB_TX_SENSE_NODE,MDB_SENSE',
+  'U_MDB_CMP,INA-,MDB_THRESHOLD_REF,MDB_SENSE',
   'U_MDB_CMP,OUTA,MDB_TX_SENSE_LOGIC,MDB_SENSE',
   'U_MDB_CMP,OUTB,MDB_RX_SENSE_LOGIC,MDB_SENSE',
   'U_MDB_ISO,OUT_A,MDB_TX_MON_3V3,LOGIC',
@@ -173,21 +251,40 @@ for (const connection of [
 ]) {
   requireCondition(cadConnections.includes(connection), `CAD connection table missing required connection: ${connection}`);
 }
+requireCondition(!cadConnections.includes('R_MDB_TX_BOTTOM'), 'old raw-line divider-to-common element must not return in EVT CAD table');
+requireCondition(!cadConnections.includes('R_MDB_RX_BOTTOM'), 'old raw-line divider-to-common element must not return in EVT CAD table');
 requireCondition(!cadConnections.includes('MDB_MASTER_TX_RAW,LOGIC'), 'raw MDB Master-TX must never enter logic domain directly');
 requireCondition(!cadConnections.includes('MDB_MASTER_RX_RAW,LOGIC'), 'raw MDB Master-RX must never enter logic domain directly');
 requireCondition(!cadConnections.includes('U_DEX,8 ROUT,DEX_RX_3V3'), 'ADM3251E ROUT must not connect directly to ESP32 3.3V receive net');
 requireCondition(!cadConnections.includes('U_DEX,9 TIN,DEX_TX_3V3'), 'ESP32 3.3V transmit net must not connect directly to ADM3251E TIN');
 
+for (const bomNeedle of [
+  'R_MDB_TX_SER,MDB pin5 raw series sense resistor,100k',
+  'R_MDB_RX_SER,MDB pin4 raw series sense resistor,100k',
+  'R_MDB_REF_TOP,MDB comparator reference divider top,100k',
+  'R_MDB_REF_BOTTOM,MDB comparator reference divider bottom,100k',
+  'R_MDB_HYS_A,MDB pin5 comparator positive feedback,2.2M',
+  'R_MDB_HYS_B,MDB pin4 comparator positive feedback,2.2M',
+  'C_MDB_TX_IN,MDB pin5 optional raw-input filter footprint,10pF',
+  'C_MDB_RX_IN,MDB pin4 optional raw-input filter footprint,10pF',
+  'C_MDB_REF,MDB comparator reference bypass,10nF',
+]) {
+  requireCondition(bom.includes(bomNeedle), `BOM missing MDB EVT population: ${bomNeedle}`);
+}
+requireCondition(bom.includes('D_MDB_TX_PROTECT') && bom.includes('DNI/TBD'), 'MDB TX protection must remain DNI/TBD');
+requireCondition(bom.includes('D_MDB_RX_PROTECT') && bom.includes('DNI/TBD'), 'MDB RX protection must remain DNI/TBD');
+
 const schematicState = contract.schematic_state ?? {};
-requireCondition(schematicState.mdb_master_tx_input_network_values === 'validation', 'MDB Master-TX input network values must remain validation-only until bench data exists');
-requireCondition(schematicState.mdb_master_rx_input_network_values === 'validation', 'MDB Master-RX input network values must remain validation-only until bench data exists');
-requireCondition(schematicState.input_protection_values === 'validation', 'surge/reverse/filter values must remain validation-only until source/inrush data exists');
+requireCondition(schematicState.mdb_master_tx_input_network_values === 'evt_candidate_not_production', 'MDB Master-TX values must be EVT-only');
+requireCondition(schematicState.mdb_master_rx_input_network_values === 'evt_candidate_not_production', 'MDB Master-RX values must be EVT-only');
+requireCondition(schematicState.mdb_raw_line_protection_values === 'validation', 'MDB raw-line protection values must remain validation-only');
+requireCondition(schematicState.input_protection_values === 'validation', 'main power surge/reverse/filter values must remain validation-only until source/inrush data exists');
 requireCondition(schematicState.pcb_outline === 'not_locked', 'PCB outline must not be locked before isolation/layout validation');
 
 const gates = Object.values(contract.release_gates ?? {});
 const allReleaseGatesPassed = gates.length > 0 && gates.every(Boolean);
 requireCondition(contract.field_use_allowed === allReleaseGatesPassed, 'field_use_allowed may only become true when every release gate is true');
-requireCondition(contract.manufacturing_release_allowed === false, 'manufacturing_release_allowed must remain false during MDB front-end validation definition');
+requireCondition(contract.manufacturing_release_allowed === false, 'manufacturing_release_allowed must remain false during MDB EVT population definition');
 
 if (errors.length) {
   console.error('Telemetry hardware contract check failed:');
@@ -196,5 +293,6 @@ if (errors.length) {
 }
 
 console.log('Telemetry Rev-B hardware contract passed.');
+console.log(`MDB EVT thresholds: ${thresholdLow.toFixed(3)}V / ${thresholdHigh.toFixed(3)}V; hysteresis ${hysteresisMv.toFixed(1)}mV; optional RC ${rcTauUs.toFixed(2)}us.`);
 console.log(`Field use allowed: ${contract.field_use_allowed ? 'YES' : 'NO - validation gates remain open'}`);
-console.log(`Manufacturing release allowed: ${contract.manufacturing_release_allowed ? 'YES' : 'NO - MDB/front-end validation not complete'}`);
+console.log(`Manufacturing release allowed: ${contract.manufacturing_release_allowed ? 'YES' : 'NO - MDB EVT values remain bench-only'}`);
