@@ -1,0 +1,28 @@
+Net,Node A,Node B,Domain,Rule
+ISO_5V_IN,J_LOGIC_TEST pin1,PS_MDB VIN+,LOGIC,5V logic-side bench input only
+LOGIC_GND,J_LOGIC_TEST pin2,PS_MDB VIN-,LOGIC,Must never connect to MDB_COMM_COMMON
+3V3_LOGIC_IN,J_LOGIC_TEST pin3,U_ISO VCC2,LOGIC,Regulated 3.3V logic input
+MDB_TX_MON_3V3,J_LOGIC_TEST pin4,U_ISO OUT_A,LOGIC,To GPIO4 or logic analyser only
+MDB_RX_MON_3V3,J_LOGIC_TEST pin5,U_ISO OUT_B,LOGIC,To GPIO5 or logic analyser only
+MDB_MASTER_TX_RAW,J_MDB_TEST pin1,R_TX_SER pin1,MDB_SENSE,MDB pin5 observation only
+MDB_MASTER_RX_RAW,J_MDB_TEST pin2,R_RX_SER pin1,MDB_SENSE,MDB pin4 observation only
+MDB_COMM_COMMON,J_MDB_TEST pin3,PS_MDB VOUT-,MDB_SENSE,MDB pin6 communications reference only
+MDB_SENSE_5V,PS_MDB VOUT+,U_CMP VCC,MDB_SENSE,Regulated isolated 5V sense rail
+MDB_SENSE_5V,PS_MDB VOUT+,U_ISO VCC1,MDB_SENSE,Digital isolator sense-side supply
+MDB_TX_SENSE_NODE,R_TX_SER pin2,U_CMP INA+,MDB_SENSE,High-impedance Master-TX comparator node
+MDB_TX_SENSE_NODE,R_HYS_A pin2,C_TX_IN pin1,MDB_SENSE,Feedback/filter node
+MDB_RX_SENSE_NODE,R_RX_SER pin2,U_CMP INB+,MDB_SENSE,High-impedance Master-RX comparator node
+MDB_RX_SENSE_NODE,R_HYS_B pin2,C_RX_IN pin1,MDB_SENSE,Feedback/filter node
+MDB_THRESHOLD_REF,R_REF_TOP pin2,R_REF_BOTTOM pin1,MDB_SENSE,Nominal 2.5V reference at 5.0V sense supply
+MDB_THRESHOLD_REF,U_CMP INA-,U_CMP INB-,MDB_SENSE,Shared comparator reference
+MDB_THRESHOLD_REF,C_REF pin1,TP_REF,MDB_SENSE,Reference bypass/test point
+MDB_TX_SENSE_LOGIC,U_CMP OUTA,R_HYS_A pin1,MDB_SENSE,Comparator A output/positive feedback
+MDB_TX_SENSE_LOGIC,U_CMP OUTA,U_ISO IN_A,MDB_SENSE,Machine-side digital input to isolator
+MDB_RX_SENSE_LOGIC,U_CMP OUTB,R_HYS_B pin1,MDB_SENSE,Comparator B output/positive feedback
+MDB_RX_SENSE_LOGIC,U_CMP OUTB,U_ISO IN_B,MDB_SENSE,Machine-side digital input to isolator
+MDB_COMM_COMMON,R_REF_BOTTOM pin2,C_REF pin2,MDB_SENSE,Reference return
+MDB_COMM_COMMON,C_TX_IN pin2,C_RX_IN pin2,MDB_SENSE,Optional input-filter return; capacitors default DNI
+MDB_COMM_COMMON,U_CMP GND,U_ISO GND1,MDB_SENSE,Sense-domain IC return
+LOGIC_GND,U_ISO GND2,J_LOGIC_TEST pin2,LOGIC,Logic-side isolator return
+DNI_TX_PROTECTION,D_TX_PROTECT network,MDB_MASTER_TX_RAW/MDB_TX_SENSE_NODE/MDB_COMM_COMMON,MDB_SENSE,Unpopulated until leakage/transient validation
+DNI_RX_PROTECTION,D_RX_PROTECT network,MDB_MASTER_RX_RAW/MDB_RX_SENSE_NODE/MDB_COMM_COMMON,MDB_SENSE,Unpopulated until leakage/transient validation

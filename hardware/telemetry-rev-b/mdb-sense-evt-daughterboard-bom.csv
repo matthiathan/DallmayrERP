@@ -1,0 +1,34 @@
+RefDes,Function,Part/value,Manufacturer,Population,Footprint status,Notes
+PS_MDB,Regulated isolated MDB sense supply,NXF1S0505MC,Murata Power Solutions,POPULATE,Verify current datasheet land pattern,"5V logic-side input; isolated regulated 5V sense-side output; secondary return=MDB_COMM_COMMON"
+U_CMP,Dual MDB comparator,TLV3202-Q1,Texas Instruments,POPULATE,Select orderable package then verify datasheet land pattern,"Powered from MDB_SENSE_5V; no direct logic-ground connection"
+U_ISO,Dual machine-to-logic digital isolator,ISO7720,Texas Instruments,POPULATE,Select isolation/package grade then verify datasheet land pattern,"Both data channels MDB sense side -> 3V3 logic side"
+R_TX_SER,Master-TX raw series resistor,100k 1%,TBD,POPULATE,0603/0805 candidate,"Bench-only value; voltage/pulse rating to be reviewed after raw transient capture"
+R_RX_SER,Master-RX raw series resistor,100k 1%,TBD,POPULATE,0603/0805 candidate,"Bench-only value; voltage/pulse rating to be reviewed after raw transient capture"
+R_REF_TOP,Comparator reference divider top,100k 1%,TBD,POPULATE,0603 candidate,"MDB_SENSE_5V to MDB_THRESHOLD_REF"
+R_REF_BOTTOM,Comparator reference divider bottom,100k 1%,TBD,POPULATE,0603 candidate,"MDB_THRESHOLD_REF to MDB_COMM_COMMON"
+R_HYS_A,Master-TX positive feedback,2.2M 1%,TBD,POPULATE,0603/0805 candidate,"Comparator OUTA to TX sense node"
+R_HYS_B,Master-RX positive feedback,2.2M 1%,TBD,POPULATE,0603/0805 candidate,"Comparator OUTB to RX sense node"
+C_REF,Reference bypass,10nF ceramic,TBD,POPULATE,0603 candidate,"MDB_THRESHOLD_REF to MDB_COMM_COMMON"
+C_CMP,Comparator bypass,0.1uF ceramic,TBD,POPULATE,0603 candidate,"MDB_SENSE_5V to MDB_COMM_COMMON; place close to U_CMP"
+C_ISO1,Isolator side-1 bypass,0.1uF ceramic,TBD,POPULATE,0603 candidate,"MDB_SENSE_5V to MDB_COMM_COMMON; place close to U_ISO"
+C_ISO2,Isolator side-2 bypass,0.1uF ceramic,TBD,POPULATE,0603 candidate,"3V3_LOGIC_IN to LOGIC_GND; place close to U_ISO"
+C_TX_IN,Optional Master-TX raw filter,10pF C0G/NP0,TBD,DNI,0603 candidate,"Footprint fitted but unpopulated for first measurements"
+C_RX_IN,Optional Master-RX raw filter,10pF C0G/NP0,TBD,DNI,0603 candidate,"Footprint fitted but unpopulated for first measurements"
+D_TX_PROTECT,Master-TX protection footprint,TBD,TBD,DNI,TBD after transient/leakage capture,"Must be low leakage/capacitance and non-conducting during valid MDB levels"
+D_RX_PROTECT,Master-RX protection footprint,TBD,TBD,DNI,TBD after transient/leakage capture,"Must be low leakage/capacitance and non-conducting during valid MDB levels"
+J_MDB_TEST,Simulator/MDB communications connector,3 position keyed header,TBD,POPULATE,TBD,"Only MDB pin5 raw; pin4 raw; pin6 communications common; no power pins"
+J_LOGIC_TEST,Logic-side bench connector,5 position keyed header,TBD,POPULATE,TBD,"ISO_5V_IN; LOGIC_GND; 3V3_LOGIC_IN; GPIO4 output; GPIO5 output"
+TP_TX_RAW,Master-TX raw test point,Test point,TBD,POPULATE,TBD,Machine/sense side
+TP_RX_RAW,Master-RX raw test point,Test point,TBD,POPULATE,TBD,Machine/sense side
+TP_MDB_COMMON,MDB communications common test point,Test point,TBD,POPULATE,TBD,Machine/sense side
+TP_MDB_SENSE5,Isolated sense 5V test point,Test point,TBD,POPULATE,TBD,Machine/sense side
+TP_TX_NODE,Master-TX comparator node test point,Test point,TBD,POPULATE,TBD,Machine/sense side
+TP_RX_NODE,Master-RX comparator node test point,Test point,TBD,POPULATE,TBD,Machine/sense side
+TP_REF,Comparator reference test point,Test point,TBD,POPULATE,TBD,Machine/sense side
+TP_CMP_TX,Comparator TX output test point,Test point,TBD,POPULATE,TBD,Machine/sense side before digital isolation
+TP_CMP_RX,Comparator RX output test point,Test point,TBD,POPULATE,TBD,Machine/sense side before digital isolation
+TP_5V_IN,Logic 5V input test point,Test point,TBD,POPULATE,TBD,Logic side
+TP_3V3,Logic 3.3V input test point,Test point,TBD,POPULATE,TBD,Logic side
+TP_LGND,Logic ground test point,Test point,TBD,POPULATE,TBD,Logic side
+TP_GPIO4,Isolated Master-TX logic output test point,Test point,TBD,POPULATE,TBD,Logic side
+TP_GPIO5,Isolated Master-RX logic output test point,Test point,TBD,POPULATE,TBD,Logic side

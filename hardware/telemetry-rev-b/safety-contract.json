@@ -60,6 +60,32 @@
     "protection_clamps_locked": false,
     "bench_population_only": true
   },
+  "validation_fixture": {
+    "name": "MDB-SENSE-EVT-A",
+    "purpose": "isolated MDB receive-front-end bench and simulator validation",
+    "bench_only": true,
+    "live_machine_use_allowed": false,
+    "includes_mdb_pin1_power": false,
+    "includes_mdb_pin2_power_return": false,
+    "includes_mdb_pin3": false,
+    "mdb_external_signals": [
+      "MDB_MASTER_TX_RAW",
+      "MDB_MASTER_RX_RAW",
+      "MDB_COMM_COMMON"
+    ],
+    "logic_external_signals": [
+      "ISO_5V_IN",
+      "LOGIC_GND",
+      "3V3_LOGIC_IN",
+      "MDB_TX_MON_3V3",
+      "MDB_RX_MON_3V3"
+    ],
+    "raw_protection_population_default": "DNI/TBD",
+    "optional_input_caps_default": "DNI",
+    "daughterboard_bom_present": true,
+    "daughterboard_netlist_present": true,
+    "results_template_present": true
+  },
   "firmware_pin_contract": {
     "cell_rx_gpio": 1,
     "cell_tx_gpio": 2,
