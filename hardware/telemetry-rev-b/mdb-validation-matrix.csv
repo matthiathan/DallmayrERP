@@ -1,0 +1,25 @@
+Test ID,Channel,Condition,Measurement,Acceptance,Release gate
+MDB-LD-01,Pin5 Master TX,Idle baseline disconnected,Raw voltage/current,Record baseline only,mdb_passive_loading_test
+MDB-LD-02,Pin5 Master TX,Idle with sense front end,Additional steady-state line current,<=50 uA design target,mdb_passive_loading_test
+MDB-LD-03,Pin5 Master TX,Active baseline disconnected,Raw active voltage/current,Record baseline only,mdb_passive_loading_test
+MDB-LD-04,Pin5 Master TX,Active with sense front end,Additional steady-state line current,<=50 uA design target,mdb_passive_loading_test
+MDB-LD-05,Pin4 Master RX,Idle baseline disconnected,Raw voltage/current,Record baseline only,mdb_passive_loading_test
+MDB-LD-06,Pin4 Master RX,Idle with sense front end,Additional steady-state line current,<=50 uA design target,mdb_passive_loading_test
+MDB-LD-07,Pin4 Master RX,Active baseline disconnected,Raw active voltage/current,Record baseline only,mdb_passive_loading_test
+MDB-LD-08,Pin4 Master RX,Active with sense front end,Additional steady-state line current,<=50 uA design target,mdb_passive_loading_test
+MDB-TH-01,Pin5 Master TX,Minimum measured active level,Comparator threshold margin,Threshold separated from active and inactive levels with engineering margin,mdb_threshold_margin_test
+MDB-TH-02,Pin5 Master TX,Maximum measured inactive/noise level,Comparator threshold margin,No chatter or false transitions,mdb_threshold_margin_test
+MDB-TH-03,Pin4 Master RX,Minimum measured inactive/high level,Comparator threshold margin,Threshold separated from active and inactive levels with engineering margin,mdb_threshold_margin_test
+MDB-TH-04,Pin4 Master RX,Maximum measured active/low level,Comparator threshold margin,No chatter or false transitions,mdb_threshold_margin_test
+MDB-TH-05,Both,Slow threshold sweep,Raw-equivalent hysteresis,100-400 mV target,mdb_threshold_margin_test
+MDB-TM-01,Pin5 Master TX,9600-baud repeated pattern,Raw crossing to GPIO4 delay,<=5 us both edges,mdb_timing_test
+MDB-TM-02,Pin4 Master RX,9600-baud repeated pattern,Raw crossing to GPIO5 delay,<=5 us both edges,mdb_timing_test
+MDB-TM-03,Both,Alternating 0x55/0xAA patterns,Pulse-width distortion,No bit-cell misclassification by production RMT decoder,mdb_timing_test
+MDB-DP-01,Both,10,000 known simulator frames,Hardware-induced checksum/framing errors,0,mdb_10000_frame_decode_test
+MDB-DP-02,Both,Normal attached MDB peripherals,Peripheral communication behavior,No new timeouts retries resets or vend failures,mdb_simulator_test
+MDB-ISO-01,MDB sense domain,Unpowered continuity,MDB_COMM_COMMON to LOGIC_GND,No DC continuity,usb_isolation_test
+MDB-ISO-02,MDB sense domain,Unpowered continuity,MDB_COMM_COMMON to USB_GND,No DC continuity,usb_isolation_test
+MDB-ISO-03,MDB sense domain,Unpowered continuity,MDB_COMM_COMMON to MACH_PWR_RETURN,No intentional copper continuity,bare_board_isolation_test
+MDB-ISO-04,MDB sense domain,USB attached while powered,USB ground to MDB_COMM_COMMON,No DC continuity created,usb_isolation_test
+MDB-PWR-01,MDB sense power,ISO_5V nominal,MDB_SENSE_5V,Within TLV3202-Q1 and ISO7720 side-1 supply limits,mdb_threshold_margin_test
+MDB-PWR-02,MDB sense power,Minimum and maximum expected logic load,MDB_SENSE_5V regulation,No out-of-range comparator/isolator supply,mdb_threshold_margin_test

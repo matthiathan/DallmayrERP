@@ -2,9 +2,9 @@ RefDes,Pin/Function,Net,Domain,Connection rule
 J_MDB,1,MACH_34V_IN,MACHINE,Input power only
 J_MDB,2,MACH_PWR_RETURN,MACHINE,PS1 primary return only
 J_MDB,3,NC,MACHINE,No electrical connection
-J_MDB,4,MDB_MASTER_RX_RAW,MACHINE,Passive sense channel B only
-J_MDB,5,MDB_MASTER_TX_RAW,MACHINE,Passive sense channel A only
-J_MDB,6,MDB_COMM_COMMON,MACHINE,MDB sensing reference only
+J_MDB,4,MDB_MASTER_RX_RAW,MACHINE,Passive high-impedance sense channel B only
+J_MDB,5,MDB_MASTER_TX_RAW,MACHINE,Passive high-impedance sense channel A only
+J_MDB,6,MDB_COMM_COMMON,MDB_SENSE,Communications reference and isolated sense-domain return only
 F1,IN,MACH_34V_IN,MACHINE,From J_MDB pin1
 F1,OUT,MACH_34V_FUSED,MACHINE,To reverse-polarity stage
 Q_RP,IN,MACH_34V_FUSED,MACHINE,Reverse protection input
@@ -32,12 +32,46 @@ ESP32,GPIO17,DEX_RX_3V3,LOGIC,DEX receive
 ESP32,GPIO18,DEX_TX_3V3,LOGIC,DEX transmit
 ESP32,5V,ISO_5V,LOGIC,Validation carrier power
 ESP32,GND,LOGIC_GND,LOGIC,Logic ground
-U_MDB_TX_SENSE,FIELD_IN,MDB_MASTER_TX_RAW,MACHINE,Values/topology pending loading validation
-U_MDB_TX_SENSE,FIELD_REF,MDB_COMM_COMMON,MACHINE,Only if validated sensing topology requires it
-U_MDB_TX_SENSE,LOGIC_OUT,MDB_TX_MON_3V3,LOGIC,Galvanically isolated receive-only output
-U_MDB_RX_SENSE,FIELD_IN,MDB_MASTER_RX_RAW,MACHINE,Values/topology pending loading validation
-U_MDB_RX_SENSE,FIELD_REF,MDB_COMM_COMMON,MACHINE,Only if validated sensing topology requires it
-U_MDB_RX_SENSE,LOGIC_OUT,MDB_RX_MON_3V3,LOGIC,Galvanically isolated receive-only output
+PS_MDB,VIN+,ISO_5V,LOGIC,NXF1S0505MC primary positive
+PS_MDB,VIN-,LOGIC_GND,LOGIC,NXF1S0505MC primary return
+PS_MDB,VOUT+,MDB_SENSE_5V,MDB_SENSE,Regulated isolated 5V for MDB comparator and isolator side 1 only
+PS_MDB,VOUT-,MDB_COMM_COMMON,MDB_SENSE,Secondary return tied only to MDB communications common
+R_MDB_TX_TOP,IN,MDB_MASTER_TX_RAW,MDB_SENSE,High-value protected input; value validation-only
+R_MDB_TX_TOP,OUT,MDB_TX_DIV,MDB_SENSE,To comparator channel A divider node
+R_MDB_TX_BOTTOM,1,MDB_TX_DIV,MDB_SENSE,Divider lower element
+R_MDB_TX_BOTTOM,2,MDB_COMM_COMMON,MDB_SENSE,Return; total line loading target <=50uA
+R_MDB_RX_TOP,IN,MDB_MASTER_RX_RAW,MDB_SENSE,High-value protected input; value validation-only
+R_MDB_RX_TOP,OUT,MDB_RX_DIV,MDB_SENSE,To comparator channel B divider node
+R_MDB_RX_BOTTOM,1,MDB_RX_DIV,MDB_SENSE,Divider lower element
+R_MDB_RX_BOTTOM,2,MDB_COMM_COMMON,MDB_SENSE,Return; total line loading target <=50uA
+R_MDB_REF_TOP,1,MDB_SENSE_5V,MDB_SENSE,Comparator reference divider top
+R_MDB_REF_TOP,2,MDB_THRESHOLD_REF,MDB_SENSE,Threshold node; exact value validation-only
+R_MDB_REF_BOTTOM,1,MDB_THRESHOLD_REF,MDB_SENSE,Comparator reference divider bottom
+R_MDB_REF_BOTTOM,2,MDB_COMM_COMMON,MDB_SENSE,Threshold reference return
+U_MDB_CMP,VCC,MDB_SENSE_5V,MDB_SENSE,TLV3202-Q1 candidate
+U_MDB_CMP,GND,MDB_COMM_COMMON,MDB_SENSE,MDB communications-domain reference only
+U_MDB_CMP,INA,MDB_TX_DIV,MDB_SENSE,Master-TX divided sense input
+U_MDB_CMP,INB,MDB_RX_DIV,MDB_SENSE,Master-RX divided sense input
+U_MDB_CMP,REF_A,MDB_THRESHOLD_REF,MDB_SENSE,Exact comparator polarity chosen after captured waveforms
+U_MDB_CMP,REF_B,MDB_THRESHOLD_REF,MDB_SENSE,Independent hysteresis allowed per channel
+U_MDB_CMP,OUTA,MDB_TX_SENSE_LOGIC,MDB_SENSE,Machine-side logic output only
+U_MDB_CMP,OUTB,MDB_RX_SENSE_LOGIC,MDB_SENSE,Machine-side logic output only
+R_MDB_HYS_A,NETWORK,MDB_TX_SENSE_LOGIC/MDB_TX_DIV,MDB_SENSE,Raw-equivalent hysteresis target 100-400mV; value validation-only
+R_MDB_HYS_B,NETWORK,MDB_RX_SENSE_LOGIC/MDB_RX_DIV,MDB_SENSE,Raw-equivalent hysteresis target 100-400mV; value validation-only
+U_MDB_ISO,VCC1,MDB_SENSE_5V,MDB_SENSE,ISO7720 machine-side supply
+U_MDB_ISO,GND1,MDB_COMM_COMMON,MDB_SENSE,ISO7720 machine-side return
+U_MDB_ISO,IN_A,MDB_TX_SENSE_LOGIC,MDB_SENSE,Comparator A to isolator only
+U_MDB_ISO,IN_B,MDB_RX_SENSE_LOGIC,MDB_SENSE,Comparator B to isolator only
+U_MDB_ISO,VCC2,3V3_LOGIC,LOGIC,ISO7720 ESP32-side supply
+U_MDB_ISO,GND2,LOGIC_GND,LOGIC,ISO7720 ESP32-side return
+U_MDB_ISO,OUT_A,MDB_TX_MON_3V3,LOGIC,To ESP32 GPIO4
+U_MDB_ISO,OUT_B,MDB_RX_MON_3V3,LOGIC,To ESP32 GPIO5
+C_MDB_CMP,1,MDB_SENSE_5V,MDB_SENSE,0.1uF local bypass at comparator
+C_MDB_CMP,2,MDB_COMM_COMMON,MDB_SENSE,Bypass return
+C_MDB_ISO1,1,MDB_SENSE_5V,MDB_SENSE,0.1uF local bypass at isolator side1
+C_MDB_ISO1,2,MDB_COMM_COMMON,MDB_SENSE,Bypass return
+C_MDB_ISO2,1,3V3_LOGIC,LOGIC,0.1uF local bypass at isolator side2
+C_MDB_ISO2,2,LOGIC_GND,LOGIC,Bypass return
 U_DEX_UP,VCC,ISO_5V,LOGIC,SN74AHCT1G125 candidate
 U_DEX_UP,GND,LOGIC_GND,LOGIC,Logic return
 U_DEX_UP,/OE,LOGIC_GND,LOGIC,Always enabled in EVT
@@ -85,7 +119,10 @@ J_DEX,COMMON,DEX_ISO_GND,DEX_ISOLATED,Machine DEX signal common only
 J_USB,GND,USB_GND,LOGIC,USB_GND belongs to logic domain
 TP_MACH_34V,TP,MACH_34V_IN,MACHINE,Machine-side labeled test point
 TP_MACH_RETURN,TP,MACH_PWR_RETURN,MACHINE,Machine-side labeled test point
-TP_MDB_COMMON,TP,MDB_COMM_COMMON,MACHINE,Machine-side labeled test point
+TP_MDB_COMMON,TP,MDB_COMM_COMMON,MDB_SENSE,MDB communications-domain labeled test point
+TP_MDB_SENSE5,TP,MDB_SENSE_5V,MDB_SENSE,Isolated MDB sense supply test point
+TP_MDB_TX_RAW,TP,MDB_MASTER_TX_RAW,MDB_SENSE,Master-TX raw waveform test point
+TP_MDB_RX_RAW,TP,MDB_MASTER_RX_RAW,MDB_SENSE,Master-RX raw waveform test point
 TP_ISO5,TP,ISO_5V,LOGIC,Logic-side labeled test point
 TP_3V3,TP,3V3_LOGIC,LOGIC,Logic-side labeled test point
 TP_LOGIC_GND,TP,LOGIC_GND,LOGIC,Logic-side labeled test point
