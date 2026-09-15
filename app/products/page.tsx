@@ -1,3 +1,4 @@
+import { FleetMachineSelectionCatalog } from '@/components/features/FleetMachineSelectionCatalog';
 import { ProductMappingWorkspace } from '@/components/features/ProductMappingWorkspace';
 import { AppShell } from '@/components/layout/AppShell';
 import { SpecialistWorkspaceFrame } from '@/components/telemetry-platform/SpecialistWorkspaceFrame';
@@ -10,6 +11,7 @@ export default function ProductsPage() {
         description="Map machine buttons and telemetry selections to Dallmayr product names."
         title="Products"
       >
+        <FleetMachineSelectionCatalog />
         <ProductMappingWorkspace />
       </SpecialistWorkspaceFrame>
     </AppShell>
