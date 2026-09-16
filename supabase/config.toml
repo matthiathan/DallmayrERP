@@ -6,3 +6,6 @@ verify_jwt = true
 
 [functions.telemetry-enroll]
 verify_jwt = true
+
+[functions.telemetry-ai-insights]
+verify_jwt = true
