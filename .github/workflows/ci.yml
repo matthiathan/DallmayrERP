@@ -40,15 +40,15 @@ jobs:
       - name: Check MDB sensing EVT fixture safety
         run: node scripts/check-mdb-sense-evt-fixture.mjs
 
-      - name: Generate V6.8.49 ESP32 telemetry firmware
-        run: npm run firmware:generate:v649
+      - name: Generate V6.8.50 ESP32 telemetry firmware
+        run: npm run firmware:generate:v650
 
-      - name: Publish V6.8.49 ESP32 telemetry firmware
+      - name: Publish V6.8.50 ESP32 telemetry firmware
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dallmayr-telemetry-v6-8-49
-          path: firmware/DallmayrTelemetryV6_8_49/DallmayrTelemetryV6_8_49.ino
+          name: dallmayr-telemetry-v6-8-50
+          path: firmware/DallmayrTelemetryV6_8_50/DallmayrTelemetryV6_8_50.ino
           if-no-files-found: error
           retention-days: 30
 
