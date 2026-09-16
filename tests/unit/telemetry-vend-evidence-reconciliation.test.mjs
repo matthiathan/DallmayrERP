@@ -10,6 +10,10 @@ const ambiguityMigration = fs.readFileSync(
   new URL('../../supabase/migrations/20260915134000_preserve_identity_ambiguity_in_product_mapping.sql', import.meta.url),
   'utf8',
 );
+const reconciliationSecurityMigration = fs.readFileSync(
+  new URL('../../supabase/migrations/20260916053000_vend_reconciliation_security_invoker.sql', import.meta.url),
+  'utf8',
+);
 
 const recordFunction = migration.match(
   /create or replace function public\.record_telemetry_vend_evidence[\s\S]*?\$function\$;/i,
@@ -93,4 +97,13 @@ test('reconciliation deduplicates correlated completion signals and compares the
   assert.match(migration, /dex_evidence_ahead/i);
   assert.match(migration, /counter_only/i);
   assert.match(migration, /evidence_only/i);
+});
+
+test('reconciliation runs as security invoker so source-table RLS remains authoritative', () => {
+  assert.match(
+    reconciliationSecurityMigration,
+    /alter function public\.get_telemetry_vend_reconciliation\(integer, uuid\)[\s\S]*security invoker/i,
+  );
+  assert.match(reconciliationSecurityMigration, /from public, anon/i);
+  assert.match(reconciliationSecurityMigration, /to authenticated, service_role/i);
 });
