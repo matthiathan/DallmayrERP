@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 const migration = fs.readFileSync('supabase/migrations/20260916093500_separate_platform_fault_diagnostics.sql', 'utf8');
+const separation = fs.readFileSync('supabase/migrations/20260916093700_enforce_platform_fault_separation.sql', 'utf8');
 const panel = fs.readFileSync('components/telemetry-platform/FaultIntelligencePanel.tsx', 'utf8');
 
 test('known telemetry diagnostics live outside manufacturer profile rules', () => {
@@ -17,6 +18,13 @@ test('fault normalization supports a distinct telemetry diagnostic status', () =
   assert.match(migration, /create or replace function public\.ingest_telemetry_payload_v7/i);
   assert.match(migration, /select public\.ingest_telemetry_payload_v7\(p_device_id, p_payload\)/i);
   assert.match(migration, /normalization_status = 'telemetry_diagnostic'/i);
+});
+
+test('platform diagnostics cannot retain machine profile rule associations', () => {
+  assert.match(separation, /new\.normalization_status = 'telemetry_diagnostic'/i);
+  assert.match(separation, /new\.profile_key := null/i);
+  assert.match(separation, /new\.fault_rule_id := null/i);
+  assert.match(separation, /before insert or update of normalization_status, profile_key, fault_rule_id/i);
 });
 
 test('stable V3 remains service-role only after V7 routing', () => {
