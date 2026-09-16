@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const migration = fs.readFileSync('supabase/migrations/20260916093500_separate_platform_fault_diagnostics.sql', 'utf8');
 const separation = fs.readFileSync('supabase/migrations/20260916093700_enforce_platform_fault_separation.sql', 'utf8');
+const locking = fs.readFileSync('supabase/migrations/20260916093800_lock_platform_fault_catalog_writes.sql', 'utf8');
 const panel = fs.readFileSync('components/telemetry-platform/FaultIntelligencePanel.tsx', 'utf8');
 
 test('known telemetry diagnostics live outside manufacturer profile rules', () => {
@@ -25,6 +26,12 @@ test('platform diagnostics cannot retain machine profile rule associations', () 
   assert.match(separation, /new\.profile_key := null/i);
   assert.match(separation, /new\.fault_rule_id := null/i);
   assert.match(separation, /before insert or update of normalization_status, profile_key, fault_rule_id/i);
+});
+
+test('platform diagnostic catalogue is read-only to authenticated app users', () => {
+  assert.match(locking, /revoke insert, update, delete, truncate, references, trigger[\s\S]*telemetry_platform_fault_codes[\s\S]*from authenticated/i);
+  assert.match(locking, /grant select on table public\.telemetry_platform_fault_codes to authenticated/i);
+  assert.match(locking, /grant all on table public\.telemetry_platform_fault_codes to service_role/i);
 });
 
 test('stable V3 remains service-role only after V7 routing', () => {
