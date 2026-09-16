@@ -41,11 +41,12 @@ function generatedLabel(value: string) {
   return `Generated ${date.toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' })}`;
 }
 
-export function TelemetryAiInsights() {
+export function TelemetryAiInsights({ machineId }: { machineId?: string }) {
   const [period, setPeriod] = useState<Period>('week');
   const [data, setData] = useState<InsightPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const machineScope = Boolean(machineId);
 
   const generate = async (refresh = false) => {
     setLoading(true);
@@ -53,7 +54,7 @@ export function TelemetryAiInsights() {
     try {
       const client = getSupabaseClient();
       const { data: result, error: invokeError } = await client.functions.invoke('telemetry-ai-insights', {
-        body: { period, refresh },
+        body: { period, refresh, machine_id: machineId ?? null },
       });
       if (invokeError) throw invokeError;
       if (!result || typeof result !== 'object' || !Array.isArray(result.insights)) {
@@ -68,12 +69,12 @@ export function TelemetryAiInsights() {
   };
 
   return (
-    <section className={styles.panel} aria-label="AI telemetry insights" data-ai-telemetry-insights="v1">
+    <section className={styles.panel} aria-label={machineScope ? 'AI machine telemetry insights' : 'AI fleet telemetry insights'} data-ai-telemetry-insights="v1">
       <header className={styles.header}>
         <div className={styles.heading}>
           <span className={styles.eyebrow}>Dallmayr AI</span>
-          <h1>Telemetry insights</h1>
-          <p>Operational analysis built only from telemetry available to your signed-in account.</p>
+          <h1>{machineScope ? 'Machine insights' : 'Telemetry insights'}</h1>
+          <p>{machineScope ? 'AI analysis restricted to this machine and its linked telemetry devices.' : 'Operational analysis built only from telemetry available to your signed-in account.'}</p>
         </div>
         <div className={styles.actions}>
           <label>
@@ -93,7 +94,7 @@ export function TelemetryAiInsights() {
       {!data && !loading ? (
         <div className={styles.empty}>
           <strong>AI analysis runs only when requested.</strong>
-          <span>Generate insights to review fleet health, faults, connectivity, vending performance, data usage, and SIM balance risks without adding API calls to normal dashboard refreshes.</span>
+          <span>{machineScope ? 'Generate insights to review this machine’s connectivity, active faults, telemetry usage, SIM state, and the sales evidence currently available.' : 'Generate insights to review fleet health, faults, connectivity, vending performance, data usage, and SIM balance risks without adding API calls to normal dashboard refreshes.'}</span>
         </div>
       ) : null}
 
