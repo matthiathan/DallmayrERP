@@ -1,6 +1,7 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { FaultIntelligencePanel } from '@/components/telemetry-platform/FaultIntelligencePanel';
 import { MachineDetail } from '@/components/telemetry-platform/MachineDetail';
+import { MachineTelemetryRegionControl } from '@/components/telemetry-platform/MachineTelemetryRegionControl';
 import { MachineVendReconciliationPanel } from '@/components/telemetry-platform/MachineVendReconciliationPanel';
 import { TelemetryAiInsights } from '@/components/telemetry-platform/TelemetryAiInsights';
 
@@ -10,6 +11,7 @@ export default async function MachineDetailsPage({ params }: { params: Promise<{
   return (
     <AppShell>
       <MachineDetail machineId={id} />
+      <MachineTelemetryRegionControl machineId={id} />
       <TelemetryAiInsights machineId={id} />
       <FaultIntelligencePanel machineId={id} />
       <MachineVendReconciliationPanel machineId={id} />
