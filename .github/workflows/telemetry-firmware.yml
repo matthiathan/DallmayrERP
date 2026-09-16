@@ -7,6 +7,7 @@ on:
       - 'scripts/generate-telemetry-v6-8-48.mjs'
       - 'scripts/generate-telemetry-v6-8-49.mjs'
       - 'scripts/generate-telemetry-v6-8-50.mjs'
+      - 'scripts/generate-telemetry-v6-8-50-release.mjs'
       - '.github/workflows/telemetry-firmware.yml'
   pull_request:
     paths:
@@ -14,6 +15,7 @@ on:
       - 'scripts/generate-telemetry-v6-8-48.mjs'
       - 'scripts/generate-telemetry-v6-8-49.mjs'
       - 'scripts/generate-telemetry-v6-8-50.mjs'
+      - 'scripts/generate-telemetry-v6-8-50-release.mjs'
       - '.github/workflows/telemetry-firmware.yml'
   workflow_dispatch:
 
@@ -34,7 +36,7 @@ jobs:
           node-version: 22
 
       - name: Generate V6.8.50 firmware
-        run: node scripts/generate-telemetry-v6-8-50.mjs
+        run: node scripts/generate-telemetry-v6-8-50-release.mjs
 
       - name: Install Arduino CLI
         uses: arduino/setup-arduino-cli@v2
