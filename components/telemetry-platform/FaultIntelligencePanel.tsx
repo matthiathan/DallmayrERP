@@ -1,9 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { getSupabaseClient } from '@/lib/supabase/client';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
+import { getSupabaseClient } from '@/lib/supabase/client';
 import styles from './FaultIntelligencePanel.module.css';
+
+type FaultStatus = 'raw' | 'verified_rule' | 'telemetry_diagnostic';
 
 type Fault = {
   id: string;
@@ -17,7 +19,7 @@ type Fault = {
   canonical_title: string | null;
   fault_category: string | null;
   recommended_action: string | null;
-  normalization_status: 'raw' | 'verified_rule';
+  normalization_status: FaultStatus;
   profile_key: string | null;
   started_at: string;
   last_seen_at: string;
@@ -85,10 +87,15 @@ function dateTime(value: string | null) {
   return new Date(value).toLocaleString('en-ZA', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
+function statusLabel(fault: Fault) {
+  if (fault.normalization_status === 'telemetry_diagnostic') return 'Telemetry diagnostic';
+  if (fault.normalization_status === 'verified_rule') return 'Verified machine interpretation';
+  return 'Raw / unverified machine fault';
+}
+
 function displayFault(fault: Fault) {
-  return fault.normalization_status === 'verified_rule' && fault.canonical_title
-    ? fault.canonical_title
-    : `Unknown machine fault ${fault.fault_code}`;
+  if (fault.normalization_status !== 'raw' && fault.canonical_title) return fault.canonical_title;
+  return `Unknown machine fault ${fault.fault_code}`;
 }
 
 export function FaultIntelligencePanel({ machineId, management = false }: { machineId?: string; management?: boolean }) {
@@ -96,7 +103,7 @@ export function FaultIntelligencePanel({ machineId, management = false }: { mach
   const [rules, setRules] = useState<Rule[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
-  const [role, setRole] = useState<string>('');
+  const [role, setRole] = useState('');
   const [selectedFault, setSelectedFault] = useState<Fault | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [busy, setBusy] = useState<string | null>(null);
@@ -119,32 +126,37 @@ export function FaultIntelligencePanel({ machineId, management = false }: { mach
         .limit(management ? 250 : 100);
       if (machineId) faultQuery = faultQuery.eq('machine_id', machineId);
 
-      const tasks: PromiseLike<unknown>[] = [faultQuery];
-      if (management) {
-        tasks.push(client.from('machine_model_fault_rules').select('id,profile_id,interface,raw_fault_code,canonical_fault_code,title,category,severity,description,recommended_action,evidence_source,is_verified,is_active,updated_at').order('updated_at', { ascending: false }).limit(500));
-        tasks.push(client.from('telemetry_fault_rule_candidates').select('id,fault_event_id,profile_key,interface,raw_fault_code,proposed_canonical_fault_code,proposed_title,proposed_category,proposed_severity,proposed_description,proposed_recommended_action,evidence_note,status,created_at').order('created_at', { ascending: false }).limit(250));
-        tasks.push(client.from('machine_model_profiles').select('id,model_key,display_name').order('display_name').limit(1000));
-        tasks.push(client.rpc('current_app_role'));
-      }
+      const ruleQuery = management
+        ? client.from('machine_model_fault_rules').select('id,profile_id,interface,raw_fault_code,canonical_fault_code,title,category,severity,description,recommended_action,evidence_source,is_verified,is_active,updated_at').order('updated_at', { ascending: false }).limit(500)
+        : Promise.resolve({ data: [] as Rule[], error: null });
+      const candidateQuery = management
+        ? client.from('telemetry_fault_rule_candidates').select('id,fault_event_id,profile_key,interface,raw_fault_code,proposed_canonical_fault_code,proposed_title,proposed_category,proposed_severity,proposed_description,proposed_recommended_action,evidence_note,status,created_at').order('created_at', { ascending: false }).limit(250)
+        : Promise.resolve({ data: [] as Candidate[], error: null });
+      const profileQuery = management
+        ? client.from('machine_model_profiles').select('id,model_key,display_name').order('display_name').limit(1000)
+        : Promise.resolve({ data: [] as Profile[], error: null });
+      const roleQuery = management
+        ? client.rpc('current_app_role')
+        : Promise.resolve({ data: '', error: null });
 
-      const results = await Promise.all(tasks);
-      const faultResult = results[0] as { data: Fault[] | null; error: { message: string } | null };
-      if (faultResult.error) throw new Error(faultResult.error.message);
-      setFaults(faultResult.data ?? []);
+      const [faultResult, ruleResult, candidateResult, profileResult, roleResult] = await Promise.all([
+        faultQuery,
+        ruleQuery,
+        candidateQuery,
+        profileQuery,
+        roleQuery,
+      ]);
 
-      if (management) {
-        const ruleResult = results[1] as { data: Rule[] | null; error: { message: string } | null };
-        const candidateResult = results[2] as { data: Candidate[] | null; error: { message: string } | null };
-        const profileResult = results[3] as { data: Profile[] | null; error: { message: string } | null };
-        const roleResult = results[4] as { data: string | null; error: { message: string } | null };
-        if (ruleResult.error) throw new Error(ruleResult.error.message);
-        if (candidateResult.error) throw new Error(candidateResult.error.message);
-        if (profileResult.error) throw new Error(profileResult.error.message);
-        setRules(ruleResult.data ?? []);
-        setCandidates(candidateResult.data ?? []);
-        setProfiles(Object.fromEntries((profileResult.data ?? []).map((profile) => [profile.id, profile])));
-        setRole(roleResult.error ? '' : String(roleResult.data ?? ''));
-      }
+      if (faultResult.error) throw faultResult.error;
+      if (ruleResult.error) throw ruleResult.error;
+      if (candidateResult.error) throw candidateResult.error;
+      if (profileResult.error) throw profileResult.error;
+
+      setFaults((faultResult.data ?? []) as Fault[]);
+      setRules((ruleResult.data ?? []) as Rule[]);
+      setCandidates((candidateResult.data ?? []) as Candidate[]);
+      setProfiles(Object.fromEntries(((profileResult.data ?? []) as Profile[]).map((profile) => [profile.id, profile])));
+      setRole(roleResult.error ? '' : String(roleResult.data ?? ''));
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Could not load fault intelligence.');
     } finally {
@@ -156,11 +168,13 @@ export function FaultIntelligencePanel({ machineId, management = false }: { mach
 
   const activeFaults = useMemo(() => faults.filter((fault) => !fault.cleared_at), [faults]);
   const unknownFaults = useMemo(() => faults.filter((fault) => fault.normalization_status === 'raw'), [faults]);
-  const normalizedFaults = useMemo(() => faults.filter((fault) => fault.normalization_status === 'verified_rule'), [faults]);
+  const interpretedFaults = useMemo(() => faults.filter((fault) => fault.normalization_status !== 'raw'), [faults]);
+  const platformDiagnostics = useMemo(() => faults.filter((fault) => fault.normalization_status === 'telemetry_diagnostic'), [faults]);
   const pendingCandidates = useMemo(() => candidates.filter((candidate) => candidate.status === 'pending'), [candidates]);
   const verifiedRules = useMemo(() => rules.filter((rule) => rule.is_verified && rule.is_active), [rules]);
 
   const startProposal = (fault: Fault) => {
+    if (fault.normalization_status !== 'raw') return;
     setSelectedFault(fault);
     setForm({
       canonicalCode: '',
@@ -176,7 +190,7 @@ export function FaultIntelligencePanel({ machineId, management = false }: { mach
 
   const submitProposal = async (event: FormEvent) => {
     event.preventDefault();
-    if (!selectedFault) return;
+    if (!selectedFault || selectedFault.normalization_status !== 'raw') return;
     setBusy(selectedFault.id);
     setError(null);
     setNotice(null);
@@ -212,7 +226,9 @@ export function FaultIntelligencePanel({ machineId, management = false }: { mach
       const { error: reviewError } = await getSupabaseClient().rpc('review_telemetry_fault_rule_candidate_v1', {
         p_candidate_id: candidate.id,
         p_action: action,
-        p_review_note: action === 'verify' ? 'Verified in DallmayrERP fault catalogue workbench.' : 'Rejected in DallmayrERP fault catalogue workbench.',
+        p_review_note: action === 'verify'
+          ? 'Verified in DallmayrERP fault catalogue workbench.'
+          : 'Rejected in DallmayrERP fault catalogue workbench.',
       });
       if (reviewError) throw reviewError;
       setNotice(action === 'verify' ? 'Fault mapping verified and activated for the machine profile.' : 'Fault mapping proposal rejected.');
@@ -231,8 +247,8 @@ export function FaultIntelligencePanel({ machineId, management = false }: { mach
           <span>Machine fault intelligence</span>
           <h2>{management ? 'Fault catalogue & verification' : 'Fault interpretation'}</h2>
           <p>{management
-            ? 'Capture field evidence for unknown machine codes. Pending proposals never affect live severity until operations/admin verification.'
-            : 'Verified machine-profile meanings are shown alongside the original raw code.'}</p>
+            ? 'Capture field evidence for unknown machine codes. Telemetry diagnostics are kept separate, and pending proposals never affect live severity until operations/admin verification.'
+            : 'Verified machine-profile meanings and telemetry diagnostics are shown alongside the original raw code.'}</p>
         </div>
         <button disabled={loading} onClick={() => void load()} type="button">{loading ? 'Refreshing…' : 'Refresh'}</button>
       </header>
@@ -244,17 +260,17 @@ export function FaultIntelligencePanel({ machineId, management = false }: { mach
       {!loading ? <>
         <div className={styles.metrics}>
           <div><span>Active faults</span><strong>{activeFaults.length}</strong></div>
-          <div><span>Verified interpretations</span><strong>{normalizedFaults.length}</strong></div>
-          <div><span>Unknown raw faults</span><strong>{unknownFaults.length}</strong></div>
-          {management ? <div><span>Pending verification</span><strong>{pendingCandidates.length}</strong></div> : null}
+          <div><span>Interpreted faults</span><strong>{interpretedFaults.length}</strong></div>
+          <div><span>Unknown machine faults</span><strong>{unknownFaults.length}</strong></div>
+          {management ? <div><span>Pending verification</span><strong>{pendingCandidates.length}</strong></div> : <div><span>Telemetry diagnostics</span><strong>{platformDiagnostics.length}</strong></div>}
         </div>
 
         <div className={styles.faultList}>
           {faults.slice(0, management ? 30 : 20).map((fault) => (
-            <article className={`${styles.fault} ${fault.normalization_status === 'verified_rule' ? styles.verified : styles.raw}`} key={fault.id}>
+            <article className={`${styles.fault} ${fault.normalization_status === 'raw' ? styles.raw : styles.verified}`} key={fault.id}>
               <div className={styles.faultTop}>
                 <div>
-                  <span>{fault.normalization_status === 'verified_rule' ? 'Verified interpretation' : 'Raw / unverified'}</span>
+                  <span>{statusLabel(fault)}</span>
                   <h3>{displayFault(fault)}</h3>
                 </div>
                 <b>{fault.cleared_at ? 'Resolved' : fault.severity}</b>
@@ -277,7 +293,10 @@ export function FaultIntelligencePanel({ machineId, management = false }: { mach
         </div>
 
         {management && selectedFault && canSubmit ? <form className={styles.form} onSubmit={submitProposal}>
-          <header><div><span>Evidence capture</span><h3>Propose mapping for raw code {selectedFault.fault_code}</h3></div><button onClick={() => setSelectedFault(null)} type="button">Cancel</button></header>
+          <header>
+            <div><span>Evidence capture</span><h3>Propose mapping for raw code {selectedFault.fault_code}</h3></div>
+            <button onClick={() => setSelectedFault(null)} type="button">Cancel</button>
+          </header>
           <div className={styles.formGrid}>
             <label>Canonical code<input required value={form.canonicalCode} onChange={(event) => setForm((current) => ({ ...current, canonicalCode: event.target.value }))} placeholder="e.g. WATER.SUPPLY" /></label>
             <label>Fault title<input required value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="Verified fault name" /></label>
@@ -292,19 +311,19 @@ export function FaultIntelligencePanel({ machineId, management = false }: { mach
 
         {management ? <div className={styles.workbenchGrid}>
           <section className={styles.card}>
-            <header><div><span>Review queue</span><h3>Pending fault mappings</h3></div><strong>{pendingCandidates.length}</strong></header>
+            <header><div><span>Review queue</span><h3>Pending machine-fault mappings</h3></div><strong>{pendingCandidates.length}</strong></header>
             <div className={styles.compactList}>
               {pendingCandidates.map((candidate) => <article key={candidate.id}>
                 <div><b>{candidate.proposed_title}</b><span>{candidate.profile_key} · raw {candidate.raw_fault_code} · {candidate.interface ?? 'any'}</span></div>
                 <p>{candidate.proposed_canonical_fault_code} · {candidate.proposed_severity ?? 'severity unchanged'} · {candidate.evidence_note}</p>
                 {canReview ? <footer><button disabled={busy === candidate.id} onClick={() => void reviewCandidate(candidate, 'reject')} type="button">Reject</button><button className={styles.primary} disabled={busy === candidate.id} onClick={() => void reviewCandidate(candidate, 'verify')} type="button">Verify & activate</button></footer> : <small>Operations/admin verification required.</small>}
               </article>)}
-              {!pendingCandidates.length ? <div className={styles.empty}>No mappings are awaiting verification.</div> : null}
+              {!pendingCandidates.length ? <div className={styles.empty}>No machine-fault mappings are awaiting verification.</div> : null}
             </div>
           </section>
 
           <section className={styles.card}>
-            <header><div><span>Verified catalogue</span><h3>Active profile rules</h3></div><strong>{verifiedRules.length}</strong></header>
+            <header><div><span>Verified catalogue</span><h3>Active machine-profile rules</h3></div><strong>{verifiedRules.length}</strong></header>
             <div className={styles.compactList}>
               {verifiedRules.slice(0, 100).map((rule) => <article key={rule.id}>
                 <div><b>{rule.title}</b><span>{profiles[rule.profile_id]?.display_name ?? profiles[rule.profile_id]?.model_key ?? 'Machine profile'} · raw {rule.raw_fault_code} · {rule.interface ?? 'any'}</span></div>
