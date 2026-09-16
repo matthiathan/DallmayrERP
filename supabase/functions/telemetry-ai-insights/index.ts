@@ -14,6 +14,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 const periods = new Set(['day', 'week', 'month', 'six_months']);
+const regions = new Set(['south_africa', 'dubai', 'europe']);
 const CACHE_TTL_MS = 10 * 60_000;
 const MIN_REFRESH_MS = 60_000;
 
@@ -157,10 +158,12 @@ Deno.serve(async (request: Request) => {
   const forceRefresh = body.refresh === true;
   const machineId = typeof body.machine_id === 'string' && body.machine_id.trim() ? body.machine_id.trim() : null;
 
-  const { data: profile, error: profileError } = await supabase.from('user_details').select('role,branch').eq('user_id', authData.user.id).maybeSingle();
+  const { data: profile, error: profileError } = await supabase.from('user_details').select('role,branch,telemetry_region').eq('user_id', authData.user.id).maybeSingle();
   if (profileError || !profile) return jsonResponse({ message: 'An active DallmayrERP user profile is required.' }, 403);
   const branch = String(profile.branch ?? 'national').toLowerCase();
   const role = String(profile.role ?? 'unknown').toLowerCase();
+  const telemetryRegion = String(profile.telemetry_region ?? '').toLowerCase();
+  if (!regions.has(telemetryRegion)) return jsonResponse({ message: 'Select a telemetry region before generating AI insights.', code: 'telemetry_region_required' }, 403);
   const branchScope = branch === 'national' ? 'all' : branch;
 
   const [reportResult, dashboardResult] = await Promise.all([
@@ -172,10 +175,12 @@ Deno.serve(async (request: Request) => {
   const dashboard = (dashboardResult.data ?? {}) as Record<string, any>;
   const visibleStates = Array.isArray(dashboard.device_states) ? dashboard.device_states : [];
   if (machineId && !visibleStates.some((row: Record<string, unknown>) => String(row.machine_id ?? '') === machineId)) {
-    return jsonResponse({ message: 'The requested machine is not available in your telemetry scope.' }, 404);
+    return jsonResponse({ message: 'The requested machine is not available in your telemetry region.' }, 404);
   }
 
-  const scopeKey = machineId ? `legacy-branch:${branchScope}:machine:${machineId}` : `legacy-branch:${branchScope}:fleet`;
+  const scopeKey = machineId
+    ? `region:${telemetryRegion}:branch:${branchScope}:machine:${machineId}`
+    : `region:${telemetryRegion}:branch:${branchScope}:fleet`;
   const { data: cached } = await supabase.from('telemetry_ai_insight_cache')
     .select('payload,model,generated_at,input_tokens,output_tokens')
     .eq('user_id', authData.user.id).eq('scope_key', scopeKey).eq('period', period).maybeSingle();
@@ -198,7 +203,7 @@ Deno.serve(async (request: Request) => {
   const evidence = buildEvidence(
     (reportResult.data ?? {}) as Record<string, any>, dashboard,
     (usageResult.data ?? []) as Record<string, any>[], (balanceResult.data ?? []) as Record<string, any>[],
-    { role, branch: branchScope }, machineId,
+    { role, branch: branchScope, telemetry_region: telemetryRegion }, machineId,
   );
 
   const aiResponse = await fetch(`${AI_API_BASE_URL}/responses`, {
@@ -208,12 +213,13 @@ Deno.serve(async (request: Request) => {
       instructions: [
         'You are the Dallmayr telemetry operations analyst. Return no more than six insights.',
         'Use only the supplied telemetry evidence. Never invent machine states, causes, quantities, faults, or trends.',
-        'Respect the analysis_scope in generated_for. For machine scope, discuss only that machine and its linked telemetry devices.',
+        'Respect telemetry_region and analysis_scope in generated_for. Never discuss or imply access to another region.',
+        'For machine scope, discuss only that machine and its linked telemetry devices.',
         'If sales data says sample_only, never describe sampled totals as full-period totals.',
         'If evidence is insufficient, say so. Distinguish correlation from confirmed cause.',
         'Prioritize operational risk, offline machines, recurring faults, vend degradation, unusual data usage, weak connectivity, and SIM balance risk.',
         'Recommendations are advisory diagnostic actions only; never claim that you changed a machine or device.',
-        'Use concise South African business English. Revenue values are supplied in cents and represent ZAR.',
+        'Use concise business English. Revenue values are supplied in cents and currently represent ZAR.',
       ].join(' '),
       input: JSON.stringify(evidence), max_output_tokens: 1800,
       text: { format: { type: 'json_schema', name: 'dallmayr_telemetry_insights', strict: true, schema: insightSchema } },
