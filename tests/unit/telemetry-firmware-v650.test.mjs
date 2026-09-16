@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
-import { transformTelemetryV650 } from '../../scripts/generate-telemetry-v6-8-50.mjs';
+import { transformTelemetryV650Release } from '../../scripts/generate-telemetry-v6-8-50-release.mjs';
 
 const baseFirmware = fs.readFileSync(
   new URL('../../firmware/DallmayrTelemetryV6_8_47/DallmayrTelemetryV6_8_47.ino', import.meta.url),
   'utf8',
 );
 
-const generated = transformTelemetryV650(baseFirmware);
+const generated = transformTelemetryV650Release(baseFirmware);
 
 test('V6.8.50 remains passive MDB while emitting vend evidence from decoded lifecycle states', () => {
   assert.match(generated, /6\.8\.50-esp32s3-air780eu-passive-mdb-vend-evidence/);
@@ -59,4 +59,14 @@ test('cash and free-vend audit notifications use independent completed correlati
   assert.ok(auditIds.length >= 2, 'free vend and paid cash sale each need an independent audit correlation');
   assert.match(generated, /MDB_SELECTION_SUCCESS, "free_vend", auditCorrelationId, 0/);
   assert.match(generated, /MDB_SELECTION_SUCCESS, "cash_sale", auditCorrelationId, 0/);
+});
+
+test('MDB reset after approval remains a successful counter event and now emits correlated evidence', () => {
+  assert.match(generated, /cashless\.vendPending && cashless\.vendApproved/);
+  assert.match(generated, /mdbRecordVend\(cashless\.selection, cents, true, "cashless_reset_after_approval"\)/);
+  assert.match(
+    generated,
+    /MDB_SELECTION_SUCCESS, "cashless_reset_after_approval", cashless\.vendCorrelationId, cashless\.vendCorrelationOrdinal/,
+  );
+  assert.match(generated, /cashless\.vendCorrelationId = 0;[\s\S]*cashless\.vendCorrelationOrdinal = 0;/);
 });
