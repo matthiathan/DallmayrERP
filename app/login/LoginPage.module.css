@@ -4,8 +4,8 @@
   grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr);
   align-items: stretch;
   padding: 0;
-  color: #231f20;
-  background: #f4f1eb;
+  color: #242424;
+  background: #f5f4f1;
 }
 
 .intro {
@@ -18,8 +18,8 @@
   overflow: hidden;
   color: #ffffff;
   background:
-    linear-gradient(145deg, rgba(142, 17, 26, .97), rgba(181, 22, 33, .92)),
-    #b51621;
+    radial-gradient(circle at 88% 12%, rgba(184, 155, 94, .17), transparent 28%),
+    linear-gradient(145deg, #292826, #191918 72%);
 }
 
 .intro::after {
@@ -29,7 +29,7 @@
   bottom: -120px;
   width: 360px;
   height: 360px;
-  border: 42px solid rgba(200, 164, 106, .24);
+  border: 42px solid rgba(184, 155, 94, .16);
   border-radius: 50%;
   pointer-events: none;
 }
@@ -43,9 +43,21 @@
   width: fit-content;
 }
 
-.brand img {
-  width: 56px;
-  height: 56px;
+.logoPlate {
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 62px;
+  padding: 6px 8px;
+  background: #ffffff;
+  border: 1px solid rgba(184, 155, 94, .55);
+  border-radius: 10px;
+}
+
+.logoPlate img {
+  width: 76px;
+  height: 50px;
+  object-fit: contain;
 }
 
 .brandCopy {
@@ -55,14 +67,14 @@
 
 .brandCopy strong {
   color: #ffffff;
-  font-size: 1.1rem;
+  font-size: 1.08rem;
   font-weight: 800;
   letter-spacing: -.02em;
 }
 
 .brandCopy span {
-  color: rgba(255, 255, 255, .74);
-  font-size: .76rem;
+  color: #d8c59b;
+  font-size: .75rem;
   font-weight: 700;
   letter-spacing: .09em;
   text-transform: uppercase;
@@ -77,7 +89,7 @@
 .copy > span {
   display: inline-block;
   margin-bottom: 14px;
-  color: #f0dcb9;
+  color: #cdb57f;
   font-size: .76rem;
   font-weight: 850;
   letter-spacing: .12em;
@@ -97,7 +109,7 @@
 .copy p {
   max-width: 600px;
   margin: 0;
-  color: rgba(255, 255, 255, .8) !important;
+  color: rgba(255, 255, 255, .76) !important;
   font-size: 1rem;
   line-height: 1.65;
 }
@@ -112,9 +124,9 @@
 
 .modules span {
   padding: 7px 10px;
-  color: #ffffff;
-  background: rgba(255, 255, 255, .09);
-  border: 1px solid rgba(255, 255, 255, .18);
+  color: #f4ead3;
+  background: rgba(184, 155, 94, .08);
+  border: 1px solid rgba(184, 155, 94, .3);
   border-radius: 999px;
   font-size: .74rem;
   font-weight: 750;
@@ -124,17 +136,17 @@
   display: grid;
   place-items: center;
   padding: clamp(24px, 5vw, 64px);
-  background: #f4f1eb;
+  background: #f5f4f1;
 }
 
 .card {
   width: min(100%, 480px);
   padding: clamp(24px, 4vw, 40px) !important;
-  color: #231f20 !important;
+  color: #242424 !important;
   background: #ffffff !important;
-  border: 1px solid #ded8cf !important;
+  border: 1px solid #ddd9d1 !important;
   border-radius: 16px !important;
-  box-shadow: 0 20px 48px rgba(35, 31, 32, .10) !important;
+  box-shadow: 0 20px 48px rgba(31, 31, 29, .09) !important;
 }
 
 .card::before,
@@ -143,42 +155,53 @@
 }
 
 .card h1 {
-  color: #231f20 !important;
+  color: #242424 !important;
   text-shadow: none !important;
 }
 
 .card p,
 .card label {
-  color: #6f6965 !important;
+  color: #6d6a64 !important;
   text-shadow: none !important;
 }
 
 .card input {
-  color: #231f20 !important;
+  color: #242424 !important;
   background: #ffffff !important;
-  border: 1px solid #d8d0c6 !important;
+  border: 1px solid #d6d1c7 !important;
   box-shadow: none !important;
 }
 
 .card input:focus {
-  border-color: #b51621 !important;
-  box-shadow: 0 0 0 3px rgba(181, 22, 33, .12) !important;
+  border-color: #9f844d !important;
+  box-shadow: 0 0 0 3px rgba(184, 155, 94, .18) !important;
 }
 
 .card :global(.button:not(.secondary)) {
-  color: #ffffff !important;
-  background: #b51621 !important;
-  border-color: #8e111a !important;
+  color: #211d16 !important;
+  background: #b89b5e !important;
+  border-color: #9f844d !important;
   box-shadow: none !important;
   text-shadow: none !important;
 }
 
+.card :global(.button:not(.secondary):hover) {
+  color: #ffffff !important;
+  background: #7f683b !important;
+}
+
 .card :global(.button.secondary) {
-  color: #8e111a !important;
+  color: #6f5a31 !important;
   background: #ffffff !important;
-  border-color: #d8c6c4 !important;
+  border-color: #cec4b2 !important;
   box-shadow: none !important;
   text-shadow: none !important;
+}
+
+.card :global(.badge) {
+  color: #6f5a31 !important;
+  background: #f6f1e7 !important;
+  border-color: #ded2bb !important;
 }
 
 @media (max-width: 900px) {
