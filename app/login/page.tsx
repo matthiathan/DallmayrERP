@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { safeLocalStorageGet, safeLocalStorageRemove, safeLocalStorageSet } from '@/lib/browserStorage';
+import { DALLMAYR_SA_LOGO_URL } from '@/lib/brand/dallmayr';
 import {
   getAuthRememberMePreference,
   getSupabaseClient,
@@ -145,7 +146,9 @@ export default function LoginPage() {
     <main className={`${styles.page} login-page dynamics-login-page`}>
       <section aria-label="Dallmayr South Africa Machine Telemetry overview" className={`${styles.intro} dynamics-login-intro`}>
         <div className={`${styles.brand} dynamics-login-brand`}>
-          <Image alt="Dallmayr South Africa" height={56} priority src="/icons/dallmayr-app.svg" width={56} />
+          <span className={styles.logoPlate}>
+            <Image alt="Dallmayr South Africa" height={70} priority src={DALLMAYR_SA_LOGO_URL} width={105} />
+          </span>
           <span className={styles.brandCopy}>
             <strong>Dallmayr South Africa</strong>
             <span>Machine telemetry</span>
