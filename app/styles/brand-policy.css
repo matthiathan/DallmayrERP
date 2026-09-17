@@ -1,0 +1,47 @@
+/*
+ * Dallmayr South Africa colour policy.
+ *
+ * Red is not a brand or interaction colour in this application. It is reserved
+ * exclusively for runtime failure semantics such as failed vends, faults,
+ * errors and offline/failure states. Destructive or stop actions are actions,
+ * not failures, so they use the gold/charcoal brand palette.
+ */
+
+:root {
+  --dallmayr-brand-gold: #b89b5e;
+  --dallmayr-brand-gold-dark: #7f683b;
+  --dallmayr-brand-gold-soft: #f6f1e7;
+  --dallmayr-brand-ivory: #f5f4f1;
+  --dallmayr-brand-charcoal: #292826;
+}
+
+/* Prevent action styling from using failure red. */
+:is(button, a, [role='button']).danger,
+.button.danger,
+.danger-button,
+.destructive-action,
+.test-center-stop {
+  color: #5f4c28 !important;
+  background: var(--dallmayr-brand-gold-soft) !important;
+  border-color: var(--dallmayr-brand-gold) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+:is(button, a, [role='button']).danger:hover:not(:disabled),
+.button.danger:hover:not(:disabled),
+.danger-button:hover:not(:disabled),
+.destructive-action:hover:not(:disabled),
+.test-center-stop:hover:not(:disabled) {
+  color: #ffffff !important;
+  background: var(--dallmayr-brand-gold-dark) !important;
+  border-color: var(--dallmayr-brand-gold-dark) !important;
+}
+
+/*
+ * Intentionally not overridden here:
+ *   .error / .is-error / .failed / failed-vend indicators
+ *   offline fault indicators
+ *   .badge.danger / .status-badge.danger
+ * Those represent an actual failure condition and may remain red.
+ */
