@@ -16,6 +16,7 @@ const corsHeaders = {
 const periods = new Set(['day', 'week', 'month', 'six_months']);
 const CACHE_TTL_MS = 10 * 60_000;
 const MIN_REFRESH_MS = 60_000;
+const SALES_PAGE_SIZE = 1000;
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -44,6 +45,85 @@ function outputText(payload: Record<string, unknown>) {
   return '';
 }
 
+async function loadMachinePeriodSales(
+  supabase: ReturnType<typeof createClient>,
+  machineId: string,
+  dateFrom: string,
+  dateTo: string,
+) {
+  const rows: Record<string, any>[] = [];
+  for (let from = 0; ; from += SALES_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('telemetry_daily_item_sales')
+      .select('sales_date,selection_code,product_key,sku,product_name,brand,units_sold,failed_vends,revenue_cents')
+      .eq('machine_id', machineId)
+      .gte('sales_date', dateFrom)
+      .lte('sales_date', dateTo)
+      .order('sales_date', { ascending: true })
+      .range(from, from + SALES_PAGE_SIZE - 1);
+
+    if (error) return { data: [] as Record<string, any>[], error };
+    const page = (data ?? []) as Record<string, any>[];
+    rows.push(...page);
+    if (page.length < SALES_PAGE_SIZE) break;
+  }
+  return { data: rows, error: null };
+}
+
+function completeMachineSalesEvidence(rows: Record<string, any>[]) {
+  const productTotals = new Map<string, Record<string, any>>();
+  const dailyTotals = new Map<string, { date: string; units_sold: number; failed_vends: number; revenue_cents: number }>();
+  let unitsSold = 0;
+  let failedVends = 0;
+  let revenueCents = 0;
+
+  for (const row of rows) {
+    const units = numberValue(row.units_sold);
+    const failed = numberValue(row.failed_vends);
+    const revenue = numberValue(row.revenue_cents);
+    unitsSold += units;
+    failedVends += failed;
+    revenueCents += revenue;
+
+    const productKey = String(row.product_key ?? row.sku ?? row.selection_code ?? 'unknown');
+    const product = productTotals.get(productKey) ?? {
+      product_key: row.product_key ?? null,
+      sku: row.sku ?? null,
+      selection_code: row.selection_code ?? null,
+      product_name: row.product_name ?? null,
+      brand: row.brand ?? null,
+      units_sold: 0,
+      failed_vends: 0,
+      revenue_cents: 0,
+    };
+    product.units_sold += units;
+    product.failed_vends += failed;
+    product.revenue_cents += revenue;
+    productTotals.set(productKey, product);
+
+    const date = String(row.sales_date ?? '');
+    if (date) {
+      const daily = dailyTotals.get(date) ?? { date, units_sold: 0, failed_vends: 0, revenue_cents: 0 };
+      daily.units_sold += units;
+      daily.failed_vends += failed;
+      daily.revenue_cents += revenue;
+      dailyTotals.set(date, daily);
+    }
+  }
+
+  return {
+    sample_only: false,
+    complete_period_totals: true,
+    source: 'telemetry_daily_item_sales',
+    row_count: rows.length,
+    units_sold: unitsSold,
+    failed_vends: failedVends,
+    revenue_cents: revenueCents,
+    top_items: [...productTotals.values()].sort((a, b) => b.units_sold - a.units_sold).slice(0, 10),
+    daily_trend_recent: [...dailyTotals.values()].sort((a, b) => a.date.localeCompare(b.date)).slice(-14),
+  };
+}
+
 function buildEvidence(
   report: Record<string, any>,
   dashboard: Record<string, any>,
@@ -51,6 +131,7 @@ function buildEvidence(
   balanceRows: Record<string, any>[],
   scope: Record<string, string>,
   machineId: string | null,
+  machineSalesRows: Record<string, any>[] | null,
 ) {
   const allStates = Array.isArray(dashboard.device_states) ? dashboard.device_states : [];
   const allFaults = Array.isArray(dashboard.active_faults) ? dashboard.active_faults : [];
@@ -73,20 +154,25 @@ function buildEvidence(
     .map((row) => ({ device_id: row.device_id, alert_level: row.alert_level, remaining_bytes: row.remaining_bytes }));
 
   const recentSales = Array.isArray(report.recent_sales) ? report.recent_sales : [];
-  const machineSales = machineId ? recentSales.filter((row: Record<string, unknown>) => String(row.machine_id ?? '') === machineId) : [];
-  const salesEvidence = machineId ? {
-    sample_only: true,
-    sample_note: 'This is the matching subset of the reporting RPC recent-sales sample, not a guaranteed complete machine-period total.',
-    rows: machineSales.slice(0, 50),
-    sampled_units_sold: machineSales.reduce((sum: number, row: Record<string, unknown>) => sum + numberValue(row.units_sold), 0),
-    sampled_failed_vends: machineSales.reduce((sum: number, row: Record<string, unknown>) => sum + numberValue(row.failed_vends), 0),
-    sampled_revenue_cents: machineSales.reduce((sum: number, row: Record<string, unknown>) => sum + numberValue(row.revenue_cents), 0),
-  } : {
-    summary: report.summary ?? {},
-    daily_trend_recent: Array.isArray(report.daily_trend) ? report.daily_trend.slice(-14) : [],
-    top_items: Array.isArray(report.top_items) ? report.top_items.slice(0, 8) : [],
-    top_machines: Array.isArray(report.top_machines) ? report.top_machines.slice(0, 8) : [],
-  };
+  const sampledMachineSales = machineId ? recentSales.filter((row: Record<string, unknown>) => String(row.machine_id ?? '') === machineId) : [];
+  const salesEvidence = machineId
+    ? machineSalesRows
+      ? completeMachineSalesEvidence(machineSalesRows)
+      : {
+        sample_only: true,
+        complete_period_totals: false,
+        sample_note: 'Complete machine-period sales could not be loaded, so this is the matching subset of the reporting RPC recent-sales sample.',
+        rows: sampledMachineSales.slice(0, 50),
+        sampled_units_sold: sampledMachineSales.reduce((sum: number, row: Record<string, unknown>) => sum + numberValue(row.units_sold), 0),
+        sampled_failed_vends: sampledMachineSales.reduce((sum: number, row: Record<string, unknown>) => sum + numberValue(row.failed_vends), 0),
+        sampled_revenue_cents: sampledMachineSales.reduce((sum: number, row: Record<string, unknown>) => sum + numberValue(row.revenue_cents), 0),
+      }
+    : {
+      summary: report.summary ?? {},
+      daily_trend_recent: Array.isArray(report.daily_trend) ? report.daily_trend.slice(-14) : [],
+      top_items: Array.isArray(report.top_items) ? report.top_items.slice(0, 8) : [],
+      top_machines: Array.isArray(report.top_machines) ? report.top_machines.slice(0, 8) : [],
+    };
 
   return {
     generated_for: { ...scope, analysis_scope: machineId ? 'machine' : 'fleet', machine_id: machineId },
@@ -140,6 +226,7 @@ const insightSchema = {
 };
 
 Deno.serve(async (request: Request) => {
+  const requestStartedAt = Date.now();
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders });
   if (request.method !== 'POST') return jsonResponse({ message: 'POST is required.' }, 405);
   const authorization = request.headers.get('Authorization') ?? '';
@@ -169,6 +256,7 @@ Deno.serve(async (request: Request) => {
   ]);
   if (reportResult.error || dashboardResult.error) return jsonResponse({ message: 'Could not load authorized telemetry for AI analysis.' }, 503);
 
+  const report = (reportResult.data ?? {}) as Record<string, any>;
   const dashboard = (dashboardResult.data ?? {}) as Record<string, any>;
   const visibleStates = Array.isArray(dashboard.device_states) ? dashboard.device_states : [];
   if (machineId && !visibleStates.some((row: Record<string, unknown>) => String(row.machine_id ?? '') === machineId)) {
@@ -191,14 +279,26 @@ Deno.serve(async (request: Request) => {
     code: 'ai_not_configured',
   }, 503);
 
-  const [usageResult, balanceResult] = await Promise.all([
+  const dateFrom = typeof report.date_from === 'string' ? report.date_from : '';
+  const dateTo = typeof report.date_to === 'string' ? report.date_to : '';
+  const machineSalesPromise = machineId && dateFrom && dateTo
+    ? loadMachinePeriodSales(supabase, machineId, dateFrom, dateTo)
+    : Promise.resolve({ data: [] as Record<string, any>[], error: null });
+
+  const [usageResult, balanceResult, machineSalesResult] = await Promise.all([
     supabase.rpc('get_telemetry_data_usage', { p_days: 30 }),
     supabase.rpc('get_telemetry_prepaid_balances'),
+    machineSalesPromise,
   ]);
+  if (machineId && machineSalesResult.error) {
+    console.error('AI machine-period sales load failed', machineSalesResult.error.code ?? 'unknown');
+  }
+
   const evidence = buildEvidence(
-    (reportResult.data ?? {}) as Record<string, any>, dashboard,
+    report, dashboard,
     (usageResult.data ?? []) as Record<string, any>[], (balanceResult.data ?? []) as Record<string, any>[],
     { role, branch: branchScope }, machineId,
+    machineId && !machineSalesResult.error ? machineSalesResult.data : null,
   );
 
   const aiResponse = await fetch(`${AI_API_BASE_URL}/responses`, {
@@ -209,6 +309,7 @@ Deno.serve(async (request: Request) => {
         'You are the Dallmayr telemetry operations analyst. Return no more than six insights.',
         'Use only the supplied telemetry evidence. Never invent machine states, causes, quantities, faults, or trends.',
         'Respect the analysis_scope in generated_for. For machine scope, discuss only that machine and its linked telemetry devices.',
+        'When machine sales say complete_period_totals=true, those totals cover the requested reporting period and may be stated as period totals.',
         'If sales data says sample_only, never describe sampled totals as full-period totals.',
         'If evidence is insufficient, say so. Distinguish correlation from confirmed cause.',
         'Prioritize operational risk, offline machines, recurring faults, vend degradation, unusual data usage, weak connectivity, and SIM balance risk.',
@@ -222,19 +323,44 @@ Deno.serve(async (request: Request) => {
 
   const aiPayload = await aiResponse.json().catch(() => ({})) as Record<string, any>;
   if (!aiResponse.ok) {
-    console.error('AI provider error', aiResponse.status, aiPayload?.error?.type ?? 'unknown');
+    console.error('AI provider error', JSON.stringify({
+      status: aiResponse.status,
+      type: aiPayload?.error?.type ?? 'unknown',
+      model: AI_MODEL,
+      scope: machineId ? 'machine' : 'fleet',
+      period,
+      duration_ms: Date.now() - requestStartedAt,
+    }));
     return jsonResponse({ message: 'The AI insight service is temporarily unavailable.' }, 502);
   }
   const text = outputText(aiPayload);
   let parsed: Record<string, unknown>;
-  try { parsed = JSON.parse(text); } catch { return jsonResponse({ message: 'The AI provider returned an invalid structured response.' }, 502); }
+  try { parsed = JSON.parse(text); } catch {
+    console.error('AI structured response parse failed', JSON.stringify({ model: AI_MODEL, scope: machineId ? 'machine' : 'fleet', period }));
+    return jsonResponse({ message: 'The AI provider returned an invalid structured response.' }, 502);
+  }
 
   const generatedAt = new Date().toISOString();
   const usage = aiPayload.usage ?? {};
-  await supabase.from('telemetry_ai_insight_cache').upsert({
+  const inputTokens = numberValue(usage.input_tokens) || null;
+  const outputTokens = numberValue(usage.output_tokens) || null;
+  const { error: cacheError } = await supabase.from('telemetry_ai_insight_cache').upsert({
     user_id: authData.user.id, scope_key: scopeKey, period, payload: parsed, model: AI_MODEL,
-    input_tokens: numberValue(usage.input_tokens) || null, output_tokens: numberValue(usage.output_tokens) || null,
+    input_tokens: inputTokens, output_tokens: outputTokens,
     generated_at: generatedAt, updated_at: generatedAt,
   }, { onConflict: 'user_id,scope_key,period' });
+
+  if (cacheError) console.error('AI insight cache write failed', cacheError.code ?? 'unknown');
+  console.info('AI insight generated', JSON.stringify({
+    model: AI_MODEL,
+    scope: machineId ? 'machine' : 'fleet',
+    period,
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    duration_ms: Date.now() - requestStartedAt,
+    cache_write_ok: !cacheError,
+    complete_machine_sales: machineId ? !machineSalesResult.error : null,
+  }));
+
   return jsonResponse({ ...parsed, cached: false, generated_at: generatedAt, model: AI_MODEL });
 });
