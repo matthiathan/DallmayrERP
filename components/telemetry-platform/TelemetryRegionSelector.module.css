@@ -6,16 +6,16 @@
   align-items: center;
   gap: 7px;
   padding: 0 10px;
-  border: 1px solid #ded8cf;
+  border: 1px solid #d8d2c6;
   border-radius: 9px;
   background: #fff;
-  color: #4f4946;
+  color: #4a463f;
   font-size: 12px;
   font-weight: 720;
   white-space: nowrap;
 }
 .chip svg,
-.selectChip svg { width: 14px; height: 14px; color: #b51621; }
+.selectChip svg { width: 14px; height: 14px; color: #8a7445; }
 .selectChip select {
   border: 0;
   background: transparent;
@@ -25,18 +25,19 @@
   outline: 0;
   cursor: pointer;
 }
+.selectChip:focus-within { border-color: #9f844d; box-shadow: 0 0 0 3px rgba(184, 155, 94, .14); }
 .manageButton {
   min-height: 34px;
   padding: 0 11px;
-  border: 1px solid #d8c6c4;
+  border: 1px solid #d8d2c6;
   border-radius: 9px;
-  background: #fff8f7;
-  color: #8e111a;
+  background: #f8f6f1;
+  color: #6f5a31;
   font-size: 11px;
   font-weight: 750;
   cursor: pointer;
 }
-.manageButton:hover { background: #fcedef; }
+.manageButton:hover { background: #f1eadc; border-color: #cdbc9b; }
 .srOnly {
   position: absolute;
   width: 1px;
@@ -55,16 +56,16 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgb(35 31 32 / 52%);
+  background: rgb(24 23 21 / 52%);
 }
 .dialog {
   width: min(860px, 100%);
   max-height: min(760px, calc(100vh - 48px));
   overflow: auto;
+  border: 1px solid #d9d3c8;
   border-radius: 16px;
   background: #fff;
-  border: 1px solid #ded8cf;
-  box-shadow: 0 24px 70px rgb(35 31 32 / 22%);
+  box-shadow: 0 24px 70px rgb(18 17 16 / 24%);
 }
 .dialogHeader {
   position: sticky;
@@ -75,48 +76,49 @@
   justify-content: space-between;
   gap: 16px;
   padding: 20px 22px;
-  border-bottom: 1px solid #ebe5dd;
+  border-bottom: 1px solid #e8e3d9;
   background: #fff;
 }
-.dialogHeader span { color: #b51621; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
-.dialogHeader h2 { margin: 3px 0 0; color: #231f20; font-size: 20px; }
-.dialogHeader button { width: 34px; height: 34px; border: 1px solid #ded8cf; border-radius: 9px; background: #fff; color: #6f6965; font-size: 22px; cursor: pointer; }
+.dialogHeader span { color: #7f683b; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.dialogHeader h2 { margin: 3px 0 0; color: #242424; font-size: 20px; }
+.dialogHeader button { width: 34px; height: 34px; border: 1px solid #d8d2c6; border-radius: 9px; background: #fff; color: #5f594f; font-size: 22px; cursor: pointer; }
 .summaryGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 18px 22px 8px; }
-.summaryGrid article { display: grid; gap: 3px; padding: 13px; border: 1px solid #e6dfd5; border-radius: 11px; background: #f8f5ef; }
-.summaryGrid strong { color: #231f20; font-size: 13px; }
-.summaryGrid span { color: #4f4946; font-size: 12px; font-weight: 720; }
-.summaryGrid small { color: #7f7771; font-size: 10px; }
+.summaryGrid article { display: grid; gap: 3px; padding: 13px; border: 1px solid #e3ddd2; border-radius: 11px; background: #faf8f3; }
+.summaryGrid strong { color: #242424; font-size: 13px; }
+.summaryGrid span { color: #5d584f; font-size: 12px; font-weight: 720; }
+.summaryGrid small { color: #827b70; font-size: 10px; }
 .assignmentList { display: grid; gap: 0; padding: 10px 22px 22px; }
-.assignmentRow { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 4px; border-bottom: 1px solid #eee8e0; }
+.assignmentRow { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 4px; border-bottom: 1px solid #ede8df; }
 .assignmentRow > div { min-width: 0; display: grid; gap: 2px; }
-.assignmentRow strong { color: #231f20; font-size: 13px; }
-.assignmentRow span { color: #625b56; font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
-.assignmentRow small { color: #8b8179; font-size: 10px; text-transform: capitalize; }
-.assignmentRow select { min-width: 145px; min-height: 36px; padding: 0 8px; border: 1px solid #ded8cf; border-radius: 8px; background: #fff; color: #3c3734; }
+.assignmentRow strong { color: #242424; font-size: 13px; }
+.assignmentRow span { color: #656057; font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+.assignmentRow small { color: #8a8378; font-size: 10px; text-transform: capitalize; }
+.assignmentRow select { min-width: 145px; min-height: 36px; padding: 0 8px; border: 1px solid #d8d2c6; border-radius: 8px; background: #fff; color: #34312c; }
+.assignmentRow select:focus { border-color: #9f844d; box-shadow: 0 0 0 3px rgba(184, 155, 94, .14); outline: 0; }
 .loading,
 .error { margin: 10px 22px; padding: 11px 13px; border-radius: 9px; font-size: 12px; }
-.loading { background: #f8f5ef; color: #6f6965; }
+.loading { background: #f6f3ec; color: #665f54; }
 .error { border: 1px solid #efcbd0; background: #fff3f5; color: #912432; }
 .required {
   max-width: 880px;
   margin: 42px auto;
   padding: 30px;
-  border: 1px solid #ded8cf;
+  border: 1px solid #ddd9d1;
   border-radius: 18px;
   background: #fff;
-  box-shadow: 0 15px 45px rgb(35 31 32 / 9%);
+  box-shadow: 0 15px 45px rgb(27 25 22 / 8%);
 }
-.required > span { color: #b51621; font-size: 11px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
-.required h1 { margin: 7px 0 8px; color: #231f20; font-size: 27px; }
-.required > p { max-width: 720px; margin: 0; color: #6f6965; font-size: 13px; line-height: 1.6; }
+.required > span { color: #7f683b; font-size: 11px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+.required h1 { margin: 7px 0 8px; color: #242424; font-size: 27px; }
+.required > p { max-width: 720px; margin: 0; color: #6d675e; font-size: 13px; line-height: 1.6; }
 .regionCards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 22px; }
-.regionCards button { min-height: 142px; display: grid; align-content: start; gap: 7px; padding: 17px; text-align: left; border: 1px solid #e4ddd3; border-radius: 13px; background: #f8f5ef; cursor: pointer; }
-.regionCards button:hover:not(:disabled) { border-color: #b51621; background: #fff7f8; }
-.regionCards button:focus-visible { outline: 3px solid rgb(181 22 33 / 18%); outline-offset: 2px; }
+.regionCards button { min-height: 142px; display: grid; align-content: start; gap: 7px; padding: 17px; text-align: left; border: 1px solid #dfd8cc; border-radius: 13px; background: #faf8f3; cursor: pointer; }
+.regionCards button:hover:not(:disabled) { border-color: #b89b5e; background: #f6f1e7; }
+.regionCards button:focus-visible { outline: 2px solid #8d7544; outline-offset: 2px; }
 .regionCards button:disabled { cursor: not-allowed; opacity: .62; }
-.regionCards strong { color: #231f20; font-size: 16px; }
-.regionCards span { color: #6f6965; font-size: 11px; line-height: 1.45; }
-.regionCards small { align-self: end; margin-top: auto; color: #b51621; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.regionCards strong { color: #242424; font-size: 16px; }
+.regionCards span { color: #6b655b; font-size: 11px; line-height: 1.45; }
+.regionCards small { align-self: end; margin-top: auto; color: #7f683b; font-size: 10px; font-weight: 800; text-transform: uppercase; }
 
 @media (max-width: 900px) {
   .manageButton { display: none; }
