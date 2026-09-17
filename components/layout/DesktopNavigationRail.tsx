@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { NavigationIcon, navigationIconKind } from '@/components/layout/NavigationIcon';
 import type { NavSection } from '@/lib/auth/permissions';
+import { DALLMAYR_SA_LOGO_URL } from '@/lib/brand/dallmayr';
 import { favoritePathname, type FavoriteEntry } from '@/lib/navigation/favorites';
 import { FLEET_OVERVIEW_LABEL, FLEET_OVERVIEW_OPEN_LABEL } from '@/lib/navigation/terminology';
 import styles from '@/components/telemetry-platform/TelemetryPlatformShell.module.css';
@@ -51,7 +52,7 @@ export function DesktopNavigationRail({
       <div className={styles.sidebarBrand}>
         <Link aria-label={FLEET_OVERVIEW_OPEN_LABEL} href={homePath} title={FLEET_OVERVIEW_LABEL}>
           <span aria-hidden="true" className={styles.brandMark}>
-            <Image alt="" height={34} src="/icons/dallmayr-app.svg" width={28} />
+            <Image alt="" height={70} priority src={DALLMAYR_SA_LOGO_URL} width={105} />
           </span>
           {!collapsed ? (
             <span className={styles.brandCopy}>
