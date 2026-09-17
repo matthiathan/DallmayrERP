@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -9,6 +10,7 @@ import {
   getSupabaseClient,
   setAuthRememberMePreference,
 } from '@/lib/supabase/client';
+import styles from './LoginPage.module.css';
 
 const REMEMBERED_EMAIL_KEY = 'dallmayrerp-remembered-email';
 type LoginMode = 'login' | 'signup' | 'forgot';
@@ -43,7 +45,7 @@ function modeCopy(mode: LoginMode) {
   }
   return {
     title: 'Sign in',
-    description: 'Use your Dallmayr telemetry account to continue.',
+    description: 'Use your Dallmayr South Africa telemetry account to continue.',
     submit: 'Sign in',
   };
 }
@@ -140,18 +142,21 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="login-page dynamics-login-page">
-      <section aria-label="Dallmayr Machine Telemetry overview" className="dynamics-login-intro">
-        <div className="dynamics-login-brand">
-          <span aria-hidden="true">D</span>
-          <strong>Dallmayr Telemetry</strong>
+    <main className={`${styles.page} login-page dynamics-login-page`}>
+      <section aria-label="Dallmayr South Africa Machine Telemetry overview" className={`${styles.intro} dynamics-login-intro`}>
+        <div className={`${styles.brand} dynamics-login-brand`}>
+          <Image alt="Dallmayr South Africa" height={56} priority src="/icons/dallmayr-app.svg" width={56} />
+          <span className={styles.brandCopy}>
+            <strong>Dallmayr South Africa</strong>
+            <span>Machine telemetry</span>
+          </span>
         </div>
-        <div className="dynamics-login-copy">
+        <div className={`${styles.copy} dynamics-login-copy`}>
           <span>Machine intelligence</span>
           <h1>See every machine, telemetry device, sale and fault in one place.</h1>
           <p>Live device health, flexible reporting schedules and actionable fleet monitoring for Dallmayr South Africa.</p>
         </div>
-        <div className="dynamics-login-modules" aria-label="Core modules">
+        <div className={`${styles.modules} dynamics-login-modules`} aria-label="Core modules">
           <span>Machines</span>
           <span>Telemetry</span>
           <span>Faults</span>
@@ -159,61 +164,63 @@ export default function LoginPage() {
         </div>
       </section>
 
-      <div className="login-card neo-card dynamics-login-card">
-        <div className="badge">Secure workspace</div>
-        <h1>{copy.title}</h1>
-        <p>{copy.description}</p>
-        {error ? <div className="error" role="alert">{error}</div> : null}
-        {success ? <div aria-live="polite" className="success" role="status">{success}</div> : null}
+      <section className={styles.formSide} aria-label="Account access">
+        <div className={`${styles.card} login-card neo-card dynamics-login-card`}>
+          <div className="badge">Secure workspace</div>
+          <h1>{copy.title}</h1>
+          <p>{copy.description}</p>
+          {error ? <div className="error" role="alert">{error}</div> : null}
+          {success ? <div aria-live="polite" className="success" role="status">{success}</div> : null}
 
-        <form className="grid" onSubmit={submit}>
-          {mode === 'signup' ? (
+          <form className="grid" onSubmit={submit}>
+            {mode === 'signup' ? (
+              <label>
+                Full name
+                <input autoComplete="name" onChange={(event) => setFullName(event.target.value)} required value={fullName} />
+              </label>
+            ) : null}
             <label>
-              Full name
-              <input autoComplete="name" onChange={(event) => setFullName(event.target.value)} required value={fullName} />
+              Email
+              <input autoComplete="email" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} />
             </label>
-          ) : null}
-          <label>
-            Email
-            <input autoComplete="email" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} />
-          </label>
-          {mode !== 'forgot' ? (
-            <label>
-              Password
-              <input autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} minLength={8} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />
-            </label>
-          ) : null}
-          {mode === 'signup' ? (
-            <label>
-              Confirm password
-              <input autoComplete="new-password" minLength={8} onChange={(event) => setConfirmPassword(event.target.value)} required type="password" value={confirmPassword} />
-            </label>
-          ) : null}
-          {mode === 'login' ? (
-            <label className="login-remember-me">
-              <input checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} type="checkbox" />
-              <span>
-                <strong>Remember me on this device</strong>
-                <small>Stay signed in until you choose Sign out. Your password is never stored by Dallmayr Telemetry.</small>
-              </span>
-            </label>
-          ) : null}
-          <button className="button pulse-button" disabled={submitting} type="submit">
-            {submitting ? 'Please wait…' : copy.submit}
-          </button>
-        </form>
+            {mode !== 'forgot' ? (
+              <label>
+                Password
+                <input autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} minLength={8} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />
+              </label>
+            ) : null}
+            {mode === 'signup' ? (
+              <label>
+                Confirm password
+                <input autoComplete="new-password" minLength={8} onChange={(event) => setConfirmPassword(event.target.value)} required type="password" value={confirmPassword} />
+              </label>
+            ) : null}
+            {mode === 'login' ? (
+              <label className="login-remember-me">
+                <input checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} type="checkbox" />
+                <span>
+                  <strong>Remember me on this device</strong>
+                  <small>Stay signed in until you choose Sign out. Your password is never stored by Dallmayr Telemetry.</small>
+                </span>
+              </label>
+            ) : null}
+            <button className="button pulse-button" disabled={submitting} type="submit">
+              {submitting ? 'Please wait…' : copy.submit}
+            </button>
+          </form>
 
-        <div className="action-row login-secondary-actions">
-          {mode === 'login' ? (
-            <>
-              <button className="button secondary" onClick={() => switchMode('forgot')} type="button">Forgot password</button>
-              <button className="button secondary" onClick={() => switchMode('signup')} type="button">Create account</button>
-            </>
-          ) : (
-            <button className="button secondary" onClick={() => switchMode('login')} type="button">Back to sign in</button>
-          )}
+          <div className="action-row login-secondary-actions">
+            {mode === 'login' ? (
+              <>
+                <button className="button secondary" onClick={() => switchMode('forgot')} type="button">Forgot password</button>
+                <button className="button secondary" onClick={() => switchMode('signup')} type="button">Create account</button>
+              </>
+            ) : (
+              <button className="button secondary" onClick={() => switchMode('login')} type="button">Back to sign in</button>
+            )}
+          </div>
         </div>
-      </div>
+      </section>
     </main>
   );
 }
