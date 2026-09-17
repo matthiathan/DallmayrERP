@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { NavSection } from '@/lib/auth/permissions';
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
 import { NavigationIcon, navigationIconKind } from '@/components/layout/NavigationIcon';
+import { DALLMAYR_SA_LOGO_URL } from '@/lib/brand/dallmayr';
 import styles from '@/components/telemetry-platform/TelemetryPlatformShell.module.css';
 
 const MOBILE_SHELL_MEDIA = '(max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse)';
@@ -86,12 +87,12 @@ export function MobileTelemetryShell({
     <div className={`${styles.mobileShell} telemetry-mobile-shell`} data-mobile-shell="v1" data-platform-navigation="mobile-v3">
       <header className={`${styles.mobileHeader} telemetry-mobile-header`}>
         <Link aria-label="Open Fleet Overview" className={styles.mobileBrand} href={homePath}>
-          <Image alt="" height={32} src="/icons/dallmayr-app.svg" width={27} />
+          <Image alt="" height={70} priority src={DALLMAYR_SA_LOGO_URL} width={105} />
         </Link>
 
         <div className={styles.mobileTitle}>
           <strong>{activeTitle}</strong>
-          <small>Dallmayr Machine Telemetry</small>
+          <small>Dallmayr South Africa</small>
         </div>
 
         <div className={styles.mobileActions}>
