@@ -85,6 +85,7 @@
   50% { box-shadow: 0 0 0 6px rgba(32, 164, 100, 0); }
 }
 
+/* Actual errors may use red. */
 .test-center-error {
   background: rgba(194, 54, 54, .08);
   border: 1px solid rgba(194, 54, 54, .2);
@@ -191,10 +192,16 @@
   width: 100%;
 }
 
+/* Stop is an action, not a failure state, so it stays in the brand palette. */
 .test-center-stop {
-  background: #a93232;
-  border-color: #a93232;
-  color: #fff;
+  background: #f6f1e7;
+  border-color: #b89b5e;
+  color: #5f4c28;
+}
+
+.test-center-stop:hover:not(:disabled) {
+  background: #ede4d2;
+  border-color: #9f844d;
 }
 
 .test-center-session-meta {
@@ -339,6 +346,7 @@
 .test-center-line.is-mdb pre { color: #93c5fd; }
 .test-center-line.is-dex pre { color: #c4b5fd; }
 .test-center-line.is-control pre { color: #f9d67a; }
+/* Actual error log entries are one of the approved uses of red. */
 .test-center-line.is-error pre { color: #ff9494; }
 .test-center-line.is-success pre { color: #8ce0ad; }
 
