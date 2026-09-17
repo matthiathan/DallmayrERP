@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
   <title id="title">Dallmayr South Africa</title>
-  <desc id="desc">Dallmayr South Africa telemetry app mark</desc>
-  <rect width="512" height="512" rx="112" fill="#b51621"/>
-  <rect x="44" y="44" width="424" height="424" rx="92" fill="#ffffff" stroke="#8e111a" stroke-width="12"/>
-  <path d="M142 126h112c88 0 150 51 150 130s-62 130-150 130H142V126zm108 194c49 0 80-23 80-64 0-40-31-64-80-64h-34v128h34z" fill="#b51621"/>
-  <path d="M154 408h204" stroke="#c8a46a" stroke-width="18" stroke-linecap="round"/>
+  <desc id="desc">Dallmayr South Africa telemetry app mark in gold, white and charcoal</desc>
+  <rect width="512" height="512" rx="112" fill="#292826"/>
+  <rect x="44" y="44" width="424" height="424" rx="92" fill="#ffffff" stroke="#b89b5e" stroke-width="12"/>
+  <path d="M142 126h112c88 0 150 51 150 130s-62 130-150 130H142V126zm108 194c49 0 80-23 80-64 0-40-31-64-80-64h-34v128h34z" fill="#b89b5e"/>
+  <path d="M154 408h204" stroke="#7f683b" stroke-width="18" stroke-linecap="round"/>
 </svg>
