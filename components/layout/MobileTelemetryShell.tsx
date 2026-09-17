@@ -91,7 +91,7 @@ export function MobileTelemetryShell({
 
         <div className={styles.mobileTitle}>
           <strong>{activeTitle}</strong>
-          <small>Dallmayr Machine Telemetry</small>
+          <small>Dallmayr South Africa</small>
         </div>
 
         <div className={styles.mobileActions}>
