@@ -53,7 +53,6 @@ type AppearanceRow = {
 
 const STORAGE_KEY = 'dallmayrerp-appearance-v1';
 const THEME_TONES: ThemeTone[] = ['dark', 'light'];
-const HEX_COLOUR = /^#[0-9a-f]{6}$/i;
 
 export const CURATED_APPEARANCE_THEMES: readonly CuratedAppearanceTheme[] = [
   {
@@ -82,12 +81,10 @@ export const CURATED_APPEARANCE_THEMES: readonly CuratedAppearanceTheme[] = [
   },
 ] as const;
 
+// Branding is intentionally fixed to Dallmayr gold. Red is reserved for
+// runtime failure semantics and must never be user-selectable as an accent.
 export const ACCENT_PRESETS = [
   { name: 'Dallmayr Gold', value: '#b89b5e' },
-  { name: 'Dallmayr Deep Gold', value: '#7f683b' },
-  { name: 'Dallmayr Crest Red', value: '#e51f2b' },
-  { name: 'Charcoal', value: '#292826' },
-  { name: 'Coffee Brown', value: '#6f5a31' },
 ] as const;
 
 export const DEFAULT_APPEARANCE: AppearancePreferences = {
@@ -125,13 +122,12 @@ function normalizePreferences(value: unknown): AppearancePreferences {
     ? source.themeTone as ThemeTone
     : DEFAULT_APPEARANCE.themeTone;
   const base = appearanceForTone(tone);
-  const accentColor = typeof source.accentColor === 'string' && HEX_COLOUR.test(source.accentColor)
-    ? source.accentColor.toLowerCase()
-    : base.accentColor;
 
+  // Ignore legacy/custom accent values so stale local or database preferences
+  // cannot reintroduce red (or any non-brand accent) into the application.
   return {
     ...base,
-    accentColor,
+    accentColor: base.accentColor,
   };
 }
 
