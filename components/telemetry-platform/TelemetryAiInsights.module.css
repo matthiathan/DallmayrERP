@@ -91,16 +91,61 @@
 .card footer { margin-top: 12px; padding-top: 10px; border-top: 1px solid #ebe7df; color: #777169; font-size: 10px; overflow-wrap: anywhere; }
 .advisory { margin: 15px 0 0; color: #777169; font-size: 11px; }
 
+.adminStatus {
+  margin: 0 24px 24px;
+  padding: 18px;
+  border: 1px solid #ddd9d1;
+  border-radius: 12px;
+  background: #faf9f6;
+}
+.adminStatusHeader { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.adminStatusHeader span { display: block; margin-bottom: 3px; color: #7f683b; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.adminStatusHeader h2 { margin: 0; color: #242424; font-size: 16px; }
+.adminStatusHeader button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #b89b5e;
+  border-radius: 8px;
+  background: #fff;
+  color: #5f4d2b;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.adminStatusHeader button:hover { background: #f6f1e7; border-color: #7f683b; }
+.adminMetrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.adminMetrics article { padding: 12px 13px; border: 1px solid #e4dfd6; border-radius: 9px; background: #fff; }
+.adminMetrics span { display: block; color: #777169; font-size: 10px; font-weight: 750; text-transform: uppercase; letter-spacing: .04em; }
+.adminMetrics strong { display: block; margin-top: 5px; color: #242424; font-size: 20px; }
+/* Failure metrics are red because they represent an actual failed AI service event. */
+.adminMetrics .failureMetric { border-color: #efc8cd; background: #fff5f6; }
+.adminMetrics .failureMetric strong { color: #8c1f2b; }
+.adminStatusError { margin-bottom: 12px; padding: 10px 12px; border: 1px solid #efc8cd; border-radius: 8px; background: #fff5f6; color: #8c1f2b; font-size: 12px; }
+.activityTableWrap { overflow-x: auto; border: 1px solid #e4dfd6; border-radius: 9px; background: #fff; }
+.activityTable { width: 100%; border-collapse: collapse; min-width: 680px; }
+.activityTable th,
+.activityTable td { padding: 10px 11px; border-bottom: 1px solid #ebe7df; text-align: left; font-size: 11px; color: #514d46; white-space: nowrap; }
+.activityTable th { background: #f6f1e7; color: #6a604c; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.activityTable tbody tr:last-child td { border-bottom: 0; }
+.eventBadge { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 7px; font-size: 10px; font-weight: 800; }
+.eventSuccess { background: #eaf7ef; color: #17683b; }
+.eventCache { background: #f6f1e7; color: #6f5a31; }
+.eventFailure { background: #fff0f2; color: #8c1f2b; }
+.noActivity { margin: 4px 0 0; color: #777169; font-size: 12px; }
+
 @media (max-width: 1100px) {
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .adminMetrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 760px) {
-  .header, .summary { flex-direction: column; }
+  .header, .summary, .adminStatusHeader { flex-direction: column; }
   .actions { width: 100%; align-items: stretch; flex-direction: column; }
-  .actions select, .actions button { width: 100%; }
+  .actions select, .actions button, .adminStatusHeader button { width: 100%; }
   .summary > div { flex-direction: column; }
-  .grid { grid-template-columns: 1fr; }
+  .grid, .adminMetrics { grid-template-columns: 1fr; }
   .content, .header { padding-left: 16px; padding-right: 16px; }
   .empty, .error { margin-left: 16px; margin-right: 16px; }
+  .adminStatus { margin-left: 16px; margin-right: 16px; }
 }
