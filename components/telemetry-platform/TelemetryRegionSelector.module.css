@@ -6,16 +6,16 @@
   align-items: center;
   gap: 7px;
   padding: 0 10px;
-  border: 1px solid #d9dde4;
+  border: 1px solid #ded8cf;
   border-radius: 9px;
   background: #fff;
-  color: #3e4653;
+  color: #4f4946;
   font-size: 12px;
   font-weight: 720;
   white-space: nowrap;
 }
 .chip svg,
-.selectChip svg { width: 14px; height: 14px; }
+.selectChip svg { width: 14px; height: 14px; color: #b51621; }
 .selectChip select {
   border: 0;
   background: transparent;
@@ -28,15 +28,15 @@
 .manageButton {
   min-height: 34px;
   padding: 0 11px;
-  border: 1px solid #d9dde4;
+  border: 1px solid #d8c6c4;
   border-radius: 9px;
-  background: #f7f8fa;
-  color: #4c5565;
+  background: #fff8f7;
+  color: #8e111a;
   font-size: 11px;
   font-weight: 750;
   cursor: pointer;
 }
-.manageButton:hover { background: #f0f2f5; }
+.manageButton:hover { background: #fcedef; }
 .srOnly {
   position: absolute;
   width: 1px;
@@ -55,7 +55,7 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgb(20 24 33 / 48%);
+  background: rgb(35 31 32 / 52%);
 }
 .dialog {
   width: min(860px, 100%);
@@ -63,7 +63,8 @@
   overflow: auto;
   border-radius: 16px;
   background: #fff;
-  box-shadow: 0 24px 70px rgb(15 23 42 / 28%);
+  border: 1px solid #ded8cf;
+  box-shadow: 0 24px 70px rgb(35 31 32 / 22%);
 }
 .dialogHeader {
   position: sticky;
@@ -74,47 +75,48 @@
   justify-content: space-between;
   gap: 16px;
   padding: 20px 22px;
-  border-bottom: 1px solid #e6e9ee;
+  border-bottom: 1px solid #ebe5dd;
   background: #fff;
 }
-.dialogHeader span { color: #bd0f22; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
-.dialogHeader h2 { margin: 3px 0 0; color: #1f2632; font-size: 20px; }
-.dialogHeader button { width: 34px; height: 34px; border: 1px solid #d9dde4; border-radius: 9px; background: #fff; color: #505867; font-size: 22px; cursor: pointer; }
+.dialogHeader span { color: #b51621; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.dialogHeader h2 { margin: 3px 0 0; color: #231f20; font-size: 20px; }
+.dialogHeader button { width: 34px; height: 34px; border: 1px solid #ded8cf; border-radius: 9px; background: #fff; color: #6f6965; font-size: 22px; cursor: pointer; }
 .summaryGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 18px 22px 8px; }
-.summaryGrid article { display: grid; gap: 3px; padding: 13px; border: 1px solid #e3e6eb; border-radius: 11px; background: #fafbfc; }
-.summaryGrid strong { color: #252c38; font-size: 13px; }
-.summaryGrid span { color: #3c4554; font-size: 12px; font-weight: 720; }
-.summaryGrid small { color: #798190; font-size: 10px; }
+.summaryGrid article { display: grid; gap: 3px; padding: 13px; border: 1px solid #e6dfd5; border-radius: 11px; background: #f8f5ef; }
+.summaryGrid strong { color: #231f20; font-size: 13px; }
+.summaryGrid span { color: #4f4946; font-size: 12px; font-weight: 720; }
+.summaryGrid small { color: #7f7771; font-size: 10px; }
 .assignmentList { display: grid; gap: 0; padding: 10px 22px 22px; }
-.assignmentRow { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 4px; border-bottom: 1px solid #edf0f3; }
+.assignmentRow { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 4px; border-bottom: 1px solid #eee8e0; }
 .assignmentRow > div { min-width: 0; display: grid; gap: 2px; }
-.assignmentRow strong { color: #242b36; font-size: 13px; }
-.assignmentRow span { color: #606a79; font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
-.assignmentRow small { color: #858d99; font-size: 10px; text-transform: capitalize; }
-.assignmentRow select { min-width: 145px; min-height: 36px; padding: 0 8px; border: 1px solid #d8dce3; border-radius: 8px; background: #fff; color: #303845; }
+.assignmentRow strong { color: #231f20; font-size: 13px; }
+.assignmentRow span { color: #625b56; font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+.assignmentRow small { color: #8b8179; font-size: 10px; text-transform: capitalize; }
+.assignmentRow select { min-width: 145px; min-height: 36px; padding: 0 8px; border: 1px solid #ded8cf; border-radius: 8px; background: #fff; color: #3c3734; }
 .loading,
 .error { margin: 10px 22px; padding: 11px 13px; border-radius: 9px; font-size: 12px; }
-.loading { background: #f4f6f8; color: #626c7b; }
+.loading { background: #f8f5ef; color: #6f6965; }
 .error { border: 1px solid #efcbd0; background: #fff3f5; color: #912432; }
 .required {
   max-width: 880px;
   margin: 42px auto;
   padding: 30px;
-  border: 1px solid #dde1e7;
+  border: 1px solid #ded8cf;
   border-radius: 18px;
   background: #fff;
-  box-shadow: 0 15px 45px rgb(27 35 52 / 9%);
+  box-shadow: 0 15px 45px rgb(35 31 32 / 9%);
 }
-.required > span { color: #bd0f22; font-size: 11px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
-.required h1 { margin: 7px 0 8px; color: #1e2530; font-size: 27px; }
-.required > p { max-width: 720px; margin: 0; color: #66707f; font-size: 13px; line-height: 1.6; }
+.required > span { color: #b51621; font-size: 11px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+.required h1 { margin: 7px 0 8px; color: #231f20; font-size: 27px; }
+.required > p { max-width: 720px; margin: 0; color: #6f6965; font-size: 13px; line-height: 1.6; }
 .regionCards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 22px; }
-.regionCards button { min-height: 142px; display: grid; align-content: start; gap: 7px; padding: 17px; text-align: left; border: 1px solid #dfe3e8; border-radius: 13px; background: #fafbfc; cursor: pointer; }
-.regionCards button:hover:not(:disabled) { border-color: #bd0f22; background: #fff7f8; }
+.regionCards button { min-height: 142px; display: grid; align-content: start; gap: 7px; padding: 17px; text-align: left; border: 1px solid #e4ddd3; border-radius: 13px; background: #f8f5ef; cursor: pointer; }
+.regionCards button:hover:not(:disabled) { border-color: #b51621; background: #fff7f8; }
+.regionCards button:focus-visible { outline: 3px solid rgb(181 22 33 / 18%); outline-offset: 2px; }
 .regionCards button:disabled { cursor: not-allowed; opacity: .62; }
-.regionCards strong { color: #242b36; font-size: 16px; }
-.regionCards span { color: #687282; font-size: 11px; line-height: 1.45; }
-.regionCards small { align-self: end; margin-top: auto; color: #bd0f22; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.regionCards strong { color: #231f20; font-size: 16px; }
+.regionCards span { color: #6f6965; font-size: 11px; line-height: 1.45; }
+.regionCards small { align-self: end; margin-top: auto; color: #b51621; font-size: 10px; font-weight: 800; text-transform: uppercase; }
 
 @media (max-width: 900px) {
   .manageButton { display: none; }
