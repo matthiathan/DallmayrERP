@@ -7,6 +7,7 @@
  * 3. shared foundations
  * 4. quarantined legacy layout programmes
  * 5. canonical application visual authority
+ * 6. Dallmayr South Africa brand policy guard
  *
  * Do not import global CSS directly from app/layout.tsx and do not add new
  * legacy imports to either quarantine manifest.
@@ -16,3 +17,4 @@
 @import './foundations.css';
 @import './legacy-layout-manifest.css';
 @import './application.css';
+@import './brand-policy.css';
