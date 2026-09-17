@@ -31,7 +31,7 @@ const securityHeaders = [
       `connect-src ${connectSources.join(' ')}`,
       `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ''}`,
       "style-src 'self' 'unsafe-inline'",
-      `img-src 'self' data: blob: ${supabaseOrigin} https://tiles.openfreemap.org`,
+      `img-src 'self' data: blob: ${supabaseOrigin} https://tiles.openfreemap.org https://dallmayr.co.za`,
       "font-src 'self' data:",
       `media-src 'self' data: blob: ${supabaseOrigin}`,
       "worker-src 'self' blob:",
@@ -72,6 +72,15 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'dallmayr.co.za',
+        pathname: '/wp-content/uploads/**',
+      },
+    ],
+  },
   env: {
     // Fail closed: messaging is unavailable unless the deployment opts in with exact "true".
     NEXT_PUBLIC_INTERNAL_MESSAGING_ENABLED: internalMessagingEnabled ? 'true' : 'false',
