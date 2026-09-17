@@ -55,7 +55,7 @@ export function DesktopNavigationRail({
           </span>
           {!collapsed ? (
             <span className={styles.brandCopy}>
-              <strong>Dallmayr</strong>
+              <strong>Dallmayr South Africa</strong>
               <small>Machine telemetry</small>
             </span>
           ) : null}
