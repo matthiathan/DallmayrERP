@@ -53,50 +53,46 @@ type AppearanceRow = {
 
 const STORAGE_KEY = 'dallmayrerp-appearance-v1';
 const THEME_TONES: ThemeTone[] = ['dark', 'light'];
-const HEX_COLOUR = /^#[0-9a-f]{6}$/i;
 
 export const CURATED_APPEARANCE_THEMES: readonly CuratedAppearanceTheme[] = [
   {
     id: 'slate-modern',
-    name: 'Slate Modern',
+    name: 'Dallmayr Night',
     modeLabel: 'Dark mode',
-    description: 'Calm charcoal surfaces, cyan actions and bright neutral text.',
-    accentColor: '#22c3dc',
-    themeColor: '#2b343d',
-    backgroundColor: '#0f1419',
+    description: 'Charcoal surfaces with Dallmayr gold accents and warm neutral text.',
+    accentColor: '#b89b5e',
+    themeColor: '#292826',
+    backgroundColor: '#191918',
     themeTone: 'dark',
     backgroundStyle: 'solid',
-    preview: ['#0f1419', '#2b343d', '#22c3dc'],
+    preview: ['#191918', '#292826', '#b89b5e'],
   },
   {
     id: 'warm-sand',
-    name: 'Warm Sand',
+    name: 'Dallmayr Light',
     modeLabel: 'Light mode',
-    description: 'Warm ivory workspaces, bronze actions and dark espresso text.',
-    accentColor: '#a67828',
-    themeColor: '#e6d7bf',
-    backgroundColor: '#f5efe5',
+    description: 'White and warm ivory surfaces with Dallmayr gold accents and dark neutral copy.',
+    accentColor: '#b89b5e',
+    themeColor: '#ffffff',
+    backgroundColor: '#f5f4f1',
     themeTone: 'light',
     backgroundStyle: 'solid',
-    preview: ['#f5efe5', '#fffaf2', '#a67828'],
+    preview: ['#f5f4f1', '#ffffff', '#b89b5e'],
   },
 ] as const;
 
+// Branding is intentionally fixed to Dallmayr gold. Red is reserved for
+// runtime failure semantics and must never be user-selectable as an accent.
 export const ACCENT_PRESETS = [
-  { name: 'Dallmayr Gold', value: '#a67828' },
-  { name: 'Cyan', value: '#22c3dc' },
-  { name: 'Royal Blue', value: '#2563eb' },
-  { name: 'Emerald', value: '#16805d' },
-  { name: 'Burgundy', value: '#9b2c3b' },
-  { name: 'Violet', value: '#7c3aed' },
+  { name: 'Dallmayr Gold', value: '#b89b5e' },
 ] as const;
 
 export const DEFAULT_APPEARANCE: AppearancePreferences = {
-  accentColor: CURATED_APPEARANCE_THEMES[0].accentColor,
-  themeColor: CURATED_APPEARANCE_THEMES[0].themeColor,
-  backgroundColor: CURATED_APPEARANCE_THEMES[0].backgroundColor,
-  themeTone: CURATED_APPEARANCE_THEMES[0].themeTone,
-  backgroundStyle: CURATED_APPEARANCE_THEMES[0].backgroundStyle,
+  accentColor: CURATED_APPEARANCE_THEMES[1].accentColor,
+  themeColor: CURATED_APPEARANCE_THEMES[1].themeColor,
+  backgroundColor: CURATED_APPEARANCE_THEMES[1].backgroundColor,
+  themeTone: CURATED_APPEARANCE_THEMES[1].themeTone,
+  backgroundStyle: CURATED_APPEARANCE_THEMES[1].backgroundStyle,
 };
 
 export const THEME_PRESETS = CURATED_APPEARANCE_THEMES.map((theme) => ({
@@ -109,7 +105,7 @@ const AppearanceContext = createContext<AppearanceContextValue | undefined>(unde
 
 export function appearanceForTone(tone: ThemeTone): AppearancePreferences {
   const selected = CURATED_APPEARANCE_THEMES.find((theme) => theme.themeTone === tone)
-    ?? CURATED_APPEARANCE_THEMES[0];
+    ?? CURATED_APPEARANCE_THEMES[1];
 
   return {
     accentColor: selected.accentColor,
@@ -126,13 +122,12 @@ function normalizePreferences(value: unknown): AppearancePreferences {
     ? source.themeTone as ThemeTone
     : DEFAULT_APPEARANCE.themeTone;
   const base = appearanceForTone(tone);
-  const accentColor = typeof source.accentColor === 'string' && HEX_COLOUR.test(source.accentColor)
-    ? source.accentColor.toLowerCase()
-    : base.accentColor;
 
+  // Ignore legacy/custom accent values so stale local or database preferences
+  // cannot reintroduce red (or any non-brand accent) into the application.
   return {
     ...base,
-    accentColor,
+    accentColor: base.accentColor,
   };
 }
 
