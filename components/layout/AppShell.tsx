@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { DesktopNavigationRail } from '@/components/layout/DesktopNavigationRail';
+import brandStyles from '@/components/layout/DallmayrBrandShell.module.css';
 import { MobileTelemetryShell } from '@/components/layout/MobileTelemetryShell';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { canAccessShellPath, deriveAppShellNavigation } from '@/components/layout/appShellNavigation';
@@ -64,7 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div
-      className={`${styles.shell} ${styles.desktopShell} application-shell-v2 app-shell ${railCollapsed ? `${styles.desktopCollapsed} desktop-rail-collapsed` : ''}`}
+      className={`${styles.shell} ${brandStyles.brandShell} ${styles.desktopShell} application-shell-v2 app-shell ${railCollapsed ? `${styles.desktopCollapsed} desktop-rail-collapsed` : ''}`}
       data-platform-shell="telemetry-v3"
     >
       <a className="skip-link" href="#main-content">Skip to main content</a>
