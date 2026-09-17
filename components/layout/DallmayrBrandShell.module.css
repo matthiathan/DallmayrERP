@@ -1,0 +1,228 @@
+.brandShell {
+  /* Dallmayr South Africa app palette: gold identity, white/light surfaces and
+     charcoal copy. Red is intentionally excluded from branding; fault/error
+     components keep their own semantic danger colours. */
+  --dallmayr-gold: #b89b5e !important;
+  --dallmayr-gold-dark: #7f683b !important;
+  --dallmayr-gold-soft: #f6f1e7 !important;
+  --dallmayr-red: #b89b5e !important;
+  --dallmayr-red-dark: #7f683b !important;
+  --dallmayr-red-soft: #f6f1e7 !important;
+  --dallmayr-cream: #f5f4f1 !important;
+  --dallmayr-cream-soft: #faf9f6 !important;
+  --platform-ink: #242424 !important;
+  --platform-muted: #6d6a64 !important;
+  --platform-border: #ddd9d1 !important;
+  --platform-surface: #ffffff !important;
+  --user-accent: #b89b5e !important;
+  --content-accent-text: #6f5a31 !important;
+  --content-focus: #8d7544 !important;
+  color: #242424;
+  background: #f5f4f1;
+}
+
+.brandShell :global(.application-main) {
+  color: #242424 !important;
+  background: #f5f4f1 !important;
+}
+
+.brandShell :global(.neo-card),
+.brandShell :global(.card),
+.brandShell :global(.hero-panel),
+.brandShell :global(.table-wrap) {
+  color: #242424 !important;
+  background: #ffffff !important;
+  border-color: #ddd9d1 !important;
+  box-shadow: 0 1px 2px rgba(31, 31, 29, .05), 0 10px 28px rgba(31, 31, 29, .045) !important;
+}
+
+.brandShell :global(.neo-card::before),
+.brandShell :global(.card::before),
+.brandShell :global(.hero-panel::before),
+.brandShell :global(.table-wrap::before),
+.brandShell :global(.neo-card::after),
+.brandShell :global(.card::after),
+.brandShell :global(.hero-panel::after) {
+  display: none !important;
+}
+
+.brandShell :global(h1),
+.brandShell :global(h2),
+.brandShell :global(h3),
+.brandShell :global(h4) {
+  color: #242424 !important;
+  text-shadow: none !important;
+}
+
+.brandShell :global(p),
+.brandShell :global(label) {
+  color: #6d6a64 !important;
+  text-shadow: none !important;
+}
+
+.brandShell :global(.kpi-value) {
+  color: #7f683b !important;
+  text-shadow: none !important;
+}
+
+.brandShell :global(.button:not(.secondary):not(.danger)) {
+  color: #211d16 !important;
+  background: #b89b5e !important;
+  border-color: #9f844d !important;
+  box-shadow: 0 1px 2px rgba(31, 31, 29, .08) !important;
+  text-shadow: none !important;
+}
+
+.brandShell :global(.button:not(.secondary):not(.danger):hover) {
+  color: #ffffff !important;
+  background: #7f683b !important;
+}
+
+.brandShell :global(.button.secondary) {
+  color: #6f5a31 !important;
+  background: #ffffff !important;
+  border-color: #cec4b2 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.brandShell :global(input),
+.brandShell :global(select),
+.brandShell :global(textarea) {
+  color: #242424 !important;
+  background: #ffffff !important;
+  border-color: #d6d1c7 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.brandShell :global(input:focus),
+.brandShell :global(select:focus),
+.brandShell :global(textarea:focus) {
+  border-color: #9f844d !important;
+  box-shadow: 0 0 0 3px rgba(184, 155, 94, .18) !important;
+}
+
+.brandShell :global(th) {
+  color: #625c51 !important;
+  background: #f8f6f1 !important;
+  border-bottom-color: #ddd9d1 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.brandShell :global(td) {
+  color: #242424 !important;
+  border-bottom-color: #ebe7df !important;
+}
+
+.brandShell :global(tr:hover td) {
+  background: #fbf9f4 !important;
+}
+
+.brandShell :global(.dallmayr-sidebar) {
+  color: #3d3a35 !important;
+  background: #ffffff !important;
+  border-right-color: #ddd9d1 !important;
+}
+
+.brandShell :global(.dallmayr-sidebar) > div:first-child {
+  color: #242424 !important;
+  background: #ffffff !important;
+  border-bottom: 2px solid #b89b5e !important;
+}
+
+.brandShell :global(.dallmayr-sidebar) > div:first-child a {
+  color: #242424 !important;
+}
+
+.brandShell :global(.dallmayr-sidebar) > div:first-child img {
+  width: 44px !important;
+  height: 31px !important;
+  object-fit: contain !important;
+}
+
+.brandShell :global(.dallmayr-sidebar) > div:first-child button {
+  color: #5d513b !important;
+  background: #faf8f2 !important;
+  border-color: #d8cfbd !important;
+}
+
+.brandShell :global(.dallmayr-sidebar-link) {
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.brandShell :global(.dallmayr-sidebar-link:hover) {
+  color: #5f4c28 !important;
+  background: #faf8f2 !important;
+  border-color: #e6dfd1 !important;
+}
+
+.brandShell :global(.dallmayr-sidebar-link[aria-current='page']) {
+  color: #6f5a31 !important;
+  background: #f6f1e7 !important;
+  border-color: #ded2bb !important;
+}
+
+.brandShell :global(.dallmayr-sidebar-link[aria-current='page'])::before {
+  background: #b89b5e !important;
+}
+
+.brandShell :global(.telemetry-mobile-header) {
+  color: #242424 !important;
+  background: #ffffff !important;
+  border-bottom-color: #b89b5e !important;
+  box-shadow: 0 2px 8px rgba(31, 31, 29, .08) !important;
+}
+
+.brandShell :global(.telemetry-mobile-header) > a {
+  width: 58px !important;
+  color: #242424 !important;
+  background: #ffffff !important;
+}
+
+.brandShell :global(.telemetry-mobile-header) > a img {
+  width: 52px !important;
+  height: 35px !important;
+  object-fit: contain !important;
+}
+
+.brandShell :global(.telemetry-mobile-header) strong {
+  color: #242424 !important;
+}
+
+.brandShell :global(.telemetry-mobile-header) small {
+  color: #746f66 !important;
+}
+
+.brandShell :global(.telemetry-mobile-header) svg {
+  color: #5e574b !important;
+}
+
+.brandShell :global(.telemetry-mobile-bottom-nav) {
+  background: #ffffff !important;
+  border-top-color: #ddd9d1 !important;
+}
+
+.brandShell :global(.telemetry-mobile-nav-item[aria-current='page']) {
+  color: #6f5a31 !important;
+  background: #f6f1e7 !important;
+}
+
+.brandShell :global(.application-header) {
+  background: rgba(255, 255, 255, .98) !important;
+  border-bottom-color: #ddd9d1 !important;
+}
+
+.brandShell :global(.application-header) a:focus-visible,
+.brandShell :global(.application-header) button:focus-visible,
+.brandShell :global(.dallmayr-sidebar-link:focus-visible) {
+  outline: 2px solid #8d7544 !important;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brandShell :global(.dallmayr-sidebar-link) {
+    transition: none;
+  }
+}
