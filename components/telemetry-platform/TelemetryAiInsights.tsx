@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import styles from './TelemetryAiInsights.module.css';
 
@@ -23,6 +23,22 @@ type InsightPayload = {
   generated_at: string;
   model?: string;
 };
+type GenerationLogRow = {
+  id: string;
+  scope_key: string;
+  analysis_scope: 'fleet' | 'machine';
+  machine_id: string | null;
+  period: Period;
+  model: string;
+  event_type: 'success' | 'failure' | 'cache_hit';
+  error_code: string | null;
+  duration_ms: number | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  cache_write_ok: boolean | null;
+  complete_machine_sales: boolean | null;
+  created_at: string;
+};
 
 const periods: Array<{ value: Period; label: string }> = [
   { value: 'day', label: 'Today' },
@@ -41,12 +57,71 @@ function generatedLabel(value: string) {
   return `Generated ${date.toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' })}`;
 }
 
+function activityTime(value: string) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return 'Unknown';
+  return date.toLocaleString('en-ZA', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function tokenCount(row: GenerationLogRow) {
+  return (row.input_tokens ?? 0) + (row.output_tokens ?? 0);
+}
+
 export function TelemetryAiInsights({ machineId }: { machineId?: string }) {
   const [period, setPeriod] = useState<Period>('week');
   const [data, setData] = useState<InsightPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [adminActivity, setAdminActivity] = useState<GenerationLogRow[] | null>(null);
+  const [adminActivityError, setAdminActivityError] = useState<string | null>(null);
   const machineScope = Boolean(machineId);
+
+  const loadAdminActivity = useCallback(async () => {
+    if (machineScope) return;
+    try {
+      const client = getSupabaseClient();
+      const { data: authData } = await client.auth.getUser();
+      if (!authData.user) return;
+
+      const { data: profile, error: profileError } = await client
+        .from('user_details')
+        .select('role')
+        .eq('user_id', authData.user.id)
+        .maybeSingle();
+      if (profileError || String(profile?.role ?? '').toLowerCase() !== 'admin') {
+        setAdminActivity(null);
+        return;
+      }
+
+      const { data: rows, error: activityError } = await client
+        .from('telemetry_ai_generation_log')
+        .select('id,scope_key,analysis_scope,machine_id,period,model,event_type,error_code,duration_ms,input_tokens,output_tokens,cache_write_ok,complete_machine_sales,created_at')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (activityError) throw activityError;
+      setAdminActivity((rows ?? []) as GenerationLogRow[]);
+      setAdminActivityError(null);
+    } catch (activityLoadError) {
+      setAdminActivity([]);
+      setAdminActivityError(activityLoadError instanceof Error ? activityLoadError.message : 'Could not load AI service activity.');
+    }
+  }, [machineScope]);
+
+  useEffect(() => {
+    void loadAdminActivity();
+  }, [loadAdminActivity]);
+
+  const adminStats = useMemo(() => {
+    if (adminActivity === null) return null;
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    const recent = adminActivity.filter((row) => new Date(row.created_at).getTime() >= cutoff);
+    return {
+      generations: recent.filter((row) => row.event_type === 'success').length,
+      cacheHits: recent.filter((row) => row.event_type === 'cache_hit').length,
+      failures: recent.filter((row) => row.event_type === 'failure').length,
+      tokens: recent.reduce((sum, row) => sum + tokenCount(row), 0),
+    };
+  }, [adminActivity]);
 
   const generate = async (refresh = false) => {
     setLoading(true);
@@ -61,6 +136,7 @@ export function TelemetryAiInsights({ machineId }: { machineId?: string }) {
         throw new Error(result?.message ?? 'AI insights returned an unexpected response.');
       }
       setData(result as InsightPayload);
+      if (!machineScope) void loadAdminActivity();
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Could not generate AI telemetry insights.');
     } finally {
@@ -69,7 +145,7 @@ export function TelemetryAiInsights({ machineId }: { machineId?: string }) {
   };
 
   return (
-    <section className={styles.panel} aria-label={machineScope ? 'AI machine telemetry insights' : 'AI fleet telemetry insights'} data-ai-telemetry-insights="v1">
+    <section className={styles.panel} aria-label={machineScope ? 'AI machine telemetry insights' : 'AI fleet telemetry insights'} data-ai-telemetry-insights="v2">
       <header className={styles.header}>
         <div className={styles.heading}>
           <span className={styles.eyebrow}>Dallmayr AI</span>
@@ -122,6 +198,49 @@ export function TelemetryAiInsights({ machineId }: { machineId?: string }) {
 
           <p className={styles.advisory}>AI recommendations are advisory. Confirm faults and machine state in DallmayrERP before taking operational action.</p>
         </div>
+      ) : null}
+
+      {!machineScope && adminActivity !== null ? (
+        <section className={styles.adminStatus} aria-label="AI service activity">
+          <header className={styles.adminStatusHeader}>
+            <div>
+              <span>Administrator only</span>
+              <h2>AI service activity</h2>
+            </div>
+            <button type="button" onClick={() => void loadAdminActivity()}>Refresh activity</button>
+          </header>
+
+          {adminActivityError ? <div className={styles.adminStatusError} role="alert">{adminActivityError}</div> : null}
+
+          {adminStats ? (
+            <div className={styles.adminMetrics}>
+              <article><span>Generations · 24h</span><strong>{adminStats.generations}</strong></article>
+              <article><span>Tokens · 24h</span><strong>{adminStats.tokens.toLocaleString('en-ZA')}</strong></article>
+              <article><span>Cache hits · 24h</span><strong>{adminStats.cacheHits}</strong></article>
+              <article className={adminStats.failures > 0 ? styles.failureMetric : ''}><span>Failures · 24h</span><strong>{adminStats.failures}</strong></article>
+            </div>
+          ) : null}
+
+          {adminActivity.length ? (
+            <div className={styles.activityTableWrap}>
+              <table className={styles.activityTable}>
+                <thead><tr><th>Time</th><th>Scope</th><th>Period</th><th>Model</th><th>Tokens</th><th>Result</th></tr></thead>
+                <tbody>
+                  {adminActivity.slice(0, 8).map((row) => (
+                    <tr key={row.id}>
+                      <td>{activityTime(row.created_at)}</td>
+                      <td>{row.analysis_scope === 'machine' ? 'Machine' : 'Fleet'}</td>
+                      <td>{periods.find((item) => item.value === row.period)?.label ?? row.period}</td>
+                      <td>{row.model}</td>
+                      <td>{tokenCount(row).toLocaleString('en-ZA')}</td>
+                      <td><span className={`${styles.eventBadge} ${row.event_type === 'failure' ? styles.eventFailure : row.event_type === 'success' ? styles.eventSuccess : styles.eventCache}`}>{row.event_type === 'cache_hit' ? 'Cache hit' : row.event_type === 'success' ? 'Generated' : 'Failed'}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : <p className={styles.noActivity}>No AI generations have been recorded yet.</p>}
+        </section>
       ) : null}
     </section>
   );
