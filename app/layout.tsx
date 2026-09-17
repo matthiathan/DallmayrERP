@@ -7,49 +7,50 @@ import { AppearanceProvider } from '@/components/appearance/AppearanceProvider';
 import { RenderedSurfaceContrastSync } from '@/components/appearance/RenderedSurfaceContrastSync';
 import { GlobalAccountMenu } from '@/components/layout/GlobalAccountMenu';
 import { PageTemplateFrame } from '@/components/layout/PageTemplateFrame';
+import { DALLMAYR_SA_ICON_URL } from '@/lib/brand/dallmayr';
 
 const APPEARANCE_BOOT_SCRIPT = `
 (function () {
   try {
     var raw = window.localStorage.getItem('dallmayrerp-appearance-v1');
     var saved = raw ? JSON.parse(raw) : {};
-    var tone = saved.themeTone === 'light' ? 'light' : 'dark';
+    var tone = saved.themeTone === 'dark' ? 'dark' : 'light';
     var themes = {
       dark: {
         id: 'slate-modern',
-        accent: '#22c3dc',
-        accentInk: '#071318',
-        accentOnLight: '#08778b',
-        accentOnDark: '#67e8f9',
-        theme: '#2b343d',
-        background: '#0f1419',
-        surface: '#20272f',
-        raised: '#2b343d',
-        text: '#f8fafc',
+        accent: '#b89b5e',
+        accentInk: '#1f1d19',
+        accentOnLight: '#6f5a31',
+        accentOnDark: '#d8c59b',
+        theme: '#292826',
+        background: '#191918',
+        surface: '#242321',
+        raised: '#312f2c',
+        text: '#f4f1e9',
         strong: '#ffffff',
-        muted: '#cbd5e1',
-        subtle: '#a8b3bf',
-        border: '#71808e',
-        link: '#67e8f9',
-        track: '#111820'
+        muted: '#d2cdc2',
+        subtle: '#aaa398',
+        border: '#5e574b',
+        link: '#d8c59b',
+        track: '#302e2a'
       },
       light: {
         id: 'warm-sand',
-        accent: '#a67828',
-        accentInk: '#11100d',
-        accentOnLight: '#7a4d13',
-        accentOnDark: '#d7b26b',
-        theme: '#e6d7bf',
-        background: '#f5efe5',
-        surface: '#fffaf2',
-        raised: '#f2e5d3',
-        text: '#2b2118',
-        strong: '#1f1812',
-        muted: '#65584a',
-        subtle: '#766858',
-        border: '#9b8464',
-        link: '#7a4d13',
-        track: '#ded4c6'
+        accent: '#b89b5e',
+        accentInk: '#211d16',
+        accentOnLight: '#6f5a31',
+        accentOnDark: '#d8c59b',
+        theme: '#ffffff',
+        background: '#f5f4f1',
+        surface: '#ffffff',
+        raised: '#faf9f6',
+        text: '#242424',
+        strong: '#191918',
+        muted: '#6d6a64',
+        subtle: '#8f8a82',
+        border: '#ddd9d1',
+        link: '#6f5a31',
+        track: '#e7e2d8'
       }
     };
     var selected = themes[tone];
@@ -82,8 +83,8 @@ const APPEARANCE_BOOT_SCRIPT = `
     root.style.setProperty('--content-chart-track', selected.track);
     root.style.colorScheme = tone;
   } catch (error) {
-    document.documentElement.dataset.themeTone = 'dark';
-    document.documentElement.dataset.visualTheme = 'slate-modern';
+    document.documentElement.dataset.themeTone = 'light';
+    document.documentElement.dataset.visualTheme = 'warm-sand';
     document.documentElement.dataset.backgroundStyle = 'solid';
     document.documentElement.dataset.contrastGuard = 'active';
   }
@@ -94,8 +95,8 @@ export const metadata = {
   description: 'Dallmayr South Africa machine and telemetry monitoring',
   applicationName: 'Dallmayr Machine Telemetry',
   icons: {
-    icon: '/icons/dallmayr-app.svg',
-    apple: '/icons/dallmayr-app.svg',
+    icon: DALLMAYR_SA_ICON_URL,
+    apple: DALLMAYR_SA_ICON_URL,
   },
 };
 
@@ -103,7 +104,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#0f1419',
+  themeColor: '#b89b5e',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -111,8 +112,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html
       data-background-style="solid"
       data-contrast-guard="active"
-      data-theme-tone="dark"
-      data-visual-theme="slate-modern"
+      data-theme-tone="light"
+      data-visual-theme="warm-sand"
       lang="en"
       suppressHydrationWarning
     >
