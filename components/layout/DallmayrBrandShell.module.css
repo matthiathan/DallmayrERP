@@ -1,12 +1,13 @@
 .brandShell {
-  /* Website-derived Dallmayr South Africa palette: gold identity, white/light
-     surfaces, dark neutral copy, with crest red reserved for emphasis/status. */
+  /* Dallmayr South Africa app palette: gold identity, white/light surfaces and
+     charcoal copy. Red is intentionally excluded from branding; fault/error
+     components keep their own semantic danger colours. */
   --dallmayr-gold: #b89b5e !important;
   --dallmayr-gold-dark: #7f683b !important;
   --dallmayr-gold-soft: #f6f1e7 !important;
-  --dallmayr-red: #e51f2b !important;
-  --dallmayr-red-dark: #b91520 !important;
-  --dallmayr-red-soft: #fff0f1 !important;
+  --dallmayr-red: #b89b5e !important;
+  --dallmayr-red-dark: #7f683b !important;
+  --dallmayr-red-soft: #f6f1e7 !important;
   --dallmayr-cream: #f5f4f1 !important;
   --dallmayr-cream-soft: #faf9f6 !important;
   --platform-ink: #242424 !important;
