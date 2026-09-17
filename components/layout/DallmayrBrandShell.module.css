@@ -1,0 +1,134 @@
+.brandShell {
+  --dallmayr-red: #b51621;
+  --dallmayr-red-dark: #8e111a;
+  --dallmayr-red-soft: #fcedef;
+  --dallmayr-cream: #f4f1eb;
+  --dallmayr-cream-soft: #f8f5ef;
+  --dallmayr-gold: #c8a46a;
+  --platform-ink: #231f20;
+  --platform-muted: #6f6965;
+  --platform-border: #ded8cf;
+  --platform-surface: #ffffff;
+  --user-accent: #b51621;
+  --content-accent-text: #8e111a;
+  --content-focus: #b51621;
+  color: #231f20;
+  background: #f4f1eb;
+}
+
+.brandShell :global(.application-main) {
+  color: #231f20 !important;
+  background: #f4f1eb !important;
+}
+
+.brandShell :global(.neo-card),
+.brandShell :global(.card),
+.brandShell :global(.hero-panel),
+.brandShell :global(.table-wrap) {
+  color: #231f20 !important;
+  background: #ffffff !important;
+  border-color: #ded8cf !important;
+  box-shadow: 0 1px 2px rgba(35, 31, 32, .06), 0 10px 30px rgba(35, 31, 32, .05) !important;
+}
+
+.brandShell :global(.neo-card::before),
+.brandShell :global(.card::before),
+.brandShell :global(.hero-panel::before),
+.brandShell :global(.table-wrap::before),
+.brandShell :global(.neo-card::after),
+.brandShell :global(.card::after),
+.brandShell :global(.hero-panel::after) {
+  display: none !important;
+}
+
+.brandShell :global(h1),
+.brandShell :global(h2),
+.brandShell :global(h3),
+.brandShell :global(h4) {
+  color: #231f20 !important;
+  text-shadow: none !important;
+}
+
+.brandShell :global(p),
+.brandShell :global(label) {
+  color: #6f6965 !important;
+  text-shadow: none !important;
+}
+
+.brandShell :global(.kpi-value) {
+  color: #b51621 !important;
+  text-shadow: none !important;
+}
+
+.brandShell :global(.button:not(.secondary):not(.danger)) {
+  color: #ffffff !important;
+  background: #b51621 !important;
+  border-color: #8e111a !important;
+  box-shadow: 0 1px 2px rgba(35, 31, 32, .08) !important;
+  text-shadow: none !important;
+}
+
+.brandShell :global(.button:not(.secondary):not(.danger):hover) {
+  background: #8e111a !important;
+}
+
+.brandShell :global(.button.secondary) {
+  color: #8e111a !important;
+  background: #ffffff !important;
+  border-color: #d8c6c4 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.brandShell :global(input),
+.brandShell :global(select),
+.brandShell :global(textarea) {
+  color: #231f20 !important;
+  background: #ffffff !important;
+  border-color: #d8d0c6 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.brandShell :global(input:focus),
+.brandShell :global(select:focus),
+.brandShell :global(textarea:focus) {
+  border-color: #b51621 !important;
+  box-shadow: 0 0 0 3px rgba(181, 22, 33, .12) !important;
+}
+
+.brandShell :global(th) {
+  color: #6f6965 !important;
+  background: #f8f5ef !important;
+  border-bottom-color: #ded8cf !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.brandShell :global(td) {
+  color: #231f20 !important;
+  border-bottom-color: #ebe5dd !important;
+}
+
+.brandShell :global(tr:hover td) {
+  background: #fcfaf6 !important;
+}
+
+.brandShell :global(.dallmayr-sidebar) {
+  border-right-color: #ded8cf !important;
+}
+
+.brandShell :global(.dallmayr-sidebar-link) {
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.brandShell :global(.dallmayr-sidebar-link:hover) {
+  background: #f8f5ef !important;
+  border-color: #e8dfd3 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brandShell :global(.dallmayr-sidebar-link) {
+    transition: none;
+  }
+}
