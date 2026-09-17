@@ -7,6 +7,7 @@ import { AppearanceProvider } from '@/components/appearance/AppearanceProvider';
 import { RenderedSurfaceContrastSync } from '@/components/appearance/RenderedSurfaceContrastSync';
 import { GlobalAccountMenu } from '@/components/layout/GlobalAccountMenu';
 import { PageTemplateFrame } from '@/components/layout/PageTemplateFrame';
+import { DALLMAYR_SA_ICON_URL } from '@/lib/brand/dallmayr';
 
 const APPEARANCE_BOOT_SCRIPT = `
 (function () {
@@ -94,8 +95,8 @@ export const metadata = {
   description: 'Dallmayr South Africa machine and telemetry monitoring',
   applicationName: 'Dallmayr Machine Telemetry',
   icons: {
-    icon: '/icons/dallmayr-app.svg',
-    apple: '/icons/dallmayr-app.svg',
+    icon: DALLMAYR_SA_ICON_URL,
+    apple: DALLMAYR_SA_ICON_URL,
   },
 };
 
@@ -103,7 +104,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#0f1419',
+  themeColor: '#b89b5e',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
