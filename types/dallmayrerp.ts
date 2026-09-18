@@ -10,6 +10,7 @@ export type BusinessRole =
   | 'road_technician';
 
 export type Branch = 'jhb' | 'cpt' | 'kzn' | 'national';
+export type TelemetryRegion = 'south_africa' | 'dubai' | 'europe';
 
 export interface BusinessUser {
   id: string;
@@ -32,6 +33,7 @@ export interface UserDetails {
   birthday: string | null;
   role: BusinessRole;
   branch: Branch;
+  telemetry_region: TelemetryRegion | null;
   emergency_contact_name: string | null;
   emergency_contact_phone: string | null;
   created_at: string;
