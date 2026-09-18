@@ -17,6 +17,15 @@ test('V6.8.51 keeps passive MDB safety while adding DEX audit reconciliation', (
   assert.match(generated, /counter_semantics.*cumulative_dex_product_audit/);
 });
 
+test('passive MDB profile fingerprint is stable across cashless-reader serial replacements', () => {
+  const fingerprintBuilder = generated.match(/void updateMdbProfileFingerprint\(\) \{[\s\S]*?\n\}/)?.[0] ?? '';
+  assert.match(fingerprintBuilder, /String fingerprint = String\("MDB2-"\)/);
+  assert.match(fingerprintBuilder, /reader\.manufacturer/);
+  assert.match(fingerprintBuilder, /reader\.modelNumber/);
+  assert.match(fingerprintBuilder, /reader\.softwareVersion/);
+  assert.doesNotMatch(fingerprintBuilder, /seed \+= String\(reader\.peripheralSerial\)/);
+});
+
 test('current DEX PA2 and aggregate VA1 counters are captured into the reconciliation buffer', () => {
   assert.match(
     generated,
