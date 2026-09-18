@@ -15,8 +15,8 @@ test('telemetry AI requires an authenticated user before loading telemetry evide
 test('telemetry AI resolves auth users through the internal application user mapping', () => {
   assert.match(edgeFunction, /supabase\.rpc\('current_app_user_id'\)/);
   assert.match(edgeFunction, /supabase\.rpc\('current_app_role'\)/);
-  assert.match(edgeFunction, /\.eq\('user_id', appUserId\)/);
-  assert.doesNotMatch(edgeFunction, /\.eq\('user_id', authData\.user\.id\)/);
+  assert.match(edgeFunction, /\.from\('user_details'\)[\s\S]*?\.eq\('user_id', appUserId\)/);
+  assert.match(edgeFunction, /\.from\('telemetry_ai_insight_cache'\)[\s\S]*?\.eq\('user_id', authData\.user\.id\)/);
   assert.match(aiComponent, /client\.rpc\('current_app_role'\)/);
   assert.doesNotMatch(aiComponent, /\.eq\('user_id', authData\.user\.id\)/);
 });
