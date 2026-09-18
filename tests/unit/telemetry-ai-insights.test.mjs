@@ -46,6 +46,24 @@ test('AI client surfaces the Edge Function response message instead of the gener
   assert.match(aiComponent, /requestErrorMessage\(invokeError\)/);
 });
 
+test('AI provider failures are classified into actionable server messages', () => {
+  assert.match(edgeFunction, /function providerErrorCode/);
+  assert.match(edgeFunction, /function providerErrorMessage/);
+  assert.match(edgeFunction, /insufficient_quota/);
+  assert.match(edgeFunction, /invalid_api_key/);
+  assert.match(edgeFunction, /model_not_found/);
+  assert.match(edgeFunction, /rate_limit/);
+  assert.match(edgeFunction, /provider_status: aiResponse\.status/);
+});
+
+test('AI generation telemetry persists success, failure and cache hits', () => {
+  assert.match(edgeFunction, /telemetry_ai_generation_log/);
+  assert.match(edgeFunction, /event_type: 'success'/);
+  assert.match(edgeFunction, /event_type: 'failure'/);
+  assert.match(edgeFunction, /event_type: 'cache_hit'/);
+  assert.match(edgeFunction, /error_code: code/);
+});
+
 test('AI branding uses Dallmayr gold and keeps red for actual failure states only', () => {
   assert.match(aiStyles, /\.actions button\s*\{[^}]*background:\s*#b89b5e/s);
   assert.match(aiStyles, /\.eyebrow\s*\{[^}]*color:\s*#7f683b/s);
