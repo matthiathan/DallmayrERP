@@ -45,6 +45,71 @@ function outputText(payload: Record<string, unknown>) {
   return '';
 }
 
+function providerErrorCode(payload: Record<string, any>, status: number) {
+  const error = payload?.error ?? {};
+  const raw = error.code ?? error.type ?? `http_${status}`;
+  const code = String(raw || `http_${status}`).trim().toLowerCase();
+  return code.slice(0, 160) || `http_${status}`;
+}
+
+function providerErrorMessage(code: string, status: number) {
+  if (['insufficient_quota', 'billing_hard_limit_reached', 'billing_not_active'].includes(code)) {
+    return 'OpenAI API billing or quota is unavailable. Add API billing or credits to the OpenAI project used by OPENAI_API_KEY, then retry.';
+  }
+  if (['invalid_api_key', 'invalid_api_key_format'].includes(code) || status === 401) {
+    return 'OpenAI rejected the configured API key. Replace OPENAI_API_KEY with a valid API key for the intended OpenAI project.';
+  }
+  if (code === 'model_not_found' || status === 404) {
+    return `The configured OpenAI model (${AI_MODEL}) is not available to this API project. Update AI_MODEL/OPENAI_MODEL or grant the project access.`;
+  }
+  if (code.includes('rate_limit') || status === 429) {
+    return 'The OpenAI API rate limit was reached. Retry shortly or review the API project rate limits.';
+  }
+  if (status === 403) {
+    return 'OpenAI rejected this API key\'s permissions. Check the key/project permissions for Responses API and the configured model.';
+  }
+  if (status >= 500) {
+    return `The OpenAI service returned a provider error (${code}). Retry the request shortly.`;
+  }
+  return `OpenAI rejected the AI request (${code}). Check the OpenAI API project configuration and retry.`;
+}
+
+async function recordGenerationEvent(
+  supabase: ReturnType<typeof createClient>,
+  values: {
+    user_id: string;
+    scope_key: string;
+    analysis_scope: 'fleet' | 'machine';
+    machine_id: string | null;
+    period: string;
+    model: string;
+    event_type: 'success' | 'failure' | 'cache_hit';
+    error_code?: string | null;
+    duration_ms?: number | null;
+    input_tokens?: number | null;
+    output_tokens?: number | null;
+    cache_write_ok?: boolean | null;
+    complete_machine_sales?: boolean | null;
+  },
+) {
+  const { error } = await supabase.from('telemetry_ai_generation_log').insert({
+    user_id: values.user_id,
+    scope_key: values.scope_key,
+    analysis_scope: values.analysis_scope,
+    machine_id: values.machine_id,
+    period: values.period,
+    model: values.model,
+    event_type: values.event_type,
+    error_code: values.error_code ?? null,
+    duration_ms: values.duration_ms ?? null,
+    input_tokens: values.input_tokens ?? null,
+    output_tokens: values.output_tokens ?? null,
+    cache_write_ok: values.cache_write_ok ?? null,
+    complete_machine_sales: values.complete_machine_sales ?? null,
+  });
+  if (error) console.error('AI generation log write failed', error.code ?? 'unknown');
+}
+
 async function loadMachinePeriodSales(
   supabase: ReturnType<typeof createClient>,
   machineId: string,
@@ -277,20 +342,46 @@ Deno.serve(async (request: Request) => {
   }
 
   const scopeKey = machineId ? `legacy-branch:${branchScope}:machine:${machineId}` : `legacy-branch:${branchScope}:fleet`;
+  const analysisScope = machineId ? 'machine' as const : 'fleet' as const;
   const { data: cached } = await supabase.from('telemetry_ai_insight_cache')
     .select('payload,model,generated_at,input_tokens,output_tokens')
     .eq('user_id', authData.user.id).eq('scope_key', scopeKey).eq('period', period).maybeSingle();
   if (cached?.generated_at) {
     const age = Date.now() - new Date(cached.generated_at).getTime();
     if (age < MIN_REFRESH_MS || (!forceRefresh && age < CACHE_TTL_MS)) {
+      await recordGenerationEvent(supabase, {
+        user_id: authData.user.id,
+        scope_key: scopeKey,
+        analysis_scope: analysisScope,
+        machine_id: machineId,
+        period,
+        model: String(cached.model ?? AI_MODEL),
+        event_type: 'cache_hit',
+        duration_ms: Date.now() - requestStartedAt,
+        input_tokens: numberValue(cached.input_tokens) || null,
+        output_tokens: numberValue(cached.output_tokens) || null,
+      });
       return jsonResponse({ ...cached.payload, cached: true, generated_at: cached.generated_at, model: cached.model });
     }
   }
 
-  if (!AI_API_KEY) return jsonResponse({
-    message: 'AI is not configured on the server. Add OPENAI_API_KEY (or AI_API_KEY) to the Supabase Edge Function secrets.',
-    code: 'ai_not_configured',
-  }, 503);
+  if (!AI_API_KEY) {
+    await recordGenerationEvent(supabase, {
+      user_id: authData.user.id,
+      scope_key: scopeKey,
+      analysis_scope: analysisScope,
+      machine_id: machineId,
+      period,
+      model: AI_MODEL,
+      event_type: 'failure',
+      error_code: 'ai_not_configured',
+      duration_ms: Date.now() - requestStartedAt,
+    });
+    return jsonResponse({
+      message: 'AI is not configured on the server. Add OPENAI_API_KEY (or AI_API_KEY) to the Supabase Edge Function secrets.',
+      code: 'ai_not_configured',
+    }, 503);
+  }
 
   const dateFrom = typeof report.date_from === 'string' ? report.date_from : '';
   const dateTo = typeof report.date_to === 'string' ? report.date_to : '';
@@ -336,21 +427,53 @@ Deno.serve(async (request: Request) => {
 
   const aiPayload = await aiResponse.json().catch(() => ({})) as Record<string, any>;
   if (!aiResponse.ok) {
+    const code = providerErrorCode(aiPayload, aiResponse.status);
+    const durationMs = Date.now() - requestStartedAt;
     console.error('AI provider error', JSON.stringify({
       status: aiResponse.status,
+      code,
       type: aiPayload?.error?.type ?? 'unknown',
       model: AI_MODEL,
-      scope: machineId ? 'machine' : 'fleet',
+      scope: analysisScope,
       period,
-      duration_ms: Date.now() - requestStartedAt,
+      duration_ms: durationMs,
     }));
-    return jsonResponse({ message: 'The AI insight service is temporarily unavailable.' }, 502);
+    await recordGenerationEvent(supabase, {
+      user_id: authData.user.id,
+      scope_key: scopeKey,
+      analysis_scope: analysisScope,
+      machine_id: machineId,
+      period,
+      model: AI_MODEL,
+      event_type: 'failure',
+      error_code: code,
+      duration_ms: durationMs,
+      complete_machine_sales: machineId ? !machineSalesResult.error : null,
+    });
+    return jsonResponse({
+      message: providerErrorMessage(code, aiResponse.status),
+      code,
+      provider_status: aiResponse.status,
+    }, 502);
   }
   const text = outputText(aiPayload);
   let parsed: Record<string, unknown>;
   try { parsed = JSON.parse(text); } catch {
-    console.error('AI structured response parse failed', JSON.stringify({ model: AI_MODEL, scope: machineId ? 'machine' : 'fleet', period }));
-    return jsonResponse({ message: 'The AI provider returned an invalid structured response.' }, 502);
+    const durationMs = Date.now() - requestStartedAt;
+    console.error('AI structured response parse failed', JSON.stringify({ model: AI_MODEL, scope: analysisScope, period }));
+    await recordGenerationEvent(supabase, {
+      user_id: authData.user.id,
+      scope_key: scopeKey,
+      analysis_scope: analysisScope,
+      machine_id: machineId,
+      period,
+      model: AI_MODEL,
+      event_type: 'failure',
+      error_code: 'invalid_structured_response',
+      duration_ms: durationMs,
+      complete_machine_sales: machineId ? !machineSalesResult.error : null,
+    });
+    return jsonResponse({ message: 'The AI provider returned an invalid structured response.', code: 'invalid_structured_response' }, 502);
   }
 
   const generatedAt = new Date().toISOString();
@@ -364,13 +487,28 @@ Deno.serve(async (request: Request) => {
   }, { onConflict: 'user_id,scope_key,period' });
 
   if (cacheError) console.error('AI insight cache write failed', cacheError.code ?? 'unknown');
+  const durationMs = Date.now() - requestStartedAt;
+  await recordGenerationEvent(supabase, {
+    user_id: authData.user.id,
+    scope_key: scopeKey,
+    analysis_scope: analysisScope,
+    machine_id: machineId,
+    period,
+    model: AI_MODEL,
+    event_type: 'success',
+    duration_ms: durationMs,
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    cache_write_ok: !cacheError,
+    complete_machine_sales: machineId ? !machineSalesResult.error : null,
+  });
   console.info('AI insight generated', JSON.stringify({
     model: AI_MODEL,
-    scope: machineId ? 'machine' : 'fleet',
+    scope: analysisScope,
     period,
     input_tokens: inputTokens,
     output_tokens: outputTokens,
-    duration_ms: Date.now() - requestStartedAt,
+    duration_ms: durationMs,
     cache_write_ok: !cacheError,
     complete_machine_sales: machineId ? !machineSalesResult.error : null,
   }));
