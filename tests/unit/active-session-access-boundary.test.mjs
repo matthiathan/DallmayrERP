@@ -25,11 +25,20 @@ test('login rejects authenticated accounts without active application access', (
   assert.match(login, /active DallmayrERP access|active DallmayrERP account/i);
 });
 
-test('current_app_user_id fails closed for suspended application users', () => {
-  const hardeningMigration = migrations.find(({ content }) =>
-    /create\s+or\s+replace\s+function\s+public\.current_app_user_id\s*\(\s*\)/i.test(content)
-    && /u\.is_active\s*=\s*true/i.test(content),
+test('active identity hardening fails closed for suspended and unclaimed application users', () => {
+  const hardeningMigration = migrations.find(({ name }) =>
+    name.endsWith('_harden_active_app_user_identity.sql'),
   );
 
-  assert.ok(hardeningMigration, 'A migration must redefine current_app_user_id() to require users.is_active = true');
+  assert.ok(hardeningMigration, 'The active application identity hardening migration must exist');
+  assert.match(
+    hardeningMigration.content,
+    /create\s+or\s+replace\s+function\s+public\.current_app_user_id\s*\(\s*\)[\s\S]*?u\.is_active\s*=\s*true/i,
+  );
+  assert.match(
+    hardeningMigration.content,
+    /create\s+or\s+replace\s+function\s+public\.claim_current_app_user\s*\(\s*\)[\s\S]*?u\.is_active\s*=\s*true/i,
+  );
+  assert.match(hardeningMigration.content, /grant\s+execute\s+on\s+function\s+public\.current_app_user_id\(\)\s+to\s+authenticated,\s*service_role/i);
+  assert.match(hardeningMigration.content, /grant\s+execute\s+on\s+function\s+public\.claim_current_app_user\(\)\s+to\s+authenticated,\s*service_role/i);
 });
