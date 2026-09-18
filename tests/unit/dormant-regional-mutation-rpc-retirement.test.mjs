@@ -9,7 +9,9 @@ const suffix = '_retire_dormant_regional_mutation_rpcs.sql';
 function migrationText() {
   const file = fs.readdirSync(migrationsDir).find((name) => name.endsWith(suffix));
   assert.ok(file, 'A dedicated migration must retire dormant regional mutation RPCs');
-  return fs.readFileSync(path.join(migrationsDir, file), 'utf8').toLowerCase();
+  return fs.readFileSync(path.join(migrationsDir, file), 'utf8')
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
 }
 
 const dormantFunctions = [
@@ -18,16 +20,11 @@ const dormantFunctions = [
   'set_telemetry_fleet_attention_workflow(text, uuid, text, text, timestamp with time zone, text)',
 ];
 
-function escaped(signature) {
-  return signature.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 test('dormant security-definer regional mutation RPCs are not callable by authenticated clients', () => {
   const sql = migrationText();
   for (const signature of dormantFunctions) {
-    assert.match(
-      sql,
-      new RegExp(`revoke\\s+execute\\s+on\\s+function\\s+public\\.${escaped(signature)}\\s+from\\s+authenticated`),
+    assert.ok(
+      sql.includes(`revoke execute on function public.${signature} from authenticated;`),
       `${signature} must revoke authenticated execution`,
     );
   }
@@ -36,9 +33,8 @@ test('dormant security-definer regional mutation RPCs are not callable by authen
 test('dormant regional mutation RPCs retain service-role maintenance compatibility', () => {
   const sql = migrationText();
   for (const signature of dormantFunctions) {
-    assert.match(
-      sql,
-      new RegExp(`grant\\s+execute\\s+on\\s+function\\s+public\\.${escaped(signature)}\\s+to\\s+service_role`),
+    assert.ok(
+      sql.includes(`grant execute on function public.${signature} to service_role;`),
       `${signature} must retain service-role execution`,
     );
   }
