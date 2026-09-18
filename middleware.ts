@@ -86,15 +86,25 @@ export async function middleware(request: NextRequest) {
   const { data, error } = await supabase.auth.getClaims();
   const authenticated = !error && Boolean(data?.claims?.sub);
 
-  if (!authenticated && !publicRoute) {
+  // A valid Supabase JWT identifies the Auth account, but application access is
+  // granted only while that account is linked to an active DallmayrERP user.
+  // Treat an RPC failure as no access so protected routes fail closed.
+  let activeAppUser = false;
+  if (authenticated) {
+    const { data: activeAccess, error: activeAccessError } = await supabase.rpc('is_active_app_user');
+    activeAppUser = !activeAccessError && activeAccess === true;
+  }
+
+  if (!(authenticated && activeAppUser) && !publicRoute) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
     loginUrl.search = '';
     loginUrl.searchParams.set('next', `${pathname}${request.nextUrl.search}`);
+    if (authenticated && !activeAppUser) loginUrl.searchParams.set('access', 'inactive');
     return redirectWithSession(loginUrl, response);
   }
 
-  if (authenticated && pathname === '/login') {
+  if (authenticated && activeAppUser && pathname === '/login') {
     const destination = safeReturnPath(request.nextUrl.searchParams.get('next'), request.url);
     return redirectWithSession(new URL(destination, request.url), response);
   }
