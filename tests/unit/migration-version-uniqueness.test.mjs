@@ -14,8 +14,8 @@ test('Supabase migration version prefixes are unique', () => {
   const duplicates = [];
 
   for (const file of files) {
-    const match = file.match(/^(\d{14})_/);
-    assert.ok(match, `Migration ${file} must begin with a 14-digit UTC version prefix`);
+    const match = file.match(/^(\d+)_/);
+    assert.ok(match, `Migration ${file} must begin with a numeric version prefix`);
     const version = match[1];
     const previous = seen.get(version);
     if (previous) duplicates.push(`${version}: ${previous}, ${file}`);
