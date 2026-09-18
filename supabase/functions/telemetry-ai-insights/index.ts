@@ -244,10 +244,23 @@ Deno.serve(async (request: Request) => {
   const forceRefresh = body.refresh === true;
   const machineId = typeof body.machine_id === 'string' && body.machine_id.trim() ? body.machine_id.trim() : null;
 
-  const { data: profile, error: profileError } = await supabase.from('user_details').select('role,branch').eq('user_id', authData.user.id).maybeSingle();
+  const [appUserResult, appRoleResult] = await Promise.all([
+    supabase.rpc('current_app_user_id'),
+    supabase.rpc('current_app_role'),
+  ]);
+  const appUserId = typeof appUserResult.data === 'string' ? appUserResult.data : '';
+  const role = typeof appRoleResult.data === 'string' ? appRoleResult.data.toLowerCase() : '';
+  if (appUserResult.error || appRoleResult.error || !appUserId || !role) {
+    return jsonResponse({ message: 'An active DallmayrERP user profile is required.' }, 403);
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('user_details')
+    .select('branch')
+    .eq('user_id', appUserId)
+    .maybeSingle();
   if (profileError || !profile) return jsonResponse({ message: 'An active DallmayrERP user profile is required.' }, 403);
   const branch = String(profile.branch ?? 'national').toLowerCase();
-  const role = String(profile.role ?? 'unknown').toLowerCase();
   const branchScope = branch === 'national' ? 'all' : branch;
 
   const [reportResult, dashboardResult] = await Promise.all([
