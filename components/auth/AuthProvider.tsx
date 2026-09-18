@@ -44,9 +44,9 @@ async function loadBusinessProfile(authUser: User | null): Promise<BusinessProfi
   try {
     const client = getSupabaseClient();
 
-    // Older DallmayrERP accounts may still have a matching profile row. Claim
-    // and load it when available so names and saved appearance preferences keep
-    // working, but never make that legacy record a condition of authentication.
+    // Older active DallmayrERP accounts may still have a matching unclaimed
+    // profile row. Claim and load it when available so names and saved
+    // appearance preferences keep working after the session access gate passes.
     await client.rpc('claim_current_app_user');
 
     const { data: userRecord, error: userError } = await client
@@ -69,8 +69,9 @@ async function loadBusinessProfile(authUser: User | null): Promise<BusinessProfi
       details,
     };
   } catch {
-    // Supabase Auth is the access authority for the telemetry-only app. A
-    // missing ERP profile or role must not turn a valid session into a logout.
+    // Middleware and the login flow enforce active DallmayrERP access. Profile
+    // hydration remains nullable so a transient details failure does not mutate
+    // an otherwise valid Auth session client-side.
     return null;
   }
 }
