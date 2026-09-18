@@ -27,6 +27,7 @@
     "firmware:generate:v649": "node scripts/generate-telemetry-v6-8-49.mjs",
     "firmware:generate:v650": "node scripts/generate-telemetry-v6-8-50-release.mjs",
     "firmware:generate:v651": "node scripts/generate-telemetry-v6-8-51.mjs",
+    "firmware:generate:v652": "node scripts/generate-telemetry-v6-8-52.mjs",
     "hardware:check": "node scripts/check-telemetry-hardware-contract.mjs",
     "lint": "next lint",
     "test": "node --test --import ./tests/unit/register-typescript-loader.mjs tests/unit/*.test.mjs",
