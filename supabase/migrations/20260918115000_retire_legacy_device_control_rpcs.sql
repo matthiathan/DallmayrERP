@@ -1,2 +1,0 @@
--- Superseded by 20260918115500_retire_legacy_device_control_rpcs.sql.
--- Kept intentionally empty only to avoid rewriting branch history during review.
