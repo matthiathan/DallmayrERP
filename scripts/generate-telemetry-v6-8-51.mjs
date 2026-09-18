@@ -31,6 +31,20 @@ export function transformTelemetryV651(input) {
 
   source = replaceOnce(
     source,
+    `    seed += "|M";\n    seed += String(reader.manufacturer);\n    seed += "|P";\n    seed += String(reader.peripheralSerial);\n    seed += "|N";`,
+    `    seed += "|M";\n    seed += String(reader.manufacturer);\n    // Keep the per-unit cashless-reader serial available for diagnostics, but\n    // exclude it from the profile signature so an equivalent reader replacement\n    // does not create a different decoder-profile fingerprint.\n    seed += "|N";`,
+    'stable MDB profile fingerprint seed',
+  );
+
+  source = replaceOnce(
+    source,
+    `  String fingerprint = String("MDB-") + fingerprintHex(fnv1a32(seed));`,
+    `  String fingerprint = String("MDB2-") + fingerprintHex(fnv1a32(seed));`,
+    'versioned stable MDB profile fingerprint',
+  );
+
+  source = replaceOnce(
+    source,
     `void appendDexByte(uint8_t b) {`,
     `static const uint8_t DEX_AUDIT_UPLOAD_CAPACITY = 96;\n\nstruct DexAuditUploadItem {\n  char selection[41];\n  char product[97];\n  uint32_t configuredPriceCents;\n  uint64_t soldTotal;\n  uint64_t revenueCentsTotal;\n};\n\nstatic DexAuditUploadItem dexAuditUploadItems[DEX_AUDIT_UPLOAD_CAPACITY];\nstatic uint8_t dexAuditUploadItemCount = 0;\nstatic bool dexAuditUploadOverflow = false;\nstatic bool dexAuditSnapshotPending = false;\nstatic uint32_t dexAuditCompletedMs = 0;\n\nvoid resetDexAuditUploadBuffer() {\n  dexAuditUploadItemCount = 0;\n  dexAuditUploadOverflow = false;\n}\n\nvoid rememberDexAuditUploadItem(const String& selection, const String& product,\n                                uint32_t configuredPriceCents, uint64_t soldTotal,\n                                uint64_t revenueCentsTotal) {\n  if (!selection.length()) return;\n  if (dexAuditUploadItemCount >= DEX_AUDIT_UPLOAD_CAPACITY) {\n    dexAuditUploadOverflow = true;\n    return;\n  }\n\n  DexAuditUploadItem& item = dexAuditUploadItems[dexAuditUploadItemCount++];\n  memset(&item, 0, sizeof(item));\n  copyText(item.selection, sizeof(item.selection), selection);\n  if (product.length()) copyText(item.product, sizeof(item.product), product);\n  item.configuredPriceCents = configuredPriceCents;\n  item.soldTotal = soldTotal;\n  item.revenueCentsTotal = revenueCentsTotal;\n}\n\nbool uploadDexAuditSnapshot() {\n  if (!dexAuditSnapshotPending || dexAuditUploadItemCount == 0) return true;\n  if (dexAuditUploadOverflow) return false;\n\n  uint8_t index = 0;\n  while (index < dexAuditUploadItemCount) {\n    JsonDocument doc;\n    addCommonPayload(doc, "dex_audit_snapshot");\n    doc["audit_completed_uptime_ms"] = dexAuditCompletedMs;\n    doc["counter_semantics"] = "cumulative_dex_product_audit";\n    JsonArray items = doc["items"].to<JsonArray>();\n\n    uint8_t added = 0;\n    while (index < dexAuditUploadItemCount && added < MAX_ITEMS_PER_UPLOAD) {\n      const DexAuditUploadItem& item = dexAuditUploadItems[index++];\n      JsonObject out = items.add<JsonObject>();\n      out["selection"] = item.selection;\n      if (strlen(item.product)) out["product"] = item.product;\n      if (item.configuredPriceCents > 0) out["configured_price_cents"] = item.configuredPriceCents;\n      out["sold_total"] = item.soldTotal;\n      out["revenue_cents_total"] = item.revenueCentsTotal;\n      added++;\n    }\n\n    if (!sendDocumentToIngest(doc)) return false;\n  }\n\n  return true;\n}\n\nvoid appendDexByte(uint8_t b) {`,
     'DEX audit upload buffer and sender',
@@ -86,6 +100,9 @@ export function transformTelemetryV651(input) {
   }
   if (!source.includes('DEX counter snapshot and reconciliation snapshot accepted.')) {
     throw new Error('V6.8.51 generation failed: DEX completed-audit handoff missing.');
+  }
+  if (!source.includes('String fingerprint = String("MDB2-")')) {
+    throw new Error('V6.8.51 generation failed: stable MDB profile fingerprint schema missing.');
   }
 
   return source;
