@@ -15,7 +15,7 @@ function migrationText() {
 }
 
 const legacyFunctions = [
-  'set_telemetry_device_control(text, text, boolean, boolean)',
+  'set_telemetry_device_control(text, text, text, boolean, boolean)',
   'set_telemetry_device_location_control(text, boolean, integer, integer)',
   'set_telemetry_device_mode(text, text)',
   'set_telemetry_prepaid_balance_control(text, integer, integer, integer, integer)',
