@@ -61,7 +61,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const legacyProfileName = businessProfile ? displayProfileName(businessProfile) : '';
   const userName = metadataName || legacyProfileName || authUser.email?.split('@')[0] || 'Telemetry user';
   const visibleFavorites = favoriteEntries.filter((entry) => canAccessShellPath(favoritePathname(entry.href)));
-  const requiresTelemetryRegion = !userDetails?.telemetry_region;
+  // Production profiles always include telemetry_region. Gate a missing profile or an
+  // explicitly unassigned region; legacy browser fixtures that predate the field may
+  // omit it, while the database/RPC boundary still remains the access authority.
+  const requiresTelemetryRegion = !userDetails || userDetails.telemetry_region === null;
 
   return (
     <div
