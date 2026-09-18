@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import styles from './TelemetryAiInsights.module.css';
 
@@ -67,6 +68,18 @@ function tokenCount(row: GenerationLogRow) {
   return (row.input_tokens ?? 0) + (row.output_tokens ?? 0);
 }
 
+async function requestErrorMessage(error: unknown) {
+  if (error instanceof FunctionsHttpError) {
+    try {
+      const payload = await error.context.json() as { message?: unknown };
+      if (typeof payload?.message === 'string' && payload.message.trim()) return payload.message.trim();
+    } catch {
+      // Fall through to the SDK error message if the response is not JSON.
+    }
+  }
+  return error instanceof Error ? error.message : 'Could not generate AI telemetry insights.';
+}
+
 export function TelemetryAiInsights({ machineId }: { machineId?: string }) {
   const [period, setPeriod] = useState<Period>('week');
   const [data, setData] = useState<InsightPayload | null>(null);
@@ -80,15 +93,8 @@ export function TelemetryAiInsights({ machineId }: { machineId?: string }) {
     if (machineScope) return;
     try {
       const client = getSupabaseClient();
-      const { data: authData } = await client.auth.getUser();
-      if (!authData.user) return;
-
-      const { data: profile, error: profileError } = await client
-        .from('user_details')
-        .select('role')
-        .eq('user_id', authData.user.id)
-        .maybeSingle();
-      if (profileError || String(profile?.role ?? '').toLowerCase() !== 'admin') {
+      const { data: currentRole, error: roleError } = await client.rpc('current_app_role');
+      if (roleError || String(currentRole ?? '').toLowerCase() !== 'admin') {
         setAdminActivity(null);
         return;
       }
@@ -131,14 +137,14 @@ export function TelemetryAiInsights({ machineId }: { machineId?: string }) {
       const { data: result, error: invokeError } = await client.functions.invoke('telemetry-ai-insights', {
         body: { period, refresh, machine_id: machineId ?? null },
       });
-      if (invokeError) throw invokeError;
+      if (invokeError) throw new Error(await requestErrorMessage(invokeError));
       if (!result || typeof result !== 'object' || !Array.isArray(result.insights)) {
         throw new Error(result?.message ?? 'AI insights returned an unexpected response.');
       }
       setData(result as InsightPayload);
       if (!machineScope) void loadAdminActivity();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Could not generate AI telemetry insights.');
+      setError(await requestErrorMessage(requestError));
     } finally {
       setLoading(false);
     }
