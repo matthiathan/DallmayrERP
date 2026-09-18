@@ -12,6 +12,15 @@ test('telemetry AI requires an authenticated user before loading telemetry evide
   assert.match(edgeFunction, /An active DallmayrERP user profile is required/);
 });
 
+test('telemetry AI resolves auth users through the internal application user mapping', () => {
+  assert.match(edgeFunction, /supabase\.rpc\('current_app_user_id'\)/);
+  assert.match(edgeFunction, /supabase\.rpc\('current_app_role'\)/);
+  assert.match(edgeFunction, /\.eq\('user_id', appUserId\)/);
+  assert.doesNotMatch(edgeFunction, /\.eq\('user_id', authData\.user\.id\)/);
+  assert.match(aiComponent, /client\.rpc\('current_app_role'\)/);
+  assert.doesNotMatch(aiComponent, /\.eq\('user_id', authData\.user\.id\)/);
+});
+
 test('machine AI verifies visibility and prefers complete period sales evidence', () => {
   assert.match(edgeFunction, /requested machine is not available in your telemetry scope/i);
   assert.match(edgeFunction, /telemetry_daily_item_sales/);
@@ -28,6 +37,13 @@ test('AI generations stay manual and expose supported analysis periods', () => {
   assert.match(aiComponent, /value: 'month', label: 'Last 30 days'/);
   assert.match(aiComponent, /value: 'six_months', label: 'Last 6 months'/);
   assert.doesNotMatch(aiComponent, /useEffect\([^)]*generate/);
+});
+
+test('AI client surfaces the Edge Function response message instead of the generic non-2xx error', () => {
+  assert.match(aiComponent, /FunctionsHttpError/);
+  assert.match(aiComponent, /error\.context\.json\(\)/);
+  assert.match(aiComponent, /payload\.message\.trim\(\)/);
+  assert.match(aiComponent, /requestErrorMessage\(invokeError\)/);
 });
 
 test('AI branding uses Dallmayr gold and keeps red for actual failure states only', () => {
