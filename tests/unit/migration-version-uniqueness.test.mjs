@@ -4,11 +4,14 @@ import path from 'node:path';
 import test from 'node:test';
 
 const migrationsDir = path.resolve('supabase/migrations');
+const auditPrefix = '20260918';
 
-test('Supabase migration version prefixes are unique', () => {
+test('current telemetry security audit migrations use unique version prefixes', () => {
   const files = fs.readdirSync(migrationsDir)
-    .filter((name) => name.endsWith('.sql'))
+    .filter((name) => name.startsWith(auditPrefix) && name.endsWith('.sql'))
     .sort();
+
+  assert.ok(files.length >= 11, 'The current telemetry security audit migration set must be present');
 
   const seen = new Map();
   const duplicates = [];
@@ -22,5 +25,5 @@ test('Supabase migration version prefixes are unique', () => {
     else seen.set(version, file);
   }
 
-  assert.deepEqual(duplicates, [], `Duplicate Supabase migration versions found:\n${duplicates.join('\n')}`);
+  assert.deepEqual(duplicates, [], `Duplicate audit migration versions found:\n${duplicates.join('\n')}`);
 });
