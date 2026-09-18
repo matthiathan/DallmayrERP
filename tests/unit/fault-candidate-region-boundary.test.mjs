@@ -17,7 +17,7 @@ test('fault candidate reads are restricted to the selected telemetry region', ()
   const migration = migrations.find(({ name }) => name.endsWith('_harden_fault_candidate_region_boundaries.sql'));
   assert.ok(migration, 'A dedicated fault candidate region-boundary migration must exist');
 
-  assert.match(migration.content, /create\s+policy\s+telemetry_region_scope_fault_rule_candidates[\s\S]*?as\s+restrictive[\s\S]*?on\s+public\.telemetry_fault_rule_candidates[\s\S]*?to\s+authenticated/i);
+  assert.match(migration.content, /create\s+policy\s+telemetry_region_scope_fault_rule_candidates[\s\S]*?on\s+public\.telemetry_fault_rule_candidates[\s\S]*?as\s+restrictive[\s\S]*?to\s+authenticated/i);
   assert.match(migration.content, /using\s*\(\s*public\.telemetry_region_allows_device\s*\(\s*device_id\s*\)\s*\)/i);
   assert.match(migration.content, /with\s+check\s*\(\s*public\.telemetry_region_allows_device\s*\(\s*device_id\s*\)\s*\)/i);
 });
