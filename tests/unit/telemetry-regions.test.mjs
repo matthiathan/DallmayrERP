@@ -15,7 +15,7 @@ test('telemetry regions are explicitly typed', () => {
 test('app shell requires a provisioned telemetry region', () => {
   assert.match(shell, /TelemetryRegionRequired/);
   assert.match(shell, /TelemetryRegionSelector/);
-  assert.match(shell, /const requiresTelemetryRegion = !userDetails\?\.telemetry_region/);
+  assert.match(shell, /const requiresTelemetryRegion = !userDetails \|\| userDetails\.telemetry_region === null/);
   assert.doesNotMatch(shell, /<NavigationIcon kind="pin" \/>South Africa/);
 });
 
