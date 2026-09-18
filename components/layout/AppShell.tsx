@@ -11,6 +11,7 @@ import { MobileTelemetryShell } from '@/components/layout/MobileTelemetryShell';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { canAccessShellPath, deriveAppShellNavigation } from '@/components/layout/appShellNavigation';
 import { useAppShellPreferences } from '@/components/layout/useAppShellPreferences';
+import { TelemetryRegionRequired, TelemetryRegionSelector } from '@/components/telemetry-platform/TelemetryRegionSelector';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { ErpStateBanner } from '@/components/ui/ErpLayout';
 import { GlobalSearch } from '@/components/ui/GlobalSearch';
@@ -34,7 +35,7 @@ function StatusScreen({ title, message, loading = false }: { title: string; mess
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { authUser, businessProfile, loading, error } = useAuth();
+  const { authUser, businessProfile, userDetails, loading, error } = useAuth();
   const { favoriteEntries, railCollapsed, toggleRail } = useAppShellPreferences();
 
   useEffect(() => {
@@ -60,6 +61,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const legacyProfileName = businessProfile ? displayProfileName(businessProfile) : '';
   const userName = metadataName || legacyProfileName || authUser.email?.split('@')[0] || 'Telemetry user';
   const visibleFavorites = favoriteEntries.filter((entry) => canAccessShellPath(favoritePathname(entry.href)));
+  const requiresTelemetryRegion = !userDetails?.telemetry_region;
 
   return (
     <div
@@ -87,7 +89,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <GlobalSearch triggerLabel="Search machine, device or page" />
         </div>
         <div className={styles.topbarActions}>
-          <div className={styles.headerChip}><NavigationIcon kind="pin" />South Africa</div>
+          <TelemetryRegionSelector />
           <div className={styles.headerChip}><i aria-hidden="true" />Live telemetry</div>
           <Link aria-label="Open active alerts" className={styles.headerIcon} href="/alerts">
             <NavigationIcon kind="bell" />
@@ -115,6 +117,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             title="This page is outside the telemetry workspace."
             tone="danger"
           />
+        ) : requiresTelemetryRegion ? (
+          <TelemetryRegionRequired />
         ) : (
           <>
             <Breadcrumbs />
