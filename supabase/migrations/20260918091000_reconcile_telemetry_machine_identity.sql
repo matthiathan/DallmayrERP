@@ -55,7 +55,7 @@ begin
   v_asset := lower(trim(coalesce(v_device.reported_machine_asset,'')));
 
   if v_serial <> '' then
-    select count(*)::integer, min(m.id)
+    select count(*)::integer, min(m.id::text)::uuid
     into v_serial_matches, v_serial_machine
     from public.machines m
     where m.telemetry_region=v_region
@@ -64,7 +64,7 @@ begin
   end if;
 
   if v_asset <> '' then
-    select count(*)::integer, min(m.id)
+    select count(*)::integer, min(m.id::text)::uuid
     into v_asset_matches, v_asset_machine
     from public.machines m
     where m.telemetry_region=v_region
