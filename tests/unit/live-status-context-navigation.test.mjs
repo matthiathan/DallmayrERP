@@ -17,6 +17,8 @@ test('operational telemetry pages share one live-data freshness indicator', asyn
   assert.match(indicator, /Stale/);
   assert.match(indicator, /Updated/);
   assert.match(indicator, /data-live-data-state/);
+  assert.match(indicator, /selfRef/);
+  assert.match(indicator, /fullText\.replace\(ownText, ''\)/);
   for (const source of [fleet, alerts, devices, map]) {
     assert.match(source, /LiveDataStatus/);
   }
