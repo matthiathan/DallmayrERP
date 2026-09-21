@@ -9,7 +9,7 @@ type LiveDataStatusProps = {
 };
 
 function observedTimestamp(text: string, now: number) {
-  const matches = Array.from(text.matchAll(/(?:updated|last refreshed)\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/gi));
+  const matches = Array.from(text.matchAll(/(?:updated|last refreshed)\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/gi));
   const match = matches.at(-1);
   if (!match) return null;
   const date = new Date(now);
