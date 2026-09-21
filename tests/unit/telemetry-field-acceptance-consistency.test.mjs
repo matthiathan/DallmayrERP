@@ -21,7 +21,7 @@ test('manual device assignment keeps machine-link metadata and runtime state con
   assert.match(body, /machine_link_status\s*=\s*case\s+when\s+p_machine_id\s+is\s+null\s+then\s+'unlinked'\s+else\s+'linked'/i);
   assert.match(body, /machine_link_method\s*=\s*case\s+when\s+p_machine_id\s+is\s+null\s+then\s+null\s+else\s+'manual_assignment'/i);
   assert.match(body, /machine_linked_at\s*=\s*case\s+when\s+p_machine_id\s+is\s+null\s+then\s+null/i);
-  assert.match(body, /update\s+public\.telemetry_machine_state[\s\S]*machine_id\s*=\s*p_machine_id[\s\S]*site_id\s*=\s*v_site_id/i);
+  assert.match(body, /insert\s+into\s+public\.telemetry_machine_state\s*\(\s*device_id\s*,\s*machine_id\s*,\s*site_id[\s\S]*values\s*\(\s*p_device_id\s*,\s*p_machine_id\s*,\s*v_site_id[\s\S]*on\s+conflict\s*\(\s*device_id\s*\)\s+do\s+update[\s\S]*machine_id\s*=\s*excluded\.machine_id[\s\S]*site_id\s*=\s*excluded\.site_id/i);
 });
 
 test('existing assigned devices are backfilled to a coherent linked state', () => {
