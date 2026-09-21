@@ -17,17 +17,16 @@ test('device management separates configuration into task-focused tabs', async (
   assert.match(source, /aria-label="Device settings sections"/);
   assert.match(source, /role="tablist"/);
   assert.match(source, /role="tab"/);
-  const tabs = [
-    ['overview', 'Overview'],
-    ['assignment', 'Assignment'],
-    ['connectivity', 'Connectivity'],
-    ['mdb', 'MDB'],
-    ['location', 'Location'],
-    ['sim', 'SIM & Data'],
-    ['advanced', 'Advanced'],
-  ];
-  for (const [id, label] of tabs) {
-    assert.match(source, new RegExp(`\\{ id: '${id}', label: '${label.replace('&', '\\&')}' \\}`));
+  for (const declaration of [
+    "{ id: 'overview', label: 'Overview' }",
+    "{ id: 'assignment', label: 'Assignment' }",
+    "{ id: 'connectivity', label: 'Connectivity' }",
+    "{ id: 'mdb', label: 'MDB' }",
+    "{ id: 'location', label: 'Location' }",
+    "{ id: 'sim', label: 'SIM & Data' }",
+    "{ id: 'advanced', label: 'Advanced' }",
+  ]) {
+    assert.ok(source.includes(declaration), `missing device tab ${declaration}`);
   }
   assert.match(source, /data-device-tab="overview"/);
   assert.match(source, /data-device-tab="advanced"/);
