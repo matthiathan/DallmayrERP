@@ -1,0 +1,88 @@
+.workspace {
+  display: grid;
+  gap: 18px;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.tab {
+  min-height: 72px;
+  border: 1px solid var(--border-subtle, #d9e0e6);
+  border-radius: 14px;
+  background: var(--surface, #fff);
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tab strong,
+.tab span {
+  display: block;
+}
+
+.tab strong {
+  font-size: 14px;
+}
+
+.tab span {
+  margin-top: 4px;
+  color: var(--text-muted, #667085);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.active {
+  border-color: var(--accent, #0b6fa4);
+  box-shadow: 0 0 0 1px var(--accent, #0b6fa4);
+}
+
+.context {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: var(--text-muted, #667085);
+}
+
+.context strong {
+  color: var(--text-primary, #17212b);
+}
+
+.mappingHost :global([data-product-mapping-workspace] > .fleet-page-heading) {
+  display: none;
+}
+
+.workspace[data-product-view='catalogue'] .mappingHost :global([data-product-mapping-workspace] > .grid.grid-2 > .fleet-panel:nth-child(2)),
+.workspace[data-product-view='catalogue'] .mappingHost :global([data-product-mapping-workspace] > section.fleet-panel),
+.workspace[data-product-view='unmapped'] .mappingHost :global([data-product-mapping-workspace] > .grid.grid-2),
+.workspace[data-product-view='history'] .mappingHost :global([data-product-mapping-workspace] > .grid.grid-2) {
+  display: none;
+}
+
+.workspace[data-product-view='mappings'] .mappingHost :global([data-product-mapping-workspace] > .grid.grid-2 > .fleet-panel:nth-child(1)),
+.workspace[data-product-view='mappings'] .mappingHost :global([data-product-mapping-workspace] > section.fleet-panel:nth-of-type(1)),
+.workspace[data-product-view='mappings'] .mappingHost :global([data-product-mapping-workspace] > section.fleet-panel:nth-of-type(3)) {
+  display: none;
+}
+
+.workspace[data-product-view='unmapped'] .mappingHost :global([data-product-mapping-workspace] > section.fleet-panel:nth-of-type(2)),
+.workspace[data-product-view='unmapped'] .mappingHost :global([data-product-mapping-workspace] > section.fleet-panel:nth-of-type(3)),
+.workspace[data-product-view='history'] .mappingHost :global([data-product-mapping-workspace] > section.fleet-panel:nth-of-type(1)),
+.workspace[data-product-view='history'] .mappingHost :global([data-product-mapping-workspace] > section.fleet-panel:nth-of-type(2)) {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .tabs {
+    grid-template-columns: 1fr;
+  }
+}
