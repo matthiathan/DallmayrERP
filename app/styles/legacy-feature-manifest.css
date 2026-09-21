@@ -1,5 +1,11 @@
 /*
- * Transitional feature registry.
+ * Transitional feature registry and compatibility quarantine.
+ *
+ * `../globals.css` contains broad legacy selectors that are still required by
+ * historical feature surfaces. It may be loaded only through this manifest;
+ * routes, layouts and components must not import it directly or add new styles
+ * to it. New and rebuilt telemetry presentation belongs in component CSS
+ * modules or the canonical application style layers.
  *
  * Live feature styles are classified under explicit ownership folders while this
  * registry preserves the approved historical cascade. Import order is contractual:
