@@ -1,0 +1,24 @@
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.actions span {
+  color: var(--text-muted, #667085);
+  font-size: 12px;
+  font-weight: 700;
+  margin-right: auto;
+}
+
+.actions a {
+  border: 1px solid var(--border-subtle, #d9e0e6);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
