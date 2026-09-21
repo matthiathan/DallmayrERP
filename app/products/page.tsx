@@ -1,6 +1,4 @@
-import { FleetMachineSelectionCatalog } from '@/components/features/FleetMachineSelectionCatalog';
-import { ProductMappingWorkspace } from '@/components/features/ProductMappingWorkspace';
-import { SelectionLearnModePanel } from '@/components/features/SelectionLearnModePanel';
+import { ProductsWorkspaceOrganizer } from '@/components/features/ProductsWorkspaceOrganizer';
 import { AppShell } from '@/components/layout/AppShell';
 import { SpecialistWorkspaceFrame } from '@/components/telemetry-platform/SpecialistWorkspaceFrame';
 
@@ -9,12 +7,10 @@ export default function ProductsPage() {
     <AppShell>
       <SpecialistWorkspaceFrame
         badge="Fleet product mapping"
-        description="Map machine buttons and telemetry selections to Dallmayr product names."
+        description="Maintain the product catalogue, map machine selections, resolve unmapped telemetry and review mapping history."
         title="Products"
       >
-        <FleetMachineSelectionCatalog />
-        <SelectionLearnModePanel />
-        <ProductMappingWorkspace />
+        <ProductsWorkspaceOrganizer />
       </SpecialistWorkspaceFrame>
     </AppShell>
   );

@@ -1,0 +1,100 @@
+.workspace {
+  display: grid;
+  gap: 16px;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.tab {
+  min-height: 68px;
+  border: 1px solid var(--border-subtle, #d9e0e6);
+  border-radius: 14px;
+  background: var(--surface, #fff);
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tab strong,
+.tab span {
+  display: block;
+}
+
+.tab span {
+  margin-top: 4px;
+  color: var(--text-muted, #667085);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.active {
+  border-color: var(--accent, #0b6fa4);
+  box-shadow: 0 0 0 1px var(--accent, #0b6fa4);
+}
+
+.viewNote {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  border: 1px solid var(--border-subtle, #d9e0e6);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--surface, #fff);
+}
+
+.viewNote span {
+  color: var(--text-muted, #667085);
+}
+
+.workspace[data-test-center-view='console'] .centerHost :global(.test-center-command-strip),
+.workspace[data-test-center-view='console'] .centerHost :global([class*='commandHistory']),
+.workspace[data-test-center-view='console'] .centerHost :global([class*='historyPanel']),
+.workspace[data-test-center-view='events'] .centerHost :global(.test-center-command-strip),
+.workspace[data-test-center-view='events'] .centerHost :global([class*='commandHistory']),
+.workspace[data-test-center-view='events'] .centerHost :global([class*='historyPanel']) {
+  display: none;
+}
+
+.workspace[data-test-center-view='events'] .centerHost :global(.test-center-line:not([class*='important'])) {
+  display: none;
+}
+
+.workspace[data-test-center-view='events'] .centerHost :global([class*='filterBar']),
+.workspace[data-test-center-view='events'] .centerHost :global([class*='logResultMeta']) {
+  display: none;
+}
+
+.workspace[data-test-center-view='commands'] .centerHost :global(.test-center-console-toolbar),
+.workspace[data-test-center-view='commands'] .centerHost :global([class*='logTools']),
+.workspace[data-test-center-view='commands'] .centerHost :global(.test-center-terminal),
+.workspace[data-test-center-view='commands'] .centerHost :global([class*='historyPanel']) {
+  display: none;
+}
+
+.workspace[data-test-center-view='history'] .centerHost :global(.test-center-layout > main) {
+  display: none;
+}
+
+.workspace[data-test-center-view='history'] .centerHost :global([class*='historyPanel']) {
+  display: block;
+}
+
+.workspace:not([data-test-center-view='history']) .centerHost :global([class*='historyPanel']) {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .tabs {
+    grid-template-columns: 1fr;
+  }
+}
