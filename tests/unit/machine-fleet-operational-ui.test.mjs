@@ -6,6 +6,7 @@ const fleet = fs.readFileSync(new URL('../../components/telemetry-platform/Machi
 const detail = fs.readFileSync(new URL('../../components/telemetry-platform/MachineDetail.tsx', import.meta.url), 'utf8');
 const createImport = fs.readFileSync(new URL('../../components/features/MachineCreateImportControls.tsx', import.meta.url), 'utf8');
 const migration = fs.readFileSync(new URL('../../supabase/migrations/20260910064741_telemetry_machine_fleet_operational_status.sql', import.meta.url), 'utf8');
+const effectiveProfileMigration = fs.readFileSync(new URL('../../supabase/migrations/20260921130000_align_fleet_with_effective_profile_resolution.sql', import.meta.url), 'utf8');
 
 test('machine fleet exposes operational attention filters and persisted views', () => {
   assert.match(fleet, /profile_attention/);
@@ -16,12 +17,15 @@ test('machine fleet exposes operational attention filters and persisted views', 
   assert.match(fleet, /safeLocalStorageSet/);
   assert.doesNotMatch(fleet, /window\.localStorage/);
   assert.match(fleet, /Clear saved filters/);
-  assert.match(fleet, /Automatic · unmatched/);
+  assert.match(fleet, /Automatic · ambiguous/);
+  assert.match(fleet, /effective_profile_key/);
+  assert.match(fleet, /profile_assignment_method === 'manual' \? 'Manual' : 'Automatic'/);
   assert.match(fleet, /telemetry\/test-center\?device=/);
   assert.match(migration, /v_status = 'profile_attention'/);
   assert.match(migration, /v_status = 'faults'/);
   assert.match(migration, /profile_assignment_method/);
   assert.match(migration, /reported_machine_interface/);
+  assert.match(effectiveProfileMigration, /profile_status in \('ambiguous','unmatched','pending'\)/);
 });
 
 test('machine create and import workflow captures telemetry-relevant master data', () => {
