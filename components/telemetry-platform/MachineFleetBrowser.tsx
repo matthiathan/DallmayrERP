@@ -12,7 +12,7 @@ import styles from './MachineFleetBrowser.module.css';
 
 type ConnectionStatus = 'online' | 'delayed' | 'offline' | 'never' | 'unlinked';
 type FleetFilterStatus = 'all' | ConnectionStatus | 'unconnected' | 'faults' | 'profile_attention';
-type ProfileStatus = 'configured' | 'pending' | 'unmatched' | 'unlinked';
+type ProfileStatus = 'configured' | 'pending' | 'ambiguous' | 'unmatched' | 'unlinked';
 
 type MachineFleetRow = {
   id: string;
@@ -40,6 +40,10 @@ type MachineFleetRow = {
   last_seen_at: string | null;
   last_heartbeat_at: string | null;
   profile_id: string | null;
+  effective_profile_key: string | null;
+  applied_profile_key: string | null;
+  profile_resolution: string | null;
+  profile_confidence: string | null;
   profile_assignment_method: 'automatic' | 'manual' | null;
   profile_model_key: string | null;
   profile_display_name: string | null;
@@ -86,11 +90,25 @@ function transportLabel(machine: MachineFleetRow) {
 
 function profileLabel(machine: MachineFleetRow) {
   if (!machine.device_id) return 'No device';
-  const name = machine.profile_display_name ?? machine.profile_model_key;
+  const name = machine.profile_display_name ?? machine.effective_profile_key ?? machine.profile_model_key;
   if (machine.profile_status === 'pending') return name ? `Pending · ${name}` : 'Profile pending';
-  if (!machine.profile_id) return 'Automatic · unmatched';
+  if (machine.profile_status === 'ambiguous') return 'Automatic · ambiguous';
+  if (machine.profile_status === 'unmatched') return `${machine.profile_assignment_method === 'manual' ? 'Manual' : 'Automatic'} · unmatched`;
   if (machine.profile_assignment_method === 'manual') return `Manual · ${name ?? 'Configured'}`;
   return `Automatic · ${name ?? 'Configured'}`;
+}
+
+function profilePillClass(status: ProfileStatus) {
+  const visualStatus = status === 'ambiguous' ? 'unmatched' : status;
+  return `${styles.profilePill} ${styles[`profile_${visualStatus}`]}`;
+}
+
+function profileEvidenceLabel(machine: MachineFleetRow) {
+  const evidence = machine.reported_machine_interface
+    ? machine.reported_machine_interface.toUpperCase()
+    : machine.reported_machine_model ?? 'No identity evidence';
+  if (!machine.profile_confidence || machine.profile_status === 'unlinked') return evidence;
+  return `${evidence} · ${machine.profile_confidence} confidence`;
 }
 
 function contactAge(value: string | null) {
@@ -263,7 +281,7 @@ export function MachineFleetBrowser() {
           <button aria-pressed={status === 'offline'} className={`${styles.statusCard} ${styles.offline} ${status === 'offline' ? styles.statusCardActive : ''}`} onClick={() => applyStatusFilter('offline')} type="button"><span>Offline</span><strong>{summary.offline.toLocaleString('en-ZA')}</strong><small>Filter fleet</small></button>
           <button aria-pressed={status === 'unconnected'} className={`${styles.statusCard} ${styles.unlinked} ${status === 'unconnected' ? styles.statusCardActive : ''}`} onClick={() => applyStatusFilter('unconnected')} type="button"><span>No device / never</span><strong>{(summary.unlinked + summary.never).toLocaleString('en-ZA')}</strong><small>Filter fleet</small></button>
           <button aria-pressed={status === 'faults'} className={`${styles.statusCard} ${styles.faults} ${status === 'faults' ? styles.statusCardActive : ''}`} onClick={() => applyStatusFilter('faults')} type="button"><span>Active faults</span><strong>{summary.active_faults.toLocaleString('en-ZA')}</strong><small>Filter affected machines</small></button>
-          <button aria-pressed={status === 'profile_attention'} className={`${styles.statusCard} ${styles.profiles} ${status === 'profile_attention' ? styles.statusCardActive : ''}`} onClick={() => applyStatusFilter('profile_attention')} type="button"><span>Profile attention</span><strong>{summary.profile_attention.toLocaleString('en-ZA')}</strong><small>Unmatched or pending</small></button>
+          <button aria-pressed={status === 'profile_attention'} className={`${styles.statusCard} ${styles.profiles} ${status === 'profile_attention' ? styles.statusCardActive : ''}`} onClick={() => applyStatusFilter('profile_attention')} type="button"><span>Profile attention</span><strong>{summary.profile_attention.toLocaleString('en-ZA')}</strong><small>Unmatched, ambiguous or pending</small></button>
         </section>
 
         <section className={styles.filters} aria-label="Machine filters">
@@ -286,7 +304,7 @@ export function MachineFleetBrowser() {
                     <td><span className={`${styles.statusPill} ${styles[`is_${machine.connection_status}`]}`}><i />{statusLabel(machine.connection_status)}</span></td>
                     <td><strong>{machine.site_name}</strong><div className={styles.secondary}>{machine.location}</div></td>
                     <td>{machine.device_id ? <><strong>{machine.device_code}</strong><div className={styles.secondary}>{machine.telemetry_mode ?? 'live'} · {machine.machine_status ?? 'unknown'}</div></> : <span className={styles.secondary}>Not assigned</span>}</td>
-                    <td><span className={`${styles.profilePill} ${styles[`profile_${machine.profile_status}`]}`}>{profileLabel(machine)}</span><div className={styles.secondary}>{machine.reported_machine_interface ? machine.reported_machine_interface.toUpperCase() : machine.reported_machine_model ?? 'No identity evidence'}</div></td>
+                    <td><span className={profilePillClass(machine.profile_status)}>{profileLabel(machine)}</span><div className={styles.secondary}>{profileEvidenceLabel(machine)}</div></td>
                     <td><div className={styles.network}><strong>{transportLabel(machine)}</strong><span className={styles.secondary}>{machine.cellular_operator ?? machine.firmware_version ?? '—'}</span></div></td>
                     <td>{machine.device_id ? <SignalStrengthIndicator cellularCsq={machine.cellular_csq} transport={machine.last_transport} wifiRssi={machine.wifi_rssi} /> : <span className={styles.secondary}>—</span>}</td>
                     <td>{machine.fault_count ? <span className={styles.faultCount}>{machine.fault_count}</span> : <span className={styles.noFaults}>Clear</span>}</td>
@@ -304,7 +322,7 @@ export function MachineFleetBrowser() {
                     <div className={styles.mobileMain}><strong>{titleFor(machine)}</strong><span>{machine.site_name}</span><small>{machine.location}</small></div>
                     <div className={styles.mobileSide}><span className={`${styles.statusPill} ${styles[`is_${machine.connection_status}`]}`}><i />{statusLabel(machine.connection_status)}</span>{machine.fault_count ? <b>{machine.fault_count} fault{machine.fault_count === 1 ? '' : 's'}</b> : null}</div>
                     <div className={styles.mobileMeta}><span>{machine.serial_number ?? 'No serial'}</span><span>·</span><span>{transportLabel(machine)}</span><span>·</span><span>{contactAge(machine.last_contact)}</span></div>
-                    <div className={styles.mobileProfile}><span className={`${styles.profilePill} ${styles[`profile_${machine.profile_status}`]}`}>{profileLabel(machine)}</span><small>{machine.reported_machine_interface ? machine.reported_machine_interface.toUpperCase() : 'Protocol not reported'}</small></div>
+                    <div className={styles.mobileProfile}><span className={profilePillClass(machine.profile_status)}>{profileLabel(machine)}</span><small>{profileEvidenceLabel(machine)}</small></div>
                   </Link>
                   <div className={styles.mobileActions}><Link href={`/machines/${machine.id}`}>Dashboard</Link>{machine.device_code ? <Link href={`/telemetry/test-center?device=${encodeURIComponent(machine.device_code)}`}>Test Center</Link> : null}<Link href="/products">Mappings</Link></div>
                 </article>
