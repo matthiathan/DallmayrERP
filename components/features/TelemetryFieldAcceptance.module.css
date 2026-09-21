@@ -1,0 +1,137 @@
+.panel {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid var(--border-subtle, #d9e0e6);
+  border-radius: 16px;
+  background: var(--surface, #fff);
+}
+
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.heading > div {
+  display: grid;
+  gap: 2px;
+}
+
+.heading span:first-child {
+  color: var(--text-muted, #667085);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.heading strong {
+  font-size: 18px;
+}
+
+.heading small,
+.check small,
+.footer span {
+  color: var(--text-muted, #667085);
+}
+
+.score {
+  flex: 0 0 auto;
+  border: 1px solid var(--border-subtle, #d9e0e6);
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.complete {
+  border-color: var(--success-border, #8bc8a4);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.check {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 8px;
+  min-height: 76px;
+  padding: 11px;
+  border: 1px solid var(--border-subtle, #d9e0e6);
+  border-radius: 12px;
+}
+
+.check > div {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+
+.check strong {
+  font-size: 13px;
+}
+
+.check small {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.marker {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  font-weight: 900;
+}
+
+.passed .marker {
+  background: var(--success-soft, rgba(30, 142, 76, 0.12));
+}
+
+.waiting .marker {
+  background: var(--surface-muted, rgba(102, 112, 133, 0.1));
+}
+
+.footer {
+  display: grid;
+  gap: 3px;
+  padding-top: 2px;
+}
+
+.footer strong,
+.footer span {
+  font-size: 12px;
+}
+
+.error {
+  border: 1px solid var(--danger-border, #efb2b2);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+@media (max-width: 1000px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .heading {
+    display: grid;
+  }
+
+  .score {
+    justify-self: start;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
