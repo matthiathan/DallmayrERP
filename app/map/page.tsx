@@ -1,6 +1,7 @@
-import { TelemetryLocationMap } from '@/components/features/TelemetryLocationMap';
+import { TelemetryLocationWorkspace } from '@/components/features/TelemetryLocationWorkspace';
 import { AppShell } from '@/components/layout/AppShell';
 import { SpecialistWorkspaceFrame } from '@/components/telemetry-platform/SpecialistWorkspaceFrame';
+import { LiveDataStatus } from '@/components/ui/LiveDataStatus';
 
 export default function MachineMapPage() {
   return (
@@ -10,7 +11,8 @@ export default function MachineMapPage() {
         description="Live machine locations, connection state and movement across the fleet."
         title="Fleet map"
       >
-        <TelemetryLocationMap />
+        <LiveDataStatus refreshIntervalMs={30_000} />
+        <TelemetryLocationWorkspace />
       </SpecialistWorkspaceFrame>
     </AppShell>
   );
