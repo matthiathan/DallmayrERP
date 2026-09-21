@@ -204,7 +204,7 @@ export function TelemetryReports() {
   const unknownNetwork = data?.locations.filter((row) => !row.last_transport).length ?? 0;
 
   return <section className={styles.reports} data-telemetry-reports="v1">
-    <header className={styles.header}><div><span>Production telemetry</span><h1>Reports & exports</h1><p>Operational reporting from real machine, vend, fault, network and data-usage records.</p></div><div className={styles.headerActions}><Link href="/telemetry">Open analytics</Link><button disabled={!data} onClick={exportCurrent} type="button">Export current report</button></div></header>
+    <header className={styles.header}><div><span>Production telemetry</span><h1>Reports & exports</h1><p>Structured operational tables and exports from real machine, vend, fault, network and data-usage records.</p></div><div className={styles.headerActions}><Link href="/telemetry">Open analytics</Link><button disabled={!data} onClick={exportCurrent} type="button">Export current report</button></div></header>
 
     <section className={styles.controls} aria-label="Report filters">
       <label><span>Period</span><select value={period} onChange={(event) => setPeriod(event.target.value as Period)}>{(Object.keys(periods) as Period[]).map((value) => <option key={value} value={value}>{periods[value].label}</option>)}</select></label>
@@ -244,7 +244,7 @@ export function TelemetryReports() {
         {tab === 'readiness' ? <div className={styles.tableWrap}><div className={styles.readinessSummary}><span><strong>{overdue}</strong> overdue</span><span><strong>{unassigned}</strong> unassigned</span><span><strong>{mapped}</strong> located</span><span><strong>{unknownNetwork}</strong> network unknown</span></div><div className={styles.notice}>Current communication state uses each device reporting deadline. Historical uptime is not inferred from this snapshot.</div><table><thead><tr><th>Machine / device</th><th>Branch</th><th>Communication</th><th>Network</th><th>Location</th><th>Faults</th><th>Last contact</th></tr></thead><tbody>{data.locations.map((row) => <tr key={row.device_id}><td><strong>{row.machine_name ?? row.device_code}</strong><span>{row.serial_number ?? row.device_code}</span></td><td>{row.branch}</td><td><b className={row.communication_error ? styles.bad : styles.good}>{row.communication_status ?? (row.communication_error ? 'offline' : 'unknown')}</b>{row.communication_error ? <span>{n(row.minutes_overdue)} min overdue</span> : null}</td><td>{row.last_transport === 'wifi' ? 'Wi-Fi' : row.last_transport === 'cellular' ? 'Cellular' : 'Unknown'}</td><td>{row.has_location ? `${row.location_source ?? 'known'}${row.location_stale ? ' · stale' : ''}` : 'Not mapped'}</td><td>{n(row.active_fault_count)}</td><td>{dateTime(row.last_seen_at)}</td></tr>)}</tbody></table>{!data.locations.length ? <div className={styles.empty}>No active telemetry devices match this branch.</div> : null}</div> : null}
       </article>
 
-      <footer className={styles.footer}><span>Exports contain only the real records returned by the selected production report.</span><div><Link href="/alerts">Alarm workflow</Link><Link href="/map">Fleet map</Link><Link href="/telemetry/devices">Device management</Link></div></footer>
+      <footer className={styles.footer}><span>Exports contain only the real records returned by the selected production report.</span><div><Link href="/alerts">Alert workflow</Link><Link href="/map">Fleet map</Link><Link href="/telemetry/devices">Device management</Link></div></footer>
     </> : null}
   </section>;
 }
