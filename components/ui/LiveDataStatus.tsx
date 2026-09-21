@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './LiveDataStatus.module.css';
 
 type LiveDataStatusProps = {
@@ -29,6 +29,7 @@ function ageLabel(ageMs: number) {
 }
 
 export function LiveDataStatus({ refreshIntervalMs, staleAfterMs = Math.max(refreshIntervalMs * 3, 90_000) }: LiveDataStatusProps) {
+  const selfRef = useRef<HTMLDivElement>(null);
   const [now, setNow] = useState(Date.now());
   const [lastUpdate, setLastUpdate] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -36,7 +37,9 @@ export function LiveDataStatus({ refreshIntervalMs, staleAfterMs = Math.max(refr
   useEffect(() => {
     const root = document.getElementById('main-content') ?? document.body;
     const inspect = () => {
-      const text = root.textContent ?? '';
+      const fullText = root.textContent ?? '';
+      const ownText = selfRef.current?.textContent ?? '';
+      const text = ownText ? fullText.replace(ownText, '') : fullText;
       const timestamp = observedTimestamp(text, Date.now());
       setLastUpdate(timestamp);
       setRefreshing(/refreshing(?:…|\.\.\.)/i.test(text));
@@ -60,7 +63,7 @@ export function LiveDataStatus({ refreshIntervalMs, staleAfterMs = Math.max(refr
   }, [lastUpdate, now, state]);
 
   return (
-    <div className={`${styles.status} ${styles[state]}`} data-live-data-state={state} role="status">
+    <div className={`${styles.status} ${styles[state]}`} data-live-data-state={state} ref={selfRef} role="status">
       <i aria-hidden="true" />
       <span>{label}</span>
       <small>Auto-refresh {Math.round(refreshIntervalMs / 1000)}s</small>
