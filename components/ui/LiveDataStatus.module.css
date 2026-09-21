@@ -1,0 +1,50 @@
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid var(--border-subtle, #d9e0e6);
+  border-radius: 999px;
+  background: var(--surface, #fff);
+  color: var(--text-primary, #17212b);
+  font-size: 12px;
+}
+
+.status i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status span {
+  font-weight: 700;
+}
+
+.status small {
+  color: var(--text-muted, #667085);
+}
+
+.live {
+  color: #157347;
+}
+
+.refreshing {
+  color: #0b6fa4;
+}
+
+.stale {
+  color: #b54708;
+}
+
+.waiting {
+  color: #667085;
+}
+
+@media (max-width: 640px) {
+  .status small {
+    display: none;
+  }
+}
