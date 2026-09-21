@@ -1,0 +1,63 @@
+name: Deploy production to Render
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-render-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Trigger Render production deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify Render deploy hook is configured
+        shell: bash
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "Repository secret RENDER_DEPLOY_HOOK_URL is not configured." >&2
+            echo "Create it from the DallmayrERP service Settings > Deploy Hook in Render." >&2
+            exit 1
+          fi
+
+      - name: Trigger exact commit on Render
+        shell: bash
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          set -euo pipefail
+          echo "::add-mask::$RENDER_DEPLOY_HOOK_URL"
+
+          separator='?'
+          if [[ "$RENDER_DEPLOY_HOOK_URL" == *'?'* ]]; then
+            separator='&'
+          fi
+
+          deploy_url="${RENDER_DEPLOY_HOOK_URL}${separator}ref=${GITHUB_SHA}"
+          http_code="$(curl --silent --show-error \
+            --output render-deploy-response.json \
+            --write-out '%{http_code}' \
+            --request POST \
+            "$deploy_url")"
+
+          cat render-deploy-response.json
+          echo
+
+          if [ "$http_code" != "200" ] && [ "$http_code" != "202" ]; then
+            echo "Render deploy hook returned HTTP $http_code." >&2
+            exit 1
+          fi
+
+          {
+            echo "### Render production deployment triggered"
+            echo
+            echo "- Commit: \`$GITHUB_SHA\`"
+            echo "- Render response: HTTP $http_code"
+          } >> "$GITHUB_STEP_SUMMARY"
