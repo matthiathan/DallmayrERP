@@ -1,0 +1,45 @@
+.workspace {
+  display: grid;
+  gap: 14px;
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid var(--border-subtle, #d9e0e6);
+  border-radius: 14px;
+  background: var(--surface, #fff);
+  padding: 12px 14px;
+}
+
+.notice div,
+.notice strong,
+.notice span {
+  display: block;
+}
+
+.notice span {
+  margin-top: 3px;
+  color: var(--text-muted, #667085);
+  font-size: 13px;
+}
+
+.notice a {
+  flex: 0 0 auto;
+  font-weight: 700;
+}
+
+.mapHost :global(.telemetry-location-table th:nth-child(5)),
+.mapHost :global(.telemetry-location-table td:nth-child(5)),
+.mapHost :global(.telemetry-location-controls) {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .notice {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
