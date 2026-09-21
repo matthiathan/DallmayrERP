@@ -206,7 +206,7 @@ function Gauge({ title, value, percent, label }: { title: string; value: string;
 }
 
 function attentionTitle(item: FleetAttentionItem) {
-  if (item.kind === 'offline') return item.occurredAt ? 'Controller offline' : 'Controller has never contacted DallmayrERP';
+  if (item.kind === 'offline') return item.occurredAt ? 'Controller offline' : 'Controller has never reported';
   if (item.kind === 'config') return 'Configuration awaiting device ACK';
   if (item.kind === 'sim_balance') return item.balanceAlert === 'depleted' ? 'SIM balance depleted' : item.balanceAlert === 'critical' ? 'SIM balance critical' : 'SIM balance low';
   return item.lastTransport ? `${item.lastTransport === 'wifi' ? 'Wi-Fi' : 'Cellular'} signal not reported` : 'Network transport not reported';
@@ -403,7 +403,7 @@ export function TelevendFleetDashboard() {
   return (
     <section className={styles.dashboard} data-fleet-dashboard="televend-v3">
       <div className={styles.toolbar}>
-        <div className={styles.toolbarTitle}><i /><strong>Fleet dashboard</strong><span>{report.date_from ?? '—'} – {report.date_to ?? '—'}</span></div>
+        <div className={styles.toolbarTitle}><i /><strong>Fleet overview</strong><span>{report.date_from ?? '—'} – {report.date_to ?? '—'}</span></div>
         <div className={styles.toolbarActions}>
           <label><span>Period</span><select value={period} onChange={(event) => setPeriod(event.target.value as Period)}>{periods.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
           <button disabled={!locations.length} onClick={exportFleetSnapshot} type="button">Export fleet CSV</button>
@@ -412,7 +412,7 @@ export function TelevendFleetDashboard() {
       </div>
 
       {error ? <div className={styles.error} role="alert">{error}</div> : null}
-      {loading && !data ? <HamsterLoader label="Loading fleet dashboard" /> : null}
+      {loading && !data ? <HamsterLoader label="Loading fleet overview" /> : null}
 
       {data ? <>
         <section className={styles.metricsStrip} aria-label="Fleet headline metrics">
@@ -420,7 +420,7 @@ export function TelevendFleetDashboard() {
           <Metric helper={`${periodChange >= 0 ? '+' : ''}${periodChange.toFixed(1)}% vs previous`} label="Revenue" tone="gold" value={money(revenue)} />
           <Metric helper={`${online} online · ${offline} offline`} label="Fleet availability" tone="green" value={`${availability.toFixed(1)}%`} />
           <Metric helper={`${failed.toLocaleString('en-ZA')} failed vends`} label="Vend success" tone={success >= 98 ? 'green' : success >= 95 ? 'amber' : 'red'} value={`${success.toFixed(1)}%`} />
-          <Metric helper={`${critical} critical · ${warning} warning`} label="Active alarms" tone={active ? 'red' : 'green'} value={active.toLocaleString('en-ZA')} />
+          <Metric helper={`${critical} critical · ${warning} warning`} label="Active alerts" tone={active ? 'red' : 'green'} value={active.toLocaleString('en-ZA')} />
           <Metric helper={`${reportingDevices} telemetry devices`} label="Machines reporting" tone="amber" value={n(summary.active_machines).toLocaleString('en-ZA')} />
         </section>
 
@@ -478,7 +478,7 @@ export function TelevendFleetDashboard() {
           </article>
 
           <article className={styles.card}>
-            <header className={styles.cardHeader}><div><span>Fault activity · 30 days</span><h2>Alarms</h2></div><Link href="/alerts">All alarms ›</Link></header>
+            <header className={styles.cardHeader}><div><span>Fault activity · 30 days</span><h2>Alerts</h2></div><Link href="/alerts">All alerts ›</Link></header>
             <div className={styles.alarmGrid}>
               <Ring label="Active" legend={[`${critical} critical`, `${warning} warning`, `${Math.max(0, active - critical - warning)} other`]} percent={activeRate} tone="red" value={active} />
               <Ring label="Resolved" legend={[`${resolved} cleared`, `${Math.max(0, faults.length - resolved)} open`, `${faults.length} raised`]} percent={resolvedRate} tone="green" value={resolved} />
