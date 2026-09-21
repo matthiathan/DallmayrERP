@@ -4,7 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 
 const migrationsDir = path.resolve('supabase/migrations');
-const auditPrefix = '20260918';
+const auditPrefix = '20260921';
 
 test('current telemetry security audit migrations use unique version prefixes', () => {
   const files = fs.readdirSync(migrationsDir)
