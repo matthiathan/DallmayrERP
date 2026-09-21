@@ -1,5 +1,5 @@
+import { TestCenterWorkspaceOrganizer } from '@/components/features/TestCenterWorkspaceOrganizer';
 import { AppShell } from '@/components/layout/AppShell';
-import { TelemetryTestCenter } from '@/components/features/TelemetryTestCenter';
 import { SpecialistWorkspaceFrame } from '@/components/telemetry-platform/SpecialistWorkspaceFrame';
 
 export default function TelemetryTestCenterPage() {
@@ -7,10 +7,10 @@ export default function TelemetryTestCenterPage() {
     <AppShell>
       <SpecialistWorkspaceFrame
         badge="Remote diagnostics"
-        description="Commission telemetry devices, inspect live machine communications and run temporary remote diagnostic sessions."
+        description="Commission telemetry devices, inspect important events, run safe commands and review archived diagnostic sessions."
         title="Test Center"
       >
-        <TelemetryTestCenter />
+        <TestCenterWorkspaceOrganizer />
       </SpecialistWorkspaceFrame>
     </AppShell>
   );
