@@ -53,7 +53,7 @@ function modeCopy(mode: LoginMode) {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { authUser, loading } = useAuth();
+  const { authUser, businessUser, loading } = useAuth();
   const [mode, setMode] = useState<LoginMode>('login');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -69,11 +69,15 @@ export default function LoginPage() {
     const remembered = getAuthRememberMePreference();
     setRememberMe(remembered);
     if (remembered) setEmail(safeLocalStorageGet(REMEMBERED_EMAIL_KEY) ?? '');
+
+    if (new URLSearchParams(window.location.search).get('access') === 'inactive') {
+      setError('Your account does not have active DallmayrERP access. Contact an administrator.');
+    }
   }, []);
 
   useEffect(() => {
-    if (!loading && authUser) router.replace(loginDestination());
-  }, [authUser, loading, router]);
+    if (!loading && authUser && businessUser?.is_active) router.replace(loginDestination());
+  }, [authUser, businessUser, loading, router]);
 
   function switchMode(nextMode: LoginMode) {
     setMode(nextMode);
@@ -115,10 +119,19 @@ export default function LoginPage() {
         });
         if (signUpError) return setError(signUpError.message);
         if (data.session) {
+          const { data: activeAccess, error: activeAccessError } = await client.rpc('is_active_app_user');
+          if (activeAccessError || activeAccess !== true) {
+            await client.auth.signOut();
+            setSuccess('Account created. An administrator must activate your DallmayrERP access before you can sign in.');
+            setMode('login');
+            setPassword('');
+            setConfirmPassword('');
+            return;
+          }
           router.replace(loginDestination());
           return;
         }
-        setSuccess('Account created. Check your email to confirm it, then sign in.');
+        setSuccess('Account created. Check your email to confirm it. An administrator must also activate your DallmayrERP access.');
         setMode('login');
         setPassword('');
         setConfirmPassword('');
@@ -134,6 +147,13 @@ export default function LoginPage() {
         password,
       });
       if (loginError) return setError('Sign in failed. Check your email and password, then try again.');
+
+      const { data: activeAccess, error: activeAccessError } = await client.rpc('is_active_app_user');
+      if (activeAccessError || activeAccess !== true) {
+        await client.auth.signOut();
+        return setError('Your account does not have active DallmayrERP access. Contact an administrator.');
+      }
+
       router.replace(loginDestination());
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Authentication could not start.');
