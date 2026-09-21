@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-// This contract intentionally fails on the pre-simplification UI.
 const devicesPath = new URL('../../components/telemetry-platform/TelemetryDevicesWorkspace.tsx', import.meta.url);
 const alertsPath = new URL('../../components/telemetry-platform/AlarmCenter.tsx', import.meta.url);
 const fleetPath = new URL('../../components/telemetry-platform/TelevendFleetDashboard.tsx', import.meta.url);
@@ -16,8 +15,19 @@ test('device management separates configuration into task-focused tabs', async (
 
   assert.match(source, /type DeviceWorkspaceTab = 'overview' \| 'assignment' \| 'connectivity' \| 'mdb' \| 'location' \| 'sim' \| 'advanced'/);
   assert.match(source, /aria-label="Device settings sections"/);
-  for (const label of ['Overview', 'Assignment', 'Connectivity', 'MDB', 'Location', 'SIM & Data', 'Advanced']) {
-    assert.match(source, new RegExp(`>${label}<`));
+  assert.match(source, /role="tablist"/);
+  assert.match(source, /role="tab"/);
+  const tabs = [
+    ['overview', 'Overview'],
+    ['assignment', 'Assignment'],
+    ['connectivity', 'Connectivity'],
+    ['mdb', 'MDB'],
+    ['location', 'Location'],
+    ['sim', 'SIM & Data'],
+    ['advanced', 'Advanced'],
+  ];
+  for (const [id, label] of tabs) {
+    assert.match(source, new RegExp(`\\{ id: '${id}', label: '${label.replace('&', '\\&')}' \\}`));
   }
   assert.match(source, /data-device-tab="overview"/);
   assert.match(source, /data-device-tab="advanced"/);
@@ -49,6 +59,8 @@ test('map and fleet copy no longer use ERP terminology', async () => {
   const fleet = await readFile(fleetPath, 'utf8');
 
   assert.match(map, /Assigned site location/);
+  assert.match(map, /selected telemetry region/);
   assert.doesNotMatch(map, /ERP site fallback/);
+  assert.doesNotMatch(map, /coordinates to the ERP site/i);
   assert.doesNotMatch(fleet, /DallmayrERP/);
 });
