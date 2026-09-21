@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
+// This contract intentionally fails on the pre-simplification UI.
 const devicesPath = new URL('../../components/telemetry-platform/TelemetryDevicesWorkspace.tsx', import.meta.url);
 const alertsPath = new URL('../../components/telemetry-platform/AlarmCenter.tsx', import.meta.url);
 const fleetPath = new URL('../../components/telemetry-platform/TelevendFleetDashboard.tsx', import.meta.url);
