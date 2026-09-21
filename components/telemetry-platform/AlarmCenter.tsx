@@ -121,7 +121,7 @@ async function loadWorkflows(ids: string[]) {
 
 function workflowLabel(workflow: AlarmWorkflow | undefined, currentUserId: string | null) {
   if (workflow?.workflow_status === 'resolved') return 'Operator resolved';
-  if (workflow?.assigned_to && workflow.assigned_to === currentUserId) return 'Owned by you';
+  if (workflow?.assigned_to && workflow.assigned_to === currentUserId) return 'Assigned to you';
   if (workflow?.workflow_status === 'acknowledged') return 'Acknowledged';
   return 'Unacknowledged';
 }
@@ -184,7 +184,7 @@ export function AlarmCenter() {
       setCurrentUserId(authResult.data.user?.id ?? null);
       setUpdated(new Date());
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Could not load alarms.');
+      setError(loadError instanceof Error ? loadError.message : 'Could not load alerts.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -258,10 +258,10 @@ export function AlarmCenter() {
       const next = data as AlarmWorkflow;
       setWorkflows((current) => ({ ...current, [faultId]: next }));
       setNotice(action === 'resolve'
-        ? 'Alarm workflow resolved. Live machine telemetry remains authoritative and is not altered.'
-        : action === 'reopen' ? 'Alarm workflow reopened.' : 'Alarm workflow updated.');
+        ? 'Alert workflow resolved. Live machine telemetry remains authoritative and is not altered.'
+        : action === 'reopen' ? 'Alert workflow reopened.' : 'Alert workflow updated.');
     } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : 'Alarm workflow could not be updated.');
+      setError(actionError instanceof Error ? actionError.message : 'Alert workflow could not be updated.');
     } finally {
       setBusyFaultId(null);
     }
@@ -288,32 +288,32 @@ export function AlarmCenter() {
 
   return (
     <section className={styles.center} data-alarm-center="televend-v3">
-      <header className={styles.header}><div><h1>Alarms & events</h1><p>Live machine faults, acknowledgement, ownership and auditable resolution workflow.</p></div><button disabled={refreshing} onClick={() => load(true)} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button></header>
-      {error ? <div className={styles.error} role="alert">Alarm data unavailable: {error}</div> : null}
+      <header className={styles.header}><div><h1>Alerts</h1><p>Live machine faults, acknowledgement, ownership and auditable resolution workflow.</p></div><button disabled={refreshing} onClick={() => load(true)} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button></header>
+      {error ? <div className={styles.error} role="alert">Alert data unavailable: {error}</div> : null}
       {notice ? <div className={styles.notice} role="status">{notice}</div> : null}
-      {loading ? <HamsterLoader label="Loading alarm center" /> : null}
+      {loading ? <HamsterLoader label="Loading alert center" /> : null}
 
       {!loading ? <>
-        <section className={styles.metrics} aria-label="Alarm status summary">
-          <button className={`${styles.metric} ${styles.critical}`} onClick={() => { setStatus('active'); setWorkflowFilter('all'); }} type="button"><span>Active machine faults</span><strong>{active.length.toLocaleString('en-ZA')}</strong></button>
+        <section className={styles.metrics} aria-label="Alert status summary">
+          <button className={`${styles.metric} ${styles.critical}`} onClick={() => { setStatus('active'); setWorkflowFilter('all'); }} type="button"><span>All active</span><strong>{active.length.toLocaleString('en-ZA')}</strong></button>
           <button className={`${styles.metric} ${styles.critical}`} onClick={() => { setStatus('active'); setSeverity('critical'); }} type="button"><span>Critical</span><strong>{critical.toLocaleString('en-ZA')}</strong></button>
           <button className={`${styles.metric} ${styles.warning}`} onClick={() => { setStatus('active'); setWorkflowFilter('unacknowledged'); }} type="button"><span>Unacknowledged</span><strong>{unacknowledged.toLocaleString('en-ZA')}</strong></button>
-          <button className={`${styles.metric} ${styles.connectivity}`} onClick={() => { setStatus('active'); setWorkflowFilter('owned'); }} type="button"><span>Owned by me</span><strong>{ownedByMe.toLocaleString('en-ZA')}</strong></button>
+          <button className={`${styles.metric} ${styles.connectivity}`} onClick={() => { setStatus('active'); setWorkflowFilter('owned'); }} type="button"><span>Assigned to me</span><strong>{ownedByMe.toLocaleString('en-ZA')}</strong></button>
           <button className={`${styles.metric} ${styles.resolved}`} onClick={() => { setStatus('resolved'); setWorkflowFilter('all'); }} type="button"><span>Machine cleared · 30d</span><strong>{resolved.length.toLocaleString('en-ZA')}</strong></button>
           <button className={`${styles.metric} ${styles.operator}`} onClick={() => { setStatus('all'); setWorkflowFilter('operator_resolved'); }} type="button"><span>Operator resolved</span><strong>{operatorResolved.toLocaleString('en-ZA')}</strong></button>
         </section>
 
         <section className={styles.analysis}>
-          <article className={styles.card}><header className={styles.cardHeader}><div><span>Active alarm mix</span><h2>Severity distribution</h2></div><span>{active.length} open</span></header><div className={styles.barList}>{[
+          <article className={styles.card}><header className={styles.cardHeader}><div><span>Active alert mix</span><h2>Severity distribution</h2></div><span>{active.length} open</span></header><div className={styles.barList}>{[
             ['Critical', severityCounts.critical ?? 0], ['Warning', severityCounts.warning ?? 0], ['Connectivity', severityCounts.connectivity ?? 0], ['Other', (severityCounts.fault ?? 0) + (severityCounts.info ?? 0)],
           ].map(([label, value]) => <div className={styles.barRow} key={String(label)}><span>{label}</span><div className={styles.track}><i style={{ width: `${Number(value) / maxSeverity * 100}%` }} /></div><b>{Number(value).toLocaleString('en-ZA')}</b></div>)}</div></article>
           <article className={styles.card}><header className={styles.cardHeader}><div><span>30-day machine lifecycle</span><h2>Active vs machine-cleared</h2></div><span>{faults.length} events</span></header><div className={styles.rings}><div className={styles.ringWrap}><div className={`${styles.ring} ${styles.red}`} style={{ '--ring': `${Math.max(2, activeRate)}%` } as CSSProperties}><div><strong>{active.length}</strong><span>Active</span></div></div></div><div className={styles.ringWrap}><div className={styles.ring} style={{ '--ring': `${Math.max(2, resolvedRate)}%` } as CSSProperties}><div><strong>{resolved.length}</strong><span>Cleared</span></div></div></div></div></article>
         </section>
 
-        <section className={styles.filters} aria-label="Alarm filters">
-          <label className={styles.search}><NavigationIcon kind="search" /><input aria-label="Search alarms" placeholder="Search fault, machine, serial, device, detail or resolution note" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
+        <section className={styles.filters} aria-label="Alert filters">
+          <label className={styles.search}><NavigationIcon kind="search" /><input aria-label="Search alerts" placeholder="Search fault, machine, serial, device, detail or resolution note" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
           <label><span>Machine signal</span><select value={status} onChange={(event) => setStatus(event.target.value as FilterStatus)}><option value="active">Active</option><option value="resolved">Machine cleared</option><option value="all">All</option></select></label>
-          <label><span>Workflow</span><select value={workflowFilter} onChange={(event) => setWorkflowFilter(event.target.value as WorkflowFilter)}><option value="all">All workflow states</option><option value="unacknowledged">Unacknowledged</option><option value="acknowledged">Acknowledged</option><option value="owned">Owned by me</option><option value="operator_resolved">Operator resolved</option></select></label>
+          <label><span>Workflow</span><select value={workflowFilter} onChange={(event) => setWorkflowFilter(event.target.value as WorkflowFilter)}><option value="all">All workflow states</option><option value="unacknowledged">Unacknowledged</option><option value="acknowledged">Acknowledged</option><option value="owned">Assigned to me</option><option value="operator_resolved">Operator resolved</option></select></label>
           <label><span>Severity</span><select value={severity} onChange={(event) => setSeverity(event.target.value)}><option value="all">All severities</option><option value="critical">Critical</option><option value="warning">Warning</option><option value="connectivity">Connectivity</option><option value="fault">Fault</option><option value="info">Info</option></select></label>
           <label><span>Branch</span><select value={branch} onChange={(event) => setBranch(event.target.value)}><option value="all">All branches</option>{branches.map((value) => <option key={value} value={value}>{value.toUpperCase()}</option>)}</select></label>
           <label><span>Source</span><select value={source} onChange={(event) => setSource(event.target.value)}><option value="all">All sources</option>{sources.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
@@ -323,7 +323,7 @@ export function AlarmCenter() {
 
         <section className={styles.tableCard}>
           <header className={styles.tableHead}><div><strong>Event console</strong><small>Operator workflow never overwrites the machine-generated fault state.</small></div><span>{filtered.length.toLocaleString('en-ZA')} events · updated {updated ? updated.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '—'}</span></header>
-          {!visible.length ? <div className={styles.empty}>No alarms match the selected filters.</div> : <>
+          {!visible.length ? <div className={styles.empty}>No alerts match the selected filters.</div> : <>
             <div className={styles.scroll}><table className={styles.table}><thead><tr><th>Severity</th><th>Machine</th><th>Fault</th><th>Machine state</th><th>Workflow</th><th>Last seen</th><th>Actions</th></tr></thead><tbody>{visible.map((fault) => {
               const machine = fault.machine_id ? machines[fault.machine_id] : null;
               const device = fault.device_id ? devices[fault.device_id] : null;
@@ -375,13 +375,13 @@ export function AlarmCenter() {
         </section>
       </> : null}
 
-      <AccessibleDialog ariaLabel="Resolve alarm" className={styles.resolveDialog} id="resolve-telemetry-alarm-dialog" onClose={() => { if (!busyFaultId) { setResolutionTarget(null); setResolutionNote(''); } }} open={Boolean(resolutionTarget)} closeOnBackdrop={!busyFaultId}>
-        <header><div><h2>Resolve alarm workflow</h2><p>This records an operator resolution. It does not clear the machine-generated telemetry fault.</p></div><button aria-label="Close resolve alarm dialog" disabled={Boolean(busyFaultId)} onClick={() => setResolutionTarget(null)} type="button">×</button></header>
+      <AccessibleDialog ariaLabel="Resolve alert" className={styles.resolveDialog} id="resolve-telemetry-alarm-dialog" onClose={() => { if (!busyFaultId) { setResolutionTarget(null); setResolutionNote(''); } }} open={Boolean(resolutionTarget)} closeOnBackdrop={!busyFaultId}>
+        <header><div><h2>Resolve alert workflow</h2><p>This records an operator resolution. It does not clear the machine-generated telemetry fault.</p></div><button aria-label="Close resolve alert dialog" disabled={Boolean(busyFaultId)} onClick={() => setResolutionTarget(null)} type="button">×</button></header>
         <form onSubmit={submitResolution}>
           <div className={styles.resolveBody}>
-            <div className={styles.resolveFault}><span>Alarm</span><strong>{resolutionTarget?.fault_code ?? '—'}</strong><small>{resolutionTarget?.machine_id ? machines[resolutionTarget.machine_id]?.machine_name ?? machines[resolutionTarget.machine_id]?.serial_number ?? 'Machine' : 'Unassigned machine'}</small></div>
+            <div className={styles.resolveFault}><span>Alert</span><strong>{resolutionTarget?.fault_code ?? '—'}</strong><small>{resolutionTarget?.machine_id ? machines[resolutionTarget.machine_id]?.machine_name ?? machines[resolutionTarget.machine_id]?.serial_number ?? 'Machine' : 'Unassigned machine'}</small></div>
             <label><span>Resolution note</span><textarea data-dialog-initial-focus maxLength={1000} minLength={3} onChange={(event) => setResolutionNote(event.target.value)} placeholder="What was checked or done?" required rows={5} value={resolutionNote} /></label>
-            {resolutionTarget && !resolutionTarget.cleared_at ? <div className={styles.resolveWarning}><strong>Telemetry fault is still active.</strong><span>The alarm remains visibly marked as machine-active until the vending machine reports recovery.</span></div> : null}
+            {resolutionTarget && !resolutionTarget.cleared_at ? <div className={styles.resolveWarning}><strong>Telemetry fault is still active.</strong><span>The alert remains visibly marked as machine-active until the vending machine reports recovery.</span></div> : null}
           </div>
           <footer><button disabled={Boolean(busyFaultId)} onClick={() => { setResolutionTarget(null); setResolutionNote(''); }} type="button">Cancel</button><button disabled={Boolean(busyFaultId) || resolutionNote.trim().length < 3} type="submit">{busyFaultId ? 'Saving…' : 'Resolve workflow'}</button></footer>
         </form>

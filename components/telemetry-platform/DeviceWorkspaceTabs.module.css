@@ -1,0 +1,50 @@
+.tabs {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 10px 0 14px;
+  margin: -4px 0 14px;
+  background: linear-gradient(var(--telemetry-surface, #fff) 82%, rgba(255, 255, 255, 0));
+  scrollbar-width: thin;
+}
+
+.tab {
+  flex: 0 0 auto;
+  min-height: 34px;
+  border: 1px solid var(--telemetry-border, #d9dde5);
+  border-radius: 999px;
+  padding: 0 12px;
+  background: var(--telemetry-surface, #fff);
+  color: var(--telemetry-muted, #697386);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tab:hover {
+  border-color: rgba(187, 30, 40, .34);
+  color: #9f1c25;
+}
+
+.active {
+  border-color: #b91e28;
+  background: #b91e28;
+  color: #fff;
+  box-shadow: 0 5px 14px rgba(185, 30, 40, .18);
+}
+
+.active:hover {
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .tabs {
+    margin-right: -14px;
+    padding-right: 14px;
+  }
+}

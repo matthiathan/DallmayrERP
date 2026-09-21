@@ -15,9 +15,10 @@ test('operator workflow remains separate from machine generated fault state', ()
   assert.doesNotMatch(migration, /update public\.telemetry_fault_events[\s\S]*set cleared_at/i);
 });
 
-test('alarm center exposes acknowledgement ownership resolution and machine authority', () => {
+test('alert center exposes acknowledgement ownership resolution and machine authority', () => {
   assert.match(center, /Unacknowledged/);
-  assert.match(center, /Owned by me/);
+  assert.match(center, /Assigned to me/);
+  assert.match(center, /Assigned to you/);
   assert.match(center, /Acknowledge/);
   assert.match(center, /Take/);
   assert.match(center, /Resolve workflow/);
@@ -27,7 +28,7 @@ test('alarm center exposes acknowledgement ownership resolution and machine auth
   assert.match(center, /Operator workflow never overwrites the machine-generated fault state/);
 });
 
-test('alarm center provides operational filters and direct machine diagnostics', () => {
+test('alert center provides operational filters and direct machine diagnostics', () => {
   assert.match(center, /Machine signal/);
   assert.match(center, /Workflow/);
   assert.match(center, /Severity/);

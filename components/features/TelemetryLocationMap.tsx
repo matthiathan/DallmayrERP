@@ -122,7 +122,7 @@ function machineLabel(row: LocationRow) {
 function sourceLabel(source: string | null) {
   if (!source) return 'No location';
   if (source === 'gnss') return 'GNSS/GPS';
-  if (source === 'site') return 'ERP site fallback';
+  if (source === 'site') return 'Assigned site location';
   if (source === 'last_known') return 'Last known';
   if (source === 'manual') return 'Manual fallback';
   return source.charAt(0).toUpperCase() + source.slice(1);
@@ -477,7 +477,7 @@ export function TelemetryLocationPreview() {
   }, []);
 
   if (loading) return <div className="fleet-map-preview-loading"><HamsterLoader label="Loading machine map" /></div>;
-  if (points.length === 0) return <div className="fleet-empty-state"><strong>No mapped machines yet</strong><p>Locations will appear after a site coordinate or device location fix is available.</p></div>;
+  if (points.length === 0) return <div className="fleet-empty-state"><strong>No mapped machines yet</strong><p>Locations will appear after an assigned site coordinate or device location fix is available.</p></div>;
   return <TelemetryMapCanvas compact onSelect={() => undefined} points={points} selectedDeviceId={null} />;
 }
 
@@ -592,7 +592,7 @@ export function TelemetryLocationMap() {
   return (
     <section className="fleet-route-page telemetry-map-page">
       <header className="fleet-page-heading">
-        <div><h1>Machine locations</h1><p>Live machine health, communication deadlines and location state across South Africa.</p></div>
+        <div><h1>Machine locations</h1><p>Live machine health, communication deadlines and location state across your selected telemetry region.</p></div>
         <button className="fleet-button secondary" type="button" disabled={loading || refreshing} onClick={() => load(false)}><NavigationIcon kind="telemetry" />{refreshing ? 'Refreshing…' : 'Refresh map'}</button>
       </header>
 
@@ -632,7 +632,7 @@ export function TelemetryLocationMap() {
       </div>
 
       {!loading && rows.length === 0 ? <div className="fleet-empty-state"><strong>No telemetry devices</strong><p>No active telemetry devices are registered.</p></div> : null}
-      {!loading && rows.length > 0 && points.length === 0 ? <div className="fleet-banner is-error"><strong>No mapped machines match the filters.</strong><span>Add coordinates to the ERP site or wait for a location fix from the telemetry device.</span></div> : null}
+      {!loading && rows.length > 0 && points.length === 0 ? <div className="fleet-banner is-error"><strong>No mapped machines match the filters.</strong><span>Add coordinates to the assigned site or wait for a location fix from the telemetry device.</span></div> : null}
       {points.length > 0 ? <TelemetryMapCanvas points={points} selectedDeviceId={selectedDeviceId} onSelect={setSelectedDeviceId} /> : null}
 
       {filtered.length > 0 ? (

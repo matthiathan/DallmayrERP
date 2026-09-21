@@ -7,25 +7,25 @@ export const telemetryNavigationSections: NavSection[] = [
   {
     heading: 'Monitoring',
     items: [
-      { href: '/', label: 'Fleet Overview', code: 'FLT01', roles: 'all', description: 'Fleet health, sales counters, faults and connectivity.' },
+      { href: '/', label: 'Fleet Overview', code: 'FLT01', roles: 'all', description: 'Fleet health, exceptions, faults and current connectivity.' },
       { href: '/machines', label: 'Machines', code: 'FLT02', roles: 'all', description: 'Every machine and its connected telemetry device.' },
-      { href: '/alerts', label: 'Alerts', code: 'FLT03', roles: 'all', description: 'Current machine faults and devices needing attention.' },
+      { href: '/alerts', label: 'Alerts', code: 'FLT03', roles: 'all', description: 'Active faults, ownership, acknowledgement and resolution workflow.' },
     ],
   },
   {
     heading: 'Telemetry',
     items: [
-      { href: '/telemetry', label: 'Analytics', code: 'TEL01', roles: 'all', description: 'Item quantities, trends, failures and activity.' },
-      { href: '/telemetry/reports', label: 'Reports & Exports', code: 'TEL05', roles: 'all', description: 'Production sales, product, machine, fault, data-usage and fleet-readiness reports.' },
+      { href: '/telemetry', label: 'Analytics', code: 'TEL01', roles: 'all', description: 'Explore trends, comparisons and performance signals.' },
+      { href: '/telemetry/reports', label: 'Reports & Exports', code: 'TEL05', roles: 'all', description: 'Structured operational tables, audit views and exports.' },
       { href: '/telemetry/test-center', label: 'Test Center', code: 'TEL04', roles: 'all', description: 'Temporary remote console and commissioning diagnostics.' },
-      { href: '/map', label: 'Machine Map', code: 'TEL03', roles: 'all', description: 'Last known device locations and movement.' },
+      { href: '/map', label: 'Machine Map', code: 'TEL03', roles: 'all', description: 'Last known device locations, health and movement.' },
     ],
   },
   {
     heading: 'Management',
     items: [
-      { href: '/products', label: 'Products', code: 'PRD01', roles: 'all', description: 'Product catalog and machine-model button mappings.' },
-      { href: '/telemetry/devices', label: 'Device Management', code: 'TEL02', roles: 'all', description: 'Device assignment, reporting frequency and connectivity settings.' },
+      { href: '/products', label: 'Products', code: 'PRD01', roles: 'all', description: 'Product catalog, machine mappings and unmapped selections.' },
+      { href: '/telemetry/devices', label: 'Device Management', code: 'TEL02', roles: 'all', description: 'Device assignment, connectivity, reporting, location and SIM settings.' },
     ],
   },
 ];
