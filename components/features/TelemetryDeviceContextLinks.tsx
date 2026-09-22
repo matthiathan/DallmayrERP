@@ -27,12 +27,16 @@ export function TelemetryDeviceContextLinks() {
   const testCenterHref = deviceCode
     ? `/telemetry/test-center?device=${encodeURIComponent(deviceCode)}`
     : '/telemetry/test-center';
+  const profileIdentityHref = deviceCode
+    ? `/telemetry/devices/profile-identity?device=${encodeURIComponent(deviceCode)}`
+    : '/telemetry/devices/profile-identity';
 
   return (
     <nav aria-label="Device context actions" className={styles.actions}>
       <span>{deviceCode ? `Working with ${deviceCode}` : 'Device workflow'}</span>
       <Link href="/machines">Open machines</Link>
       <Link href={testCenterHref}>Open Test Center</Link>
+      <Link href={profileIdentityHref}>Profile identity</Link>
     </nav>
   );
 }
