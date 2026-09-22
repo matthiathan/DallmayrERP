@@ -20,6 +20,13 @@ test('machine reconciliation is scoped to the selected active telemetry device',
   assert.doesNotMatch(component, /p_device_id:\s*null/);
 });
 
+test('reconciliation excludes device history from prior machine assignments', () => {
+  assert.match(component, /filter\(\(row\) => row\.machine_id === machineId\)/);
+  assert.match(component, /summarize\(machineRows\)/);
+  assert.doesNotMatch(component, /const summary = payload\?\.summary/);
+  assert.match(component, /Historical rows from previous machine assignments are excluded/);
+});
+
 test('reconciliation supports bounded operational windows rather than an unbounded fleet query', () => {
   assert.match(component, /type WindowDays = 7 \| 30 \| 90/);
   assert.match(component, /<option value=\{7\}>7 days<\/option>/);
@@ -28,13 +35,21 @@ test('reconciliation supports bounded operational windows rather than an unbound
   assert.match(component, /source\.slice\(0, 250\)/);
 });
 
-test('UI keeps cumulative counter snapshots authoritative and describes MDB/DEX as evidence', () => {
+test('UI distinguishes accounting counters from independent corroborating evidence', () => {
   assert.match(component, /Counter cups/);
   assert.match(component, /Production accounting/);
-  assert.match(component, /MDB confirmed/);
-  assert.match(component, /DEX audit units/);
+  assert.match(component, /MDB \/ DEX evidence/);
+  assert.match(component, /Independent confirmations/);
   assert.match(component, /counter snapshots remain authoritative/i);
-  assert.match(component, /MDB and DEX are corroborating evidence and never add another sale by themselves/i);
+  assert.match(component, /MDB, DEX and machine-complete evidence corroborate counters and never add another sale by themselves/i);
+});
+
+test('counter-only coverage is not described as a successful reconciliation', () => {
+  assert.match(component, /Counter coverage only/);
+  assert.match(component, /No independent MDB\/DEX evidence yet/);
+  assert.match(component, /summary\.counterOnlyRows === summary\.rows/);
+  assert.match(component, /Partial evidence/);
+  assert.match(component, /Reconciled/);
 });
 
 test('operator attention statuses are explicit while matched MDB and DEX rows are distinguished', () => {
