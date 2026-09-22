@@ -1,6 +1,7 @@
 'use client';
 
 import { ChangeEvent, useMemo, useState } from 'react';
+import { formatLocalDate } from '@/lib/dates/local-date';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import styles from './BulkTelemetryEnrollmentControl.module.css';
 
@@ -134,7 +135,7 @@ export function BulkTelemetryEnrollmentControl() {
       row.expires_at,
       region ?? '',
     ].join(',')).join('\n');
-    downloadCsv(`dallmayr-telemetry-enrollment-${new Date().toISOString().slice(0, 10)}.csv`, `${header}\n${body}\n`);
+    downloadCsv(`dallmayr-telemetry-enrollment-${formatLocalDate()}.csv`, `${header}\n${body}\n`);
   }
 
   function downloadTemplate() {
