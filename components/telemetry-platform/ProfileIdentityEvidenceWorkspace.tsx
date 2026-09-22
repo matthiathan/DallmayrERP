@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { collectSupabasePagesResult } from '@/lib/supabase/collect-pages';
@@ -106,7 +106,7 @@ export function ProfileIdentityEvidenceWorkspace() {
         .order('device_code', { ascending: true })
         .range(from, to);
       return { data: (data ?? []) as IdentityDevice[], error: pageError };
-    }, PAGE_SIZE);
+    }, { pageSize: PAGE_SIZE });
 
     if (result.error) {
       setError(result.error.message);
@@ -172,8 +172,7 @@ export function ProfileIdentityEvidenceWorkspace() {
 
   const selected = selectedId ? devices.find((row) => row.id === selectedId) ?? null : null;
 
-  async function verifyEvidence(event: FormEvent, evidenceType: 'fingerprint' | 'model_alias') {
-    event.preventDefault();
+  async function verifyEvidence(evidenceType: 'fingerprint' | 'model_alias') {
     if (!selected || !candidate || !profileKey) return;
     setSavingType(evidenceType);
     setError(null);
@@ -243,8 +242,8 @@ export function ProfileIdentityEvidenceWorkspace() {
                 <label><span>Decoder profile</span><select value={profileKey} onChange={(event) => setProfileKey(event.target.value)}>{candidate.profiles.map((profile) => <option key={profile.id} value={profile.model_key}>{profile.display_name}</option>)}</select></label>
                 <label><span>Verification note</span><textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Optional field-test or machine reference" rows={3} /></label>
                 {candidate.can_verify ? <div className={styles.verifyActions}>
-                  <button disabled={!candidate.observations.fingerprint || Boolean(savingType)} onClick={(event) => void verifyEvidence(event, 'fingerprint')} type="button">{savingType === 'fingerprint' ? 'Verifying…' : 'Verify fingerprint'}</button>
-                  <button disabled={!candidate.observations.model || Boolean(savingType)} onClick={(event) => void verifyEvidence(event, 'model_alias')} type="button">{savingType === 'model_alias' ? 'Verifying…' : 'Verify reported model alias'}</button>
+                  <button disabled={!candidate.observations.fingerprint || Boolean(savingType)} onClick={() => void verifyEvidence('fingerprint')} type="button">{savingType === 'fingerprint' ? 'Verifying…' : 'Verify fingerprint'}</button>
+                  <button disabled={!candidate.observations.model || Boolean(savingType)} onClick={() => void verifyEvidence('model_alias')} type="button">{savingType === 'model_alias' ? 'Verifying…' : 'Verify reported model alias'}</button>
                 </div> : <div className={styles.readOnly}><strong>Administrator verification required</strong><span>You can inspect regional identity candidates, but only an administrator can promote globally trusted decoder evidence.</span></div>}
               </form>
             </> : <div className={styles.emptyDetail}>Candidate details are unavailable.</div>}
