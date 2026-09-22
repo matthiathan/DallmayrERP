@@ -35,8 +35,9 @@ export function TelemetryDeviceContextLinks() {
     <nav aria-label="Device context actions" className={styles.actions}>
       <span>{deviceCode ? `Working with ${deviceCode}` : 'Device workflow'}</span>
       <Link href="/machines">Open machines</Link>
-      <Link href={testCenterHref}>Open Test Center</Link>
+      <Link href="/telemetry/devices/profile-rollout">Profile rollout</Link>
       <Link href={profileIdentityHref}>Profile identity</Link>
+      <Link href={testCenterHref}>Open Test Center</Link>
     </nav>
   );
 }
