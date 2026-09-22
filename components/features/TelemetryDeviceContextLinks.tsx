@@ -28,8 +28,8 @@ export function TelemetryDeviceContextLinks() {
     ? `/telemetry/test-center?device=${encodeURIComponent(deviceCode)}`
     : '/telemetry/test-center';
   const profileIdentityHref = deviceCode
-    ? `/telemetry/devices/profile-identity?device=${encodeURIComponent(deviceCode)}`
-    : '/telemetry/devices/profile-identity';
+    ? `/telemetry/profile-identity?device=${encodeURIComponent(deviceCode)}`
+    : '/telemetry/profile-identity';
 
   return (
     <nav aria-label="Device context actions" className={styles.actions}>
