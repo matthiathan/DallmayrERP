@@ -1,3 +1,4 @@
+import { BulkTelemetryEnrollmentControl } from '@/components/features/BulkTelemetryEnrollmentControl';
 import { TelemetryDeviceContextLinks } from '@/components/features/TelemetryDeviceContextLinks';
 import { AppShell } from '@/components/layout/AppShell';
 import { SpecialistWorkspaceFrame } from '@/components/telemetry-platform/SpecialistWorkspaceFrame';
@@ -14,6 +15,7 @@ export default function TelemetryDevicesPage() {
       >
         <LiveDataStatus refreshIntervalMs={15_000} />
         <TelemetryDeviceContextLinks />
+        <BulkTelemetryEnrollmentControl />
         <TelemetryDevicesWorkspace />
       </SpecialistWorkspaceFrame>
     </AppShell>
