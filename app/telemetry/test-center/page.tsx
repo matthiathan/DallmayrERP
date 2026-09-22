@@ -1,4 +1,5 @@
 import { TelemetryFieldAcceptance } from '@/components/features/TelemetryFieldAcceptance';
+import { TelemetryFieldAcceptanceRecord } from '@/components/features/TelemetryFieldAcceptanceRecord';
 import { TestCenterWorkspaceOrganizer } from '@/components/features/TestCenterWorkspaceOrganizer';
 import { AppShell } from '@/components/layout/AppShell';
 import { SpecialistWorkspaceFrame } from '@/components/telemetry-platform/SpecialistWorkspaceFrame';
@@ -12,6 +13,7 @@ export default function TelemetryTestCenterPage() {
         title="Test Center"
       >
         <TelemetryFieldAcceptance />
+        <TelemetryFieldAcceptanceRecord />
         <TestCenterWorkspaceOrganizer />
       </SpecialistWorkspaceFrame>
     </AppShell>
