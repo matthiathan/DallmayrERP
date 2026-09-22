@@ -23,21 +23,33 @@ test('field acceptance creates immutable region-scoped audit records from author
   assert.match(sql, /expected_plan\s+jsonb\s+not\s+null/i);
   assert.match(sql, /telemetry_region\s+text\s+not\s+null/i);
   assert.match(sql, /enable\s+row\s+level\s+security/i);
-  assert.match(sql, /revoke[\s\S]*insert[\s\S]*update[\s\S]*delete[\s\S]*authenticated/i);
+  assert.match(sql, /revoke\s+all\s+on\s+public\.telemetry_field_acceptance_records\s+from\s+anon\s*,?\s*authenticated/i);
+  assert.match(sql, /grant\s+select\s+on\s+public\.telemetry_field_acceptance_records\s+to\s+authenticated/i);
+  assert.match(sql, /grant\s+insert\s*\(\s*test_session_id\s*,\s*outcome\s*,\s*operator_notes\s*\)\s+on\s+public\.telemetry_field_acceptance_records\s+to\s+authenticated/i);
+  assert.doesNotMatch(sql, /grant\s+(?:insert|update|delete)(?:\s*,|\s+on)\s+public\.telemetry_field_acceptance_records\s+to\s+authenticated/i);
   assert.match(sql, /current_telemetry_region\s*\(\s*\)/i);
+
+  const prepare = sql.match(/create\s+or\s+replace\s+function\s+public\.prepare_telemetry_field_acceptance_record\s*\(\s*\)[\s\S]*?(?=create\s+trigger|drop\s+trigger|create\s+or\s+replace\s+function\s+public\.finalize_telemetry_field_acceptance|$)/i)?.[0] ?? '';
+  assert.ok(prepare, 'prepare_telemetry_field_acceptance_record trigger function must exist');
+  assert.match(prepare, /security\s+definer/i);
+  assert.match(prepare, /assert_telemetry_region_selected\s*\(\s*\)/i);
+  assert.match(prepare, /is_active_app_user\s*\(\s*\)/i);
+  assert.match(prepare, /require_app_role\s*\(\s*array\s*\[[^\]]*(admin|operations|technician|road_technician)/i);
+  assert.match(prepare, /telemetry_test_sessions/i);
+  assert.match(prepare, /telemetry_debug_logs/i);
+  assert.match(prepare, /telemetry_vend_evidence/i);
+  assert.match(prepare, /reported_machine_interface/i);
+  assert.match(prepare, /last_transport/i);
+  assert.match(prepare, /applied_config/i);
+  assert.match(sql, /before\s+insert\s+on\s+public\.telemetry_field_acceptance_records/i);
+  assert.match(sql, /revoke\s+all\s+on\s+function\s+public\.prepare_telemetry_field_acceptance_record\s*\(\s*\)\s+from\s+public\s*,\s*anon\s*,\s*authenticated/i);
 
   const finalize = sql.match(/create\s+or\s+replace\s+function\s+public\.finalize_telemetry_field_acceptance\s*\([\s\S]*?(?=revoke\s+all|grant\s+execute|comment\s+on|$)/i)?.[0] ?? '';
   assert.ok(finalize, 'finalize_telemetry_field_acceptance must exist');
-  assert.match(finalize, /assert_telemetry_region_selected\s*\(\s*\)/i);
-  assert.match(finalize, /is_active_app_user\s*\(\s*\)/i);
-  assert.match(finalize, /require_app_role\s*\(\s*array\s*\[[^\]]*(admin|operations|technician|road_technician)/i);
-  assert.match(finalize, /telemetry_test_sessions/i);
-  assert.match(finalize, /telemetry_debug_logs/i);
-  assert.match(finalize, /telemetry_vend_evidence/i);
-  assert.match(finalize, /reported_machine_interface/i);
-  assert.match(finalize, /last_transport/i);
-  assert.match(finalize, /applied_config/i);
+  assert.match(finalize, /security\s+invoker/i);
   assert.doesNotMatch(finalize, /p_evidence_snapshot/i, 'the browser must not provide the authoritative evidence snapshot');
+  assert.match(sql, /revoke\s+all\s+on\s+function\s+public\.finalize_telemetry_field_acceptance[\s\S]*from\s+public\s*,\s*anon/i);
+  assert.match(sql, /grant\s+execute\s+on\s+function\s+public\.finalize_telemetry_field_acceptance[\s\S]*to\s+authenticated/i);
 });
 
 test('Test Center exposes a durable acceptance-record workflow with the controlled vend plan', () => {
