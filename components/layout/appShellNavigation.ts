@@ -26,6 +26,7 @@ export const telemetryNavigationSections: NavSection[] = [
     items: [
       { href: '/products', label: 'Products', code: 'PRD01', roles: 'all', description: 'Product catalog, machine mappings and unmapped selections.' },
       { href: '/telemetry/devices', label: 'Device Management', code: 'TEL02', roles: 'all', description: 'Device assignment, connectivity, reporting, location and SIM settings.' },
+      { href: '/telemetry/profile-identity', label: 'Profile Identity', code: 'TEL06', roles: 'all', description: 'Review observed machine fingerprints and verified automatic decoder evidence.' },
     ],
   },
 ];
