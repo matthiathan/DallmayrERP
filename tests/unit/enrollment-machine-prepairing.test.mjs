@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const migration = fs.readFileSync(new URL('../../supabase/migrations/20260922101500_add_enrollment_machine_prepairing.sql', import.meta.url), 'utf8');
 const fkHardening = fs.readFileSync(new URL('../../supabase/migrations/20260922101600_harden_enrollment_machine_target_fk.sql', import.meta.url), 'utf8');
+const serialGuard = fs.readFileSync(new URL('../../supabase/migrations/20260922101700_guard_enrollment_machine_serial_mismatch.sql', import.meta.url), 'utf8');
 const control = fs.readFileSync(new URL('../../components/features/BulkTelemetryEnrollmentControl.tsx', import.meta.url), 'utf8');
 
 test('bulk enrollment can resolve one exact machine inside the selected region', () => {
@@ -26,14 +27,20 @@ test('machine pre-pairing rejects duplicate, occupied, and competing targets', (
 });
 
 test('a preassigned token wins over reported serial and produces an explicit link method', () => {
-  const preassigned = migration.indexOf('if v_token.expected_machine_id is not null then');
-  const serialFallback = migration.indexOf("elsif v_serial <> '' then");
+  const preassigned = serialGuard.indexOf('if v_token.expected_machine_id is not null then');
+  const serialFallback = serialGuard.indexOf("elsif v_serial <> '' then");
   assert.ok(preassigned >= 0, 'expected preassigned-machine branch');
   assert.ok(serialFallback > preassigned, 'serial matching must only be a fallback after token pre-pairing');
-  assert.match(migration, /v_site_id := v_expected_machine\.site_id/);
-  assert.match(migration, /v_link_status := 'linked'/);
-  assert.match(migration, /v_link_method := 'token_preassigned'/);
-  assert.match(migration, /'machine_link_method',v_link_method/);
+  assert.match(serialGuard, /v_site_id := v_expected_machine\.site_id/);
+  assert.match(serialGuard, /v_link_status := 'linked'/);
+  assert.match(serialGuard, /v_link_method := 'token_preassigned'/);
+  assert.match(serialGuard, /'machine_link_method',v_link_method/);
+});
+
+test('pre-pairing rejects contradictory serial evidence but permits MDB-only devices without serial evidence', () => {
+  assert.match(serialGuard, /v_serial <> '' and v_expected_serial <> '' and v_serial <> v_expected_serial/);
+  assert.match(serialGuard, /Reported machine serial does not match the machine preassigned to this enrollment token/);
+  assert.match(serialGuard, /elsif v_serial <> '' then/);
 });
 
 test('machine target cannot disappear silently while a commissioning token references it', () => {
@@ -43,8 +50,8 @@ test('machine target cannot disappear silently while a commissioning token refer
 });
 
 test('device enrollment remains service-role only while operator issuance stays authenticated', () => {
-  assert.match(migration, /revoke all on function public\.enroll_telemetry_device\(text,text,text,text,text\) from public, anon, authenticated/);
-  assert.match(migration, /grant execute on function public\.enroll_telemetry_device\(text,text,text,text,text\) to service_role/);
+  assert.match(serialGuard, /revoke all on function public\.enroll_telemetry_device\(text,text,text,text,text\) from public, anon, authenticated/);
+  assert.match(serialGuard, /grant execute on function public\.enroll_telemetry_device\(text,text,text,text,text\) to service_role/);
   assert.match(migration, /require_app_role\(array\['admin','operations'\]\)/);
   assert.match(migration, /grant execute on function public\.create_telemetry_enrollment_tokens_bulk\(jsonb,integer,text\) to authenticated/);
 });
