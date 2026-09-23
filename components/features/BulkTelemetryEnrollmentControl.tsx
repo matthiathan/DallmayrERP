@@ -5,14 +5,34 @@ import { formatLocalDate } from '@/lib/dates/local-date';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import styles from './BulkTelemetryEnrollmentControl.module.css';
 
-type ParsedRow = { hardware_uid: string; label: string };
-type IssuedRow = ParsedRow & { token: string; token_id: string; expires_at: string };
+type ParsedRow = { hardware_uid: string; label: string; machine_key: string };
+type IssuedRow = ParsedRow & {
+  token: string;
+  token_id: string;
+  expires_at: string;
+  expected_machine_id: string;
+  machine_name: string;
+  machine_serial: string;
+  machine_asset_tag: string;
+  machine_barcode: string;
+};
+
+type BulkTokenResponse = {
+  token_id?: string;
+  hardware_uid?: string;
+  expires_at?: string;
+  expected_machine_id?: string | null;
+  machine_name?: string | null;
+  machine_serial?: string | null;
+  machine_asset_tag?: string | null;
+  machine_barcode?: string | null;
+};
 
 type BulkResponse = {
   accepted?: boolean;
   telemetry_region?: string;
   count?: number;
-  tokens?: Array<{ token_id?: string; hardware_uid?: string; expires_at?: string }>;
+  tokens?: BulkTokenResponse[];
 };
 
 function csvCells(line: string) {
@@ -39,7 +59,7 @@ function parseRows(source: string) {
     const cells = csvCells(lines[index]);
     if (index === 0 && /hardware[_ ]?uid/i.test(cells[0] ?? '')) continue;
     const uid = (cells[0] ?? '').replace(/[^0-9a-f]/gi, '').toUpperCase();
-    rows.push({ hardware_uid: uid, label: cells[1] ?? '' });
+    rows.push({ hardware_uid: uid, label: cells[1] ?? '', machine_key: cells[2] ?? '' });
   }
   return rows;
 }
@@ -81,6 +101,7 @@ export function BulkTelemetryEnrollmentControl() {
   const rows = useMemo(() => parseRows(source), [source]);
   const invalid = rows.filter((row) => !/^[0-9A-F]{12}$/.test(row.hardware_uid));
   const duplicateCount = rows.length - new Set(rows.map((row) => row.hardware_uid)).size;
+  const prepairedCount = rows.filter((row) => Boolean(row.machine_key.trim())).length;
 
   async function loadFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -103,17 +124,35 @@ export function BulkTelemetryEnrollmentControl() {
         return { ...row, token, token_hash: await sha256Hex(token) };
       }));
       const { data, error: requestError } = await getSupabaseClient().rpc('create_telemetry_enrollment_tokens_bulk', {
-        p_rows: local.map(({ hardware_uid, label, token_hash }) => ({ hardware_uid, label: label || null, token_hash })),
+        p_rows: local.map(({ hardware_uid, label, machine_key, token_hash }) => ({
+          hardware_uid,
+          label: label || null,
+          machine_key: machine_key.trim() || null,
+          token_hash,
+        })),
         p_minutes: minutes,
         p_label: batchLabel.trim() || null,
       });
       if (requestError) throw requestError;
       const response = (data ?? {}) as BulkResponse;
       const byUid = new Map((response.tokens ?? []).map((row) => [row.hardware_uid ?? '', row]));
-      const next = local.map(({ hardware_uid, label, token }) => {
+      const next = local.map(({ hardware_uid, label, machine_key, token }) => {
         const server = byUid.get(hardware_uid);
         if (!server?.token_id || !server.expires_at) throw new Error(`Supabase did not return token metadata for ${hardware_uid}.`);
-        return { hardware_uid, label, token, token_id: server.token_id, expires_at: server.expires_at };
+        if (machine_key.trim() && !server.expected_machine_id) throw new Error(`Supabase did not confirm the machine pre-pair for ${hardware_uid}.`);
+        return {
+          hardware_uid,
+          label,
+          machine_key,
+          token,
+          token_id: server.token_id,
+          expires_at: server.expires_at,
+          expected_machine_id: server.expected_machine_id ?? '',
+          machine_name: server.machine_name ?? '',
+          machine_serial: server.machine_serial ?? '',
+          machine_asset_tag: server.machine_asset_tag ?? '',
+          machine_barcode: server.machine_barcode ?? '',
+        };
       });
       setIssued(next);
       setRegion(response.telemetry_region ?? null);
@@ -126,10 +165,16 @@ export function BulkTelemetryEnrollmentControl() {
 
   function exportIssued() {
     if (!issued.length) return;
-    const header = 'hardware_uid,label,enrollment_token,enrollment_command,expires_at,telemetry_region';
+    const header = 'hardware_uid,label,machine_key,expected_machine_id,machine_name,machine_serial,machine_asset_tag,machine_barcode,enrollment_token,enrollment_command,expires_at,telemetry_region';
     const body = issued.map((row) => [
       row.hardware_uid,
       csvEscape(row.label),
+      csvEscape(row.machine_key),
+      row.expected_machine_id,
+      csvEscape(row.machine_name),
+      csvEscape(row.machine_serial),
+      csvEscape(row.machine_asset_tag),
+      csvEscape(row.machine_barcode),
       row.token,
       csvEscape(`ENROLL TOKEN ${row.token}`),
       row.expires_at,
@@ -139,27 +184,30 @@ export function BulkTelemetryEnrollmentControl() {
   }
 
   function downloadTemplate() {
-    downloadCsv('dallmayr-telemetry-enrollment-template.csv', 'hardware_uid,label\nB81F3FDA1CD8,Controller 001\n');
+    downloadCsv(
+      'dallmayr-telemetry-enrollment-template.csv',
+      'hardware_uid,label,machine_key\nB81F3FDA1CD8,Controller 001,FA/1938/VM\n',
+    );
   }
 
   return (
-    <section className={styles.panel} data-bulk-telemetry-enrollment="v1">
+    <section className={styles.panel} data-bulk-telemetry-enrollment="v2">
       <header className={styles.header}>
-        <div><span>Fleet rollout</span><h3>Bulk controller enrollment</h3><p>Issue exact-UID one-time enrollment credentials for commissioning batches. Plaintext secrets are generated in this browser and are not stored in Supabase.</p></div>
+        <div><span>Fleet rollout</span><h3>Bulk controller enrollment</h3><p>Issue exact-UID one-time enrollment credentials. Optionally pre-pair each controller to an exact machine using its machine UUID, serial number, asset tag or QR/barcode so commissioning does not depend on passive MDB exposing a unique serial.</p></div>
         <button onClick={downloadTemplate} type="button">Download CSV template</button>
       </header>
 
       {error ? <div className={styles.error} role="alert">{error}</div> : null}
-      {issued.length ? <div className={styles.success} role="status"><strong>{issued.length} enrollment tokens issued{region ? ` for ${region.replaceAll('_', ' ')}` : ''}.</strong><span>Export the CSV now. Refreshing or closing this page discards the plaintext tokens.</span></div> : null}
+      {issued.length ? <div className={styles.success} role="status"><strong>{issued.length} enrollment tokens issued{region ? ` for ${region.replaceAll('_', ' ')}` : ''}{prepairedCount ? ` · ${prepairedCount} machine pre-pair${prepairedCount === 1 ? '' : 's'}` : ''}.</strong><span>Export the CSV now. Refreshing or closing this page discards the plaintext tokens.</span></div> : null}
 
       <div className={styles.grid}>
-        <label className={styles.source}><span>Hardware UIDs</span><textarea rows={8} value={source} onChange={(event) => { setSource(event.target.value); setIssued([]); }} placeholder={'hardware_uid,label\nB81F3FDA1CD8,Controller 001'} /><small>{rows.length} row(s) · max 500</small></label>
+        <label className={styles.source}><span>Hardware UIDs and optional machine targets</span><textarea rows={8} value={source} onChange={(event) => { setSource(event.target.value); setIssued([]); }} placeholder={'hardware_uid,label,machine_key\nB81F3FDA1CD8,Controller 001,FA/1938/VM'} /><small>{rows.length} row(s) · {prepairedCount} pre-paired · max 500. Machine key must be an exact UUID, serial, asset tag or QR/barcode in the selected region.</small></label>
         <div className={styles.options}>
           <label><span>Upload CSV</span><input accept=".csv,text/csv" onChange={(event) => void loadFile(event)} type="file" /></label>
           <label><span>Batch label</span><input value={batchLabel} onChange={(event) => setBatchLabel(event.target.value)} /></label>
           <label><span>Token validity</span><select value={minutes} onChange={(event) => setMinutes(Number(event.target.value))}><option value={60}>1 hour</option><option value={1440}>24 hours</option><option value={4320}>3 days</option><option value={10080}>7 days</option></select></label>
           <div className={styles.actions}><button disabled={busy || !rows.length || Boolean(invalid.length || duplicateCount)} onClick={() => void issueBatch()} type="button">{busy ? 'Issuing…' : `Issue ${rows.length || ''} token${rows.length === 1 ? '' : 's'}`}</button>{issued.length ? <button onClick={exportIssued} type="button">Export commissioning CSV</button> : null}</div>
-          <small>Bulk issuance is restricted by the database to Administrator and Operations accounts in the selected telemetry region.</small>
+          <small>Bulk issuance is restricted by the database to Administrator and Operations accounts in the selected telemetry region. A machine target is rejected if it is ambiguous, outside the region, already has an active controller, or is reserved by another active commissioning token.</small>
         </div>
       </div>
     </section>
