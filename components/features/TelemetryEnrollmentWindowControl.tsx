@@ -27,12 +27,21 @@ type ManualEnrollmentToken = {
   expires_at: string;
   seconds_remaining: number;
   token: string;
+  expected_machine_id: string | null;
+  machine_name: string | null;
+  machine_serial: string | null;
+  machine_asset_tag: string | null;
+  machine_barcode: string | null;
 };
 
 type ManualEnrollmentTokenStatus = {
   status?: 'active' | 'used' | 'expired' | 'revoked' | 'missing';
   seconds_remaining?: number;
 };
+
+function optionalString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value : null;
+}
 
 function normalizeStatus(value: unknown): EnrollmentWindowStatus {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -55,6 +64,11 @@ function normalizeManualToken(value: unknown) {
     hardware_uid: candidate.hardware_uid,
     expires_at: candidate.expires_at,
     seconds_remaining: Number(candidate.seconds_remaining ?? 600),
+    expected_machine_id: optionalString(candidate.expected_machine_id),
+    machine_name: optionalString(candidate.machine_name),
+    machine_serial: optionalString(candidate.machine_serial),
+    machine_asset_tag: optionalString(candidate.machine_asset_tag),
+    machine_barcode: optionalString(candidate.machine_barcode),
   };
 }
 
@@ -76,9 +90,18 @@ function formatRemaining(seconds: number) {
   return `${minutes}:${String(remainder).padStart(2, '0')}`;
 }
 
+function manualMachineLabel(token: ManualEnrollmentToken) {
+  return token.machine_asset_tag
+    ?? token.machine_serial
+    ?? token.machine_barcode
+    ?? token.machine_name
+    ?? token.expected_machine_id;
+}
+
 export function TelemetryEnrollmentWindowControl({ onDeviceEnrolled }: TelemetryEnrollmentWindowControlProps) {
   const [status, setStatus] = useState<EnrollmentWindowStatus>({ active: false, status: 'none' });
   const [expectedUid, setExpectedUid] = useState('');
+  const [manualMachineKey, setManualMachineKey] = useState('');
   const [remaining, setRemaining] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -252,6 +275,7 @@ export function TelemetryEnrollmentWindowControl({ onDeviceEnrolled }: Telemetry
           p_token_hash: tokenHash,
           p_minutes: 10,
           p_label: 'DallmayrERP manual enrollment',
+          p_machine_key: manualMachineKey.trim() || null,
         },
       );
       if (requestError) {
@@ -264,10 +288,16 @@ export function TelemetryEnrollmentWindowControl({ onDeviceEnrolled }: Telemetry
         setError('Supabase returned an invalid enrollment-token response.');
         return;
       }
+      if (manualMachineKey.trim() && !issued.expected_machine_id) {
+        setError('Supabase did not confirm the intended machine pre-pair.');
+        return;
+      }
 
       setExpectedUid(uid);
       setManualToken({ ...issued, token });
-      setNotice('A UID-bound token was generated. It will be shown only until this page is refreshed or the token expires.');
+      setNotice(issued.expected_machine_id
+        ? 'A UID-bound token was generated and pre-paired to the intended machine. It will be shown only until this page is refreshed or the token expires.'
+        : 'A UID-bound token was generated. It will be shown only until this page is refreshed or the token expires.');
       await refresh();
     } catch (requestError) {
       setError(requestError instanceof Error
@@ -331,7 +361,7 @@ export function TelemetryEnrollmentWindowControl({ onDeviceEnrolled }: Telemetry
         <div>
           <span>Telemetry security</span>
           <h2 id="telemetry-enrollment-heading">Device enrollment</h2>
-          <p>Allow one controller automatically, or generate a UID-bound one-time token for manual enrollment through the ESP32 serial console.</p>
+          <p>Allow one controller automatically, or generate a UID-bound one-time token for manual enrollment. Manual tokens can be pre-paired to an exact machine before installation.</p>
         </div>
         <span className={`fleet-status-pill ${status.active || manualToken ? 'is-success' : 'is-neutral'}`}>
           <i />{manualToken ? 'Manual token active' : status.active ? 'Enrollment open' : 'Enrollment closed'}
@@ -354,6 +384,7 @@ export function TelemetryEnrollmentWindowControl({ onDeviceEnrolled }: Telemetry
           <span>One-time serial command</span>
           <code>ENROLL TOKEN {manualToken.token}</code>
           <small>Locked to UID {manualToken.hardware_uid} · expires in {formatRemaining(manualToken.seconds_remaining)}</small>
+          {manualToken.expected_machine_id ? <small>Pre-paired machine: {manualMachineLabel(manualToken)}</small> : null}
         </div>
         <p>Paste this complete command into the ESP32 serial console. The plaintext token is not stored by Supabase and cannot be shown again after this page is refreshed.</p>
         <div className="device-enrollment-actions">
@@ -376,6 +407,18 @@ export function TelemetryEnrollmentWindowControl({ onDeviceEnrolled }: Telemetry
             value={expectedUid}
           />
         </label>
+        <label htmlFor="expected-telemetry-machine-key">
+          <span>Intended machine <small>Optional · manual token only</small></span>
+          <input
+            autoComplete="off"
+            disabled={busy || loading || Boolean(manualToken)}
+            id="expected-telemetry-machine-key"
+            onChange={(event) => setManualMachineKey(event.target.value)}
+            placeholder="Machine UUID, serial, asset tag or QR/barcode"
+            spellCheck={false}
+            value={manualMachineKey}
+          />
+        </label>
         <div className="device-enrollment-actions">
           <button className="fleet-button" disabled={busy || loading || status.active || Boolean(manualToken)} type="submit">
             <NavigationIcon kind="telemetry" />{busy ? 'Please wait…' : 'Allow next device'}
@@ -388,6 +431,7 @@ export function TelemetryEnrollmentWindowControl({ onDeviceEnrolled }: Telemetry
           >Generate one-time token</button>
           {status.active ? <button className="fleet-button secondary" disabled={busy} onClick={closeWindow} type="button">Close enrollment</button> : null}
         </div>
+        <small>Machine pre-pairing uses an exact UUID, serial number, asset tag or QR/barcode in your selected telemetry region. The database rejects ambiguous, occupied or separately reserved machines.</small>
       </form>
     </section>
   );
