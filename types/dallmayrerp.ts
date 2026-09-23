@@ -7,9 +7,9 @@ export type BusinessRole =
   | 'executive'
   | 'warehouse_staff'
   | 'technician'
-  | 'road_technician'
-  | 'client_viewer';
+  | 'road_technician';
 
+export type ClientRole = 'client_viewer';
 export type Branch = 'jhb' | 'cpt' | 'kzn' | 'national';
 export type TelemetryRegion = 'south_africa' | 'dubai' | 'europe';
 export type AccountScope = 'dallmayr' | 'client';
@@ -35,7 +35,7 @@ export interface UserDetails {
   last_name: string | null;
   phone_number: string | null;
   birthday: string | null;
-  role: BusinessRole;
+  role: BusinessRole | ClientRole;
   branch: Branch;
   telemetry_region: TelemetryRegion | null;
   emergency_contact_name: string | null;
