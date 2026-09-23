@@ -46,6 +46,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (!authUser) return <StatusScreen title="Redirecting to sign in" message="Sign in is required to open Dallmayr Machine Telemetry." />;
   if (error) return <StatusScreen title="Session check failed" message={error} />;
 
+  const accountScope = businessProfile?.user.account_scope === 'client' ? 'client' : 'dallmayr';
+  const role = userDetails?.role ?? null;
+  const isClient = accountScope === 'client';
+
   const {
     activeHref,
     activeSection,
@@ -53,22 +57,22 @@ export function AppShell({ children }: { children: ReactNode }) {
     allowedPath,
     homePath,
     navigationSections,
-  } = deriveAppShellNavigation(pathname);
+  } = deriveAppShellNavigation(pathname, accountScope, role);
 
   const metadataName = typeof authUser.user_metadata?.full_name === 'string'
     ? authUser.user_metadata.full_name.trim()
     : '';
   const legacyProfileName = businessProfile ? displayProfileName(businessProfile) : '';
   const userName = metadataName || legacyProfileName || authUser.email?.split('@')[0] || 'Telemetry user';
-  const visibleFavorites = favoriteEntries.filter((entry) => canAccessShellPath(favoritePathname(entry.href)));
-  // Production profiles always include telemetry_region. Gate a missing profile or an
-  // explicitly unassigned region; legacy browser fixtures that predate the field may
-  // omit it, while the database/RPC boundary still remains the access authority.
+  const visibleFavorites = favoriteEntries.filter((entry) => canAccessShellPath(favoritePathname(entry.href), accountScope, role));
+  // Production profiles always include telemetry_region. Client regions are assigned
+  // by Dallmayr staff and cannot be changed by the client account.
   const requiresTelemetryRegion = !userDetails || userDetails.telemetry_region === null;
 
   return (
     <div
       className={`${styles.shell} ${brandStyles.brandShell} ${styles.desktopShell} application-shell-v2 app-shell ${railCollapsed ? `${styles.desktopCollapsed} desktop-rail-collapsed` : ''}`}
+      data-account-scope={accountScope}
       data-platform-shell="telemetry-v3"
     >
       <a className="skip-link" href="#main-content">Skip to main content</a>
@@ -92,12 +96,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           <GlobalSearch triggerLabel="Search machine, device or page" />
         </div>
         <div className={styles.topbarActions}>
-          <TelemetryRegionSelector />
-          <div className={styles.headerChip}><i aria-hidden="true" />Live telemetry</div>
-          <Link aria-label="Open active alerts" className={styles.headerIcon} href="/alerts">
-            <NavigationIcon kind="bell" />
-            <span aria-hidden="true" className={styles.alertDot} />
-          </Link>
+          {!isClient ? <TelemetryRegionSelector /> : null}
+          <div className={styles.headerChip}><i aria-hidden="true" />{isClient ? 'Company telemetry' : 'Live telemetry'}</div>
+          {!isClient ? (
+            <Link aria-label="Open active alerts" className={styles.headerIcon} href="/alerts">
+              <NavigationIcon kind="bell" />
+              <span aria-hidden="true" className={styles.alertDot} />
+            </Link>
+          ) : null}
           <div className="desktop-account-menu-target" id="desktop-account-menu-target" />
         </div>
       </header>
@@ -116,12 +122,19 @@ export function AppShell({ children }: { children: ReactNode }) {
           <ErpStateBanner
             action={<Link className="button" href={homePath}>Open Fleet Overview</Link>}
             className="access-denied"
-            message="This application contains machine and telemetry pages only."
-            title="This page is outside the telemetry workspace."
+            message={isClient ? 'This client account can only open read-only telemetry pages for its assigned company.' : 'This application contains machine and telemetry pages only.'}
+            title={isClient ? 'This page is not available to client accounts.' : 'This page is outside the telemetry workspace.'}
             tone="danger"
           />
         ) : requiresTelemetryRegion ? (
-          <TelemetryRegionRequired />
+          isClient ? (
+            <ErpStateBanner
+              className="access-denied"
+              message="Ask a Dallmayr administrator to assign this client account to a telemetry region."
+              title="Client telemetry region is not configured."
+              tone="danger"
+            />
+          ) : <TelemetryRegionRequired />
         ) : (
           <>
             <Breadcrumbs />
