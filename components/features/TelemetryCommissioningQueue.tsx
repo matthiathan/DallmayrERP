@@ -71,7 +71,9 @@ export function TelemetryCommissioningQueue() {
   const [filter, setFilter] = useState<QueueFilter>('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [revokingTokenId, setRevokingTokenId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const loadQueue = useCallback(async (showLoading = false) => {
@@ -95,10 +97,34 @@ export function TelemetryCommissioningQueue() {
   useEffect(() => {
     void loadQueue(true);
     const intervalId = window.setInterval(() => {
-      if (document.visibilityState === 'visible') void loadQueue(false);
+      if (document.visibilityState === 'visible' && !revokingTokenId) void loadQueue(false);
     }, 15_000);
     return () => window.clearInterval(intervalId);
-  }, [loadQueue]);
+  }, [loadQueue, revokingTokenId]);
+
+  async function revokeWaitingCredential(row: CommissioningRow) {
+    if (row.commissioning_state !== 'waiting' || row.token_status !== 'active' || row.used_at) return;
+    if (!window.confirm(`Revoke the enrollment credential for ${row.hardware_uid}? The controller will no longer be able to enroll with this credential.`)) return;
+
+    setRevokingTokenId(row.token_id);
+    setError(null);
+    setMessage(null);
+    try {
+      const { data, error: requestError } = await getSupabaseClient().rpc(
+        'revoke_telemetry_enrollment_token',
+        { p_token_id: row.token_id },
+      );
+      if (requestError) throw requestError;
+      const result = (data ?? {}) as { revoked?: boolean };
+      if (!result.revoked) throw new Error('The enrollment credential was not revoked. It may already have been used or revoked.');
+      setMessage(`Enrollment credential for ${row.hardware_uid} revoked.`);
+      await loadQueue(false);
+    } catch (revokeError) {
+      setError(revokeError instanceof Error ? revokeError.message : 'The enrollment credential could not be revoked.');
+    } finally {
+      setRevokingTokenId(null);
+    }
+  }
 
   const metrics = useMemo(() => ({
     waiting: rows.filter((row) => row.commissioning_state === 'waiting').length,
@@ -117,17 +143,18 @@ export function TelemetryCommissioningQueue() {
   }), [filter, rows]);
 
   return (
-    <section className="fleet-panel device-commissioning-queue" data-telemetry-commissioning-queue="v1">
+    <section className="fleet-panel device-commissioning-queue" data-telemetry-commissioning-queue="v2">
       <div className="device-enrollment-heading">
         <div>
           <span>Fleet commissioning</span>
           <h2>Commissioning queue</h2>
           <p>Track UID-bound credentials from issuance through enrollment and first heartbeat. Only safe commissioning metadata is shown; enrollment-token hashes are never returned to the browser.</p>
         </div>
-        <button className="fleet-button secondary" disabled={refreshing} onClick={() => void loadQueue(false)} type="button"><NavigationIcon kind="telemetry" />{refreshing ? 'Refreshing…' : 'Refresh queue'}</button>
+        <button className="fleet-button secondary" disabled={refreshing || Boolean(revokingTokenId)} onClick={() => void loadQueue(false)} type="button"><NavigationIcon kind="telemetry" />{refreshing ? 'Refreshing…' : 'Refresh queue'}</button>
       </div>
 
-      {error ? <div className="fleet-banner is-error" role="alert"><strong>Commissioning queue unavailable.</strong><span>{error}</span></div> : null}
+      {error ? <div className="fleet-banner is-error" role="alert"><strong>Commissioning action failed.</strong><span>{error}</span></div> : null}
+      {message ? <div className="fleet-banner is-success" role="status"><strong>Commissioning credential updated.</strong><span>{message}</span></div> : null}
 
       <div className="fleet-metric-grid device-metric-grid">
         <article className="fleet-metric-card"><span className="fleet-metric-icon is-amber"><NavigationIcon kind="queue" /></span><div><span>Waiting</span><strong>{metrics.waiting}</strong></div><small>Issued, not yet enrolled</small></article>
@@ -141,7 +168,10 @@ export function TelemetryCommissioningQueue() {
         <span>{visibleRows.length.toLocaleString('en-ZA')} shown · {metrics.history.toLocaleString('en-ZA')} historical · last refreshed {lastUpdated ? formatDate(lastUpdated.toISOString()) : 'never'}</span>
       </div>
 
-      {loading ? <HamsterLoader label="Loading telemetry commissioning queue" /> : visibleRows.length === 0 ? <div className="fleet-empty-state"><strong>No commissioning records in this view.</strong><span>New UID-bound enrollment credentials will appear here after they are issued.</span></div> : <div className="fleet-table-scroll"><table className="fleet-machine-table"><thead><tr><th>Controller</th><th>Intended machine</th><th>Credential</th><th>Enrolled device</th><th>Last contact</th><th>State</th></tr></thead><tbody>{visibleRows.map((row) => <tr key={row.token_id}><td><strong>{row.hardware_uid}</strong><span>{row.label ?? 'No label'}</span></td><td><strong>{machineLabel(row)}</strong><span>{row.expected_machine_id ? row.machine_name ?? 'Machine pre-paired' : 'Serial fallback allowed'}</span></td><td><strong>{row.token_status}</strong><span>{row.used_at ? `Used ${formatDate(row.used_at)}` : `Expires ${formatDate(row.expires_at)}`}</span></td><td><strong>{row.device_code ?? 'Not enrolled'}</strong><span>{row.firmware_version ?? row.device_machine_link_method ?? 'Awaiting device'}</span></td><td><strong>{formatDate(row.last_seen_at)}</strong><span>{row.last_transport ? row.last_transport.replace('_', ' ') : 'No transport reported'}</span></td><td><span className={`fleet-status-pill ${stateClass(row.commissioning_state)}`}><i />{stateLabel(row.commissioning_state)}</span>{row.attention_reason ? <small>{row.attention_reason}</small> : null}</td></tr>)}</tbody></table></div>}
+      {loading ? <HamsterLoader label="Loading telemetry commissioning queue" /> : visibleRows.length === 0 ? <div className="fleet-empty-state"><strong>No commissioning records in this view.</strong><span>New UID-bound enrollment credentials will appear here after they are issued.</span></div> : <div className="fleet-table-scroll"><table className="fleet-machine-table"><thead><tr><th>Controller</th><th>Intended machine</th><th>Credential</th><th>Enrolled device</th><th>Last contact</th><th>State</th><th>Actions</th></tr></thead><tbody>{visibleRows.map((row) => {
+        const canRevoke = row.commissioning_state === 'waiting' && row.token_status === 'active' && !row.used_at;
+        return <tr key={row.token_id}><td><strong>{row.hardware_uid}</strong><span>{row.label ?? 'No label'}</span></td><td><strong>{machineLabel(row)}</strong><span>{row.expected_machine_id ? row.machine_name ?? 'Machine pre-paired' : 'Serial fallback allowed'}</span></td><td><strong>{row.token_status}</strong><span>{row.used_at ? `Used ${formatDate(row.used_at)}` : `Expires ${formatDate(row.expires_at)}`}</span></td><td><strong>{row.device_code ?? 'Not enrolled'}</strong><span>{row.firmware_version ?? row.device_machine_link_method ?? 'Awaiting device'}</span></td><td><strong>{formatDate(row.last_seen_at)}</strong><span>{row.last_transport ? row.last_transport.replace('_', ' ') : 'No transport reported'}</span></td><td><span className={`fleet-status-pill ${stateClass(row.commissioning_state)}`}><i />{stateLabel(row.commissioning_state)}</span>{row.attention_reason ? <small>{row.attention_reason}</small> : null}</td><td>{canRevoke ? <button className="fleet-button secondary" disabled={revokingTokenId === row.token_id} onClick={() => void revokeWaitingCredential(row)} type="button">{revokingTokenId === row.token_id ? 'Revoking…' : 'Revoke credential'}</button> : <span>—</span>}</td></tr>;
+      })}</tbody></table></div>}
     </section>
   );
 }

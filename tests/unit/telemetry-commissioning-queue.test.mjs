@@ -42,7 +42,7 @@ test('commissioning queue joins intended machine and resulting device without ex
 test('commissioning panel is present in the telemetry devices workspace', () => {
   assert.match(page, /TelemetryCommissioningQueue/);
   assert.match(page, /<TelemetryCommissioningQueue \/>/);
-  assert.match(queue, /data-telemetry-commissioning-queue="v1"/);
+  assert.match(queue, /data-telemetry-commissioning-queue="v2"/);
   assert.match(queue, /get_telemetry_commissioning_queue/);
   assert.match(queue, /p_limit: 500/);
   assert.match(queue, /enrollment-token hashes are never returned to the browser/);
