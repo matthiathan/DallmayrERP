@@ -7,16 +7,20 @@ export type BusinessRole =
   | 'executive'
   | 'warehouse_staff'
   | 'technician'
-  | 'road_technician';
+  | 'road_technician'
+  | 'client_viewer';
 
 export type Branch = 'jhb' | 'cpt' | 'kzn' | 'national';
 export type TelemetryRegion = 'south_africa' | 'dubai' | 'europe';
+export type AccountScope = 'dallmayr' | 'client';
 
 export interface BusinessUser {
   id: string;
   auth_user_id: string | null;
   email: string;
   is_active: boolean;
+  account_scope: AccountScope;
+  customer_id: string | null;
   access_note: string | null;
   access_updated_by: string | null;
   access_updated_at: string | null;
