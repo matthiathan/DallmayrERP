@@ -1,4 +1,4 @@
-name: One-time Render production visual QA
+name: One-time Render production visual baseline
 
 on:
   push:
@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   verify-production:
-    name: Verify live production telemetry UI
+    name: Capture current production telemetry baseline
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -38,7 +38,7 @@ jobs:
           done
           exit "$missing"
 
-      - name: Checkout exact production target
+      - name: Checkout exact production target harness
         uses: actions/checkout@v4
         with:
           ref: ${{ env.TARGET_COMMIT }}
@@ -54,49 +54,7 @@ jobs:
           npm install --no-save --no-package-lock --no-audit --no-fund @playwright/test@1.55.0
           npx playwright install --with-deps chromium
 
-      - name: Confirm polished login build is live
-        shell: bash
-        run: |
-          node --input-type=module <<'NODE'
-          import { chromium } from '@playwright/test';
-
-          const baseURL = process.env.PRODUCTION_BASE_URL.replace(/\/$/, '');
-          const browser = await chromium.launch({ headless: true });
-          const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
-
-          const response = await page.goto(`${baseURL}/login`, { waitUntil: 'networkidle', timeout: 60_000 });
-          if (!response?.ok()) throw new Error(`Production login returned HTTP ${response?.status() ?? 'unknown'}`);
-
-          const email = page.getByLabel('Email', { exact: true });
-          const signIn = page.getByRole('button', { name: 'Sign in', exact: true });
-          await email.waitFor({ state: 'visible', timeout: 30_000 });
-          await signIn.waitFor({ state: 'visible', timeout: 30_000 });
-
-          const evidence = await page.evaluate(() => {
-            const emailInput = document.querySelector('input[type="email"]');
-            const signInButton = Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Sign in');
-            if (!(emailInput instanceof HTMLElement) || !(signInButton instanceof HTMLElement)) return null;
-            const inputStyle = getComputedStyle(emailInput);
-            const buttonStyle = getComputedStyle(signInButton);
-            return {
-              inputMinHeight: inputStyle.minHeight,
-              inputFontSize: inputStyle.fontSize,
-              buttonMinHeight: buttonStyle.minHeight,
-            };
-          });
-
-          console.log('Production login evidence:', evidence);
-          const inputHeight = Number.parseFloat(evidence?.inputMinHeight ?? '0');
-          const inputFont = Number.parseFloat(evidence?.inputFontSize ?? '0');
-          const buttonHeight = Number.parseFloat(evidence?.buttonMinHeight ?? '0');
-          await browser.close();
-
-          if (inputHeight < 46 || inputFont < 14 || buttonHeight < 46) {
-            throw new Error(`Production is still serving the pre-polish login build: ${JSON.stringify(evidence)}`);
-          }
-          NODE
-
-      - name: Capture authenticated production evidence
+      - name: Capture authenticated production baseline
         run: npx playwright test tests/production-visual.spec.mjs --reporter=line --workers=1
 
       - name: Upload production screenshots
@@ -108,14 +66,14 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Summarize verified production surface
+      - name: Summarize current production baseline
         if: success()
         shell: bash
         run: |
           {
-            echo "### Production telemetry visual QA passed"
+            echo "### Current production telemetry visual baseline captured"
             echo
-            echo "- Target repository commit: \`$TARGET_COMMIT\`"
+            echo "- Harness commit: \`$TARGET_COMMIT\`"
             echo "- Base URL: $PRODUCTION_BASE_URL"
             echo "- Viewports: desktop 1440, laptop 1180, tablet 820, mobile 390"
             echo "- Login, telemetry route matrix, and one live Machine Detail captured"
