@@ -1,9 +1,9 @@
 .chart {
   display: grid;
-  gap: 7px;
+  gap: var(--ds-space-2, 8px);
   width: 100%;
   min-width: 0;
-  color: #343431;
+  color: var(--content-text, #f8fafc);
 }
 
 .legend {
@@ -11,23 +11,23 @@
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 12px;
-  min-height: 24px;
+  gap: var(--ds-space-3, 12px);
+  min-height: 28px;
   padding: 0 3px;
-  color: #7f7f7a;
-  font-size: .62rem;
+  color: var(--content-muted, #cbd5e1);
+  font-size: var(--ds-font-xs, 0.75rem);
 }
 
 .legend span {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
 .legend i {
-  width: 16px;
-  height: 2px;
-  border-radius: 99px;
+  width: 18px;
+  height: 3px;
+  border-radius: var(--ds-radius-pill, 999px);
 }
 
 .legendCurrent i { background: #28aeb7; }
@@ -48,7 +48,7 @@
 }
 
 .gridLine {
-  stroke: #e8e8e4;
+  stroke: color-mix(in srgb, var(--content-border, #71808e) 58%, transparent);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
@@ -73,12 +73,12 @@
 }
 
 .currentPoint {
-  fill: #fff;
+  fill: var(--content-surface, #20272f);
   stroke: #28aeb7;
 }
 
 .previousPoint {
-  fill: #fff;
+  fill: var(--content-surface, #20272f);
   stroke: #58b957;
 }
 
@@ -87,7 +87,7 @@
 .previousPoint:hover,
 .previousPoint:focus,
 .activePoint {
-  fill: #fff;
+  fill: var(--content-surface-raised, #2b343d);
   stroke-width: 4;
   outline: none;
 }
@@ -96,15 +96,15 @@
   position: absolute;
   z-index: 6;
   display: grid;
-  gap: 2px;
-  min-width: 124px;
-  max-width: min(210px, 70%);
-  padding: 7px 9px;
-  color: #353532;
-  background: #fff;
-  border: 1px solid #d7d7d2;
-  border-radius: 4px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, .12);
+  gap: 3px;
+  min-width: 132px;
+  max-width: min(220px, 72%);
+  padding: 9px 11px;
+  color: var(--content-text, #f8fafc);
+  background: var(--content-surface-raised, #2b343d);
+  border: 1px solid var(--content-border, #71808e);
+  border-radius: var(--ds-radius-sm, 8px);
+  box-shadow: var(--ds-shadow-md, 0 10px 30px rgb(0 0 0 / 22%));
   pointer-events: none;
   transform: translate(-50%, calc(-100% - 10px));
 }
@@ -130,19 +130,19 @@
 }
 
 .tooltip strong {
-  color: #292927;
-  font-size: .7rem;
+  color: var(--content-strong, #fff);
+  font-size: var(--ds-font-sm, 0.875rem);
 }
 
 .tooltip span,
 .tooltip small {
-  color: #777772;
-  font-size: .62rem;
+  color: var(--content-muted, #cbd5e1);
+  font-size: var(--ds-font-xs, 0.75rem);
 }
 
 .tooltip b {
-  color: #b5121b;
-  font-size: .76rem;
+  color: #ef7f85;
+  font-size: var(--ds-font-sm, 0.875rem);
 }
 
 .axis {
@@ -150,8 +150,8 @@
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 2px;
   margin-top: -2px;
-  color: #969691;
-  font-size: .56rem;
+  color: var(--content-subtle, #a8b3bf);
+  font-size: var(--ds-font-xs, 0.75rem);
   text-align: center;
 }
 
@@ -166,10 +166,12 @@
   .legend {
     justify-content: flex-start;
   }
+
   .svg {
     min-height: 190px;
   }
+
   .axis {
-    font-size: .52rem;
+    font-size: var(--ds-font-xs, 0.75rem);
   }
 }
