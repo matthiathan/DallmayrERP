@@ -1,16 +1,16 @@
 .workspace {
   display: grid;
-  gap: 16px;
+  gap: var(--ds-space-4, 16px);
   min-width: 0;
 }
 
 .notice {
   padding: 11px 14px;
   border: 1px solid color-mix(in srgb, var(--user-accent) 34%, var(--content-border));
-  border-radius: 12px;
+  border-radius: var(--ds-radius-md, 12px);
   background: color-mix(in srgb, var(--user-accent) 8%, var(--content-surface));
   color: var(--content-strong);
-  font-size: 13px;
+  font-size: var(--ds-font-sm, 0.875rem);
   font-weight: 700;
 }
 
@@ -21,11 +21,11 @@
 .statusJourney {
   display: grid;
   grid-template-columns: repeat(5, minmax(100px, 1fr)) minmax(240px, 1.5fr);
-  gap: 8px;
+  gap: var(--ds-space-2, 8px);
   align-items: stretch;
   padding: 10px;
   border: 1px solid var(--content-border);
-  border-radius: 14px;
+  border-radius: var(--ds-radius-md, 12px);
   background: var(--content-surface);
 }
 
@@ -33,12 +33,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: 42px;
   padding: 8px 10px;
   border: 1px solid color-mix(in srgb, var(--content-border) 76%, transparent);
-  border-radius: 10px;
+  border-radius: var(--ds-radius-sm, 8px);
   color: var(--content-subtle);
-  font-size: 12px;
+  font-size: var(--ds-font-xs, 0.75rem);
   font-weight: 800;
 }
 
@@ -72,21 +72,21 @@
 .statusDetail {
   display: grid;
   align-content: center;
-  gap: 2px;
-  padding: 5px 8px 5px 14px;
+  gap: 3px;
+  padding: 6px 8px 6px 14px;
   border-left: 1px solid var(--content-border);
   min-width: 0;
 }
 
 .statusDetail strong {
   color: var(--content-strong);
-  font-size: 13px;
+  font-size: var(--ds-font-sm, 0.875rem);
 }
 
 .statusDetail span {
   color: var(--content-muted);
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: var(--ds-font-xs, 0.75rem);
+  line-height: 1.45;
 }
 
 .configurationCard {
@@ -94,7 +94,7 @@
   gap: 10px;
   padding: 12px;
   border: 1px solid var(--content-border);
-  border-radius: 12px;
+  border-radius: var(--ds-radius-md, 12px);
   background: var(--content-surface-raised);
 }
 
@@ -108,7 +108,7 @@
 .sectionHeading span,
 .historyHeader span {
   color: var(--content-subtle);
-  font-size: 10px;
+  font-size: var(--ds-font-xs, 0.75rem);
   font-weight: 900;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -116,7 +116,7 @@
 
 .sectionHeading strong {
   color: var(--content-strong);
-  font-size: 13px;
+  font-size: var(--ds-font-sm, 0.875rem);
 }
 
 .configList {
@@ -129,7 +129,7 @@
   display: grid;
   grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
   gap: 8px;
-  padding: 7px 0;
+  padding: 8px 0;
   border-bottom: 1px solid color-mix(in srgb, var(--content-border) 52%, transparent);
 }
 
@@ -139,13 +139,13 @@
 
 .configList dt {
   color: var(--content-subtle);
-  font-size: 11px;
+  font-size: var(--ds-font-xs, 0.75rem);
 }
 
 .configList dd {
   margin: 0;
   color: var(--content-strong);
-  font-size: 11px;
+  font-size: var(--ds-font-xs, 0.75rem);
   font-weight: 800;
   overflow-wrap: anywhere;
   text-align: right;
@@ -153,7 +153,7 @@
 
 .configurationCard small {
   color: var(--content-muted);
-  font-size: 10px;
+  font-size: var(--ds-font-xs, 0.75rem);
   line-height: 1.45;
 }
 
@@ -165,7 +165,7 @@
   margin-bottom: 10px;
   padding: 10px 12px;
   border: 1px solid #a77a30;
-  border-radius: 11px;
+  border-radius: var(--ds-radius-md, 12px);
   background: color-mix(in srgb, #a77a30 10%, var(--content-surface));
 }
 
@@ -180,19 +180,31 @@
 
 .readOnlyBanner span {
   color: var(--content-muted);
-  font-size: 12px;
+  font-size: var(--ds-font-xs, 0.75rem);
 }
 
 .readOnlyBanner button,
 .historyHeader button,
 .historyItem button {
+  min-height: 36px;
   border: 1px solid var(--content-border);
-  border-radius: 9px;
+  border-radius: var(--ds-radius-sm, 8px);
   padding: 7px 10px;
   background: var(--content-surface-raised);
   color: var(--content-strong);
   cursor: pointer;
+  font-size: var(--ds-font-xs, 0.75rem);
   font-weight: 800;
+}
+
+.readOnlyBanner button:focus-visible,
+.historyHeader button:focus-visible,
+.historyItem button:focus-visible,
+.filterButton:focus-visible,
+.filterButtonActive:focus-visible,
+.logSearch input:focus-visible {
+  outline: 2px solid var(--content-focus, #67e8f9);
+  outline-offset: 2px;
 }
 
 .logTools {
@@ -217,8 +229,9 @@
 }
 
 .logSearch input {
-  min-height: 38px;
+  min-height: var(--ds-control-md, 44px);
   padding-left: 35px;
+  font-size: var(--ds-font-sm, 0.875rem);
 }
 
 .filterBar {
@@ -232,25 +245,25 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 31px;
-  padding: 5px 9px;
+  min-height: 36px;
+  padding: 6px 10px;
   border: 1px solid var(--content-border);
-  border-radius: 999px;
+  border-radius: var(--ds-radius-pill, 999px);
   background: var(--content-surface-raised);
   color: var(--content-muted);
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--ds-font-xs, 0.75rem);
   font-weight: 850;
 }
 
 .filterButton span,
 .filterButtonActive span {
-  min-width: 18px;
-  padding: 1px 5px;
-  border-radius: 999px;
+  min-width: 20px;
+  padding: 2px 6px;
+  border-radius: var(--ds-radius-pill, 999px);
   background: color-mix(in srgb, var(--content-border) 22%, transparent);
   color: var(--content-strong);
-  font-size: 10px;
+  font-size: var(--ds-font-xs, 0.75rem);
   text-align: center;
 }
 
@@ -262,7 +275,7 @@
 
 .logResultMeta {
   color: var(--content-subtle);
-  font-size: 11px;
+  font-size: var(--ds-font-xs, 0.75rem);
   text-align: right;
 }
 
@@ -288,17 +301,9 @@
   border-radius: 2px;
 }
 
-.importantVend::before {
-  background: #3c9c67;
-}
-
-.importantFault::before {
-  background: #c94848;
-}
-
-.importantIdentity::before {
-  background: var(--user-accent);
-}
+.importantVend::before { background: #3c9c67; }
+.importantFault::before { background: #c94848; }
+.importantIdentity::before { background: var(--user-accent); }
 
 .commandHistory {
   display: grid;
@@ -309,7 +314,7 @@
 
 .commandHistory p {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--ds-font-xs, 0.75rem);
 }
 
 .commandList {
@@ -322,34 +327,35 @@
   grid-template-columns: minmax(160px, .8fr) auto minmax(200px, 1.2fr);
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--content-border) 70%, transparent);
-  border-radius: 9px;
+  border-radius: var(--ds-radius-sm, 8px);
   background: var(--content-surface-raised);
 }
 
 .commandRow > div {
   display: grid;
-  gap: 1px;
+  gap: 2px;
 }
 
 .commandRow strong {
   color: var(--content-strong);
-  font-size: 11px;
+  font-size: var(--ds-font-xs, 0.75rem);
 }
 
 .commandRow span,
 .commandRow small {
   color: var(--content-muted);
-  font-size: 10px;
+  font-size: var(--ds-font-xs, 0.75rem);
 }
 
 .commandStatus {
   display: inline-flex;
   justify-content: center;
-  min-width: 68px;
-  padding: 3px 7px;
-  border-radius: 999px;
+  min-width: 72px;
+  padding: 4px 8px;
+  border-radius: var(--ds-radius-pill, 999px);
+  font-size: var(--ds-font-xs, 0.75rem);
   font-weight: 900;
 }
 
@@ -393,7 +399,7 @@
 .historyHeader h2 {
   margin: 0;
   color: var(--content-strong);
-  font-size: 18px;
+  font-size: var(--ds-font-lg, 1.125rem);
 }
 
 .historyList {
@@ -406,9 +412,9 @@
   grid-template-columns: minmax(190px, 1.3fr) minmax(110px, .6fr) minmax(100px, .5fr) minmax(170px, .9fr) auto;
   gap: 12px;
   align-items: center;
-  padding: 10px 12px;
+  padding: 12px;
   border: 1px solid var(--content-border);
-  border-radius: 10px;
+  border-radius: var(--ds-radius-sm, 8px);
   background: var(--content-surface-raised);
 }
 
@@ -419,19 +425,19 @@
 
 .historyItem > div {
   display: grid;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
 
 .historyItem span {
   color: var(--content-subtle);
-  font-size: 10px;
+  font-size: var(--ds-font-xs, 0.75rem);
 }
 
 .historyItem strong,
 .historyItem code {
   color: var(--content-strong);
-  font-size: 11px;
+  font-size: var(--ds-font-xs, 0.75rem);
   overflow-wrap: anywhere;
 }
 
@@ -470,15 +476,16 @@
   }
 
   .statusStep {
-    flex: 0 0 132px;
+    flex: 0 0 140px;
+    min-height: var(--ds-touch-target, 44px);
     scroll-snap-align: start;
   }
 
   .statusDetail {
-    flex: 0 0 min(280px, 82vw);
+    flex: 0 0 min(300px, 84vw);
     border-top: 0;
     border-left: 1px solid var(--content-border);
-    padding: 5px 8px 5px 12px;
+    padding: 6px 9px 6px 12px;
   }
 
   .filterBar {
@@ -490,6 +497,13 @@
   .filterButton,
   .filterButtonActive {
     flex: 0 0 auto;
+    min-height: var(--ds-touch-target, 44px);
+  }
+
+  .readOnlyBanner button,
+  .historyHeader button,
+  .historyItem button {
+    min-height: var(--ds-touch-target, 44px);
   }
 
   .terminal {
@@ -511,5 +525,16 @@
   .historyItem button {
     grid-column: auto;
     width: 100%;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .logSearch input,
+  .filterButton,
+  .filterButtonActive,
+  .readOnlyBanner button,
+  .historyHeader button,
+  .historyItem button {
+    min-height: var(--ds-touch-target, 44px);
   }
 }
