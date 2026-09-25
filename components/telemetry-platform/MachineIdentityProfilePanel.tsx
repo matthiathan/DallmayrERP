@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import styles from './MachineIdentityProfilePanel.module.css';
 
@@ -74,6 +75,8 @@ function formatDate(value: string | null | undefined) {
 }
 
 export function MachineIdentityProfilePanel({ machineId }: { machineId: string }) {
+  const { businessProfile } = useAuth();
+  const isClient = businessProfile?.user.account_scope === 'client';
   const [identity, setIdentity] = useState<IdentityState | null>(null);
   const [assignmentMethod, setAssignmentMethod] = useState<'automatic' | 'manual'>('automatic');
   const [selectedProfile, setSelectedProfile] = useState('');
@@ -83,6 +86,12 @@ export function MachineIdentityProfilePanel({ machineId }: { machineId: string }
   const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (isClient) {
+      setIdentity(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -103,7 +112,7 @@ export function MachineIdentityProfilePanel({ machineId }: { machineId: string }
     } finally {
       setLoading(false);
     }
-  }, [machineId]);
+  }, [isClient, machineId]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -111,6 +120,8 @@ export function MachineIdentityProfilePanel({ machineId }: { machineId: string }
     if (!identity?.effective_profile_key) return null;
     return identity.profile_options.find((profile) => profile.model_key === identity.effective_profile_key) ?? null;
   }, [identity]);
+
+  if (isClient) return null;
 
   const save = async () => {
     if (!identity?.device) return;

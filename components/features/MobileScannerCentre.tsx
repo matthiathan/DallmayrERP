@@ -117,7 +117,7 @@ function collectUnique<T extends { id: string }>(responses: Array<{ data: unknow
 
 export function MobileScannerCentre() {
   const { businessUser, userDetails } = useAuth();
-  const role = userDetails?.role;
+  const role: BusinessRole | undefined = userDetails?.role === 'client_viewer' ? undefined : userDetails?.role;
   const canViewMachines = Boolean(role && machineRoles.has(role));
   const canViewStock = Boolean(role && stockRoles.has(role));
   const isFieldUser = Boolean(role && fieldRoles.has(role));

@@ -9,14 +9,18 @@ export type BusinessRole =
   | 'technician'
   | 'road_technician';
 
+export type ClientRole = 'client_viewer';
 export type Branch = 'jhb' | 'cpt' | 'kzn' | 'national';
 export type TelemetryRegion = 'south_africa' | 'dubai' | 'europe';
+export type AccountScope = 'dallmayr' | 'client';
 
 export interface BusinessUser {
   id: string;
   auth_user_id: string | null;
   email: string;
   is_active: boolean;
+  account_scope: AccountScope;
+  customer_id: string | null;
   access_note: string | null;
   access_updated_by: string | null;
   access_updated_at: string | null;
@@ -31,7 +35,7 @@ export interface UserDetails {
   last_name: string | null;
   phone_number: string | null;
   birthday: string | null;
-  role: BusinessRole;
+  role: BusinessRole | ClientRole;
   branch: Branch;
   telemetry_region: TelemetryRegion | null;
   emergency_contact_name: string | null;

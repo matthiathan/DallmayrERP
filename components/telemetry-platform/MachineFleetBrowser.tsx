@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { MachineCreateImportControls } from '@/components/features/MachineCreateImportControls';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
@@ -137,6 +138,8 @@ function isFleetFilterStatus(value: unknown): value is FleetFilterStatus {
 }
 
 export function MachineFleetBrowser() {
+  const { businessProfile } = useAuth();
+  const isClient = businessProfile?.user.account_scope === 'client';
   const [rows, setRows] = useState<MachineFleetRow[]>([]);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -267,7 +270,7 @@ export function MachineFleetBrowser() {
         <div className={styles.headerCopy}><h1>Machines</h1><p>Live machine status, faults, connectivity, decoder profile and device assignment.</p></div>
         <div className={styles.headerActions}>
           <button className={styles.headerButton} disabled={refreshing} onClick={() => loadFleet(true)} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button>
-          <MachineCreateImportControls onChanged={refreshAll} />
+          {!isClient ? <MachineCreateImportControls onChanged={refreshAll} /> : null}
         </div>
       </header>
 
@@ -309,7 +312,7 @@ export function MachineFleetBrowser() {
                     <td>{machine.device_id ? <SignalStrengthIndicator cellularCsq={machine.cellular_csq} transport={machine.last_transport} wifiRssi={machine.wifi_rssi} /> : <span className={styles.secondary}>—</span>}</td>
                     <td>{machine.fault_count ? <span className={styles.faultCount}>{machine.fault_count}</span> : <span className={styles.noFaults}>Clear</span>}</td>
                     <td>{contactAge(machine.last_contact)}</td>
-                    <td><div className={styles.quickActions}><Link href={`/machines/${machine.id}`}>Dashboard</Link>{machine.device_code ? <Link href={`/telemetry/test-center?device=${encodeURIComponent(machine.device_code)}`}>Test</Link> : null}<Link href="/products">Mappings</Link></div></td>
+                    <td><div className={styles.quickActions}><Link href={`/machines/${machine.id}`}>Dashboard</Link>{!isClient && machine.device_code ? <Link href={`/telemetry/test-center?device=${encodeURIComponent(machine.device_code)}`}>Test</Link> : null}{!isClient ? <Link href="/products">Mappings</Link> : null}</div></td>
                   </tr>
                 ))}</tbody>
               </table>
@@ -324,7 +327,7 @@ export function MachineFleetBrowser() {
                     <div className={styles.mobileMeta}><span>{machine.serial_number ?? 'No serial'}</span><span>·</span><span>{transportLabel(machine)}</span><span>·</span><span>{contactAge(machine.last_contact)}</span></div>
                     <div className={styles.mobileProfile}><span className={profilePillClass(machine.profile_status)}>{profileLabel(machine)}</span><small>{profileEvidenceLabel(machine)}</small></div>
                   </Link>
-                  <div className={styles.mobileActions}><Link href={`/machines/${machine.id}`}>Dashboard</Link>{machine.device_code ? <Link href={`/telemetry/test-center?device=${encodeURIComponent(machine.device_code)}`}>Test Center</Link> : null}<Link href="/products">Mappings</Link></div>
+                  <div className={styles.mobileActions}><Link href={`/machines/${machine.id}`}>Dashboard</Link>{!isClient && machine.device_code ? <Link href={`/telemetry/test-center?device=${encodeURIComponent(machine.device_code)}`}>Test Center</Link> : null}{!isClient ? <Link href="/products">Mappings</Link> : null}</div>
                 </article>
               ))}
             </div>
