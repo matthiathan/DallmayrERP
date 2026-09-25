@@ -247,7 +247,7 @@ export function ClientAccessControl() {
 
       <section className="neo-card admin-access-section">
         <div className="minimal-panel-header"><div><span className="minimal-kicker">Existing clients</span><h2>Company login register</h2></div></div>
-        <EnterpriseDataTable columns={columns} data={clients} emptyMessage={loading ? 'Loading client accounts…' : 'No client accounts have been created yet.'} rowKey={(row) => row.user_id} />
+        <EnterpriseDataTable columns={columns} rows={clients} emptyMessage={loading ? 'Loading client accounts…' : 'No client accounts have been created yet.'} rowKey={(row) => row.user_id} />
       </section>
 
       {selected ? (
