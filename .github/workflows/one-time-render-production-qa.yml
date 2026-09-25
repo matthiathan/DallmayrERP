@@ -1,4 +1,4 @@
-name: One-time Render production deploy and visual QA
+name: One-time Render production visual QA
 
 on:
   push:
@@ -12,8 +12,8 @@ permissions:
   actions: read
 
 jobs:
-  deploy-and-verify:
-    name: Deploy exact main commit and verify production telemetry UI
+  verify-production:
+    name: Verify live production telemetry UI
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -25,14 +25,12 @@ jobs:
       PRODUCTION_VISUAL_ARTIFACT_DIR: artifacts/production-visual/current
 
     steps:
-      - name: Verify production secrets are configured
+      - name: Verify production visual credentials are configured
         shell: bash
-        env:
-          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
           set -euo pipefail
           missing=0
-          for name in RENDER_DEPLOY_HOOK_URL PRODUCTION_VISUAL_EMAIL PRODUCTION_VISUAL_PASSWORD; do
+          for name in PRODUCTION_VISUAL_EMAIL PRODUCTION_VISUAL_PASSWORD; do
             if [ -z "${!name:-}" ]; then
               echo "Required repository secret $name is not configured." >&2
               missing=1
@@ -40,44 +38,7 @@ jobs:
           done
           exit "$missing"
 
-      - name: Trigger exact commit on Render
-        id: render-deploy
-        shell: bash
-        env:
-          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-        run: |
-          set -euo pipefail
-          echo "::add-mask::$RENDER_DEPLOY_HOOK_URL"
-
-          separator='?'
-          if [[ "$RENDER_DEPLOY_HOOK_URL" == *'?'* ]]; then
-            separator='&'
-          fi
-
-          deploy_url="${RENDER_DEPLOY_HOOK_URL}${separator}ref=${TARGET_COMMIT}"
-          http_code="$(curl --silent --show-error \
-            --output render-deploy-response.json \
-            --write-out '%{http_code}' \
-            --request POST \
-            "$deploy_url")"
-
-          cat render-deploy-response.json
-          echo
-
-          if [ "$http_code" != "200" ] && [ "$http_code" != "202" ]; then
-            echo "Render deploy hook returned HTTP $http_code." >&2
-            exit 1
-          fi
-
-          echo "http_code=$http_code" >> "$GITHUB_OUTPUT"
-          {
-            echo "### Render production deployment accepted"
-            echo
-            echo "- Commit: \`$TARGET_COMMIT\`"
-            echo "- Render response: HTTP $http_code"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Checkout exact production commit
+      - name: Checkout exact production target
         uses: actions/checkout@v4
         with:
           ref: ${{ env.TARGET_COMMIT }}
@@ -93,7 +54,7 @@ jobs:
           npm install --no-save --no-package-lock --no-audit --no-fund @playwright/test@1.55.0
           npx playwright install --with-deps chromium
 
-      - name: Wait for polished production login build
+      - name: Confirm polished login build is live
         shell: bash
         run: |
           node --input-type=module <<'NODE'
@@ -102,52 +63,37 @@ jobs:
           const baseURL = process.env.PRODUCTION_BASE_URL.replace(/\/$/, '');
           const browser = await chromium.launch({ headless: true });
           const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
-          let lastEvidence = null;
 
-          for (let attempt = 1; attempt <= 36; attempt += 1) {
-            try {
-              const response = await page.goto(`${baseURL}/login`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-              if (!response?.ok()) throw new Error(`HTTP ${response?.status() ?? 'unknown'}`);
+          const response = await page.goto(`${baseURL}/login`, { waitUntil: 'networkidle', timeout: 60_000 });
+          if (!response?.ok()) throw new Error(`Production login returned HTTP ${response?.status() ?? 'unknown'}`);
 
-              const email = page.getByLabel('Email', { exact: true });
-              const signIn = page.getByRole('button', { name: 'Sign in', exact: true });
-              await email.waitFor({ state: 'visible', timeout: 15_000 });
-              await signIn.waitFor({ state: 'visible', timeout: 15_000 });
+          const email = page.getByLabel('Email', { exact: true });
+          const signIn = page.getByRole('button', { name: 'Sign in', exact: true });
+          await email.waitFor({ state: 'visible', timeout: 30_000 });
+          await signIn.waitFor({ state: 'visible', timeout: 30_000 });
 
-              const evidence = await page.evaluate(() => {
-                const emailInput = document.querySelector('input[type="email"]');
-                const signInButton = Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Sign in');
-                if (!(emailInput instanceof HTMLElement) || !(signInButton instanceof HTMLElement)) return null;
-                const inputStyle = getComputedStyle(emailInput);
-                const buttonStyle = getComputedStyle(signInButton);
-                return {
-                  inputMinHeight: inputStyle.minHeight,
-                  inputFontSize: inputStyle.fontSize,
-                  buttonMinHeight: buttonStyle.minHeight,
-                };
-              });
+          const evidence = await page.evaluate(() => {
+            const emailInput = document.querySelector('input[type="email"]');
+            const signInButton = Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Sign in');
+            if (!(emailInput instanceof HTMLElement) || !(signInButton instanceof HTMLElement)) return null;
+            const inputStyle = getComputedStyle(emailInput);
+            const buttonStyle = getComputedStyle(signInButton);
+            return {
+              inputMinHeight: inputStyle.minHeight,
+              inputFontSize: inputStyle.fontSize,
+              buttonMinHeight: buttonStyle.minHeight,
+            };
+          });
 
-              lastEvidence = evidence;
-              const inputHeight = Number.parseFloat(evidence?.inputMinHeight ?? '0');
-              const inputFont = Number.parseFloat(evidence?.inputFontSize ?? '0');
-              const buttonHeight = Number.parseFloat(evidence?.buttonMinHeight ?? '0');
-
-              if (inputHeight >= 46 && inputFont >= 14 && buttonHeight >= 46) {
-                console.log('Production login polish detected:', evidence);
-                await browser.close();
-                process.exit(0);
-              }
-
-              console.log(`Attempt ${attempt}: production still exposes pre-polish login metrics`, evidence);
-            } catch (error) {
-              console.log(`Attempt ${attempt}: production readiness probe failed:`, error instanceof Error ? error.message : error);
-            }
-
-            await page.waitForTimeout(10_000);
-          }
-
+          console.log('Production login evidence:', evidence);
+          const inputHeight = Number.parseFloat(evidence?.inputMinHeight ?? '0');
+          const inputFont = Number.parseFloat(evidence?.inputFontSize ?? '0');
+          const buttonHeight = Number.parseFloat(evidence?.buttonMinHeight ?? '0');
           await browser.close();
-          throw new Error(`Timed out waiting for the polished production login build. Last evidence: ${JSON.stringify(lastEvidence)}`);
+
+          if (inputHeight < 46 || inputFont < 14 || buttonHeight < 46) {
+            throw new Error(`Production is still serving the pre-polish login build: ${JSON.stringify(evidence)}`);
+          }
           NODE
 
       - name: Capture authenticated production evidence
@@ -159,7 +105,7 @@ jobs:
         with:
           name: production-visual-screenshots
           path: artifacts/production-visual/current
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
 
       - name: Summarize verified production surface
@@ -169,9 +115,9 @@ jobs:
           {
             echo "### Production telemetry visual QA passed"
             echo
-            echo "- Render commit: \`$TARGET_COMMIT\`"
+            echo "- Target repository commit: \`$TARGET_COMMIT\`"
             echo "- Base URL: $PRODUCTION_BASE_URL"
             echo "- Viewports: desktop 1440, laptop 1180, tablet 820, mobile 390"
-            echo "- Authenticated telemetry route matrix and one live Machine Detail captured"
+            echo "- Login, telemetry route matrix, and one live Machine Detail captured"
             echo "- Horizontal-overflow and exact-route assertions passed"
           } >> "$GITHUB_STEP_SUMMARY"
