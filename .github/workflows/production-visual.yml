@@ -9,9 +9,9 @@ on:
         default: https://dallmayrerp.onrender.com
         type: string
       routes:
-        description: Comma-separated authenticated routes to verify
+        description: Comma-separated authenticated telemetry routes to verify
         required: true
-        default: /,/customers,/operations/dashboard,/operations/assets,/warehouse/stock,/work,/messages,/workspace
+        default: /,/machines,/alerts,/telemetry,/telemetry/reports,/telemetry/test-center,/map,/products,/telemetry/devices,/users
         type: string
       baseline_run_id:
         description: Optional prior Production visual verification run ID to compare against
@@ -32,7 +32,7 @@ jobs:
   verify-production:
     name: Authenticated Render screenshots and layout checks
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     env:
       PRODUCTION_BASE_URL: ${{ inputs.base_url }}
       PRODUCTION_VISUAL_ROUTES: ${{ inputs.routes }}
