@@ -236,7 +236,7 @@ export function RoleWorkspacePanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const role = userDetails?.role;
+  const role: BusinessRole | undefined = userDetails?.role === 'client_viewer' ? undefined : userDetails?.role;
 
   const loadSummary = useCallback(async () => {
     if (!businessUser?.id || !role) return;
