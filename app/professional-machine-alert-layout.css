@@ -1,0 +1,672 @@
+/*
+ * Professional operator-workspace layer.
+ *
+ * Refines Machine Detail and Alerts around operator priorities while preserving
+ * all existing interactions and data flows. Loaded after the shared telemetry
+ * layout authority so these two workspaces have one final presentation owner.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Machine detail                                                             */
+/* -------------------------------------------------------------------------- */
+
+[data-machine-detail='televend-v3'] {
+  gap: 20px !important;
+}
+
+[data-machine-detail='televend-v3'] > header:first-child {
+  min-height: auto !important;
+  padding: 4px 0 2px !important;
+  align-items: flex-start !important;
+  gap: 24px !important;
+  color: var(--pro-layout-ink) !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+[data-machine-detail='televend-v3'] > header:first-child a {
+  min-height: 30px !important;
+  margin-bottom: 4px !important;
+  color: var(--pro-layout-muted) !important;
+  font-size: 13px !important;
+}
+
+[data-machine-detail='televend-v3'] > header:first-child h1 {
+  max-width: 32ch;
+  margin: 0 !important;
+  overflow: hidden;
+  color: var(--pro-layout-strong) !important;
+  font-size: clamp(28px, 2.3vw, 34px) !important;
+  font-weight: 760 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -.035em !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-machine-detail='televend-v3'] > header:first-child p {
+  max-width: 72ch;
+  margin: 7px 0 0 !important;
+  overflow: hidden;
+  color: var(--pro-layout-muted) !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-machine-detail='televend-v3'] > header:first-child > div:last-child {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+}
+
+[data-machine-detail='televend-v3'] > header:first-child > div:last-child > span,
+[data-machine-detail='televend-v3'] > header:first-child > div:last-child > select {
+  min-height: 42px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+}
+
+[data-machine-detail='televend-v3'] > header:first-child > div:last-child > span {
+  padding-inline: 12px !important;
+  color: var(--pro-layout-ink) !important;
+  background: var(--pro-layout-surface) !important;
+  border: 1px solid var(--pro-layout-border) !important;
+}
+
+[data-machine-detail='televend-v3'] > header:first-child > div:last-child > select {
+  padding-inline: 12px 34px !important;
+  color: var(--pro-layout-ink) !important;
+  background: var(--pro-layout-surface) !important;
+  border: 1px solid var(--pro-layout-border) !important;
+}
+
+[data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, auto) !important;
+  gap: 18px !important;
+  padding: 14px 16px !important;
+  background: var(--pro-layout-surface) !important;
+  border: 1px solid var(--pro-layout-border) !important;
+  border-radius: var(--pro-layout-radius) !important;
+  box-shadow: var(--pro-layout-shadow) !important;
+}
+
+[data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] > div:first-child {
+  grid-template-columns: repeat(4, minmax(150px, 1fr)) !important;
+  gap: 0 !important;
+}
+
+[data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] > div:first-child > div {
+  gap: 5px !important;
+  padding: 4px 16px !important;
+  border-right: 1px solid var(--pro-layout-border) !important;
+}
+
+[data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] > div:first-child > div:first-child {
+  padding-left: 0 !important;
+}
+
+[data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] > div:first-child > div:last-child {
+  border-right: 0 !important;
+}
+
+[data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] > div:first-child span {
+  color: var(--pro-layout-subtle) !important;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  letter-spacing: .055em !important;
+}
+
+[data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] > div:first-child strong {
+  overflow: hidden;
+  color: var(--pro-layout-strong) !important;
+  font-size: 14px !important;
+  line-height: 1.35 !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] > div:last-child {
+  gap: 8px !important;
+}
+
+[data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] > div:last-child :where(a, button) {
+  min-height: 38px !important;
+  padding-inline: 11px !important;
+  color: var(--pro-layout-muted) !important;
+  background: var(--pro-layout-raised) !important;
+  border: 1px solid var(--pro-layout-border) !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  font-weight: 680 !important;
+}
+
+[data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] > div:last-child button:last-child {
+  color: #fff !important;
+  background: var(--pro-layout-accent) !important;
+  border-color: var(--pro-layout-accent-dark) !important;
+}
+
+[data-machine-detail='televend-v3'] > nav[aria-label='Machine dashboard sections'] {
+  gap: 4px !important;
+  padding: 4px !important;
+  background: var(--pro-layout-raised) !important;
+  border: 1px solid var(--pro-layout-border) !important;
+  border-radius: 10px !important;
+}
+
+[data-machine-detail='televend-v3'] > nav[aria-label='Machine dashboard sections'] button {
+  min-height: 42px !important;
+  padding-inline: 18px !important;
+  color: var(--pro-layout-muted) !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 7px !important;
+  box-shadow: none !important;
+  font-size: 13px !important;
+}
+
+[data-machine-detail='televend-v3'] > nav[aria-label='Machine dashboard sections'] button[aria-current='page'] {
+  color: var(--pro-layout-strong) !important;
+  background: var(--pro-layout-surface) !important;
+  box-shadow: 0 1px 2px rgba(31, 29, 25, .08) !important;
+}
+
+[data-machine-detail='televend-v3'] > nav[aria-label='Machine dashboard sections'] + section {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+[data-machine-detail='televend-v3'] > nav[aria-label='Machine dashboard sections'] + section > article {
+  min-height: 112px !important;
+  padding: 17px 18px 15px 20px !important;
+  gap: 8px !important;
+  border-radius: var(--pro-layout-radius) !important;
+  box-shadow: var(--pro-layout-shadow) !important;
+}
+
+[data-machine-detail='televend-v3'] > nav[aria-label='Machine dashboard sections'] + section > article > span {
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+  letter-spacing: .045em !important;
+  white-space: nowrap;
+}
+
+[data-machine-detail='televend-v3'] > nav[aria-label='Machine dashboard sections'] + section > article > strong {
+  overflow: hidden !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  font-size: clamp(25px, 2vw, 32px) !important;
+  line-height: 1.05 !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-machine-detail='televend-v3'] > nav[aria-label='Machine dashboard sections'] + section > article > small {
+  color: var(--pro-layout-muted) !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+[data-machine-detail='televend-v3'] article {
+  border-radius: var(--pro-layout-radius) !important;
+  box-shadow: var(--pro-layout-shadow) !important;
+}
+
+[data-machine-detail='televend-v3'] article > header {
+  min-height: 58px !important;
+  padding: 11px 16px !important;
+  gap: 12px !important;
+}
+
+[data-machine-detail='televend-v3'] article > header h2 {
+  font-size: 16px !important;
+  line-height: 1.3 !important;
+}
+
+[data-machine-detail='televend-v3'] article > header span {
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  letter-spacing: .05em !important;
+}
+
+[data-machine-detail='televend-v3'] article > header strong {
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+}
+
+[data-machine-detail='televend-v3'] article dl {
+  padding: 8px 16px 16px !important;
+}
+
+[data-machine-detail='televend-v3'] article dl > div {
+  grid-template-columns: minmax(125px, .7fr) minmax(0, 1.3fr) !important;
+  gap: 14px !important;
+  padding-block: 11px !important;
+}
+
+[data-machine-detail='televend-v3'] article dl dt {
+  color: var(--pro-layout-subtle) !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+[data-machine-detail='televend-v3'] article dl dd {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  color: var(--pro-layout-strong) !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-machine-detail='televend-v3'] table {
+  table-layout: fixed;
+}
+
+[data-machine-detail='televend-v3'] table th,
+[data-machine-detail='televend-v3'] table td {
+  padding: 12px 13px !important;
+}
+
+[data-machine-detail='televend-v3'] table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Alerts                                                                     */
+/* -------------------------------------------------------------------------- */
+
+[data-alarm-center='televend-v3'] {
+  gap: 20px !important;
+}
+
+[data-alarm-center='televend-v3'] > header:first-child {
+  min-height: auto !important;
+  padding: 4px 0 2px !important;
+  gap: 20px !important;
+  color: var(--pro-layout-ink) !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+[data-alarm-center='televend-v3'] > header:first-child h1 {
+  margin: 0 !important;
+  color: var(--pro-layout-strong) !important;
+  font-size: clamp(28px, 2.3vw, 34px) !important;
+  font-weight: 760 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -.035em !important;
+}
+
+[data-alarm-center='televend-v3'] > header:first-child p {
+  max-width: 72ch;
+  margin: 7px 0 0 !important;
+  color: var(--pro-layout-muted) !important;
+  font-size: 15px !important;
+  line-height: 1.55 !important;
+}
+
+[data-alarm-center='televend-v3'] > header:first-child button {
+  min-height: 44px !important;
+  padding-inline: 14px !important;
+  color: var(--pro-layout-ink) !important;
+  background: var(--pro-layout-surface) !important;
+  border: 1px solid var(--pro-layout-border) !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+}
+
+[data-alarm-center='televend-v3'] > section[aria-label='Alert status summary'] {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+[data-alarm-center='televend-v3'] > section[aria-label='Alert status summary'] > button {
+  min-height: 108px !important;
+  padding: 16px 16px 14px 20px !important;
+  gap: 8px !important;
+  border-radius: var(--pro-layout-radius) !important;
+  box-shadow: var(--pro-layout-shadow) !important;
+}
+
+[data-alarm-center='televend-v3'] > section[aria-label='Alert status summary'] > button > span {
+  overflow: hidden;
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+  letter-spacing: .04em !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-alarm-center='televend-v3'] > section[aria-label='Alert status summary'] > button > strong {
+  font-size: 30px !important;
+  line-height: 1 !important;
+}
+
+[data-alarm-center='televend-v3'] > section:not([aria-label]):has(> article) {
+  gap: 16px !important;
+}
+
+[data-alarm-center='televend-v3'] > section:not([aria-label]):has(> article) > article {
+  border-radius: var(--pro-layout-radius) !important;
+  box-shadow: var(--pro-layout-shadow) !important;
+}
+
+[data-alarm-center='televend-v3'] > section:not([aria-label]):has(> article) > article > header {
+  min-height: 58px !important;
+  padding: 10px 16px !important;
+}
+
+[data-alarm-center='televend-v3'] > section:not([aria-label]):has(> article) > article > header h2 {
+  font-size: 16px !important;
+  line-height: 1.3 !important;
+}
+
+[data-alarm-center='televend-v3'] > section[aria-label='Alert filters'] {
+  grid-template-columns: minmax(360px, 2fr) repeat(3, minmax(150px, .7fr)) !important;
+  gap: 12px !important;
+  padding: 14px !important;
+  border-radius: var(--pro-layout-radius) !important;
+  box-shadow: var(--pro-layout-shadow) !important;
+}
+
+[data-alarm-center='televend-v3'] > section[aria-label='Alert filters'] > label:nth-of-type(n+5),
+[data-alarm-center='televend-v3'] > section[aria-label='Alert filters'] > button {
+  grid-row: 2;
+}
+
+[data-alarm-center='televend-v3'] > section[aria-label='Alert filters'] > label:nth-of-type(5) {
+  grid-column: 1;
+}
+
+[data-alarm-center='televend-v3'] > section[aria-label='Alert filters'] > label:nth-of-type(6) {
+  grid-column: 2;
+}
+
+[data-alarm-center='televend-v3'] > section[aria-label='Alert filters'] > label:nth-of-type(7) {
+  grid-column: 3;
+}
+
+[data-alarm-center='televend-v3'] > section[aria-label='Alert filters'] > button {
+  grid-column: 4;
+  align-self: end;
+  justify-self: stretch;
+}
+
+[data-alarm-center='televend-v3'] > section[aria-label='Alert filters'] label {
+  gap: 6px !important;
+}
+
+[data-alarm-center='televend-v3'] > section[aria-label='Alert filters'] label > span {
+  color: var(--pro-layout-subtle) !important;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  letter-spacing: .05em !important;
+}
+
+[data-alarm-center='televend-v3'] > section[aria-label='Alert filters'] :where(input, select, button) {
+  min-height: 44px !important;
+  font-size: 14px !important;
+  border-radius: 8px !important;
+}
+
+[data-alarm-center='televend-v3'] > section[aria-label='Alert filters'] label:first-child {
+  min-height: 44px !important;
+}
+
+[data-alarm-center='televend-v3'] > section[aria-label='Alert filters'] label:first-child input {
+  min-height: 42px !important;
+}
+
+[data-alarm-center='televend-v3'] > section:not([aria-label]):has(table) {
+  border-radius: var(--pro-layout-radius) !important;
+  box-shadow: var(--pro-layout-shadow) !important;
+}
+
+[data-alarm-center='televend-v3'] > section:not([aria-label]):has(table) > header {
+  min-height: 64px !important;
+  padding: 11px 16px !important;
+  gap: 16px !important;
+}
+
+[data-alarm-center='televend-v3'] > section:not([aria-label]):has(table) > header strong {
+  font-size: 16px !important;
+  line-height: 1.3 !important;
+}
+
+[data-alarm-center='televend-v3'] > section:not([aria-label]):has(table) > header :where(small, span) {
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+}
+
+[data-alarm-center='televend-v3'] table {
+  min-width: 1280px !important;
+  table-layout: fixed;
+}
+
+[data-alarm-center='televend-v3'] table th,
+[data-alarm-center='televend-v3'] table td {
+  padding: 12px 12px !important;
+  vertical-align: middle !important;
+}
+
+[data-alarm-center='televend-v3'] table th:nth-child(1),
+[data-alarm-center='televend-v3'] table td:nth-child(1) { width: 115px; }
+[data-alarm-center='televend-v3'] table th:nth-child(2),
+[data-alarm-center='televend-v3'] table td:nth-child(2) { width: 220px; }
+[data-alarm-center='televend-v3'] table th:nth-child(3),
+[data-alarm-center='televend-v3'] table td:nth-child(3) { width: 260px; }
+[data-alarm-center='televend-v3'] table th:nth-child(4),
+[data-alarm-center='televend-v3'] table td:nth-child(4) { width: 180px; }
+[data-alarm-center='televend-v3'] table th:nth-child(5),
+[data-alarm-center='televend-v3'] table td:nth-child(5) { width: 185px; }
+[data-alarm-center='televend-v3'] table th:nth-child(6),
+[data-alarm-center='televend-v3'] table td:nth-child(6) { width: 130px; }
+[data-alarm-center='televend-v3'] table th:nth-child(7),
+[data-alarm-center='televend-v3'] table td:nth-child(7) { width: 190px; }
+
+[data-alarm-center='televend-v3'] table td :where(strong, span, a, div) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+[data-alarm-center='televend-v3'] table td strong,
+[data-alarm-center='televend-v3'] table td a > span,
+[data-alarm-center='televend-v3'] table td > div {
+  overflow: hidden;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  text-overflow: ellipsis;
+}
+
+[data-alarm-center='televend-v3'] table td strong,
+[data-alarm-center='televend-v3'] table td a > span {
+  white-space: nowrap;
+}
+
+[data-alarm-center='televend-v3'] table td strong {
+  font-size: 14px !important;
+  line-height: 1.35 !important;
+}
+
+[data-alarm-center='televend-v3'] table td :where(span, div) {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+[data-alarm-center='televend-v3'] table td:last-child > div {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+}
+
+[data-alarm-center='televend-v3'] table td:last-child :where(button, a) {
+  min-height: 34px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 8px !important;
+  overflow: hidden;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-alarm-center='televend-v3'] > section:not([aria-label]):has(table) > footer {
+  min-height: 54px !important;
+  padding: 10px 14px !important;
+}
+
+[data-alarm-center='televend-v3'] > section:not([aria-label]):has(table) > footer :where(button, span) {
+  font-size: 12px !important;
+}
+
+[data-alarm-center='televend-v3'] > section:not([aria-label]):has(table) > footer button {
+  min-height: 38px !important;
+  padding-inline: 12px !important;
+  border-radius: 8px !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Responsive operator workspaces                                             */
+/* -------------------------------------------------------------------------- */
+
+@media (max-width: 1280px) and (min-width: 1181px) {
+  [data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] {
+    grid-template-columns: 1fr !important;
+  }
+
+  [data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] > div:last-child {
+    justify-content: flex-start !important;
+  }
+
+  [data-alarm-center='televend-v3'] > section[aria-label='Alert filters'] {
+    grid-template-columns: minmax(300px, 1.5fr) repeat(2, minmax(155px, .7fr)) !important;
+  }
+
+  [data-alarm-center='televend-v3'] > section[aria-label='Alert filters'] > * {
+    grid-row: auto !important;
+    grid-column: auto !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  [data-machine-detail='televend-v3'] > header:first-child {
+    grid-template-columns: 1fr !important;
+  }
+
+  [data-machine-detail='televend-v3'] > header:first-child > div:last-child {
+    justify-content: flex-start !important;
+  }
+
+  [data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] {
+    grid-template-columns: 1fr !important;
+  }
+
+  [data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] > div:last-child {
+    justify-content: flex-start !important;
+  }
+
+  [data-machine-detail='televend-v3'] > nav[aria-label='Machine dashboard sections'] + section,
+  [data-alarm-center='televend-v3'] > section[aria-label='Alert status summary'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  [data-alarm-center='televend-v3'] > section[aria-label='Alert filters'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  [data-alarm-center='televend-v3'] > section[aria-label='Alert filters'] > * {
+    grid-row: auto !important;
+    grid-column: auto !important;
+  }
+
+  [data-alarm-center='televend-v3'] table {
+    display: none !important;
+  }
+}
+
+@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  [data-machine-detail='televend-v3'] > header:first-child h1,
+  [data-alarm-center='televend-v3'] > header:first-child h1 {
+    font-size: 26px !important;
+  }
+
+  [data-machine-detail='televend-v3'] > header:first-child p {
+    white-space: normal;
+  }
+
+  [data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] > div:first-child {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  [data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] > div:first-child > div {
+    padding: 8px 10px !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--pro-layout-border) !important;
+  }
+
+  [data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] > div:last-child {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  [data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] > div:last-child :where(a, button) {
+    min-height: 44px !important;
+  }
+
+  [data-machine-detail='televend-v3'] > nav[aria-label='Machine dashboard sections'] button {
+    min-height: 44px !important;
+  }
+
+  [data-alarm-center='televend-v3'] > header:first-child {
+    align-items: flex-start !important;
+  }
+
+  [data-alarm-center='televend-v3'] > header:first-child button {
+    min-width: 110px;
+  }
+
+  [data-alarm-center='televend-v3'] > section[aria-label='Alert filters'] :where(input, select, button) {
+    min-height: 44px !important;
+  }
+}
+
+@media (max-width: 560px) {
+  [data-machine-detail='televend-v3'] > header:first-child h1 {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  [data-machine-detail='televend-v3'] > header:first-child > div:last-child {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  [data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] > div:first-child,
+  [data-machine-detail='televend-v3'] > nav[aria-label='Machine dashboard sections'] + section,
+  [data-alarm-center='televend-v3'] > section[aria-label='Alert status summary'],
+  [data-alarm-center='televend-v3'] > section[aria-label='Alert filters'] {
+    grid-template-columns: 1fr !important;
+  }
+
+  [data-machine-detail='televend-v3'] > section[aria-label='Machine quick actions'] > div:last-child {
+    grid-template-columns: 1fr !important;
+  }
+}

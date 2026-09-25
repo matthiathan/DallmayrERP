@@ -97,6 +97,7 @@ jobs:
           node --check tests/telemetry-desktop-smoke.spec.mjs
           node --check tests/telemetry-mobile-shell.spec.mjs
           node --check tests/machine-command-center.spec.mjs
+          node --check tests/professional-operator-layout.spec.mjs
           python -m py_compile scripts/compare-production-screenshots.py
 
       - name: Typecheck application
@@ -133,7 +134,7 @@ jobs:
           for attempt in {1..45}; do
             if curl -fsS "$SECURITY_PENTEST_TARGET/login" > /dev/null; then
               npm run security:pentest
-              npx playwright test tests/telemetry-desktop-smoke.spec.mjs tests/telemetry-mobile-shell.spec.mjs tests/machine-command-center.spec.mjs --reporter=line
+              npx playwright test tests/telemetry-desktop-smoke.spec.mjs tests/telemetry-mobile-shell.spec.mjs tests/machine-command-center.spec.mjs tests/professional-operator-layout.spec.mjs --reporter=line
               exit 0
             fi
             sleep 2
