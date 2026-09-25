@@ -32,6 +32,8 @@ type ClientUser = {
   updated_at: string;
 };
 
+type InviteResponse = { invited?: boolean; message?: string };
+
 const regions: Array<{ value: TelemetryRegion; label: string }> = [
   { value: 'south_africa', label: 'South Africa' },
   { value: 'dubai', label: 'Dubai' },
@@ -48,6 +50,16 @@ function customerLabel(customer: CustomerTarget) {
   return code ? `${name} · ${code}` : name;
 }
 
+async function sendClientInvitation(email: string) {
+  const { data, error } = await getSupabaseClient().functions.invoke('admin-client-invite', {
+    body: { email },
+  });
+  if (error) return error.message || 'The invitation email could not be sent.';
+  const response = (data ?? {}) as InviteResponse;
+  if (!response.invited) return response.message || 'The invitation email could not be sent.';
+  return null;
+}
+
 export function ClientAccessControl() {
   const [customers, setCustomers] = useState<CustomerTarget[]>([]);
   const [clients, setClients] = useState<ClientUser[]>([]);
@@ -62,6 +74,7 @@ export function ClientAccessControl() {
   const [editNote, setEditNote] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [inviting, setInviting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -121,10 +134,20 @@ export function ClientAccessControl() {
       p_is_active: true,
       p_access_note: note.trim() || null,
     });
-    setSaving(false);
-    if (createError) return setError(createError.message);
+    if (createError) {
+      setSaving(false);
+      return setError(createError.message);
+    }
+
     const company = customers.find((row) => row.customer_id === customerId);
-    setMessage(`${cleanEmail} can now access telemetry for ${company ? customerLabel(company) : 'the selected company'} only. They can register/sign in with this email from the normal login screen.`);
+    const inviteError = await sendClientInvitation(cleanEmail);
+    setSaving(false);
+    if (inviteError) {
+      setError(`Company-scoped access was created, but the invitation email was not sent: ${inviteError}`);
+      setMessage(`${cleanEmail} is restricted to ${company ? customerLabel(company) : 'the selected company'} and can be invited again from the client register.`);
+    } else {
+      setMessage(`${cleanEmail} was created for ${company ? customerLabel(company) : 'the selected company'} only. A secure invitation was sent so the client can choose their password.`);
+    }
     setEmail('');
     setCustomerId('');
     setNote('');
@@ -150,6 +173,17 @@ export function ClientAccessControl() {
     if (saveError) return setError(saveError.message);
     setMessage(`${displayName(selected)} was updated. Company telemetry access is ${editActive ? 'active' : 'suspended'}.`);
     await load();
+  }
+
+  async function inviteSelected() {
+    if (!selected || !selected.is_active) return;
+    setInviting(true);
+    setError(null);
+    setMessage(null);
+    const inviteError = await sendClientInvitation(selected.email);
+    setInviting(false);
+    if (inviteError) return setError(inviteError);
+    setMessage(`A secure account invitation was sent to ${selected.email}.`);
   }
 
   const columns = useMemo<EnterpriseColumn<ClientUser>[]>(() => [
@@ -190,7 +224,7 @@ export function ClientAccessControl() {
           <div>
             <span className="minimal-kicker">New client login</span>
             <h2>Create company-scoped access</h2>
-            <p>The client will use the normal login page. Their account is permanently filtered to the selected company at the database boundary.</p>
+            <p>Dallmayr creates the account, assigns the company and region, and sends a secure invitation. The client chooses their own password from the invitation link.</p>
           </div>
         </div>
         <form className="admin-access-create-grid" onSubmit={createClient}>
@@ -207,7 +241,7 @@ export function ClientAccessControl() {
             </select>
           </label>
           <label className="admin-access-note">Access note<textarea placeholder="Client contact, approval reference or contract note." value={note} onChange={(event) => setNote(event.target.value)} /></label>
-          <button className="button" disabled={saving || !customerId} type="submit">{saving ? 'Creating access…' : 'Create client access'}</button>
+          <button className="button" disabled={saving || !customerId} type="submit">{saving ? 'Creating & inviting…' : 'Create & send invitation'}</button>
         </form>
       </section>
 
@@ -233,6 +267,7 @@ export function ClientAccessControl() {
             <label className="admin-access-toggle"><input checked={editActive} type="checkbox" onChange={(event) => setEditActive(event.target.checked)} /><span>Client access active</span></label>
             <label className="admin-access-note">Access note<textarea value={editNote} onChange={(event) => setEditNote(event.target.value)} /></label>
             <button className="button" disabled={saving || !editCustomerId} onClick={() => void saveSelected()} type="button">{saving ? 'Saving…' : 'Save client access'}</button>
+            <button className="button secondary" disabled={inviting || !selected.is_active} onClick={() => void inviteSelected()} type="button">{inviting ? 'Sending invitation…' : 'Send invitation'}</button>
           </div>
         </section>
       ) : null}
