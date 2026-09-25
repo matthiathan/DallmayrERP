@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { telemetryNavigationSections } from '@/components/layout/appShellNavigation';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { canAccessShellPath, telemetryNavigationSections } from '@/components/layout/appShellNavigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type SearchResult = {
@@ -24,6 +25,17 @@ type GlobalSearchProps = {
 const OPEN_SEARCH_EVENT = 'dallmayr-open-global-search';
 const GLOBAL_SEARCH_DIALOG_ID = 'global-search-dialog';
 
+const QUICK_ACTIONS = [
+  { href: '/machines', label: 'Find a machine' },
+  { href: '/alerts', label: 'Active alerts' },
+  { href: '/telemetry', label: 'Sales analytics' },
+  { href: '/telemetry/reports', label: 'Reports & exports' },
+  { href: '/telemetry/test-center', label: 'Test Center' },
+  { href: '/map', label: 'Machine map' },
+  { href: '/products', label: 'Products' },
+  { href: '/telemetry/devices', label: 'Manage devices' },
+] as const;
+
 function safeFilterTerm(value: string) {
   return value.trim().replace(/[(),]/g, ' ').replace(/\s+/g, ' ');
 }
@@ -38,6 +50,9 @@ export function GlobalSearch({
   triggerClassName = '',
   triggerLabel = 'Search machines or devices',
 }: GlobalSearchProps = {}) {
+  const { businessProfile, userDetails } = useAuth();
+  const accountScope = businessProfile?.user.account_scope === 'client' ? 'client' : 'dallmayr';
+  const role = userDetails?.role ?? null;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [recordResults, setRecordResults] = useState<SearchResult[]>([]);
@@ -50,14 +65,21 @@ export function GlobalSearch({
   const requestRef = useRef(0);
 
   const availablePages = useMemo<SearchResult[]>(() => telemetryNavigationSections.flatMap((section) => (
-    section.items.map((item) => ({
-      id: item.href,
-      type: 'Page' as const,
-      title: item.label,
-      subtitle: `${section.heading} • ${item.description ?? 'Telemetry workspace page.'}`,
-      href: item.href,
-    }))
-  )), []);
+    section.items
+      .filter((item) => canAccessShellPath(item.href, accountScope, role))
+      .map((item) => ({
+        id: item.href,
+        type: 'Page' as const,
+        title: item.label,
+        subtitle: `${section.heading} • ${item.description ?? 'Telemetry workspace page.'}`,
+        href: item.href,
+      }))
+  )), [accountScope, role]);
+
+  const quickActions = useMemo(
+    () => QUICK_ACTIONS.filter((item) => canAccessShellPath(item.href, accountScope, role)),
+    [accountScope, role],
+  );
 
   const pageResults = useMemo(() => {
     const term = safeFilterTerm(query);
@@ -175,7 +197,7 @@ export function GlobalSearch({
             title: row.device_code,
             subtitle: `${row.status} • ${row.firmware_version ?? 'Firmware not reported'} • ${row.last_seen_at ? `Last seen ${new Date(row.last_seen_at).toLocaleString('en-ZA')}` : 'Never connected'}`,
             href: row.machine_id ? `/machines/${row.machine_id}` : '/telemetry/devices',
-          })),
+          })).filter((row) => canAccessShellPath(row.href, accountScope, role)),
         ];
         setRecordResults(nextResults);
       } catch (searchError) {
@@ -187,7 +209,7 @@ export function GlobalSearch({
       }
     }, 260);
     return () => window.clearTimeout(timeout);
-  }, [open, query]);
+  }, [accountScope, open, query, role]);
 
   function closeSearch() {
     setOpen(false);
@@ -204,14 +226,7 @@ export function GlobalSearch({
           <button aria-label="Close search" className="button secondary" onClick={closeSearch} type="button">Close</button>
         </div>
         <div className="global-search-quick-actions">
-          <Link href="/machines" onClick={closeSearch}>Find a machine</Link>
-          <Link href="/alerts" onClick={closeSearch}>Active alerts</Link>
-          <Link href="/telemetry" onClick={closeSearch}>Sales analytics</Link>
-          <Link href="/telemetry/reports" onClick={closeSearch}>Reports & exports</Link>
-          <Link href="/telemetry/test-center" onClick={closeSearch}>Test Center</Link>
-          <Link href="/map" onClick={closeSearch}>Machine map</Link>
-          <Link href="/products" onClick={closeSearch}>Products</Link>
-          <Link href="/telemetry/devices" onClick={closeSearch}>Manage devices</Link>
+          {quickActions.map((item) => <Link href={item.href} key={item.href} onClick={closeSearch}>{item.label}</Link>)}
         </div>
         <div aria-live="polite" className="global-search-results">
           {loading ? <div className="global-search-state">Searching records…</div> : null}
