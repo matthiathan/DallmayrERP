@@ -4,6 +4,8 @@
  * The three mobile authority leaves remain registered as empty tombstones so
  * cascade ordering stays stable. Shared finishing/compact-desktop layers remain
  * active because they are not part of the retired mobile implementation.
+ * The professional telemetry layout system loads last so shell scale, content
+ * hierarchy and text-containment rules have one final owner across breakpoints.
  */
 @import '../../responsive-runtime-authority.css';
 @import '../../responsive-mobile-interactions.css';
@@ -12,3 +14,4 @@
 @import '../../compact-desktop-authority.css';
 @import '../connected-workflow-strip.css';
 @import '../../responsive-mobile-tablet.css';
+@import '../../professional-layout-system.css';
