@@ -1,0 +1,177 @@
+name: One-time Render production deploy and visual QA
+
+on:
+  push:
+    branches:
+      - ops/render-production-qa-20260925
+    paths:
+      - .github/workflows/one-time-render-production-qa.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  deploy-and-verify:
+    name: Deploy exact main commit and verify production telemetry UI
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TARGET_COMMIT: 53328831c89d6885afa2937ce68d8c569c92d34a
+      PRODUCTION_BASE_URL: https://dallmayrerp.onrender.com
+      PRODUCTION_VISUAL_ROUTES: /,/machines,/alerts,/telemetry,/telemetry/reports,/telemetry/test-center,/map,/products,/telemetry/devices,/users
+      PRODUCTION_VISUAL_EMAIL: ${{ secrets.PRODUCTION_VISUAL_EMAIL }}
+      PRODUCTION_VISUAL_PASSWORD: ${{ secrets.PRODUCTION_VISUAL_PASSWORD }}
+      PRODUCTION_VISUAL_ARTIFACT_DIR: artifacts/production-visual/current
+
+    steps:
+      - name: Verify production secrets are configured
+        shell: bash
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in RENDER_DEPLOY_HOOK_URL PRODUCTION_VISUAL_EMAIL PRODUCTION_VISUAL_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "Required repository secret $name is not configured." >&2
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Trigger exact commit on Render
+        id: render-deploy
+        shell: bash
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          set -euo pipefail
+          echo "::add-mask::$RENDER_DEPLOY_HOOK_URL"
+
+          separator='?'
+          if [[ "$RENDER_DEPLOY_HOOK_URL" == *'?'* ]]; then
+            separator='&'
+          fi
+
+          deploy_url="${RENDER_DEPLOY_HOOK_URL}${separator}ref=${TARGET_COMMIT}"
+          http_code="$(curl --silent --show-error \
+            --output render-deploy-response.json \
+            --write-out '%{http_code}' \
+            --request POST \
+            "$deploy_url")"
+
+          cat render-deploy-response.json
+          echo
+
+          if [ "$http_code" != "200" ] && [ "$http_code" != "202" ]; then
+            echo "Render deploy hook returned HTTP $http_code." >&2
+            exit 1
+          fi
+
+          echo "http_code=$http_code" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Render production deployment accepted"
+            echo
+            echo "- Commit: \`$TARGET_COMMIT\`"
+            echo "- Render response: HTTP $http_code"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Checkout exact production commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_COMMIT }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install browser test runner
+        run: |
+          npm ci --no-audit --no-fund
+          npm install --no-save --no-package-lock --no-audit --no-fund @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Wait for polished production login build
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from '@playwright/test';
+
+          const baseURL = process.env.PRODUCTION_BASE_URL.replace(/\/$/, '');
+          const browser = await chromium.launch({ headless: true });
+          const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+          let lastEvidence = null;
+
+          for (let attempt = 1; attempt <= 36; attempt += 1) {
+            try {
+              const response = await page.goto(`${baseURL}/login`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+              if (!response?.ok()) throw new Error(`HTTP ${response?.status() ?? 'unknown'}`);
+
+              const email = page.getByLabel('Email', { exact: true });
+              const signIn = page.getByRole('button', { name: 'Sign in', exact: true });
+              await email.waitFor({ state: 'visible', timeout: 15_000 });
+              await signIn.waitFor({ state: 'visible', timeout: 15_000 });
+
+              const evidence = await page.evaluate(() => {
+                const emailInput = document.querySelector('input[type="email"]');
+                const signInButton = Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Sign in');
+                if (!(emailInput instanceof HTMLElement) || !(signInButton instanceof HTMLElement)) return null;
+                const inputStyle = getComputedStyle(emailInput);
+                const buttonStyle = getComputedStyle(signInButton);
+                return {
+                  inputMinHeight: inputStyle.minHeight,
+                  inputFontSize: inputStyle.fontSize,
+                  buttonMinHeight: buttonStyle.minHeight,
+                };
+              });
+
+              lastEvidence = evidence;
+              const inputHeight = Number.parseFloat(evidence?.inputMinHeight ?? '0');
+              const inputFont = Number.parseFloat(evidence?.inputFontSize ?? '0');
+              const buttonHeight = Number.parseFloat(evidence?.buttonMinHeight ?? '0');
+
+              if (inputHeight >= 46 && inputFont >= 14 && buttonHeight >= 46) {
+                console.log('Production login polish detected:', evidence);
+                await browser.close();
+                process.exit(0);
+              }
+
+              console.log(`Attempt ${attempt}: production still exposes pre-polish login metrics`, evidence);
+            } catch (error) {
+              console.log(`Attempt ${attempt}: production readiness probe failed:`, error instanceof Error ? error.message : error);
+            }
+
+            await page.waitForTimeout(10_000);
+          }
+
+          await browser.close();
+          throw new Error(`Timed out waiting for the polished production login build. Last evidence: ${JSON.stringify(lastEvidence)}`);
+          NODE
+
+      - name: Capture authenticated production evidence
+        run: npx playwright test tests/production-visual.spec.mjs --reporter=line --workers=1
+
+      - name: Upload production screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-visual-screenshots
+          path: artifacts/production-visual/current
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Summarize verified production surface
+        if: success()
+        shell: bash
+        run: |
+          {
+            echo "### Production telemetry visual QA passed"
+            echo
+            echo "- Render commit: \`$TARGET_COMMIT\`"
+            echo "- Base URL: $PRODUCTION_BASE_URL"
+            echo "- Viewports: desktop 1440, laptop 1180, tablet 820, mobile 390"
+            echo "- Authenticated telemetry route matrix and one live Machine Detail captured"
+            echo "- Horizontal-overflow and exact-route assertions passed"
+          } >> "$GITHUB_STEP_SUMMARY"
