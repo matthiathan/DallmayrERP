@@ -64,14 +64,16 @@ test('branch filters scope device availability and simulation state with the sam
   assert.match(migration, /'unassigned_devices', \(select count\(\*\) from device_scope where machine_id is null\)/);
 });
 
-test('global search derives pages from the canonical telemetry navigation and exposes specialist workspaces', async () => {
+test('global search derives pages from canonical tenant-aware telemetry navigation', async () => {
   const search = await read('components/ui/GlobalSearch.tsx');
 
-  assert.match(search, /import \{ telemetryNavigationSections \} from '@\/components\/layout\/appShellNavigation';/);
+  assert.match(search, /import \{ canAccessShellPath, telemetryNavigationSections \} from '@\/components\/layout\/appShellNavigation';/);
   assert.match(search, /telemetryNavigationSections\.flatMap/);
+  assert.match(search, /\.filter\(\(item\) => canAccessShellPath\(item\.href, accountScope, role\)\)/);
+  assert.match(search, /QUICK_ACTIONS\.filter\(\(item\) => canAccessShellPath\(item\.href, accountScope, role\)\)/);
   assert.doesNotMatch(search, /const focusedPages =/);
-  assert.match(search, /href="\/telemetry\/reports"/);
-  assert.match(search, /href="\/telemetry\/test-center"/);
-  assert.match(search, /href="\/products"/);
+  assert.match(search, /href: '\/telemetry\/reports'/);
+  assert.match(search, /href: '\/telemetry\/test-center'/);
+  assert.match(search, /href: '\/products'/);
   assert.match(search, /Reports & exports/);
 });
