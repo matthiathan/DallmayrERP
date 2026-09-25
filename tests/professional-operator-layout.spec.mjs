@@ -89,49 +89,57 @@ async function installMock(page) {
     }));
     if (url.pathname === '/rest/v1/rpc/claim_current_app_user') return route.fulfill(jsonResponse(null));
 
-    if (url.pathname === '/rest/v1/machines') return route.fulfill(jsonResponse({
-      id: machineId,
-      branch: 'johannesburg',
-      customer_id: 'customer-layout',
-      site_id: 'site-layout',
-      asset_tag: 'ASSET-LONG-000512',
-      serial_number: 'SERIAL-LONG-IDENTIFIER-000512',
-      machine_barcode: 'QR-LONG-IDENTIFIER-000512',
-      machine_name: 'Rheavendors Extra Long Machine Display Name For Professional Layout Verification',
-      model: 'XS GRANDE E5 PRO',
-      status: 'active',
-      current_custodian: 'Ground Floor Reception Area With A Long Location Description',
-      manufacturer: 'Rheavendors',
-      condition: 'good',
-      criticality: 'standard',
-      installed_at: '2026-01-10T08:00:00.000Z',
-      last_service_at: '2026-08-01T08:00:00.000Z',
-      next_service_at: '2026-10-01T08:00:00.000Z',
-    }));
-    if (url.pathname === '/rest/v1/telemetry_devices') return route.fulfill(jsonResponse({
-      id: deviceId,
-      device_code: 'DLM-ESP32-LONG-DEVICE-CODE-000512',
-      status: 'active',
-      profile_id: null,
-      firmware_version: 'test-layout',
-      wifi_rssi: -58,
-      cellular_csq: 24,
-      cellular_operator: 'Vodacom',
-      cellular_model: 'Air780EU',
-      last_transport: 'cellular',
-      transport_preference: 'cellular',
-      telemetry_mode: 'live',
-      last_seen_at: new Date().toISOString(),
-      last_upload_at: new Date().toISOString(),
-      last_counter_at: new Date().toISOString(),
-      last_heartbeat_at: new Date().toISOString(),
-      last_config_at: new Date().toISOString(),
-      last_config_ack_at: new Date().toISOString(),
-      hardware_uid: 'HARDWARE-UID-EXTRA-LONG-000512',
-      reported_machine_serial: 'SERIAL-LONG-IDENTIFIER-000512',
-      machine_link_status: 'linked',
-      machine_link_method: 'automatic',
-    }));
+    if (url.pathname === '/rest/v1/machines') {
+      const machine = {
+        id: machineId,
+        branch: 'johannesburg',
+        customer_id: 'customer-layout',
+        site_id: 'site-layout',
+        asset_tag: 'ASSET-LONG-000512',
+        serial_number: 'SERIAL-LONG-IDENTIFIER-000512',
+        machine_barcode: 'QR-LONG-IDENTIFIER-000512',
+        machine_name: 'Rheavendors Extra Long Machine Display Name For Professional Layout Verification',
+        model: 'XS GRANDE E5 PRO',
+        status: 'active',
+        current_custodian: 'Ground Floor Reception Area With A Long Location Description',
+        manufacturer: 'Rheavendors',
+        condition: 'good',
+        criticality: 'standard',
+        installed_at: '2026-01-10T08:00:00.000Z',
+        last_service_at: '2026-08-01T08:00:00.000Z',
+        next_service_at: '2026-10-01T08:00:00.000Z',
+      };
+      const batchedLookup = (url.searchParams.get('id') ?? '').startsWith('in.');
+      return route.fulfill(jsonResponse(batchedLookup ? [machine] : machine));
+    }
+    if (url.pathname === '/rest/v1/telemetry_devices') {
+      const device = {
+        id: deviceId,
+        device_code: 'DLM-ESP32-LONG-DEVICE-CODE-000512',
+        status: 'active',
+        profile_id: null,
+        firmware_version: 'test-layout',
+        wifi_rssi: -58,
+        cellular_csq: 24,
+        cellular_operator: 'Vodacom',
+        cellular_model: 'Air780EU',
+        last_transport: 'cellular',
+        transport_preference: 'cellular',
+        telemetry_mode: 'live',
+        last_seen_at: new Date().toISOString(),
+        last_upload_at: new Date().toISOString(),
+        last_counter_at: new Date().toISOString(),
+        last_heartbeat_at: new Date().toISOString(),
+        last_config_at: new Date().toISOString(),
+        last_config_ack_at: new Date().toISOString(),
+        hardware_uid: 'HARDWARE-UID-EXTRA-LONG-000512',
+        reported_machine_serial: 'SERIAL-LONG-IDENTIFIER-000512',
+        machine_link_status: 'linked',
+        machine_link_method: 'automatic',
+      };
+      const batchedLookup = (url.searchParams.get('id') ?? '').startsWith('in.');
+      return route.fulfill(jsonResponse(batchedLookup ? [device] : device));
+    }
     if (url.pathname === '/rest/v1/customer_sites') return route.fulfill(jsonResponse({
       id: 'site-layout',
       site_name: 'A Very Long Customer Site Name For Professional Layout Verification',
