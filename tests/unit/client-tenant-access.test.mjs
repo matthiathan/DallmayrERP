@@ -61,11 +61,14 @@ test('Dallmayr administrators can create and manage customer-scoped client acces
   assert.match(usersPage, /AdminUserAccessControl/);
 });
 
-test('client shell exposes read-only telemetry routes and hides management controls', () => {
+test('client shell exposes only explicitly approved read-only routes', () => {
   assert.match(navigation, /CLIENT_ALLOWED_PATHS/);
   assert.match(navigation, /'\/machines'/);
   assert.match(navigation, /'\/telemetry\/reports'/);
   assert.match(navigation, /'\/map'/);
+  assert.match(navigation, /return pathname\.startsWith\('\/machines\/'\)/);
+  assert.match(navigation, /if \(accountScope === 'client'\) return clientCanAccessPath\(pathname\)/);
+  assert.doesNotMatch(navigation, /if \(accountScope === 'client'\)[^\n]*pathname\.startsWith/);
   assert.match(navigation, /Users & Client Access/);
   assert.match(shell, /data-account-scope=\{accountScope\}/);
   assert.match(shell, /!isClient \? <TelemetryRegionSelector/);
