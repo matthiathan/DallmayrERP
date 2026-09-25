@@ -33,6 +33,11 @@ export const telemetryNavigationSections: NavSection[] = [
   },
 ];
 
+function clientCanAccessPath(pathname: string) {
+  if (CLIENT_ALLOWED_PATHS.has(pathname)) return true;
+  return pathname.startsWith('/machines/');
+}
+
 function sectionsForAccount(accountScope: AccountScope, role: string | null | undefined) {
   return telemetryNavigationSections
     .map((section) => ({
@@ -47,6 +52,7 @@ function sectionsForAccount(accountScope: AccountScope, role: string | null | un
 }
 
 export function canAccessShellPath(pathname: string, accountScope: AccountScope = 'dallmayr', role?: string | null) {
+  if (accountScope === 'client') return clientCanAccessPath(pathname);
   if (pathname === TELEMETRY_HOME_PATH) return true;
   const sections = sectionsForAccount(accountScope, role);
   return sections.some((section) => section.items.some((item) => (
