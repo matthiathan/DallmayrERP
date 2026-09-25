@@ -1,41 +1,53 @@
 .tabs {
   position: sticky;
   top: 0;
-  z-index: 3;
+  z-index: var(--ds-z-sticky, 20);
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-2, 8px);
   overflow-x: auto;
-  padding: 10px 0 14px;
-  margin: -4px 0 14px;
-  background: linear-gradient(var(--telemetry-surface, #fff) 82%, rgba(255, 255, 255, 0));
+  padding: var(--ds-space-3, 12px) 0 var(--ds-space-4, 16px);
+  margin: -4px 0 var(--ds-space-4, 16px);
+  background: linear-gradient(
+    var(--content-surface, #20272f) 82%,
+    color-mix(in srgb, var(--content-surface, #20272f) 0%, transparent)
+  );
   scrollbar-width: thin;
 }
 
 .tab {
   flex: 0 0 auto;
-  min-height: 34px;
-  border: 1px solid var(--telemetry-border, #d9dde5);
-  border-radius: 999px;
-  padding: 0 12px;
-  background: var(--telemetry-surface, #fff);
-  color: var(--telemetry-muted, #697386);
+  min-height: var(--ds-control-md, 44px);
+  border: 1px solid var(--content-border, #71808e);
+  border-radius: var(--ds-radius-pill, 999px);
+  padding: 0 var(--ds-space-4, 16px);
+  background: var(--content-surface-raised, #2b343d);
+  color: var(--content-muted, #cbd5e1);
   font: inherit;
-  font-size: 11px;
+  font-size: var(--ds-font-xs, 0.75rem);
   font-weight: 800;
   white-space: nowrap;
   cursor: pointer;
+  transition:
+    border-color var(--ds-duration-fast, 120ms) var(--ds-ease-standard, ease),
+    background var(--ds-duration-fast, 120ms) var(--ds-ease-standard, ease),
+    color var(--ds-duration-fast, 120ms) var(--ds-ease-standard, ease);
 }
 
 .tab:hover {
-  border-color: rgba(187, 30, 40, .34);
-  color: #9f1c25;
+  border-color: color-mix(in srgb, #c9151e 58%, var(--content-border, #71808e));
+  color: var(--content-strong, #fff);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--content-focus, #67e8f9);
+  outline-offset: 2px;
 }
 
 .active {
-  border-color: #b91e28;
-  background: #b91e28;
+  border-color: #c9151e;
+  background: #c9151e;
   color: #fff;
-  box-shadow: 0 5px 14px rgba(185, 30, 40, .18);
+  box-shadow: 0 5px 14px rgb(201 21 30 / 20%);
 }
 
 .active:hover {
@@ -46,5 +58,11 @@
   .tabs {
     margin-right: -14px;
     padding-right: 14px;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .tab {
+    min-height: var(--ds-touch-target, 44px);
   }
 }
