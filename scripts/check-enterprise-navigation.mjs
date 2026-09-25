@@ -41,14 +41,26 @@ requireText(
 requireText(
   'app shell navigation',
   shellNavigation,
-  'allowedPath: canAccessShellPath(pathname)',
-  'the shell must reject retired ERP routes.',
+  "if (accountScope === 'client') return clientCanAccessPath(pathname);",
+  'client navigation must be governed by the explicit customer-portal allowlist.',
+);
+requireText(
+  'app shell navigation',
+  shellNavigation,
+  'allowedPath: canAccessShellPath(pathname, accountScope, role)',
+  'the shell must reject retired ERP routes and account-restricted telemetry routes.',
+);
+requireText(
+  'app shell navigation',
+  shellNavigation,
+  "return pathname.startsWith('/machines/');",
+  'client accounts must be able to open only nested machine dashboards beyond exact allowlisted routes.',
 );
 forbid(
   'app shell navigation',
   shellNavigation,
   'BusinessRole',
-  'telemetry navigation must not depend on ERP roles.',
+  'telemetry navigation must not import the legacy ERP BusinessRole model.',
 );
 requireText(
   'app shell',
@@ -56,11 +68,17 @@ requireText(
   'activeHref={activeHref}',
   'the canonical active route must be passed to desktop navigation.',
 );
+requireText(
+  'app shell',
+  appShell,
+  "const accountScope = businessProfile?.user.account_scope === 'client' ? 'client' : 'dallmayr';",
+  'the shell must resolve the authenticated account tenancy before rendering navigation.',
+);
 forbid(
   'app shell',
   appShell,
   'roleLabels',
-  'the telemetry shell must not display or evaluate ERP roles.',
+  'the telemetry shell must not display legacy ERP role labels.',
 );
 requireText(
   'desktop navigation',
@@ -74,41 +92,41 @@ requireText(
   "aria-current={active ? 'page' : undefined}",
   'desktop navigation must expose only the canonical active item as current.',
 );
-forbid(
-  'global search',
-  globalSearch,
-  'userDetails?.role',
-  'global telemetry search must expose the same pages to every authenticated account.',
-);
 requireText(
   'global search',
   globalSearch,
-  "import { telemetryNavigationSections } from '@/components/layout/appShellNavigation';",
-  'global search must derive page results from the canonical telemetry navigation catalogue.',
+  "import { canAccessShellPath, telemetryNavigationSections } from '@/components/layout/appShellNavigation';",
+  'global search must use the same account-aware telemetry route authority as the shell.',
 );
 requireText(
   'global search',
   globalSearch,
   'telemetryNavigationSections.flatMap',
-  'global search must enumerate every telemetry navigation page instead of a separate partial list.',
+  'global search must enumerate telemetry pages from the canonical navigation catalogue.',
+);
+requireText(
+  'global search',
+  globalSearch,
+  '.filter((item) => canAccessShellPath(item.href, accountScope, role))',
+  'page search results must be filtered by the authenticated account scope.',
+);
+requireText(
+  'global search',
+  globalSearch,
+  'QUICK_ACTIONS.filter((item) => canAccessShellPath(item.href, accountScope, role))',
+  'global-search quick actions must be filtered by the same account-aware route guard.',
 );
 forbid(
   'global search',
   globalSearch,
   'const focusedPages =',
-  'global search must not maintain a second hard-coded page catalogue.',
-);
-requireText(
-  'global search',
-  globalSearch,
-  'href="/telemetry/reports"',
-  'reports and exports must be reachable from global search quick actions.',
+  'global search must not maintain a second page-search catalogue.',
 );
 requireText(
   'global search',
   globalSearch,
   "client.from('telemetry_devices')",
-  'global search must search telemetry devices for every authenticated account.',
+  'global search must continue to search telemetry devices while RLS enforces customer scope.',
 );
 
 if (failures.length) {
@@ -117,4 +135,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Telemetry navigation contract passed: the rebuilt authenticated workspace and global search expose all telemetry pages without role gates.');
+console.log('Telemetry navigation contract passed: Dallmayr staff retain the complete telemetry workspace and client accounts are restricted to their approved customer telemetry routes.');
