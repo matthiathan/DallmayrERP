@@ -8,6 +8,8 @@ const clientAccess = fs.readFileSync(new URL('../../components/features/ClientAc
 const navigation = fs.readFileSync(new URL('../../components/layout/appShellNavigation.ts', import.meta.url), 'utf8');
 const shell = fs.readFileSync(new URL('../../components/layout/AppShell.tsx', import.meta.url), 'utf8');
 const usersPage = fs.readFileSync(new URL('../../app/users/page.tsx', import.meta.url), 'utf8');
+const fleetBrowser = fs.readFileSync(new URL('../../components/telemetry-platform/MachineFleetBrowser.tsx', import.meta.url), 'utf8');
+const identityPanel = fs.readFileSync(new URL('../../components/telemetry-platform/MachineIdentityProfilePanel.tsx', import.meta.url), 'utf8');
 
 test('client accounts are explicitly bound to one customer and use a non-staff role', () => {
   assert.match(migration, /account_scope text not null default 'dallmayr'/);
@@ -83,4 +85,13 @@ test('client shell exposes only explicitly approved read-only routes', () => {
   assert.match(shell, /data-account-scope=\{accountScope\}/);
   assert.match(shell, /!isClient \? <TelemetryRegionSelector/);
   assert.match(shell, /This client account can only open read-only telemetry pages for its assigned company/);
+});
+
+test('client machine views hide Dallmayr commissioning and configuration actions', () => {
+  assert.match(fleetBrowser, /!isClient \? <MachineCreateImportControls/);
+  assert.match(fleetBrowser, /!isClient && machine\.device_code/);
+  assert.match(fleetBrowser, /!isClient \? <Link href="\/products">Mappings<\/Link> : null/);
+  assert.match(identityPanel, /const isClient = businessProfile\?\.user\.account_scope === 'client'/);
+  assert.match(identityPanel, /if \(isClient\) return null/);
+  assert.match(identityPanel, /if \(isClient\) \{\s*setIdentity\(null\)/);
 });
