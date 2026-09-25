@@ -1,0 +1,610 @@
+/*
+ * Professional telemetry layout foundation.
+ *
+ * Owns the application-scale geometry, information hierarchy, text containment,
+ * fleet dashboard composition and machine-list ergonomics. This layer is
+ * presentation-only and intentionally does not alter routes, data or behavior.
+ */
+
+:root {
+  --pro-layout-rail: 256px;
+  --pro-layout-rail-collapsed: 76px;
+  --pro-layout-header: 64px;
+  --pro-layout-page-gutter: 24px;
+  --pro-layout-page-gap: 24px;
+  --pro-layout-section-gap: 32px;
+  --pro-layout-card-padding: 20px;
+  --pro-layout-radius: 12px;
+  --pro-layout-border: var(--ds-border, var(--content-border, #ddd9d1));
+  --pro-layout-surface: var(--ds-surface, var(--content-surface, #fff));
+  --pro-layout-raised: var(--ds-surface-raised, var(--content-surface-raised, #faf9f6));
+  --pro-layout-ink: var(--ds-text, var(--content-text, #242424));
+  --pro-layout-strong: var(--ds-strong, var(--content-strong, #191918));
+  --pro-layout-muted: var(--ds-muted, var(--content-muted, #6d6a64));
+  --pro-layout-subtle: var(--ds-subtle, var(--content-subtle, #8f8a82));
+  --pro-layout-focus: var(--ds-focus, var(--content-focus, #6f5a31));
+  --pro-layout-accent: #c9151e;
+  --pro-layout-accent-dark: #a90f17;
+  --pro-layout-shadow: 0 1px 2px rgba(31, 29, 25, .05);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Global readability and containment                                         */
+/* -------------------------------------------------------------------------- */
+
+.application-shell-v2,
+.application-shell-v2 * {
+  min-width: 0;
+}
+
+.application-shell-v2 :where(p, li, td, th, label, button, input, select, textarea) {
+  font-size: max(12px, 1em);
+}
+
+.application-shell-v2 :where(p, li, td, th, label, button, a, span, strong, small, code) {
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+.application-shell-v2 :where(input, select, textarea, button) {
+  max-width: 100%;
+}
+
+.application-shell-v2 :where(table) {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.application-shell-v2 :where(thead th) {
+  font-size: 12px !important;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.application-shell-v2 :where(tbody td) {
+  font-size: 14px !important;
+  line-height: 1.4;
+}
+
+.application-shell-v2 :where(.breadcrumbs) {
+  margin-bottom: 16px !important;
+  font-size: 12px !important;
+  line-height: 1.4;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Application shell                                                          */
+/* -------------------------------------------------------------------------- */
+
+@media (min-width: 901px) {
+  .application-shell-v2 {
+    grid-template-columns: var(--pro-layout-rail) minmax(0, 1fr) !important;
+    grid-template-rows: var(--pro-layout-header) minmax(0, 1fr) !important;
+  }
+
+  .application-shell-v2.desktop-rail-collapsed {
+    grid-template-columns: var(--pro-layout-rail-collapsed) minmax(0, 1fr) !important;
+  }
+
+  .application-shell-v2 .dallmayr-sidebar {
+    width: var(--pro-layout-rail) !important;
+    min-width: var(--pro-layout-rail) !important;
+    grid-template-rows: var(--pro-layout-header) minmax(0, 1fr) auto !important;
+    border-right-color: color-mix(in srgb, var(--pro-layout-border) 86%, transparent) !important;
+    box-shadow: none !important;
+  }
+
+  .application-shell-v2.desktop-rail-collapsed .dallmayr-sidebar {
+    width: var(--pro-layout-rail-collapsed) !important;
+    min-width: var(--pro-layout-rail-collapsed) !important;
+  }
+
+  .application-shell-v2 .dallmayr-sidebar-link {
+    min-height: 44px !important;
+    margin-block: 2px !important;
+    padding: 7px 10px !important;
+    border-radius: 8px !important;
+  }
+
+  .application-shell-v2 .dallmayr-sidebar-link > span:last-child {
+    overflow: hidden;
+    font-size: 14px !important;
+    font-weight: 680 !important;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .application-shell-v2 .dallmayr-sidebar nav > section > h2 {
+    margin: 18px 10px 7px !important;
+    font-size: 11px !important;
+    line-height: 1.2;
+    letter-spacing: .08em !important;
+  }
+
+  .application-header {
+    min-height: var(--pro-layout-header) !important;
+    height: var(--pro-layout-header) !important;
+    padding-inline: 20px !important;
+    gap: 20px !important;
+    grid-template-columns: minmax(190px, .75fr) minmax(320px, 1.35fr) auto !important;
+    box-shadow: none !important;
+  }
+
+  .application-header > div:first-child > span {
+    font-size: 11px !important;
+    line-height: 1.2;
+    letter-spacing: .08em !important;
+  }
+
+  .application-header > div:first-child > strong {
+    font-size: 16px !important;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .application-header .global-search-trigger {
+    min-height: 44px !important;
+    border-radius: 10px !important;
+    font-size: 14px !important;
+  }
+
+  .application-header :where(button, a[role='button']) {
+    min-height: 44px !important;
+  }
+
+  .application-main {
+    min-height: calc(100dvh - var(--pro-layout-header)) !important;
+    padding: 24px var(--pro-layout-page-gutter) 40px !important;
+    overflow-x: clip !important;
+  }
+
+  .application-main > * {
+    width: 100%;
+    max-width: 1560px;
+    margin-inline: auto;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Shared page hierarchy                                                      */
+/* -------------------------------------------------------------------------- */
+
+.application-main :where(.erp-page-header, .page-template-header, .board-header, .workbench-header) {
+  align-items: flex-start;
+  gap: 20px !important;
+  margin-bottom: 24px !important;
+}
+
+.application-main :where(.erp-page-header, .page-template-header, .board-header, .workbench-header) h1 {
+  margin: 0 0 6px !important;
+  font-size: clamp(26px, 2.1vw, 32px) !important;
+  line-height: 1.15 !important;
+  letter-spacing: -.03em !important;
+}
+
+.application-main :where(.erp-page-header, .page-template-header, .board-header, .workbench-header) p {
+  max-width: 72ch;
+  margin: 0 !important;
+  color: var(--pro-layout-muted) !important;
+  font-size: 15px !important;
+  line-height: 1.6 !important;
+}
+
+.application-main :where(.erp-panel, .erp-table-shell, .erp-form-section, .neo-card, .card, .panel, .summary-card, .metric-card, .kpi-card, .form-card, .table-card, .detail-card) {
+  border-radius: var(--pro-layout-radius) !important;
+  box-shadow: var(--pro-layout-shadow) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Fleet Overview                                                             */
+/* -------------------------------------------------------------------------- */
+
+[data-fleet-dashboard='televend-v3'] {
+  gap: 20px !important;
+}
+
+[data-fleet-dashboard='televend-v3'] > div:first-child {
+  min-height: 72px !important;
+  padding: 14px 16px !important;
+  gap: 16px !important;
+  background: var(--pro-layout-surface) !important;
+  border: 1px solid var(--pro-layout-border) !important;
+  border-radius: var(--pro-layout-radius) !important;
+  box-shadow: var(--pro-layout-shadow) !important;
+}
+
+[data-fleet-dashboard='televend-v3'] > div:first-child strong {
+  font-size: 18px !important;
+  line-height: 1.25;
+}
+
+[data-fleet-dashboard='televend-v3'] > div:first-child span {
+  font-size: 12px !important;
+  line-height: 1.4;
+}
+
+[data-fleet-dashboard='televend-v3'] > div:first-child :where(select, button) {
+  min-height: 42px !important;
+  font-size: 13px !important;
+  border-radius: 8px !important;
+}
+
+[data-fleet-dashboard='televend-v3'] > section[aria-label='Fleet headline metrics'] {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+[data-fleet-dashboard='televend-v3'] > section[aria-label='Fleet headline metrics'] > article {
+  min-height: 118px !important;
+  padding: 18px 18px 16px 20px !important;
+  gap: 8px !important;
+  border-radius: var(--pro-layout-radius) !important;
+  box-shadow: var(--pro-layout-shadow) !important;
+}
+
+[data-fleet-dashboard='televend-v3'] > section[aria-label='Fleet headline metrics'] > article > span {
+  font-size: 12px !important;
+  line-height: 1.25;
+  letter-spacing: .04em !important;
+}
+
+[data-fleet-dashboard='televend-v3'] > section[aria-label='Fleet headline metrics'] > article > strong {
+  font-size: clamp(26px, 2vw, 34px) !important;
+  line-height: 1.05;
+}
+
+[data-fleet-dashboard='televend-v3'] > section[aria-label='Fleet headline metrics'] > article > small {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+[data-fleet-attention-queue='v1'] {
+  border-radius: var(--pro-layout-radius) !important;
+  box-shadow: var(--pro-layout-shadow) !important;
+}
+
+[data-fleet-attention-queue='v1'] > header {
+  min-height: 64px !important;
+  padding: 12px 16px !important;
+}
+
+[data-fleet-attention-queue='v1'] > header span {
+  font-size: 11px !important;
+}
+
+[data-fleet-attention-queue='v1'] > header h2 {
+  font-size: 17px !important;
+  line-height: 1.3;
+}
+
+[data-fleet-attention-queue='v1'] article {
+  min-height: 76px !important;
+  gap: 12px !important;
+  padding-block: 12px !important;
+  padding-right: 14px !important;
+}
+
+[data-fleet-attention-queue='v1'] article strong {
+  font-size: 14px !important;
+  line-height: 1.35;
+}
+
+[data-fleet-attention-queue='v1'] article :where(span, p) {
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+}
+
+[data-fleet-attention-queue='v1'] article nav a {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 10px !important;
+  font-size: 12px !important;
+  border-radius: 7px !important;
+}
+
+[data-fleet-dashboard='televend-v3'] > section:not([aria-label='Fleet headline metrics']):not([data-fleet-attention-queue]) {
+  gap: 16px !important;
+}
+
+[data-fleet-dashboard='televend-v3'] > section > article {
+  border-radius: var(--pro-layout-radius) !important;
+  box-shadow: var(--pro-layout-shadow) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Machines                                                                   */
+/* -------------------------------------------------------------------------- */
+
+[data-machine-browser='televend-v3'] {
+  gap: 20px !important;
+}
+
+[data-machine-browser='televend-v3'] > header:first-child {
+  min-height: auto !important;
+  padding: 4px 0 2px !important;
+  color: var(--pro-layout-ink) !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  gap: 20px !important;
+}
+
+[data-machine-browser='televend-v3'] > header:first-child h1 {
+  margin: 0 !important;
+  color: var(--pro-layout-strong) !important;
+  font-size: clamp(26px, 2.1vw, 32px) !important;
+  font-weight: 760 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -.03em !important;
+}
+
+[data-machine-browser='televend-v3'] > header:first-child p {
+  max-width: 72ch;
+  margin: 6px 0 0 !important;
+  color: var(--pro-layout-muted) !important;
+  font-size: 15px !important;
+  line-height: 1.55 !important;
+}
+
+[data-machine-browser='televend-v3'] > header:first-child :where(button, .button) {
+  min-height: 44px !important;
+  color: var(--pro-layout-ink) !important;
+  background: var(--pro-layout-surface) !important;
+  border: 1px solid var(--pro-layout-border) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  font-size: 13px !important;
+}
+
+[data-machine-browser='televend-v3'] > section[aria-label='Machine fleet status'] {
+  grid-template-columns: repeat(3, minmax(180px, 1fr)) !important;
+  gap: 12px !important;
+}
+
+[data-machine-browser='televend-v3'] > section[aria-label='Machine fleet status'] > button {
+  min-height: 112px !important;
+  padding: 16px 16px 14px 19px !important;
+  gap: 7px !important;
+  border-radius: var(--pro-layout-radius) !important;
+  box-shadow: var(--pro-layout-shadow) !important;
+}
+
+[data-machine-browser='televend-v3'] > section[aria-label='Machine fleet status'] > button > span {
+  font-size: 12px !important;
+  line-height: 1.25;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+[data-machine-browser='televend-v3'] > section[aria-label='Machine fleet status'] > button > strong {
+  font-size: 30px !important;
+  line-height: 1;
+}
+
+[data-machine-browser='televend-v3'] > section[aria-label='Machine fleet status'] > button > small {
+  display: block !important;
+  color: var(--pro-layout-muted) !important;
+  font-size: 12px !important;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+[data-machine-browser='televend-v3'] > section[aria-label='Machine filters'] {
+  grid-template-columns: minmax(320px, 6fr) minmax(150px, 2fr) minmax(210px, 3fr) auto !important;
+  gap: 12px !important;
+  padding: 14px !important;
+  border-radius: var(--pro-layout-radius) !important;
+  box-shadow: var(--pro-layout-shadow) !important;
+}
+
+[data-machine-browser='televend-v3'] > section[aria-label='Machine filters'] label {
+  gap: 6px !important;
+}
+
+[data-machine-browser='televend-v3'] > section[aria-label='Machine filters'] label > span {
+  font-size: 11px !important;
+  line-height: 1.2;
+  letter-spacing: .05em;
+}
+
+[data-machine-browser='televend-v3'] > section[aria-label='Machine filters'] :where(input, select, button) {
+  min-height: 44px !important;
+  font-size: 14px !important;
+  border-radius: 8px !important;
+}
+
+[data-machine-browser='televend-v3'] > section:not([aria-label]) {
+  border-radius: var(--pro-layout-radius) !important;
+  box-shadow: var(--pro-layout-shadow) !important;
+}
+
+[data-machine-browser='televend-v3'] > section:not([aria-label]) > header {
+  min-height: 58px !important;
+  padding: 10px 14px !important;
+  gap: 16px !important;
+}
+
+[data-machine-browser='televend-v3'] > section:not([aria-label]) > header strong {
+  font-size: 15px !important;
+  line-height: 1.35;
+}
+
+[data-machine-browser='televend-v3'] > section:not([aria-label]) > header :where(small, span) {
+  font-size: 12px !important;
+  line-height: 1.4;
+}
+
+[data-machine-browser='televend-v3'] table {
+  min-width: 1540px !important;
+  table-layout: fixed;
+}
+
+[data-machine-browser='televend-v3'] table th,
+[data-machine-browser='televend-v3'] table td {
+  padding: 12px 12px !important;
+  vertical-align: middle;
+}
+
+[data-machine-browser='televend-v3'] table th {
+  min-height: 44px;
+  font-size: 12px !important;
+  letter-spacing: .035em !important;
+  white-space: nowrap;
+}
+
+[data-machine-browser='televend-v3'] table td {
+  height: 62px;
+  font-size: 14px !important;
+}
+
+[data-machine-browser='televend-v3'] table th:nth-child(1),
+[data-machine-browser='televend-v3'] table td:nth-child(1) { width: 250px; }
+[data-machine-browser='televend-v3'] table th:nth-child(2),
+[data-machine-browser='televend-v3'] table td:nth-child(2) { width: 125px; }
+[data-machine-browser='televend-v3'] table th:nth-child(3),
+[data-machine-browser='televend-v3'] table td:nth-child(3) { width: 205px; }
+[data-machine-browser='televend-v3'] table th:nth-child(4),
+[data-machine-browser='televend-v3'] table td:nth-child(4) { width: 180px; }
+[data-machine-browser='televend-v3'] table th:nth-child(5),
+[data-machine-browser='televend-v3'] table td:nth-child(5) { width: 235px; }
+[data-machine-browser='televend-v3'] table th:nth-child(6),
+[data-machine-browser='televend-v3'] table td:nth-child(6) { width: 130px; }
+[data-machine-browser='televend-v3'] table th:nth-child(7),
+[data-machine-browser='televend-v3'] table td:nth-child(7) { width: 100px; }
+[data-machine-browser='televend-v3'] table th:nth-child(8),
+[data-machine-browser='televend-v3'] table td:nth-child(8) { width: 80px; }
+[data-machine-browser='televend-v3'] table th:nth-child(9),
+[data-machine-browser='televend-v3'] table td:nth-child(9) { width: 120px; }
+[data-machine-browser='televend-v3'] table th:nth-child(10),
+[data-machine-browser='televend-v3'] table td:nth-child(10) { width: 160px; }
+
+[data-machine-browser='televend-v3'] table td :where(strong, span, a, div) {
+  max-width: 100%;
+}
+
+[data-machine-browser='televend-v3'] table td > strong,
+[data-machine-browser='televend-v3'] table td > span,
+[data-machine-browser='televend-v3'] table td > div,
+[data-machine-browser='televend-v3'] table td a > strong,
+[data-machine-browser='televend-v3'] table td a > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-machine-browser='televend-v3'] table td a > strong,
+[data-machine-browser='televend-v3'] table td a > span,
+[data-machine-browser='televend-v3'] table td > strong,
+[data-machine-browser='televend-v3'] table td > span {
+  white-space: nowrap;
+}
+
+[data-machine-browser='televend-v3'] table td a > strong {
+  font-size: 14px !important;
+  line-height: 1.35;
+}
+
+[data-machine-browser='televend-v3'] table td a > span,
+[data-machine-browser='televend-v3'] table td div {
+  font-size: 12px !important;
+  line-height: 1.4;
+}
+
+[data-machine-browser='televend-v3'] table td:last-child a {
+  min-height: 34px !important;
+  padding-inline: 9px !important;
+  font-size: 12px !important;
+  border-radius: 7px !important;
+}
+
+[data-machine-browser='televend-v3'] footer button {
+  min-height: 38px !important;
+  padding-inline: 12px !important;
+  font-size: 13px !important;
+  border-radius: 8px !important;
+}
+
+[data-machine-browser='televend-v3'] footer,
+[data-machine-browser='televend-v3'] footer span {
+  font-size: 12px !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Responsive composition                                                     */
+/* -------------------------------------------------------------------------- */
+
+@media (max-width: 1280px) and (min-width: 901px) {
+  :root {
+    --pro-layout-rail: 236px;
+    --pro-layout-page-gutter: 20px;
+  }
+
+  [data-machine-browser='televend-v3'] > section[aria-label='Machine filters'] {
+    grid-template-columns: minmax(280px, 1fr) minmax(150px, .45fr) minmax(210px, .65fr) !important;
+  }
+
+  [data-machine-browser='televend-v3'] > section[aria-label='Machine filters'] > button {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  .application-main {
+    padding: 16px 16px calc(88px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .application-main :where(.breadcrumbs) {
+    margin-bottom: 12px !important;
+  }
+
+  [data-fleet-dashboard='televend-v3'],
+  [data-machine-browser='televend-v3'] {
+    gap: 16px !important;
+  }
+
+  [data-fleet-dashboard='televend-v3'] > div:first-child {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  [data-fleet-dashboard='televend-v3'] > section[aria-label='Fleet headline metrics'],
+  [data-machine-browser='televend-v3'] > section[aria-label='Machine fleet status'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  [data-machine-browser='televend-v3'] > section[aria-label='Machine fleet status'] > button {
+    min-height: 96px !important;
+  }
+
+  [data-machine-browser='televend-v3'] > section[aria-label='Machine filters'] {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+
+  [data-machine-browser='televend-v3'] > section[aria-label='Machine filters'] > * {
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .application-main {
+    padding-inline: 14px !important;
+  }
+
+  [data-fleet-dashboard='televend-v3'] > section[aria-label='Fleet headline metrics'],
+  [data-machine-browser='televend-v3'] > section[aria-label='Machine fleet status'] {
+    grid-template-columns: 1fr !important;
+  }
+
+  [data-fleet-dashboard='televend-v3'] > section[aria-label='Fleet headline metrics'] > article,
+  [data-machine-browser='televend-v3'] > section[aria-label='Machine fleet status'] > button {
+    min-height: 92px !important;
+  }
+}
