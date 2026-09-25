@@ -96,24 +96,6 @@ async function waitForLoginHydration(page) {
   await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible();
 }
 
-async function login(page, screenshotPath) {
-  await page.goto(`${baseURL}/login`, { waitUntil: 'load', timeout: 45_000 });
-  await expect(page.getByLabel('Email', { exact: true })).toBeVisible();
-  await waitForLoginHydration(page);
-  await stabilize(page);
-  await page.screenshot({
-    path: screenshotPath,
-    fullPage: true,
-    animations: 'disabled',
-  });
-  await page.getByLabel('Email', { exact: true }).fill(email);
-  await page.getByLabel('Password', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 45_000 });
-  await waitForStableAuthenticatedPage(page, 'post-login redirect');
-  await expect(page.locator('.login-card .error[role="alert"]')).toHaveCount(0);
-}
-
 async function stabilize(page) {
   await page.addStyleTag({
     content: `
@@ -150,7 +132,39 @@ async function readMetrics(page, route) {
   throw new Error(`Could not read layout metrics for ${route}.`);
 }
 
-async function captureRouteEvidence(page, route, deviceDir) {
+async function login(page, screenshotPath) {
+  await page.goto(`${baseURL}/login`, { waitUntil: 'load', timeout: 45_000 });
+  await expect(page.getByLabel('Email', { exact: true })).toBeVisible();
+  await waitForLoginHydration(page);
+  await stabilize(page);
+
+  const loginUrl = new URL(page.url());
+  expect(normalisePathname(loginUrl.pathname), 'Login did not resolve to /login').toBe('/login');
+  const loginMetrics = await readMetrics(page, '/login');
+  expect(loginMetrics.documentWidth, '/login has horizontal overflow').toBeLessThanOrEqual(loginMetrics.viewportWidth + 1);
+
+  await page.screenshot({
+    path: screenshotPath,
+    fullPage: true,
+    animations: 'disabled',
+  });
+
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 45_000 });
+  await waitForStableAuthenticatedPage(page, 'post-login redirect');
+  await expect(page.locator('.login-card .error[role="alert"]')).toHaveCount(0);
+
+  return {
+    requestedRoute: '/login',
+    finalPath: loginUrl.pathname,
+    screenshot: path.basename(screenshotPath),
+    ...loginMetrics,
+  };
+}
+
+async function captureRouteEvidence(page, route, deviceDir, screenshotName = `${safeRouteName(route)}.png`) {
   await openAuthenticatedRoute(page, route);
   await stabilize(page);
   await waitForStableAuthenticatedPage(page, `${route} after stabilization`);
@@ -163,7 +177,6 @@ async function captureRouteEvidence(page, route, deviceDir) {
   const metrics = await readMetrics(page, route);
   expect(metrics.documentWidth, `${route} has horizontal overflow`).toBeLessThanOrEqual(metrics.viewportWidth + 1);
 
-  const screenshotName = `${safeRouteName(route)}.png`;
   await page.screenshot({
     path: path.join(deviceDir, screenshotName),
     fullPage: true,
@@ -185,7 +198,7 @@ async function discoverMachineDetailRoute(page) {
       const href = anchor.getAttribute('href') ?? '';
       return /^\/machines\/[^/?#]+(?:[?#].*)?$/.test(href);
     })
-  ), { timeout: 30_000 });
+  ), null, { timeout: 30_000 });
 
   const href = await page.evaluate(() => {
     const anchor = Array.from(document.querySelectorAll('a[href^="/machines/"]')).find((candidate) => {
@@ -214,7 +227,7 @@ for (const device of devices) {
     const deviceDir = path.join(artifactRoot, device.name);
     fs.mkdirSync(deviceDir, { recursive: true });
 
-    await login(page, path.join(deviceDir, 'login.png'));
+    const loginEvidence = await login(page, path.join(deviceDir, 'login.png'));
 
     const routeEvidence = [];
     for (const route of routeList) {
@@ -222,18 +235,11 @@ for (const device of devices) {
     }
 
     const machineDetailRoute = await discoverMachineDetailRoute(page);
-    const machineDetailEvidence = await captureRouteEvidence(page, machineDetailRoute, deviceDir);
-    machineDetailEvidence.screenshot = 'machine-detail.png';
-    await page.screenshot({
-      path: path.join(deviceDir, machineDetailEvidence.screenshot),
-      fullPage: true,
-      animations: 'disabled',
-    });
-    routeEvidence.push(machineDetailEvidence);
+    routeEvidence.push(await captureRouteEvidence(page, machineDetailRoute, deviceDir, 'machine-detail.png'));
 
     fs.writeFileSync(
       path.join(deviceDir, 'manifest.json'),
-      `${JSON.stringify({ device, baseURL, loginScreenshot: 'login.png', routes: routeEvidence }, null, 2)}\n`,
+      `${JSON.stringify({ device, baseURL, login: loginEvidence, routes: routeEvidence }, null, 2)}\n`,
       'utf8',
     );
 
