@@ -4,6 +4,8 @@ import test from 'node:test';
 
 const migration = fs.readFileSync(new URL('../../supabase/migrations/20260923104500_add_client_tenant_access.sql', import.meta.url), 'utf8');
 const hardeningMigration = fs.readFileSync(new URL('../../supabase/migrations/20260925102000_harden_client_tenant_boundary.sql', import.meta.url), 'utf8');
+const accountProtectionMigration = fs.readFileSync(new URL('../../supabase/migrations/20260925103000_protect_client_account_creation.sql', import.meta.url), 'utf8');
+const inviteFunction = fs.readFileSync(new URL('../../supabase/functions/admin-client-invite/index.ts', import.meta.url), 'utf8');
 const clientAccess = fs.readFileSync(new URL('../../components/features/ClientAccessControl.tsx', import.meta.url), 'utf8');
 const navigation = fs.readFileSync(new URL('../../components/layout/appShellNavigation.ts', import.meta.url), 'utf8');
 const shell = fs.readFileSync(new URL('../../components/layout/AppShell.tsx', import.meta.url), 'utf8');
@@ -60,7 +62,13 @@ test('security definer telemetry reads receive customer filters instead of relyi
   assert.match(hardeningMigration, /return jsonb_build_object\('effective_profile_key', null\)/);
 });
 
-test('Dallmayr administrators can create and manage customer-scoped client access', () => {
+test('client creation cannot reuse an existing staff or client email', () => {
+  assert.match(accountProtectionMigration, /if exists\(select 1 from public\.users u where lower\(u\.email\) = v_email\) then/);
+  assert.match(accountProtectionMigration, /An access record already exists for this email\. Update the existing user instead\./);
+  assert.doesNotMatch(accountProtectionMigration, /on conflict\(email\) do update/);
+});
+
+test('Dallmayr administrators can create, invite and manage customer-scoped client access', () => {
   assert.match(migration, /admin_list_client_customer_targets/);
   assert.match(migration, /admin_create_user_access_v2/);
   assert.match(migration, /admin_update_user_access_v2/);
@@ -69,8 +77,21 @@ test('Dallmayr administrators can create and manage customer-scoped client acces
   assert.match(clientAccess, /Create company-scoped access/);
   assert.match(clientAccess, /p_account_scope: 'client'/);
   assert.match(clientAccess, /p_customer_id: customerId/);
+  assert.match(clientAccess, /functions\.invoke\('admin-client-invite'/);
+  assert.match(clientAccess, /Create & send invitation/);
   assert.match(usersPage, /ClientAccessControl/);
   assert.match(usersPage, /AdminUserAccessControl/);
+});
+
+test('client invitation function authenticates Dallmayr admin and requires an active client access record', () => {
+  assert.match(inviteFunction, /adminClient\.auth\.getUser\(token\)/);
+  assert.match(inviteFunction, /caller\.account_scope !== 'dallmayr'/);
+  assert.match(inviteFunction, /callerRole !== 'admin'/);
+  assert.match(inviteFunction, /accessRecord\.account_scope !== 'client'/);
+  assert.match(inviteFunction, /!accessRecord\.customer_id/);
+  assert.match(inviteFunction, /inviteUserByEmail\(email/);
+  assert.match(inviteFunction, /redirectTo: `\$\{APP_ORIGIN\}\/reset-password`/);
+  assert.match(inviteFunction, /accessRecord\.auth_user_id/);
 });
 
 test('client shell exposes only explicitly approved read-only routes', () => {
