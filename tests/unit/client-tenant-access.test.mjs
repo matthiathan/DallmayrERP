@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 const migration = fs.readFileSync(new URL('../../supabase/migrations/20260923104500_add_client_tenant_access.sql', import.meta.url), 'utf8');
+const hardeningMigration = fs.readFileSync(new URL('../../supabase/migrations/20260925102000_harden_client_tenant_boundary.sql', import.meta.url), 'utf8');
 const clientAccess = fs.readFileSync(new URL('../../components/features/ClientAccessControl.tsx', import.meta.url), 'utf8');
 const navigation = fs.readFileSync(new URL('../../components/layout/appShellNavigation.ts', import.meta.url), 'utf8');
 const shell = fs.readFileSync(new URL('../../components/layout/AppShell.tsx', import.meta.url), 'utf8');
@@ -26,6 +27,14 @@ test('tenant helpers fail closed and resolve machine and device ownership by cus
   assert.match(migration, /public\.telemetry_region_allows_device/);
 });
 
+test('client sessions do not satisfy legacy internal staff-role policies', () => {
+  assert.match(hardeningMigration, /create or replace function public\.current_app_role\(\)/);
+  assert.match(hardeningMigration, /u\.account_scope = 'dallmayr'/);
+  assert.match(hardeningMigration, /client_machine_read/);
+  assert.match(hardeningMigration, /client_counter_state_read/);
+  assert.match(hardeningMigration, /client_daily_sales_read/);
+});
+
 test('direct authenticated reads use restrictive customer policies and client writes are denied', () => {
   assert.match(migration, /create policy tenant_machine_select on public\.machines as restrictive for select/);
   assert.match(migration, /create policy tenant_device_select on public\.telemetry_devices as restrictive for select/);
@@ -46,6 +55,7 @@ test('security definer telemetry reads receive customer filters instead of relyi
   assert.match(migration, /telemetry_account_allows_device\(d\.id\)/);
   assert.match(migration, /telemetry_account_allows_machine\(m\.id\)/);
   assert.match(migration, /Tenant filter injection point missing/);
+  assert.match(hardeningMigration, /return jsonb_build_object\('effective_profile_key', null\)/);
 });
 
 test('Dallmayr administrators can create and manage customer-scoped client access', () => {
