@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import styles from './ProfileIdentityEvidenceWorkspace.module.css';
@@ -194,13 +194,16 @@ export function ProfileIdentityEvidenceWorkspace() {
   const [message, setMessage] = useState<string | null>(null);
   const requestedDeviceHandled = useRef(false);
 
-  const loadDevices = useCallback(async () => {
+  const loadDevices = useCallback(async (override?: { filter?: ReviewQueueFilter; search?: string; page?: number }) => {
+    const effectiveFilter = override?.filter ?? queueFilter;
+    const effectiveSearch = override?.search ?? search;
+    const effectivePage = override?.page ?? queuePage;
     setLoading(true);
     setError(null);
     const { data, error: queueError } = await getSupabaseClient().rpc('get_telemetry_profile_identity_review_queue', {
-      p_filter: queueFilter,
-      p_search: search.trim(),
-      p_offset: (queuePage - 1) * PAGE_SIZE,
+      p_filter: effectiveFilter,
+      p_search: effectiveSearch.trim(),
+      p_offset: (effectivePage - 1) * PAGE_SIZE,
       p_limit: PAGE_SIZE,
     });
 
@@ -308,6 +311,7 @@ export function ProfileIdentityEvidenceWorkspace() {
     setQueueFilter('all');
     setQueuePage(1);
     setSearch(selected.device_code);
+    await loadDevices({ filter: 'all', search: selected.device_code, page: 1 });
     await loadCandidate(selected.id);
     setMessage(`${result.evidence_type === 'model_alias' ? 'Model alias' : 'Fingerprint'} verified for ${result.profile_name ?? profileKey}. Persisted device state has been refreshed; automatic-mode devices now apply only uniquely verified evidence.`);
   }
