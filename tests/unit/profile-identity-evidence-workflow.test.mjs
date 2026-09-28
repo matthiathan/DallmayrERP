@@ -34,7 +34,8 @@ test('device management exposes the profile identity review workspace', () => {
   assert.match(contextLinks, /Profile identity/);
   assert.match(workspace, /get_telemetry_profile_identity_review_queue/);
   assert.match(workspace, /p_limit:\s*PAGE_SIZE/);
-  assert.match(workspace, /p_offset:\s*\(queuePage - 1\) \* PAGE_SIZE/);
+  assert.match(workspace, /const effectivePage = override\?\.page \?\? queuePage/);
+  assert.match(workspace, /p_offset:\s*\(effectivePage - 1\) \* PAGE_SIZE/);
   assert.match(workspace, /get_telemetry_profile_identity_candidate/);
   assert.match(workspace, /verify_telemetry_profile_identity_evidence/);
   assert.match(workspace, /Verify fingerprint/);
