@@ -10,6 +10,8 @@ type IdentityDevice = {
   id: string;
   device_code: string;
   machine_id: string | null;
+  profile_id: string | null;
+  profile_assignment_method: 'automatic' | 'manual' | null;
   reported_machine_profile_fingerprint: string | null;
   reported_machine_model: string | null;
   reported_machine_interface: string | null;
@@ -66,7 +68,7 @@ type CandidatePayload = {
   verified_matches: VerifiedMatch[];
 };
 
-const DEVICE_SELECT = 'id,device_code,machine_id,reported_machine_profile_fingerprint,reported_machine_model,reported_machine_interface,reported_machine_revision,reported_machine_identity_at,last_seen_at';
+const DEVICE_SELECT = 'id,device_code,machine_id,profile_id,profile_assignment_method,reported_machine_profile_fingerprint,reported_machine_model,reported_machine_interface,reported_machine_revision,reported_machine_identity_at,last_seen_at';
 const PAGE_SIZE = 500;
 
 function formatDate(value: string | null | undefined) {
@@ -78,6 +80,40 @@ function compact(value: string | null | undefined, max = 42) {
   if (!value) return '—';
   if (value.length <= max) return value;
   return `${value.slice(0, max - 1)}…`;
+}
+
+function reviewStatus(device: IdentityDevice, candidate: CandidatePayload | null) {
+  if (device.profile_assignment_method === 'manual') {
+    return {
+      label: 'Manual override',
+      value: device.profile_id ?? 'Manual profile missing',
+      detail: 'Manual assignment is authoritative and is never replaced by automatic identity evidence.',
+    };
+  }
+  if (device.profile_id) {
+    return {
+      label: 'Verified automatic',
+      value: device.profile_id,
+      detail: 'This profile is persisted on the device from uniquely verified identity evidence.',
+    };
+  }
+  if (candidate?.resolution?.ambiguous) {
+    return {
+      label: 'Ambiguous',
+      value: 'No persisted profile',
+      detail: 'Multiple candidates are too close to trust. Review the reported identity before verifying evidence.',
+    };
+  }
+  const advisory = candidate?.resolution?.recommended_profile?.model_key
+    ?? candidate?.resolution?.effective_profile_key
+    ?? null;
+  return {
+    label: 'Unverified',
+    value: advisory ? `Advisory: ${advisory}` : 'No persisted profile',
+    detail: advisory
+      ? 'The resolver has an advisory recommendation, but it will not be persisted until identity evidence is verified.'
+      : 'No uniquely verified decoder identity exists yet.',
+  };
 }
 
 export function ProfileIdentityEvidenceWorkspace() {
@@ -167,10 +203,13 @@ export function ProfileIdentityEvidenceWorkspace() {
       device.reported_machine_model,
       device.reported_machine_interface,
       device.reported_machine_profile_fingerprint,
+      device.profile_id,
+      device.profile_assignment_method,
     ].join(' ').toLowerCase().includes(term));
   }, [devices, search]);
 
   const selected = selectedId ? devices.find((row) => row.id === selectedId) ?? null : null;
+  const selectedReviewStatus = selected ? reviewStatus(selected, candidate) : null;
 
   async function verifyEvidence(evidenceType: 'fingerprint' | 'model_alias') {
     if (!selected || !candidate || !profileKey) return;
@@ -189,12 +228,13 @@ export function ProfileIdentityEvidenceWorkspace() {
       return;
     }
     const result = (data ?? {}) as { profile_name?: string; evidence_type?: string };
-    setMessage(`${result.evidence_type === 'model_alias' ? 'Model alias' : 'Fingerprint'} verified for ${result.profile_name ?? profileKey}. Future automatic profile resolution can reuse this evidence.`);
+    await loadDevices();
     await loadCandidate(selected.id);
+    setMessage(`${result.evidence_type === 'model_alias' ? 'Model alias' : 'Fingerprint'} verified for ${result.profile_name ?? profileKey}. Persisted device state has been refreshed; automatic-mode devices now apply only uniquely verified evidence.`);
   }
 
   return (
-    <section className={styles.workspace} data-profile-identity-evidence="v1">
+    <section className={styles.workspace} data-profile-identity-evidence="v2">
       {error ? <div className={styles.error} role="alert"><strong>Profile identity error</strong><span>{error}</span></div> : null}
       {message ? <div className={styles.success} role="status"><strong>Verified</strong><span>{message}</span></div> : null}
 
@@ -205,7 +245,7 @@ export function ProfileIdentityEvidenceWorkspace() {
 
       <div className={styles.securityNote}>
         <strong>Safe promotion path</strong>
-        <span>Evidence values are taken from the selected controller’s reported identity state. They cannot be typed or substituted by the browser, and verification never changes the physical machine assignment.</span>
+        <span>Evidence values are taken from the selected controller’s reported identity state. They cannot be typed or substituted by the browser. Resolver matches are advisory until verified, and verification never changes the physical machine assignment.</span>
       </div>
 
       {loading ? <HamsterLoader label="Loading profile identity candidates" /> : (
@@ -217,7 +257,7 @@ export function ProfileIdentityEvidenceWorkspace() {
               <button className={`${styles.deviceButton} ${selectedId === device.id ? styles.selected : ''}`} key={device.id} onClick={() => setSelectedId(device.id)} type="button">
                 <strong>{device.device_code}</strong>
                 <span>{device.reported_machine_model ?? 'Model not reported'}</span>
-                <small>{device.reported_machine_interface?.toUpperCase() ?? 'Interface unknown'} · identity {formatDate(device.reported_machine_identity_at)}</small>
+                <small>{device.profile_assignment_method === 'manual' ? 'Manual override' : device.profile_id ? `Verified automatic · ${device.profile_id}` : 'Needs identity review'} · {device.reported_machine_interface?.toUpperCase() ?? 'Interface unknown'}</small>
                 <code title={device.reported_machine_profile_fingerprint ?? undefined}>{compact(device.reported_machine_profile_fingerprint)}</code>
               </button>
             )) : <div className={styles.empty}>No controller in this region has reported a stable fingerprint or machine model yet. Firmware V6.8.52 can provide the stable MDB profile fingerprint when the device reconnects.</div>}
@@ -225,7 +265,7 @@ export function ProfileIdentityEvidenceWorkspace() {
 
           <section className={styles.detail} aria-live="polite">
             {!selected ? <div className={styles.emptyDetail}><strong>Select a candidate</strong><span>Choose a controller to inspect its observed identity and current automatic decoder resolution.</span></div> : candidateLoading ? <HamsterLoader label="Resolving decoder profile evidence" /> : candidate ? <>
-              <header className={styles.detailHeader}><div><span>{candidate.telemetry_region.replaceAll('_', ' ')}</span><h3>{candidate.device_code}</h3><p>{candidate.machine_name ?? 'No linked machine name'}{candidate.machine_model ? ` · ${candidate.machine_model}` : ''}</p></div><div className={styles.resolution}><span>{candidate.resolution.profile_resolution ?? 'unresolved'}</span><strong>{candidate.resolution.effective_profile_key ?? 'No automatic profile'}</strong><small>{candidate.resolution.confidence ?? 'unknown'} confidence</small></div></header>
+              <header className={styles.detailHeader}><div><span>{candidate.telemetry_region.replaceAll('_', ' ')}</span><h3>{candidate.device_code}</h3><p>{candidate.machine_name ?? 'No linked machine name'}{candidate.machine_model ? ` · ${candidate.machine_model}` : ''}</p></div><div className={styles.resolution}><span>{selectedReviewStatus?.label ?? 'Unverified'}</span><strong>{selectedReviewStatus?.value ?? 'No persisted profile'}</strong><small>{selectedReviewStatus?.detail ?? 'Identity review required.'}</small></div></header>
 
               <dl className={styles.observations}>
                 <div><dt>Stable fingerprint</dt><dd><code>{candidate.observations.fingerprint ?? 'Not reported'}</code></dd></div>
