@@ -36,6 +36,22 @@ type LogEvidence = {
   received_at: string;
 };
 
+type AcceptanceReadiness = {
+  machine_linked: boolean;
+  profile_ready: boolean;
+  trusted_profile_key: string | null;
+  trusted_profile_name: string | null;
+  suggested_profile_key: string | null;
+  suggested_profile_name: string | null;
+  has_instant_porridge: boolean;
+  has_caramel_cappuccino: boolean;
+  other_mapped_product_count: number;
+  mapping_ready: boolean;
+  ready_for_acceptance: boolean;
+  blockers: string[];
+  mapped_products: Array<{ button_number: number | null; selection_code: string | null; product_name: string }>;
+};
+
 type AcceptanceCheck = {
   label: string;
   passed: boolean;
@@ -75,6 +91,7 @@ export function TelemetryFieldAcceptance() {
   const client = useMemo(() => getSupabaseClient(), []);
   const [deviceCode, setDeviceCode] = useState('');
   const [device, setDevice] = useState<DeviceEvidence | null>(null);
+  const [readiness, setReadiness] = useState<AcceptanceReadiness | null>(null);
   const [session, setSession] = useState<SessionEvidence | null>(null);
   const [logs, setLogs] = useState<LogEvidence[]>([]);
   const [loading, setLoading] = useState(false);
@@ -85,6 +102,7 @@ export function TelemetryFieldAcceptance() {
     const requested = requestedDeviceCode.trim();
     if (!requested) {
       setDevice(null);
+      setReadiness(null);
       setSession(null);
       setLogs([]);
       return;
@@ -109,10 +127,21 @@ export function TelemetryFieldAcceptance() {
     setDevice(selected);
 
     if (!selected) {
+      setReadiness(null);
       setSession(null);
       setLogs([]);
       setLoading(false);
       return;
+    }
+
+    const { data: readinessData, error: readinessError } = await client.rpc('get_telemetry_field_acceptance_readiness', {
+      p_device_id: selected.id,
+    });
+    if (readinessError) {
+      setReadiness(null);
+      setError(readinessError.message);
+    } else {
+      setReadiness((readinessData ?? null) as AcceptanceReadiness | null);
     }
 
     const { data: latestSession, error: sessionError } = await client
@@ -183,51 +212,15 @@ export function TelemetryFieldAcceptance() {
     const counter = /(?:cup\s*counter|counter[^\n]*(?:increment|delta|count)|cups?\s*[+=:])/i.test(text);
 
     return [
-      {
-        label: 'Device contact',
-        passed: recentContact,
-        detail: device?.last_seen_at ? `Last device contact ${ageLabel(device.last_seen_at, now)}.` : 'No device contact has been recorded.',
-      },
-      {
-        label: 'Cellular transport',
-        passed: device?.last_transport === 'cellular',
-        detail: device ? `Last accepted transport: ${device.last_transport ?? 'unknown'}${device.cellular_operator ? ` · ${device.cellular_operator}` : ''}.` : 'Waiting for the selected device.',
-      },
-      {
-        label: 'Test session acknowledged',
-        passed: acknowledged,
-        detail: session ? (session.acknowledged_at ? `Device acknowledged the latest session ${ageLabel(session.acknowledged_at, now)}.` : 'Latest session is waiting for device acknowledgement.') : 'No Test Center session exists yet.',
-      },
-      {
-        label: 'Logs streaming',
-        passed: streaming,
-        detail: session?.last_log_at ? `Latest diagnostic log ${ageLabel(session.last_log_at, now)}.` : 'No diagnostic log has reached this session.',
-      },
-      {
-        label: 'Machine interface identified',
-        passed: Boolean(protocol),
-        detail: protocol ? `${protocol.toUpperCase()}${device?.reported_machine_model ? ` · ${device.reported_machine_model}` : ''}.` : 'Device has not reported MDB/DEX identity yet.',
-      },
-      {
-        label: 'Decoder profile applied',
-        passed: Boolean(profile),
-        detail: profile ? `${profile}${device?.profile_assignment_method ? ` · ${device.profile_assignment_method}` : ''}.` : 'No applied decoder profile is visible yet.',
-      },
-      {
-        label: 'Product selection evidence',
-        passed: selection,
-        detail: selection ? 'Selection/product evidence exists in the latest captured session.' : 'Perform a known product selection while the session is streaming.',
-      },
-      {
-        label: 'Vend evidence',
-        passed: vend,
-        detail: vend ? 'A completed/free/failed/cancelled vend outcome is present in the captured evidence.' : 'No conclusive vend outcome has been captured yet.',
-      },
-      {
-        label: 'Cup counter evidence',
-        passed: counter,
-        detail: counter ? 'Cup/counter evidence is present in the latest captured session.' : 'No cup-counter increment/delta evidence has been captured yet.',
-      },
+      { label: 'Device contact', passed: recentContact, detail: device?.last_seen_at ? `Last device contact ${ageLabel(device.last_seen_at, now)}.` : 'No device contact has been recorded.' },
+      { label: 'Cellular transport', passed: device?.last_transport === 'cellular', detail: device ? `Last accepted transport: ${device.last_transport ?? 'unknown'}${device.cellular_operator ? ` · ${device.cellular_operator}` : ''}.` : 'Waiting for the selected device.' },
+      { label: 'Test session acknowledged', passed: acknowledged, detail: session ? (session.acknowledged_at ? `Device acknowledged the latest session ${ageLabel(session.acknowledged_at, now)}.` : 'Latest session is waiting for device acknowledgement.') : 'No Test Center session exists yet.' },
+      { label: 'Logs streaming', passed: streaming, detail: session?.last_log_at ? `Latest diagnostic log ${ageLabel(session.last_log_at, now)}.` : 'No diagnostic log has reached this session.' },
+      { label: 'Machine interface identified', passed: Boolean(protocol), detail: protocol ? `${protocol.toUpperCase()}${device?.reported_machine_model ? ` · ${device.reported_machine_model}` : ''}.` : 'Device has not reported MDB/DEX identity yet.' },
+      { label: 'Decoder profile applied', passed: Boolean(profile), detail: profile ? `${profile}${device?.profile_assignment_method ? ` · ${device.profile_assignment_method}` : ''}.` : 'No applied decoder profile is visible yet.' },
+      { label: 'Product selection evidence', passed: selection, detail: selection ? 'Selection/product evidence exists in the latest captured session.' : 'Perform a known product selection while the session is streaming.' },
+      { label: 'Vend evidence', passed: vend, detail: vend ? 'A completed/free/failed/cancelled vend outcome is present in the captured evidence.' : 'No conclusive vend outcome has been captured yet.' },
+      { label: 'Cup counter evidence', passed: counter, detail: counter ? 'Cup/counter evidence is present in the latest captured session.' : 'No cup-counter increment/delta evidence has been captured yet.' },
     ];
   }, [device, logs, now, session]);
 
@@ -236,10 +229,7 @@ export function TelemetryFieldAcceptance() {
   if (!deviceCode) {
     return (
       <section className={styles.panel} aria-label="Field acceptance">
-        <div className={styles.heading}>
-          <div><span>Field acceptance</span><strong>Choose a telemetry device first</strong></div>
-          <span className={styles.score}>0 / {checks.length}</span>
-        </div>
+        <div className={styles.heading}><div><span>Field acceptance</span><strong>Choose a telemetry device first</strong></div><span className={styles.score}>0 / {checks.length}</span></div>
         <p>Open this Test Center from Device Management so the device code is carried in the URL. The acceptance panel will then score only evidence from that device.</p>
       </section>
     );
@@ -248,19 +238,32 @@ export function TelemetryFieldAcceptance() {
   return (
     <section className={styles.panel} aria-label="Field acceptance">
       <div className={styles.heading}>
-        <div>
-          <span>Field acceptance</span>
-          <strong>{device?.device_code ?? deviceCode}</strong>
-          <small>{device?.firmware_version ? `Firmware ${device.firmware_version}` : 'Evidence from the latest Test Center session'}</small>
-        </div>
-        <span className={`${styles.score} ${passedCount === checks.length ? styles.complete : ''}`}>
-          {passedCount} / {checks.length} proven
-        </span>
+        <div><span>Field acceptance</span><strong>{device?.device_code ?? deviceCode}</strong><small>{device?.firmware_version ? `Firmware ${device.firmware_version}` : 'Evidence from the latest Test Center session'}</small></div>
+        <span className={`${styles.score} ${passedCount === checks.length && readiness?.ready_for_acceptance ? styles.complete : ''}`}>{passedCount} / {checks.length} proven</span>
       </div>
 
       {error ? <div className={styles.error} role="alert">{error}</div> : null}
       {loading && !device ? <p>Loading field evidence…</p> : null}
       {!loading && !device ? <p>No active telemetry device exactly matching <code>{deviceCode}</code> was found in the selected telemetry region.</p> : null}
+
+      {device && readiness && !readiness.ready_for_acceptance ? (
+        <div className={styles.error} role="status">
+          <strong>Mapping setup required</strong>
+          <span>Use Learn Mode before starting a field acceptance run. The timed acceptance session should begin only after setup traffic is complete.</span>
+          <ul>
+            <li>{readiness.machine_linked ? 'Machine linked' : 'Link the correct machine'}</li>
+            <li>{readiness.profile_ready ? `Trusted profile: ${readiness.trusted_profile_name ?? readiness.trusted_profile_key}` : `Trusted decoder profile required${readiness.suggested_profile_name ? ` · advisory model match: ${readiness.suggested_profile_name}` : ''}`}</li>
+            <li>{readiness.has_instant_porridge ? 'Instant Porridge mapped' : 'Map Instant Porridge'}</li>
+            <li>{readiness.has_caramel_cappuccino ? 'Caramel Cappuccino mapped' : 'Map Caramel Cappuccino'}</li>
+            <li>{readiness.other_mapped_product_count >= 1 ? `${readiness.other_mapped_product_count} additional mapped product(s)` : 'Map at least one additional product'}</li>
+          </ul>
+          {readiness.blockers.map((blocker) => <small key={blocker}>{blocker}</small>)}
+        </div>
+      ) : null}
+
+      {device && readiness?.ready_for_acceptance ? (
+        <div className={styles.footer} role="status"><strong>Mapping preflight ready.</strong><span>Start a fresh Test Center session now so the acceptance baseline excludes Learn Mode and setup traffic.</span></div>
+      ) : null}
 
       <div className={styles.grid}>
         {checks.map((check) => (
@@ -272,8 +275,8 @@ export function TelemetryFieldAcceptance() {
       </div>
 
       <div className={styles.footer}>
-        <strong>{passedCount === checks.length ? 'Evidence chain complete for this captured session.' : 'Keep the Test Center session running while performing the controlled field test.'}</strong>
-        <span>Final product quantities still need to be reconciled against live/daily/monthly reporting after the physical vend sequence.</span>
+        <strong>{readiness?.ready_for_acceptance && passedCount === checks.length ? 'Evidence chain complete for this captured session.' : readiness?.ready_for_acceptance ? 'Keep the Test Center session running while performing the controlled field test.' : 'Complete Learn Mode/profile mapping before treating a Test Center session as field acceptance.'}</strong>
+        <span>Final product quantities are reconciled server-side against the controlled plan and live/daily/monthly reporting after the physical vend sequence.</span>
       </div>
     </section>
   );
