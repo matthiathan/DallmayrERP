@@ -9,6 +9,7 @@ const migrations = fs.readdirSync(migrationsUrl)
   .map((name) => fs.readFileSync(new URL(name, migrationsUrl), 'utf8'))
   .join('\n');
 const ingest = fs.readFileSync(new URL('../../supabase/functions/telemetry-ingest/index.ts', import.meta.url), 'utf8');
+const configSync = fs.readFileSync(new URL('../../supabase/migrations/20260911060543_telemetry_device_config_sync_history.sql', import.meta.url), 'utf8');
 
 test('current telemetry stamps successful transport receipt time and exposes region-scoped per-network usage', () => {
   assert.match(migrations, /add column if not exists last_transport_at timestamptz/i);
@@ -22,15 +23,14 @@ test('current telemetry stamps successful transport receipt time and exposes reg
   assert.match(migrations, /grant execute on function public\.get_telemetry_transport_usage\(integer\) to authenticated/i);
 });
 
-test('config acknowledgement ingest has a durable service-role-only database contract', () => {
-  assert.match(ingest, /eventType === 'config_ack'/);
+test('current-main config acknowledgement remains on the tracked configuration-sync contract', () => {
+  assert.match(ingest, /payload\.type\s*===\s*["']config_ack["']/);
   assert.match(ingest, /rpc\('record_telemetry_config_ack'/);
-  assert.match(migrations, /add column if not exists last_config_ack_at timestamptz/i);
-  assert.match(migrations, /add column if not exists applied_config jsonb/i);
-  assert.match(migrations, /create or replace function public\.record_telemetry_config_ack\s*\(/i);
-  assert.match(migrations, /jsonb_typeof\(v_applied\)\s*<>\s*'object'/i);
-  assert.match(migrations, /last_config_ack_at\s*=\s*now\(\)/i);
-  assert.match(migrations, /applied_config\s*=\s*v_applied/i);
-  assert.match(migrations, /revoke all on function public\.record_telemetry_config_ack\(uuid, jsonb\) from authenticated/i);
-  assert.match(migrations, /grant execute on function public\.record_telemetry_config_ack\(uuid, jsonb\) to service_role/i);
+  assert.match(configSync, /create table if not exists public\.telemetry_device_config_history/i);
+  assert.match(configSync, /create or replace function public\.record_telemetry_config_ack\s*\(/i);
+  assert.match(configSync, /last_config_ack_at\s*=\s*now\(\)/i);
+  assert.match(configSync, /applied_config\s*=\s*v_applied/i);
+  assert.match(configSync, /v_sync_status := case when v_differences = '\{\}'::jsonb then 'applied' else 'mismatch' end/i);
+  assert.match(configSync, /unreported_fields\s*=\s*v_unreported/i);
+  assert.match(configSync, /grant execute on function public\.record_telemetry_config_ack\(uuid,jsonb\) to service_role/i);
 });
