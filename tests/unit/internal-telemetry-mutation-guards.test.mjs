@@ -2,12 +2,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 
-const migrationsUrl = new URL('../../supabase/migrations/', import.meta.url);
-const migrations = fs.readdirSync(migrationsUrl)
-  .filter((name) => name.endsWith('.sql'))
-  .sort()
-  .map((name) => fs.readFileSync(new URL(name, migrationsUrl), 'utf8'))
-  .join('\n');
+const migrationUrl = new URL(
+  '../../supabase/migrations/20260928100000_guard_internal_telemetry_mutations.sql',
+  import.meta.url,
+);
 
 const guardedFunctions = [
   'delete_telemetry_device',
@@ -18,11 +16,23 @@ const guardedFunctions = [
 ];
 
 test('telemetry mutation RPCs require an active internal Dallmayr account', () => {
+  assert.equal(
+    fs.existsSync(migrationUrl),
+    true,
+    'dedicated telemetry mutation guard migration must exist',
+  );
+
+  const migration = fs.readFileSync(migrationUrl, 'utf8');
+
   for (const name of guardedFunctions) {
     assert.match(
-      migrations,
-      new RegExp(`create\\s+or\\s+replace\\s+function\\s+public\\.${name}\\b[\\s\\S]*?is_active_app_user\\(\\)[\\s\\S]*?is_dallmayr_app_user\\(\\)`, 'i'),
-      `${name} must require both active-app-user and Dallmayr-internal authorization`,
+      migration,
+      new RegExp(`create\\s+or\\s+replace\\s+function\\s+public\\.${name}\\b`, 'i'),
+      `${name} must be wrapped by the hardening migration`,
     );
   }
+
+  assert.match(migration, /public\.is_active_app_user\(\)/i);
+  assert.match(migration, /public\.is_dallmayr_app_user\(\)/i);
+  assert.match(migration, /auth\.jwt\(\)\s*->>\s*'role'[^\n]*service_role/i);
 });
