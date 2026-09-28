@@ -16,6 +16,7 @@ test('profile identity review distinguishes persisted verified assignment from a
 });
 
 test('verification refreshes persisted device state before reporting the result', () => {
-  assert.match(workspace, /await\s+loadDevices\(\)/);
+  assert.match(workspace, /await\s+loadDevices\(/);
   assert.match(workspace, /await\s+loadCandidate\(selected\.id\)/);
+  assert.match(workspace, /await\s+loadDevices\([\s\S]*filter:\s*'all'[\s\S]*search:\s*selected\.device_code[\s\S]*page:\s*1/);
 });
