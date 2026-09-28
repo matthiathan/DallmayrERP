@@ -34,8 +34,11 @@ type VerifiedMatch = {
   verified: boolean;
   profile_key: string;
   profile_name: string;
+  notes: string | null;
   source_device_id: string | null;
+  source_device_code: string | null;
   source_telemetry_region: string | null;
+  verified_by_name: string | null;
   verified_at: string | null;
 };
 
@@ -80,6 +83,10 @@ function compact(value: string | null | undefined, max = 42) {
   if (!value) return '—';
   if (value.length <= max) return value;
   return `${value.slice(0, max - 1)}…`;
+}
+
+function humanizeRegion(value: string | null | undefined) {
+  return value ? value.replaceAll('_', ' ') : 'Region not recorded';
 }
 
 function reviewStatus(device: IdentityDevice, candidate: CandidatePayload | null) {
@@ -234,7 +241,7 @@ export function ProfileIdentityEvidenceWorkspace() {
   }
 
   return (
-    <section className={styles.workspace} data-profile-identity-evidence="v2">
+    <section className={styles.workspace} data-profile-identity-evidence="v3">
       {error ? <div className={styles.error} role="alert"><strong>Profile identity error</strong><span>{error}</span></div> : null}
       {message ? <div className={styles.success} role="status"><strong>Verified</strong><span>{message}</span></div> : null}
 
@@ -276,7 +283,14 @@ export function ProfileIdentityEvidenceWorkspace() {
                 <div><dt>Observed</dt><dd>{formatDate(candidate.observations.identity_at)}</dd></div>
               </dl>
 
-              {candidate.verified_matches.length ? <section className={styles.matches}><h4>Existing verified matches</h4>{candidate.verified_matches.map((match) => <div key={match.id}><strong>{match.evidence_type === 'model_alias' ? 'Model alias' : 'Fingerprint'} → {match.profile_name}</strong><code>{match.evidence_value}</code><small>{match.verified ? 'Verified' : 'Unverified'} · {formatDate(match.verified_at)}</small></div>)}</section> : null}
+              {candidate.verified_matches.length ? <section className={styles.matches}><h4>Existing verified matches</h4>{candidate.verified_matches.map((match) => <div key={match.id}>
+                <strong>{match.evidence_type === 'model_alias' ? 'Model alias' : 'Fingerprint'} → {match.profile_name}</strong>
+                <code>{match.evidence_value}</code>
+                <small>{match.verified ? 'Verified' : 'Unverified'} · {formatDate(match.verified_at)}</small>
+                <small><strong>Verified by:</strong> {match.verified_by_name ?? 'Dallmayr administrator'}</small>
+                <small><strong>Source:</strong> {match.source_device_code ?? 'Device not visible'} · {humanizeRegion(match.source_telemetry_region)}</small>
+                <small><strong>Verification note:</strong> {match.notes ?? 'No note recorded'}</small>
+              </div>)}</section> : null}
 
               <form className={styles.verifyForm} onSubmit={(event) => event.preventDefault()}>
                 <label><span>Decoder profile</span><select value={profileKey} onChange={(event) => setProfileKey(event.target.value)}>{candidate.profiles.map((profile) => <option key={profile.id} value={profile.model_key}>{profile.display_name}</option>)}</select></label>
