@@ -53,6 +53,11 @@ function normaliseHeader(value: string) {
   return value.trim().toLocaleLowerCase('en-ZA').replace(/[^a-z0-9]/g, '');
 }
 
+function formatRegion(value: string) {
+  if (!value) return 'Loading selected region…';
+  return value.split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
+}
+
 function parseCsv(text: string) {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -167,6 +172,14 @@ async function loadExistingIdentifiers() {
   return { serials, qrCodes };
 }
 
+async function loadSelectedRegion() {
+  const { data, error } = await getSupabaseClient().rpc('current_telemetry_region');
+  if (error) throw error;
+  const region = String(data ?? '').trim();
+  if (!region) throw new Error('Choose a telemetry region before onboarding machines.');
+  return region;
+}
+
 function customerIndex(customers: CustomerRecord[]) {
   const index = new Map<string, CustomerRecord[]>();
   customers.forEach((customer) => {
@@ -188,6 +201,7 @@ function siteIndex(sites: SiteRecord[]) {
 export function MachineCreateImportControls({ onChanged }: Props) {
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [sites, setSites] = useState<SiteRecord[]>([]);
+  const [selectedRegion, setSelectedRegion] = useState('');
   const [referenceLoading, setReferenceLoading] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -211,16 +225,17 @@ export function MachineCreateImportControls({ onChanged }: Props) {
   const customerSites = useMemo(() => sites.filter((site) => site.customer_id === customerId), [customerId, sites]);
 
   async function ensureReferenceData() {
-    if (customers.length > 0 && sites.length > 0) return { customers, sites };
     setReferenceLoading(true);
     try {
-      const [loadedCustomers, loadedSites] = await Promise.all([
+      const [loadedCustomers, loadedSites, region] = await Promise.all([
         customers.length ? Promise.resolve(customers) : loadCustomers(),
         sites.length ? Promise.resolve(sites) : loadSites(),
+        loadSelectedRegion(),
       ]);
       setCustomers(loadedCustomers);
       setSites(loadedSites);
-      return { customers: loadedCustomers, sites: loadedSites };
+      setSelectedRegion(region);
+      return { customers: loadedCustomers, sites: loadedSites, region };
     } finally {
       setReferenceLoading(false);
     }
@@ -233,7 +248,7 @@ export function MachineCreateImportControls({ onChanged }: Props) {
     try {
       await ensureReferenceData();
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Clients and sites could not be loaded.');
+      setError(loadError instanceof Error ? loadError.message : 'Clients, sites and selected region could not be loaded.');
     }
   }
 
@@ -246,7 +261,7 @@ export function MachineCreateImportControls({ onChanged }: Props) {
     try {
       await ensureReferenceData();
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Clients and sites could not be loaded.');
+      setError(loadError instanceof Error ? loadError.message : 'Clients, sites and selected region could not be loaded.');
     }
   }
 
@@ -282,31 +297,30 @@ export function MachineCreateImportControls({ onChanged }: Props) {
       return;
     }
 
+    const payload = {
+      machine_name: asset,
+      model,
+      manufacturer,
+      customer_id: customer.id,
+      site_id: site?.id ?? null,
+      serial_number: serial,
+      machine_barcode: qr,
+    };
+
     setSaving(true);
     try {
-      const client = getSupabaseClient();
-      const [serialResult, qrResult] = await Promise.all([
-        client.from('machines').select('id').eq('serial_number', serial).limit(1),
-        client.from('machines').select('id').eq('machine_barcode', qr).limit(1),
-      ]);
-      if (serialResult.error) throw serialResult.error;
-      if (qrResult.error) throw qrResult.error;
-      if ((serialResult.data ?? []).length > 0) throw new Error(`Serial Number ${serial} already belongs to another machine.`);
-      if ((qrResult.data ?? []).length > 0) throw new Error(`QR Code Number ${qr} already belongs to another machine.`);
-
-      const { error: insertError } = await client.from('machines').insert({
-        machine_name: asset,
-        model,
-        manufacturer,
-        customer_id: customer.id,
-        site_id: site?.id ?? null,
-        branch: site?.branch || customer.branch || 'national',
-        serial_number: serial,
-        machine_barcode: qr,
+      const { error: createError } = await getSupabaseClient().rpc('create_telemetry_machine', {
+        p_machine_name: payload.machine_name,
+        p_model: payload.model,
+        p_manufacturer: payload.manufacturer,
+        p_customer_id: payload.customer_id,
+        p_site_id: payload.site_id,
+        p_serial_number: payload.serial_number,
+        p_machine_barcode: payload.machine_barcode,
       });
-      if (insertError) throw insertError;
+      if (createError) throw createError;
 
-      setSuccess(`${asset} was created successfully.`);
+      setSuccess(`${asset} was created successfully in ${formatRegion(selectedRegion)}.`);
       resetCreate();
       setCreateOpen(false);
       await onChanged();
@@ -429,14 +443,15 @@ export function MachineCreateImportControls({ onChanged }: Props) {
         manufacturer: row.brand || null,
         customer_id: row.customerId,
         site_id: row.siteId,
-        branch: row.branch || 'national',
         serial_number: row.serialNumber,
         machine_barcode: row.qrCodeNumber,
       }));
-      const { error: insertError } = await getSupabaseClient().from('machines').insert(payload);
-      if (insertError) throw insertError;
+      const { data, error: importError } = await getSupabaseClient().rpc('import_telemetry_machines', { p_rows: payload });
+      if (importError) throw importError;
 
-      setSuccess(`${payload.length.toLocaleString('en-ZA')} machine${payload.length === 1 ? '' : 's'} imported successfully.`);
+      const result = (data ?? {}) as { imported_count?: number; telemetry_region?: string };
+      const importedCount = Number(result.imported_count ?? payload.length);
+      setSuccess(`${importedCount.toLocaleString('en-ZA')} machine${importedCount === 1 ? '' : 's'} imported successfully into ${formatRegion(result.telemetry_region ?? selectedRegion)}.`);
       setImportRows([]);
       setFileName('');
       setImportOpen(false);
@@ -476,6 +491,7 @@ export function MachineCreateImportControls({ onChanged }: Props) {
         <form onSubmit={createMachine}>
           <div className="device-delete-dialog-body">
             {error ? <div className="fleet-banner is-error" role="alert"><strong>Machine could not be created.</strong><span>{error}</span></div> : null}
+            <div className="fleet-banner is-success" role="status"><strong>Import target · {formatRegion(selectedRegion)}</strong><span>The region is derived from your selected telemetry workspace and revalidated by the server.</span></div>
             <label><span>Asset Name</span><input data-dialog-initial-focus maxLength={160} onChange={(event) => setAssetName(event.target.value)} placeholder="e.g. Reception Belluno" required value={assetName} /></label>
             <label><span>Machine Type / Model</span><input maxLength={160} onChange={(event) => setMachineType(event.target.value)} placeholder="e.g. SIELAFF BELLUNO" required value={machineType} /></label>
             <label><span>Brand / Manufacturer</span><input maxLength={160} onChange={(event) => setBrand(event.target.value)} placeholder="e.g. Sielaff" required value={brand} /></label>
@@ -484,7 +500,7 @@ export function MachineCreateImportControls({ onChanged }: Props) {
             <label><span>Serial Number</span><input maxLength={120} onChange={(event) => setSerialNumber(event.target.value)} required value={serialNumber} /></label>
             <label><span>QR Code Number</span><input maxLength={120} onChange={(event) => setQrCodeNumber(event.target.value)} required value={qrCodeNumber} /></label>
           </div>
-          <footer><button className="fleet-button secondary" disabled={saving} onClick={() => { setCreateOpen(false); resetCreate(); }} type="button">Cancel</button><button className="fleet-button" disabled={saving || referenceLoading} type="submit">{saving ? 'Creating…' : 'Create machine'}</button></footer>
+          <footer><button className="fleet-button secondary" disabled={saving} onClick={() => { setCreateOpen(false); resetCreate(); }} type="button">Cancel</button><button className="fleet-button" disabled={saving || referenceLoading || !selectedRegion} type="submit">{saving ? 'Creating…' : 'Create machine'}</button></footer>
         </form>
       </AccessibleDialog>
 
@@ -492,6 +508,7 @@ export function MachineCreateImportControls({ onChanged }: Props) {
         <header><div><div><h2>Bulk import machines</h2><p>Validate up to {MAX_IMPORT_ROWS.toLocaleString('en-ZA')} machines before anything is written.</p></div></div><button aria-label="Close bulk import dialog" disabled={importing} onClick={() => setImportOpen(false)} type="button">×</button></header>
         <div className="device-delete-dialog-body">
           {error ? <div className="fleet-banner is-error" role="alert"><strong>Import needs attention.</strong><span>{error}</span></div> : null}
+          <div className="fleet-banner is-success" role="status"><strong>Import target · {formatRegion(selectedRegion)}</strong><span>All valid rows are committed atomically to this selected telemetry region.</span></div>
           <div className="fleet-heading-actions"><button className="fleet-button secondary" onClick={downloadTemplate} type="button">Download CSV template</button>{invalidImportRows > 0 ? <button className="fleet-button secondary" onClick={downloadImportErrors} type="button">Download error report</button> : null}<label className="fleet-button"><input accept=".csv,text/csv" className="sr-only" disabled={referenceLoading || importing} onChange={(event) => handleFile(event.target.files?.[0] ?? null)} ref={fileRef} type="file" />Choose CSV</label></div>
           <p><strong>{fileName || 'No CSV selected'}</strong></p>
           {importRows.length > 0 ? <>
@@ -500,7 +517,7 @@ export function MachineCreateImportControls({ onChanged }: Props) {
             {importRows.length > 100 ? <p>Previewing the first 100 of {importRows.length.toLocaleString('en-ZA')} rows. All rows were validated.</p> : null}
           </> : <div className="fleet-empty-state"><strong>Required CSV columns</strong><p>Asset Name, Client Name, Serial Number and QR Code Number. Machine Type, Brand and Site Name are supported optional columns. Site Name is validated within the selected client.</p></div>}
         </div>
-        <footer><button className="fleet-button secondary" disabled={importing} onClick={() => setImportOpen(false)} type="button">Cancel</button><button className="fleet-button" disabled={importing || importRows.length === 0 || invalidImportRows > 0} onClick={importMachines} type="button">{importing ? 'Importing…' : `Import ${validImportRows.length.toLocaleString('en-ZA')} machine${validImportRows.length === 1 ? '' : 's'}`}</button></footer>
+        <footer><button className="fleet-button secondary" disabled={importing} onClick={() => setImportOpen(false)} type="button">Cancel</button><button className="fleet-button" disabled={importing || importRows.length === 0 || invalidImportRows > 0 || !selectedRegion} onClick={importMachines} type="button">{importing ? 'Importing…' : `Import ${validImportRows.length.toLocaleString('en-ZA')} machine${validImportRows.length === 1 ? '' : 's'}`}</button></footer>
       </AccessibleDialog>
     </>
   );
