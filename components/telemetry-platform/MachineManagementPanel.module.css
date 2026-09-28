@@ -1,0 +1,114 @@
+.panel {
+  margin: 1.25rem 0;
+  border: 1px solid var(--border, #d9dde5);
+  border-radius: 18px;
+  background: var(--surface, #fff);
+  padding: 1.25rem;
+  box-shadow: 0 8px 28px rgba(22, 30, 45, 0.06);
+}
+
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.heading h2,
+.deviceSection h3 { margin: 0.2rem 0 0.35rem; }
+.heading p,
+.deviceSection p,
+.muted { margin: 0; color: var(--text-muted, #667085); }
+
+.eyebrow {
+  display: block;
+  color: var(--text-muted, #667085);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.summaryGrid,
+.deviceCard dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.summaryGrid > div,
+.deviceCard dl > div {
+  border: 1px solid var(--border, #e3e6ec);
+  border-radius: 12px;
+  padding: 0.8rem;
+  min-width: 0;
+}
+
+.summaryGrid dt,
+.deviceCard dt {
+  margin-bottom: 0.25rem;
+  color: var(--text-muted, #667085);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.summaryGrid dd,
+.deviceCard dd { margin: 0; overflow-wrap: anywhere; font-weight: 650; }
+
+.form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+.form label,
+.searchRow label { display: grid; gap: 0.35rem; min-width: 0; color: var(--text-muted, #667085); font-size: 0.78rem; font-weight: 700; }
+.form input,
+.form select,
+.searchRow input { width: 100%; min-height: 42px; box-sizing: border-box; border: 1px solid var(--border, #ccd2dc); border-radius: 10px; background: var(--surface, #fff); color: inherit; padding: 0.55rem 0.7rem; font: inherit; font-weight: 500; }
+.formActions { grid-column: 1 / -1; display: flex; gap: 0.65rem; }
+
+.primaryButton,
+.secondaryButton,
+.dangerButton { border-radius: 10px; min-height: 40px; padding: 0.55rem 0.85rem; font: inherit; font-weight: 700; cursor: pointer; }
+.primaryButton { border: 1px solid #8c131a; background: #8c131a; color: #fff; }
+.secondaryButton { border: 1px solid var(--border, #ccd2dc); background: var(--surface, #fff); color: inherit; }
+.dangerButton { justify-self: start; border: 1px solid #b42318; background: transparent; color: #b42318; }
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled { cursor: not-allowed; opacity: 0.55; }
+
+.error,
+.success { margin: 0 0 1rem; border-radius: 10px; padding: 0.7rem 0.8rem; font-size: 0.88rem; font-weight: 650; }
+.error { border: 1px solid #f2b8b5; background: #fff1f0; color: #8a1c13; }
+.success { border: 1px solid #abefc6; background: #ecfdf3; color: #05603a; }
+
+.divider { height: 1px; margin: 1.25rem 0; background: var(--border, #e3e6ec); }
+.deviceSection { display: grid; gap: 0.9rem; }
+.deviceCard { display: grid; gap: 0.9rem; border: 1px solid var(--border, #d9dde5); border-radius: 14px; padding: 1rem; }
+.deviceCard > div:first-child { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
+.deviceCard > div:first-child span { color: var(--text-muted, #667085); font-size: 0.84rem; }
+.linkArea { display: grid; gap: 0.75rem; }
+.searchRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 0.7rem; }
+.results { display: grid; gap: 0.55rem; }
+.resultRow { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.65rem; border: 1px solid var(--border, #d9dde5); border-radius: 10px; padding: 0.7rem 0.8rem; cursor: pointer; }
+.resultRow span { display: grid; gap: 0.15rem; min-width: 0; }
+.resultRow small { color: var(--text-muted, #667085); overflow-wrap: anywhere; }
+.selected { border-color: #8c131a; box-shadow: 0 0 0 1px #8c131a inset; }
+
+@media (max-width: 920px) {
+  .summaryGrid,
+  .deviceCard dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .panel { padding: 1rem; }
+  .heading,
+  .formActions { align-items: stretch; flex-direction: column; }
+  .form,
+  .summaryGrid,
+  .deviceCard dl,
+  .searchRow { grid-template-columns: 1fr; }
+  .heading button,
+  .formActions button,
+  .searchRow button,
+  .results > button { width: 100%; }
+}
