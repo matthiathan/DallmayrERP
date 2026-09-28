@@ -13,8 +13,8 @@ test('automatic decoder profiles are persisted only from unique verified identit
   assert.match(migrations, /create\s+or\s+replace\s+function\s+private\.apply_verified_telemetry_profile_identity_internal_v1\b/i);
   assert.match(migrations, /profile_assignment_method[\s\S]*manual[\s\S]*return/i);
   assert.match(migrations, /machine_model_profile_identity_evidence[\s\S]*verified\s*=\s*true/i);
-  assert.match(migrations, /count\s*\(\s*distinct[\s\S]*profile_id/i);
-  assert.match(migrations, /when\s+v_match_count\s*=\s*1[\s\S]*profile_id\s*=\s*v_profile_key/i);
+  assert.match(migrations, /select\s+distinct\s+e\.profile_id[\s\S]*select\s+count\s*\(\s*\*\s*\)::integer/i);
+  assert.match(migrations, /if\s+v_match_count\s*=\s*1[\s\S]*profile_id\s*=\s*v_profile_key/i);
   assert.match(migrations, /v_match_count\s*<>\s*1[\s\S]*profile_id\s*=\s*null/i);
 });
 
