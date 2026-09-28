@@ -58,7 +58,14 @@ static String cellularLbsCsvField(const String& line, uint8_t wantedIndex) {
   return "";
 }
 
-static bool parseCellularLbsResponse(const String& response, CellularLbsFix& parsed) {
+static bool parseCellularLbsResponse(
+  const String& response,
+  double& latitudeOut,
+  double& longitudeOut,
+  int& resultCodeOut,
+  String& dateOut,
+  String& timeOut
+) {
   int marker = response.indexOf("+CIPGSMLOC:");
   if (marker < 0) return false;
 
@@ -70,11 +77,11 @@ static bool parseCellularLbsResponse(const String& response, CellularLbsFix& par
   String resultText = cellularLbsCsvField(line, 0);
   String latitudeText = cellularLbsCsvField(line, 1);
   String longitudeText = cellularLbsCsvField(line, 2);
-  String dateText = cellularLbsCsvField(line, 3);
-  String timeText = cellularLbsCsvField(line, 4);
+  dateOut = cellularLbsCsvField(line, 3);
+  timeOut = cellularLbsCsvField(line, 4);
 
   int result = resultText.toInt();
-  parsed.resultCode = result;
+  resultCodeOut = result;
   if (result != 0 || !latitudeText.length() || !longitudeText.length()) return false;
 
   char* latitudeEnd = nullptr;
@@ -84,12 +91,8 @@ static bool parseCellularLbsResponse(const String& response, CellularLbsFix& par
   if (!latitudeEnd || *latitudeEnd != '\0' || !longitudeEnd || *longitudeEnd != '\0') return false;
   if (!cellularLbsCoordinateValid(latitude, longitude)) return false;
 
-  parsed.latitude = latitude;
-  parsed.longitude = longitude;
-  parsed.valid = true;
-  parsed.acquiredAtMs = millis();
-  copyText(parsed.rawDate, sizeof(parsed.rawDate), dateText);
-  copyText(parsed.rawTime, sizeof(parsed.rawTime), timeText);
+  latitudeOut = latitude;
+  longitudeOut = longitude;
   return true;
 }
 
@@ -146,8 +149,19 @@ static bool queryCellularLbsAtMode() {
     "+CME ERROR:"
   );
 
-  CellularLbsFix candidate;
-  bool parsed = parseCellularLbsResponse(response, candidate);
+  double latitude = 0.0;
+  double longitude = 0.0;
+  int resultCode = -1;
+  String dateText;
+  String timeText;
+  bool parsed = parseCellularLbsResponse(
+    response,
+    latitude,
+    longitude,
+    resultCode,
+    dateText,
+    timeText
+  );
   closeCellularLbsBearer();
 
   if (!parsed) {
@@ -165,7 +179,14 @@ static bool queryCellularLbsAtMode() {
     return false;
   }
 
-  cellularLbsFix = candidate;
+  cellularLbsFix.valid = true;
+  cellularLbsFix.latitude = latitude;
+  cellularLbsFix.longitude = longitude;
+  cellularLbsFix.resultCode = resultCode;
+  cellularLbsFix.acquiredAtMs = millis();
+  copyText(cellularLbsFix.rawDate, sizeof(cellularLbsFix.rawDate), dateText);
+  copyText(cellularLbsFix.rawTime, sizeof(cellularLbsFix.rawTime), timeText);
+
   Serial.print(F("Cellular LBS fix acquired lat="));
   Serial.print(cellularLbsFix.latitude, 6);
   Serial.print(F(" lon="));
