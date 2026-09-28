@@ -1,0 +1,249 @@
+.panel {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+  padding: 18px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #dfe3e8);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgb(16 24 40 / 5%);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.header > div {
+  min-width: 0;
+}
+
+.header span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-muted, #667085);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.header h2 {
+  margin: 0;
+  color: var(--text-strong, #101828);
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.header p {
+  margin: 5px 0 0;
+  color: var(--text-muted, #667085);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.header button {
+  min-height: 40px;
+  padding: 0 13px;
+  color: var(--text-strong, #101828);
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #d0d5dd);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.header button:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+.error {
+  padding: 10px 12px;
+  color: #912018;
+  background: #fff4f2;
+  border: 1px solid #fecdca;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.metrics article,
+.usageGrid article {
+  min-width: 0;
+  padding: 14px 15px;
+  background: var(--surface-subtle, #f8fafc);
+  border: 1px solid var(--border, #e4e7ec);
+  border-radius: 10px;
+}
+
+.metrics span,
+.usageGrid span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-muted, #667085);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.metrics strong,
+.usageGrid strong {
+  display: block;
+  min-height: 24px;
+  overflow: hidden;
+  color: var(--text-strong, #101828);
+  font-size: 17px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metrics small,
+.usageGrid small {
+  display: block;
+  margin-top: 5px;
+  color: var(--text-muted, #667085);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.signal {
+  display: flex !important;
+  align-items: center;
+  overflow: visible !important;
+}
+
+.neutral {
+  color: var(--text-muted, #667085) !important;
+}
+
+.warning {
+  color: #b54708 !important;
+}
+
+.success {
+  color: #067647 !important;
+}
+
+.usageGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.usageGrid article {
+  background: var(--surface, #fff);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border, #e4e7ec);
+}
+
+.footer > div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.footer > div strong {
+  overflow: hidden;
+  color: var(--text-strong, #101828);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.footer > div span {
+  color: var(--text-muted, #667085);
+  font-size: 12px;
+}
+
+.footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 11px;
+  color: var(--text-strong, #101828);
+  text-decoration: none;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #d0d5dd);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.footer a:first-child {
+  color: #fff;
+  background: #b42318;
+  border-color: #b42318;
+}
+
+@media (max-width: 900px) {
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .footer nav {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 620px) {
+  .panel {
+    padding: 14px;
+  }
+
+  .header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .header button {
+    width: 100%;
+  }
+
+  .metrics,
+  .usageGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer nav {
+    width: 100%;
+  }
+
+  .footer a {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
