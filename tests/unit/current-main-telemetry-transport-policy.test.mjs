@@ -8,16 +8,15 @@ const migrations = fs.readdirSync(migrationsUrl)
   .sort()
   .map((name) => fs.readFileSync(new URL(name, migrationsUrl), 'utf8'))
   .join('\n');
-const ingest = fs.readFileSync(new URL('../../supabase/functions/telemetry-ingest/index.ts', import.meta.url), 'utf8');
-const deviceManagement = fs.readFileSync(new URL('../../components/features/AdminTelemetryDevices.tsx', import.meta.url), 'utf8');
 
-test('current telemetry records authoritative successful transport time and exposes per-network usage', () => {
-  assert.match(ingest, /patch\.last_transport\s*=\s*transport/);
-  assert.match(ingest, /patch\.last_transport_at\s*=\s*new Date\(\)\.toISOString\(\)/);
+test('current telemetry stamps successful transport receipt time and exposes region-scoped per-network usage', () => {
   assert.match(migrations, /add column if not exists last_transport_at timestamptz/i);
+  assert.match(migrations, /before update of last_transport on public\.telemetry_devices/i);
+  assert.match(migrations, /new\.last_transport_at\s*:=\s*now\(\)/i);
   assert.match(migrations, /create or replace function public\.get_telemetry_transport_usage\s*\(/i);
+  assert.match(migrations, /perform public\.assert_telemetry_region_selected\s*\(\s*\)/i);
+  assert.match(migrations, /public\.telemetry_region_allows_device\s*\(\s*d\.id\s*\)/i);
   assert.match(migrations, /group by\s+u\.device_id\s*,\s*u\.transport/i);
-  assert.match(deviceManagement, /get_telemetry_transport_usage/);
-  assert.match(deviceManagement, /Wi-Fi · last 30 days/);
-  assert.match(deviceManagement, /Cellular · last 30 days/);
+  assert.match(migrations, /revoke all on function public\.get_telemetry_transport_usage\(integer\) from public, anon/i);
+  assert.match(migrations, /grant execute on function public\.get_telemetry_transport_usage\(integer\) to authenticated/i);
 });
