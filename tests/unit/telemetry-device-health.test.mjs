@@ -9,14 +9,16 @@ import {
 
 const NOW = Date.UTC(2026, 8, 11, 10, 0, 0);
 
-test('device health uses the newest confirmed contact and the agreed 30-minute online window', () => {
+test('device health uses the newest confirmed contact and two effective heartbeat windows', () => {
   const staleHeartbeat = new Date(NOW - (45 * 60 * 1000)).toISOString();
   const freshUpload = new Date(NOW - (5 * 60 * 1000)).toISOString();
-  const device = { status: 'active', last_heartbeat_at: staleHeartbeat, last_seen_at: null, last_upload_at: freshUpload, last_config_ack_at: null };
+  const device = { status: 'active', last_heartbeat_at: staleHeartbeat, last_seen_at: null, last_upload_at: freshUpload, last_config_ack_at: null, heartbeat_interval_minutes: 5 };
 
   assert.equal(deviceContactAt(device), freshUpload);
   assert.equal(deviceConnectionState(device, NOW).key, 'online');
-  assert.equal(deviceConnectionState({ ...device, last_upload_at: new Date(NOW - DEVICE_ONLINE_WINDOW_MS - 1).toISOString() }, NOW).key, 'offline');
+  assert.equal(deviceConnectionState({ ...device, last_upload_at: new Date(NOW - (10 * 60 * 1000) - 1).toISOString() }, NOW).key, 'offline');
+  assert.equal(deviceConnectionState({ ...device, heartbeat_interval_minutes: 30, last_upload_at: new Date(NOW - (45 * 60 * 1000)).toISOString() }, NOW).key, 'online');
+  assert.equal(deviceConnectionState({ ...device, heartbeat_interval_minutes: null, last_upload_at: new Date(NOW - DEVICE_ONLINE_WINDOW_MS - 1).toISOString() }, NOW).key, 'offline');
   assert.equal(deviceConnectionState({ status: 'active' }, NOW).label, 'Never connected');
   assert.equal(deviceConnectionState({ ...device, status: 'disabled' }, NOW).key, 'disabled');
 });
