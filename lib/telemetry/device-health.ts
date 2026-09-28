@@ -6,6 +6,7 @@ type DeviceContactFields = {
   last_seen_at?: string | null;
   last_upload_at?: string | null;
   last_config_ack_at?: string | null;
+  heartbeat_interval_minutes?: number | null;
 };
 
 type DeviceConfigFields = {
@@ -31,6 +32,14 @@ function timeFor(value: string | null | undefined) {
   return Number.isFinite(timestamp) ? timestamp : null;
 }
 
+function onlineWindowMs(device: DeviceContactFields) {
+  const heartbeatMinutes = Number(device.heartbeat_interval_minutes);
+  if (Number.isFinite(heartbeatMinutes) && heartbeatMinutes > 0) {
+    return heartbeatMinutes * 2 * 60 * 1000;
+  }
+  return DEVICE_ONLINE_WINDOW_MS;
+}
+
 export function deviceContactAt(device: DeviceContactFields) {
   const candidates = [
     device.last_heartbeat_at,
@@ -52,7 +61,7 @@ export function deviceConnectionState(device: DeviceContactFields, now = Date.no
   const contactAt = deviceContactAt(device);
   const timestamp = timeFor(contactAt);
   if (timestamp === null) return { key: 'offline', label: 'Never connected', contactAt: null };
-  if (Math.max(0, now - timestamp) <= DEVICE_ONLINE_WINDOW_MS) return { key: 'online', label: 'Online', contactAt };
+  if (Math.max(0, now - timestamp) <= onlineWindowMs(device)) return { key: 'online', label: 'Online', contactAt };
   return { key: 'offline', label: 'Offline', contactAt };
 }
 
