@@ -4,6 +4,7 @@ import { TelemetryDeviceContextLinks } from '@/components/features/TelemetryDevi
 import { AppShell } from '@/components/layout/AppShell';
 import { SpecialistWorkspaceFrame } from '@/components/telemetry-platform/SpecialistWorkspaceFrame';
 import { TelemetryDevicesWorkspace } from '@/components/telemetry-platform/TelemetryDevicesWorkspace';
+import { TelemetryNetworkUsagePanel } from '@/components/telemetry-platform/TelemetryNetworkUsagePanel';
 import { LiveDataStatus } from '@/components/ui/LiveDataStatus';
 
 export default function TelemetryDevicesPage() {
@@ -18,6 +19,7 @@ export default function TelemetryDevicesPage() {
         <TelemetryDeviceContextLinks />
         <BulkTelemetryEnrollmentControl />
         <TelemetryCommissioningQueue />
+        <TelemetryNetworkUsagePanel />
         <TelemetryDevicesWorkspace />
       </SpecialistWorkspaceFrame>
     </AppShell>
