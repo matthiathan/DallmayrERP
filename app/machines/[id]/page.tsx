@@ -3,6 +3,7 @@ import { FaultIntelligencePanel } from '@/components/telemetry-platform/FaultInt
 import { MachineDetail } from '@/components/telemetry-platform/MachineDetail';
 import { MachineFieldAcceptancePanel } from '@/components/telemetry-platform/MachineFieldAcceptancePanel';
 import { MachineLocationPanel } from '@/components/telemetry-platform/MachineLocationPanel';
+import { MachineManagementPanel } from '@/components/telemetry-platform/MachineManagementPanel';
 import { MachineOperationsSnapshot } from '@/components/telemetry-platform/MachineOperationsSnapshot';
 import { MachineTelemetryRegionControl } from '@/components/telemetry-platform/MachineTelemetryRegionControl';
 import { MachineVendReconciliationPanel } from '@/components/telemetry-platform/MachineVendReconciliationPanel';
@@ -13,6 +14,7 @@ export default async function MachineDetailsPage({ params }: { params: Promise<{
   return (
     <AppShell>
       <MachineDetail machineId={id} />
+      <MachineManagementPanel machineId={id} />
       <MachineLocationPanel machineId={id} />
       <MachineOperationsSnapshot machineId={id} />
       <MachineFieldAcceptancePanel machineId={id} />
