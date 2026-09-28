@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { MachineCreateImportControls } from '@/components/features/MachineCreateImportControls';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
@@ -14,10 +14,13 @@ import styles from './MachineFleetBrowser.module.css';
 type ConnectionStatus = 'online' | 'delayed' | 'offline' | 'never' | 'unlinked';
 type FleetFilterStatus = 'all' | ConnectionStatus | 'unconnected' | 'faults' | 'profile_attention';
 type ProfileStatus = 'configured' | 'pending' | 'ambiguous' | 'unmatched' | 'unlinked';
+type CommissioningStatus = 'ready' | 'no_device' | 'never_connected' | 'profile_attention' | 'configuration_pending' | 'mapping_attention';
+type CommissioningFilter = 'all' | CommissioningStatus;
 
 type MachineFleetRow = {
   id: string;
   branch: string;
+  customer_id: string | null;
   site_id: string | null;
   serial_number: string | null;
   machine_barcode: string | null;
@@ -27,6 +30,8 @@ type MachineFleetRow = {
   asset_status: string;
   current_custodian: string | null;
   manufacturer: string | null;
+  customer_name: string | null;
+  customer_code: string | null;
   site_name: string;
   location: string;
   device_id: string | null;
@@ -54,25 +59,54 @@ type MachineFleetRow = {
   fault_count: number;
   last_contact: string | null;
   connection_status: ConnectionStatus;
+  commissioning_status: CommissioningStatus;
+  configuration_pending: boolean;
+  mapping_attention: boolean;
 };
 
-type FleetSummary = Record<ConnectionStatus, number> & { active_faults: number; profile_attention: number };
+type FleetSummary = Record<ConnectionStatus, number> & {
+  active_faults: number;
+  profile_attention: number;
+  commissioning_ready: number;
+  commissioning_attention: number;
+};
+type CustomerOption = { customer_id: string; customer_name: string; customer_code: string | null };
+type SiteOption = { site_id: string; customer_id: string | null; site_name: string };
 type FleetPayload = {
   rows?: MachineFleetRow[];
   total?: number;
   fleet_total?: number;
   summary?: Partial<FleetSummary>;
   branches?: string[];
+  customers?: CustomerOption[];
+  sites?: SiteOption[];
   limit?: number;
   offset?: number;
   generated_at?: string;
 };
 
-type SavedFleetView = { search: string; branch: string; status: FleetFilterStatus };
+type SavedFleetView = {
+  search: string;
+  branch: string;
+  status: FleetFilterStatus;
+  customerId: string | null;
+  siteId: string | null;
+  commissioning: CommissioningFilter;
+};
 
 const TABLE_PAGE_SIZE = 75;
-const FILTER_STORAGE_KEY = 'dallmayr-machine-fleet-view-v1';
-const EMPTY_SUMMARY: FleetSummary = { online: 0, delayed: 0, offline: 0, never: 0, unlinked: 0, active_faults: 0, profile_attention: 0 };
+const FILTER_STORAGE_KEY = 'dallmayr-machine-fleet-view-v2';
+const EMPTY_SUMMARY: FleetSummary = {
+  online: 0,
+  delayed: 0,
+  offline: 0,
+  never: 0,
+  unlinked: 0,
+  active_faults: 0,
+  profile_attention: 0,
+  commissioning_ready: 0,
+  commissioning_attention: 0,
+};
 
 function titleFor(machine: MachineFleetRow) {
   return machine.machine_name ?? machine.model ?? machine.serial_number ?? machine.asset_tag ?? 'Unnamed machine';
@@ -112,6 +146,28 @@ function profileEvidenceLabel(machine: MachineFleetRow) {
   return `${evidence} · ${machine.profile_confidence} confidence`;
 }
 
+function commissioningLabel(status: CommissioningStatus) {
+  switch (status) {
+    case 'ready': return 'Ready for field test';
+    case 'no_device': return 'No device';
+    case 'never_connected': return 'Never connected';
+    case 'profile_attention': return 'Profile / link attention';
+    case 'configuration_pending': return 'Configuration pending';
+    case 'mapping_attention': return 'Mapping attention';
+  }
+}
+
+function commissioningPillClass(status: CommissioningStatus) {
+  const visualStatus: ProfileStatus = status === 'ready'
+    ? 'configured'
+    : status === 'configuration_pending'
+      ? 'pending'
+      : status === 'no_device' || status === 'never_connected'
+        ? 'unlinked'
+        : 'unmatched';
+  return `${styles.profilePill} ${styles[`profile_${visualStatus}`]}`;
+}
+
 function contactAge(value: string | null) {
   if (!value) return 'Never';
   const seconds = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 1000));
@@ -127,14 +183,21 @@ function normaliseRow(row: MachineFleetRow): MachineFleetRow {
   return {
     ...row,
     profile_status: row.profile_status ?? (row.device_id ? 'unmatched' : 'unlinked'),
+    commissioning_status: row.commissioning_status ?? (row.device_id ? 'profile_attention' : 'no_device'),
     fault_count: Number(row.fault_count ?? 0),
     wifi_rssi: row.wifi_rssi === null || row.wifi_rssi === undefined ? null : Number(row.wifi_rssi),
     cellular_csq: row.cellular_csq === null || row.cellular_csq === undefined ? null : Number(row.cellular_csq),
+    configuration_pending: Boolean(row.configuration_pending),
+    mapping_attention: Boolean(row.mapping_attention),
   };
 }
 
 function isFleetFilterStatus(value: unknown): value is FleetFilterStatus {
   return typeof value === 'string' && ['all', 'online', 'delayed', 'offline', 'never', 'unlinked', 'unconnected', 'faults', 'profile_attention'].includes(value);
+}
+
+function isCommissioningFilter(value: unknown): value is CommissioningFilter {
+  return typeof value === 'string' && ['all', 'ready', 'no_device', 'never_connected', 'profile_attention', 'configuration_pending', 'mapping_attention'].includes(value);
 }
 
 export function MachineFleetBrowser() {
@@ -145,11 +208,16 @@ export function MachineFleetBrowser() {
   const [search, setSearch] = useState('');
   const [branch, setBranch] = useState('all');
   const [status, setStatus] = useState<FleetFilterStatus>('all');
+  const [customerId, setCustomerId] = useState<string | null>(null);
+  const [siteId, setSiteId] = useState<string | null>(null);
+  const [commissioning, setCommissioning] = useState<CommissioningFilter>('all');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [fleetTotal, setFleetTotal] = useState(0);
   const [summary, setSummary] = useState<FleetSummary>(EMPTY_SUMMARY);
   const [branches, setBranches] = useState<string[]>([]);
+  const [customers, setCustomers] = useState<CustomerOption[]>([]);
+  const [sites, setSites] = useState<SiteOption[]>([]);
   const [filtersReady, setFiltersReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -166,6 +234,9 @@ export function MachineFleetBrowser() {
         setSearch(savedSearch);
         setBranch(typeof saved.branch === 'string' && saved.branch ? saved.branch : 'all');
         setStatus(isFleetFilterStatus(saved.status) ? saved.status : 'all');
+        setCustomerId(typeof saved.customerId === 'string' && saved.customerId ? saved.customerId : null);
+        setSiteId(typeof saved.siteId === 'string' && saved.siteId ? saved.siteId : null);
+        setCommissioning(isCommissioningFilter(saved.commissioning) ? saved.commissioning : 'all');
       }
     } catch {
       safeLocalStorageRemove(FILTER_STORAGE_KEY);
@@ -185,9 +256,9 @@ export function MachineFleetBrowser() {
 
   useEffect(() => {
     if (!filtersReady) return;
-    const saved: SavedFleetView = { search: searchInput.trim(), branch, status };
+    const saved: SavedFleetView = { search: searchInput.trim(), branch, status, customerId, siteId, commissioning };
     safeLocalStorageSet(FILTER_STORAGE_KEY, JSON.stringify(saved));
-  }, [branch, filtersReady, searchInput, status]);
+  }, [branch, commissioning, customerId, filtersReady, searchInput, siteId, status]);
 
   const loadFleet = useCallback(async (quiet = false, pageOverride?: number) => {
     if (!filtersReady) return;
@@ -200,6 +271,9 @@ export function MachineFleetBrowser() {
         p_search: search,
         p_branch: branch,
         p_status: status,
+        p_customer_id: customerId,
+        p_site_id: siteId,
+        p_commissioning: commissioning,
         p_offset: (targetPage - 1) * TABLE_PAGE_SIZE,
         p_limit: TABLE_PAGE_SIZE,
       });
@@ -217,8 +291,12 @@ export function MachineFleetBrowser() {
         unlinked: Number(nextSummary.unlinked ?? 0),
         active_faults: Number(nextSummary.active_faults ?? 0),
         profile_attention: Number(nextSummary.profile_attention ?? 0),
+        commissioning_ready: Number(nextSummary.commissioning_ready ?? 0),
+        commissioning_attention: Number(nextSummary.commissioning_attention ?? 0),
       });
       setBranches((payload.branches ?? []).filter(Boolean));
+      setCustomers(payload.customers ?? []);
+      setSites(payload.sites ?? []);
       setLastUpdated(payload.generated_at ? new Date(payload.generated_at) : new Date());
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Could not load the machine fleet.');
@@ -226,7 +304,7 @@ export function MachineFleetBrowser() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [branch, filtersReady, page, search, status]);
+  }, [branch, commissioning, customerId, filtersReady, page, search, siteId, status]);
 
   useEffect(() => { loadFleet(false).catch(() => undefined); }, [loadFleet]);
 
@@ -238,10 +316,21 @@ export function MachineFleetBrowser() {
 
   const pageCount = Math.max(1, Math.ceil(total / TABLE_PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
+  const availableSites = useMemo(() => {
+    if (!customerId) return sites;
+    return sites.reduce<SiteOption[]>((result, site) => {
+      if (site.customer_id === customerId) result.push(site);
+      return result;
+    }, []);
+  }, [customerId, sites]);
 
   useEffect(() => {
     if (page > pageCount) setPage(pageCount);
   }, [page, pageCount]);
+
+  useEffect(() => {
+    if (siteId && !availableSites.some((site) => site.site_id === siteId)) setSiteId(null);
+  }, [availableSites, siteId]);
 
   const refreshAll = useCallback(async () => {
     if (page !== 1) {
@@ -256,6 +345,9 @@ export function MachineFleetBrowser() {
     setSearch('');
     setBranch('all');
     setStatus('all');
+    setCustomerId(null);
+    setSiteId(null);
+    setCommissioning('all');
     setPage(1);
   };
 
@@ -267,7 +359,7 @@ export function MachineFleetBrowser() {
   return (
     <section className={styles.workspace} data-machine-browser="televend-v3">
       <header className={styles.header}>
-        <div className={styles.headerCopy}><h1>Machines</h1><p>Live machine status, faults, connectivity, decoder profile and device assignment.</p></div>
+        <div className={styles.headerCopy}><h1>Machines</h1><p>Live machine status, customer/site scope, commissioning readiness, faults, decoder profile and device assignment.</p></div>
         <div className={styles.headerActions}>
           <button className={styles.headerButton} disabled={refreshing} onClick={() => loadFleet(true)} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button>
           {!isClient ? <MachineCreateImportControls onChanged={refreshAll} /> : null}
@@ -288,25 +380,29 @@ export function MachineFleetBrowser() {
         </section>
 
         <section className={styles.filters} aria-label="Machine filters">
-          <label className={styles.search}><NavigationIcon kind="search" /><input aria-label="Search machines" placeholder="Search machine, serial, QR, site, device, model or profile" value={searchInput} onChange={(event) => setSearchInput(event.target.value)} /></label>
+          <label className={styles.search}><NavigationIcon kind="search" /><input aria-label="Search machines" placeholder="Search machine, serial, QR, customer, site, device, model or profile" value={searchInput} onChange={(event) => setSearchInput(event.target.value)} /></label>
           <label className={styles.filterLabel}><span>Branch</span><select value={branch} onChange={(event) => { setBranch(event.target.value); setPage(1); }}><option value="all">All branches</option>{branches.map((value) => <option key={value} value={value}>{value.toUpperCase()}</option>)}</select></label>
+          <label className={styles.filterLabel}><span>Customer</span><select value={customerId ?? ''} onChange={(event) => { setCustomerId(event.target.value || null); setSiteId(null); setPage(1); }}><option value="">All customers</option>{customers.map((customer) => <option key={customer.customer_id} value={customer.customer_id}>{customer.customer_name}{customer.customer_code ? ` · ${customer.customer_code}` : ''}</option>)}</select></label>
+          <label className={styles.filterLabel}><span>Site</span><select value={siteId ?? ''} onChange={(event) => { setSiteId(event.target.value || null); setPage(1); }}><option value="">All sites</option>{availableSites.map((site) => <option key={site.site_id} value={site.site_id}>{site.site_name}</option>)}</select></label>
           <label className={styles.filterLabel}><span>Operational view</span><select value={status} onChange={(event) => { setStatus(event.target.value as FleetFilterStatus); setPage(1); }}><option value="all">All machines</option><option value="online">Online</option><option value="delayed">Delayed</option><option value="offline">Offline</option><option value="unconnected">No device / never connected</option><option value="never">Never connected</option><option value="unlinked">No device</option><option value="faults">Active faults</option><option value="profile_attention">Profile attention</option></select></label>
+          <label className={styles.filterLabel}><span>Commissioning</span><select value={commissioning} onChange={(event) => { setCommissioning(event.target.value as CommissioningFilter); setPage(1); }}><option value="all">All readiness states</option><option value="ready">Ready for field test</option><option value="no_device">No device</option><option value="never_connected">Never connected</option><option value="profile_attention">Profile / link attention</option><option value="configuration_pending">Configuration pending</option><option value="mapping_attention">Mapping attention</option></select></label>
           <button className={styles.clearButton} onClick={clearFilters} type="button">Clear saved filters</button>
         </section>
 
         <section className={styles.listCard}>
-          <header className={styles.listHeader}><div><strong>Machine overview</strong><small>Faults and decoder-profile attention are prioritised within each result page.</small></div><span>{total.toLocaleString('en-ZA')} of {fleetTotal.toLocaleString('en-ZA')} machines · updated {lastUpdated ? lastUpdated.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '—'}</span></header>
+          <header className={styles.listHeader}><div><strong>Machine overview</strong><small>{summary.commissioning_ready.toLocaleString('en-ZA')} ready for field test · {summary.commissioning_attention.toLocaleString('en-ZA')} need commissioning attention.</small></div><span>{total.toLocaleString('en-ZA')} of {fleetTotal.toLocaleString('en-ZA')} machines · updated {lastUpdated ? lastUpdated.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '—'}</span></header>
 
           {total === 0 ? <div className={styles.empty}>No machines match the selected filters.</div> : <>
             <div className={styles.tableScroll}>
               <table className={styles.table}>
-                <thead><tr><th>Machine</th><th>Status</th><th>Location</th><th>Telemetry device</th><th>Profile</th><th>Network</th><th>Signal</th><th>Faults</th><th>Last contact</th><th>Quick actions</th></tr></thead>
+                <thead><tr><th>Machine</th><th>Status</th><th>Customer / site</th><th>Telemetry device</th><th>Commissioning</th><th>Profile</th><th>Network</th><th>Signal</th><th>Faults</th><th>Last contact</th><th>Quick actions</th></tr></thead>
                 <tbody>{rows.map((machine) => (
                   <tr key={machine.id}>
                     <td className={`${styles.machineCell} ${styles[`status_${machine.connection_status}`]}`}><Link className={styles.machineLink} href={`/machines/${machine.id}`}><strong>{titleFor(machine)}</strong><span>{machine.serial_number ?? 'No serial'} · QR {machine.machine_barcode ?? machine.asset_tag ?? '—'}</span></Link></td>
                     <td><span className={`${styles.statusPill} ${styles[`is_${machine.connection_status}`]}`}><i />{statusLabel(machine.connection_status)}</span></td>
-                    <td><strong>{machine.site_name}</strong><div className={styles.secondary}>{machine.location}</div></td>
+                    <td><strong>{machine.customer_name ?? 'Unassigned customer'}</strong><div className={styles.secondary}>{machine.site_name} · {machine.location}</div></td>
                     <td>{machine.device_id ? <><strong>{machine.device_code}</strong><div className={styles.secondary}>{machine.telemetry_mode ?? 'live'} · {machine.machine_status ?? 'unknown'}</div></> : <span className={styles.secondary}>Not assigned</span>}</td>
+                    <td><span className={commissioningPillClass(machine.commissioning_status)}>{commissioningLabel(machine.commissioning_status)}</span></td>
                     <td><span className={profilePillClass(machine.profile_status)}>{profileLabel(machine)}</span><div className={styles.secondary}>{profileEvidenceLabel(machine)}</div></td>
                     <td><div className={styles.network}><strong>{transportLabel(machine)}</strong><span className={styles.secondary}>{machine.cellular_operator ?? machine.firmware_version ?? '—'}</span></div></td>
                     <td>{machine.device_id ? <SignalStrengthIndicator cellularCsq={machine.cellular_csq} transport={machine.last_transport} wifiRssi={machine.wifi_rssi} /> : <span className={styles.secondary}>—</span>}</td>
@@ -322,9 +418,10 @@ export function MachineFleetBrowser() {
               {rows.map((machine) => (
                 <article className={`${styles.machineMobile} ${styles[`status_${machine.connection_status}`]}`} key={machine.id}>
                   <Link className={styles.mobileOpen} href={`/machines/${machine.id}`}>
-                    <div className={styles.mobileMain}><strong>{titleFor(machine)}</strong><span>{machine.site_name}</span><small>{machine.location}</small></div>
+                    <div className={styles.mobileMain}><strong>{titleFor(machine)}</strong><span>{machine.customer_name ?? 'Unassigned customer'} · {machine.site_name}</span><small>{machine.location}</small></div>
                     <div className={styles.mobileSide}><span className={`${styles.statusPill} ${styles[`is_${machine.connection_status}`]}`}><i />{statusLabel(machine.connection_status)}</span>{machine.fault_count ? <b>{machine.fault_count} fault{machine.fault_count === 1 ? '' : 's'}</b> : null}</div>
                     <div className={styles.mobileMeta}><span>{machine.serial_number ?? 'No serial'}</span><span>·</span><span>{transportLabel(machine)}</span><span>·</span><span>{contactAge(machine.last_contact)}</span></div>
+                    <div className={styles.mobileProfile}><span className={commissioningPillClass(machine.commissioning_status)}>{commissioningLabel(machine.commissioning_status)}</span><small>Commissioning</small></div>
                     <div className={styles.mobileProfile}><span className={profilePillClass(machine.profile_status)}>{profileLabel(machine)}</span><small>{profileEvidenceLabel(machine)}</small></div>
                   </Link>
                   <div className={styles.mobileActions}><Link href={`/machines/${machine.id}`}>Dashboard</Link>{!isClient && machine.device_code ? <Link href={`/telemetry/test-center?device=${encodeURIComponent(machine.device_code)}`}>Test Center</Link> : null}{!isClient ? <Link href="/products">Mappings</Link> : null}</div>
