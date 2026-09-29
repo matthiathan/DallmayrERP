@@ -183,7 +183,7 @@ test('rebuilt machine detail workspace exposes telemetry, identity, lifetime cup
   await expect(detail.getByRole('heading', { name: 'DALL-TEL-001' })).toBeVisible();
   await expect(detail.getByText('ESP32S3-TEST-001', { exact: true })).toBeVisible();
   await expect(detail.getByText('Reporting mode', { exact: true })).toBeVisible();
-  await expect(detail.getByText('Live', { exact: true })).toBeVisible();
+  await expect(detail.getByRole('button', { name: 'Live', exact: true })).toBeDisabled();
   await expect(detail.locator('[data-machine-identification="ready"]')).toBeVisible();
 
   const overflow = await page.evaluate(() => ({
