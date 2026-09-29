@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
+import { formatLocalDate } from '@/lib/dates/local-date';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { TelemetryRegion } from '@/types/dallmayrerp';
 import styles from './OnboardingPage.module.css';
@@ -148,7 +149,7 @@ export default function OnboardingPage() {
             </label>
             <label>
               Birthday
-              <input max={new Date().toISOString().slice(0, 10)} onChange={(event) => setBirthday(event.target.value)} required type="date" value={birthday} />
+              <input max={formatLocalDate()} onChange={(event) => setBirthday(event.target.value)} required type="date" value={birthday} />
             </label>
             <label>
               Emergency contact name
