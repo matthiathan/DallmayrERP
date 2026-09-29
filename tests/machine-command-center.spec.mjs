@@ -66,6 +66,8 @@ async function installMock(page) {
       auth_user_id: authUserId,
       email: session.user.email,
       is_active: true,
+      account_scope: 'dallmayr',
+      customer_id: null,
       access_note: null,
       access_updated_by: null,
       access_updated_at: null,
@@ -81,6 +83,7 @@ async function installMock(page) {
       birthday: '1990-01-01',
       role: 'admin',
       branch: 'national',
+      telemetry_region: 'south_africa',
       emergency_contact_name: 'Test',
       emergency_contact_phone: '0820000000',
       created_at: '2026-01-01T00:00:00.000Z',
@@ -92,8 +95,9 @@ async function installMock(page) {
       id: 'machine-1', branch: 'jhb', customer_id: 'customer-1', site_id: 'site-1', asset_tag: 'AST-001', serial_number: 'BEL-001', machine_barcode: 'QR-BEL-001', machine_name: 'Belluno 01', model: 'Belluno', status: 'active', current_custodian: null, manufacturer: 'Dallmayr', condition: 'good', criticality: 'standard', installed_at: '2026-01-10T08:00:00.000Z', last_service_at: '2026-08-01T08:00:00.000Z', next_service_at: '2026-10-01T08:00:00.000Z',
     }));
     if (url.pathname === '/rest/v1/telemetry_devices') return route.fulfill(jsonResponse({
-      id: 'device-1', device_code: 'DALL-TEL-001', status: 'active', profile_id: null, firmware_version: '6.8.41', wifi_rssi: -58, cellular_csq: 24, cellular_operator: 'Vodacom', cellular_model: 'Air780EU', last_transport: 'cellular', transport_preference: 'cellular', telemetry_mode: 'live', last_seen_at: new Date().toISOString(), last_upload_at: new Date().toISOString(), last_counter_at: new Date().toISOString(), last_heartbeat_at: new Date().toISOString(), last_config_at: new Date().toISOString(), last_config_ack_at: new Date().toISOString(), hardware_uid: 'ESP32S3-TEST-001', reported_machine_serial: 'BEL-001', machine_link_status: 'linked', machine_link_method: 'automatic',
+      id: 'device-1', device_code: 'DALL-TEL-001', status: 'active', profile_id: null, firmware_version: '6.8.41', wifi_rssi: -58, cellular_csq: 24, cellular_operator: 'Vodacom', cellular_model: 'Air780EU', last_transport: 'cellular', transport_preference: 'cellular', last_seen_at: new Date().toISOString(), last_upload_at: new Date().toISOString(), last_counter_at: new Date().toISOString(), last_heartbeat_at: new Date().toISOString(), last_config_at: new Date().toISOString(), last_config_ack_at: new Date().toISOString(), hardware_uid: 'ESP32S3-TEST-001', reported_machine_serial: 'BEL-001', machine_link_status: 'linked', machine_link_method: 'automatic',
     }));
+    if (url.pathname === '/rest/v1/telemetry_machine_state') return route.fulfill(jsonResponse({ telemetry_mode: 'live', machine_status: 'online', active_fault_count: 1, last_device_contact_at: new Date().toISOString() }));
     if (url.pathname === '/rest/v1/customer_sites') return route.fulfill(jsonResponse({ id: 'site-1', site_name: 'Johannesburg Test Site', address: '1 Test Road, Johannesburg', latitude: -26.2041, longitude: 28.0473 }));
     if (url.pathname === '/rest/v1/customers') return route.fulfill(jsonResponse({ id: 'customer-1', customer_name: 'Test Customer', customer_code: 'TC001' }));
     if (url.pathname === '/rest/v1/telemetry_fault_events') return route.fulfill(jsonResponse([
