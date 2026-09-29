@@ -33,7 +33,7 @@ function modeCopy(mode: LoginMode) {
   if (mode === 'signup') {
     return {
       title: 'Create your telemetry account',
-      description: 'Create one secure account for the shared machine and telemetry workspace.',
+      description: 'Create one secure account, then choose your telemetry region and complete your profile.',
       submit: 'Create account',
     };
   }
@@ -46,7 +46,7 @@ function modeCopy(mode: LoginMode) {
   }
   return {
     title: 'Sign in',
-    description: 'Use your Dallmayr South Africa telemetry account to continue.',
+    description: 'Use your Dallmayr telemetry account to continue.',
     submit: 'Sign in',
   };
 }
@@ -71,7 +71,7 @@ export default function LoginPage() {
     if (remembered) setEmail(safeLocalStorageGet(REMEMBERED_EMAIL_KEY) ?? '');
 
     if (new URLSearchParams(window.location.search).get('access') === 'inactive') {
-      setError('Your account does not have active DallmayrERP access. Contact an administrator.');
+      setError('Your account does not have active DallmayrERP access. Please sign in again or contact support if the problem continues.');
     }
   }, []);
 
@@ -122,16 +122,16 @@ export default function LoginPage() {
           const { data: activeAccess, error: activeAccessError } = await client.rpc('is_active_app_user');
           if (activeAccessError || activeAccess !== true) {
             await client.auth.signOut();
-            setSuccess('Account created. An administrator must activate your DallmayrERP access before you can sign in.');
+            setSuccess('Account created. Sign in again to continue with your first-time setup.');
             setMode('login');
             setPassword('');
             setConfirmPassword('');
             return;
           }
-          router.replace(loginDestination());
+          router.replace('/onboarding');
           return;
         }
-        setSuccess('Account created. Check your email to confirm it. An administrator must also activate your DallmayrERP access.');
+        setSuccess('Account created. Check your email to confirm it, then sign in to choose your region and complete your profile.');
         setMode('login');
         setPassword('');
         setConfirmPassword('');
@@ -151,7 +151,7 @@ export default function LoginPage() {
       const { data: activeAccess, error: activeAccessError } = await client.rpc('is_active_app_user');
       if (activeAccessError || activeAccess !== true) {
         await client.auth.signOut();
-        return setError('Your account does not have active DallmayrERP access. Contact an administrator.');
+        return setError('Your account does not have active DallmayrERP access. Please try again or contact support if the problem continues.');
       }
 
       router.replace(loginDestination());

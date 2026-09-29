@@ -113,7 +113,6 @@ for (const fileName of moduleFiles) {
 }
 
 for (const retiredRoute of [
-  'app/onboarding/page.tsx',
   'app/operations/service-jobs/page.tsx',
   'app/operations/deliveries/page.tsx',
   'app/executive/reports/page.tsx',

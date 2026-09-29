@@ -12,6 +12,7 @@ import styles from './MachineDetail.module.css';
 
 type Period = 'day' | 'week' | 'month' | 'six_months';
 type Tab = 'overview' | 'vends' | 'events' | 'device';
+type TelemetryMode = 'live' | 'daily' | 'monthly';
 
 type Machine = {
   id: string;
@@ -48,7 +49,6 @@ type Device = {
   cellular_model: string | null;
   last_transport: 'wifi' | 'cellular' | null;
   transport_preference: 'auto' | 'wifi' | 'cellular';
-  telemetry_mode: 'live' | 'daily' | 'monthly' | null;
   last_seen_at: string | null;
   last_upload_at: string | null;
   last_counter_at: string | null;
@@ -59,6 +59,13 @@ type Device = {
   reported_machine_serial: string | null;
   machine_link_status: string | null;
   machine_link_method: string | null;
+};
+
+type MachineState = {
+  telemetry_mode: TelemetryMode | null;
+  machine_status: string | null;
+  active_fault_count: number | null;
+  last_device_contact_at: string | null;
 };
 
 type Sale = {
@@ -95,6 +102,7 @@ type Usage = {
 type Prepaid = { device_id: string; remaining_bytes: number | null; query_status: string; alert_level: string; checked_at: string | null; is_stale: boolean };
 
 const periods: Record<Period, string> = { day: 'Today', week: '7 days', month: '30 days', six_months: '6 months' };
+const telemetryModes: Record<TelemetryMode, string> = { live: 'Live', daily: 'Daily', monthly: 'Monthly' };
 
 function numberValue(value: unknown) {
   const parsed = Number(value ?? 0);
@@ -189,6 +197,7 @@ export function MachineDetail({ machineId }: { machineId: string }) {
   const [site, setSite] = useState<Site | null>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [device, setDevice] = useState<Device | null>(null);
+  const [machineState, setMachineState] = useState<MachineState | null>(null);
   const [sales, setSales] = useState<Sale[]>([]);
   const [counters, setCounters] = useState<Counter[]>([]);
   const [mappedProducts, setMappedProducts] = useState<ProductMapping[]>([]);
@@ -196,6 +205,7 @@ export function MachineDetail({ machineId }: { machineId: string }) {
   const [usage, setUsage] = useState<Usage | null>(null);
   const [prepaid, setPrepaid] = useState<Prepaid | null>(null);
   const [loading, setLoading] = useState(true);
+  const [modeSaving, setModeSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [updated, setUpdated] = useState<Date | null>(null);
 
@@ -215,7 +225,7 @@ export function MachineDetail({ machineId }: { machineId: string }) {
       const nextMachine = machineData as Machine;
       const { data: deviceData, error: deviceError } = await client
         .from('telemetry_devices')
-        .select('id,device_code,status,profile_id,firmware_version,wifi_rssi,cellular_csq,cellular_operator,cellular_model,last_transport,transport_preference,telemetry_mode,last_seen_at,last_upload_at,last_counter_at,last_heartbeat_at,last_config_at,last_config_ack_at,hardware_uid,reported_machine_serial,machine_link_status,machine_link_method')
+        .select('id,device_code,status,profile_id,firmware_version,wifi_rssi,cellular_csq,cellular_operator,cellular_model,last_transport,transport_preference,last_seen_at,last_upload_at,last_counter_at,last_heartbeat_at,last_config_at,last_config_ack_at,hardware_uid,reported_machine_serial,machine_link_status,machine_link_method')
         .eq('machine_id', machineId)
         .eq('status', 'active')
         .order('updated_at', { ascending: false })
@@ -231,13 +241,14 @@ export function MachineDetail({ machineId }: { machineId: string }) {
         : '';
       const modelKey = effectiveProfileKey || nextMachine.model || nextMachine.machine_name || '';
 
-      const [siteQuery, customerQuery, faultQuery, salesQuery, mappingQuery] = await Promise.all([
+      const [siteQuery, customerQuery, stateQuery, faultQuery, salesQuery, mappingQuery] = await Promise.all([
         nextMachine.site_id
           ? client.from('customer_sites').select('id,site_name,address,latitude,longitude').eq('id', nextMachine.site_id).maybeSingle()
           : Promise.resolve({ data: null, error: null }),
         nextMachine.customer_id
           ? client.from('customers').select('id,customer_name,customer_code').eq('id', nextMachine.customer_id).maybeSingle()
           : Promise.resolve({ data: null, error: null }),
+        client.from('telemetry_machine_state').select('telemetry_mode,machine_status,active_fault_count,last_device_contact_at').eq('machine_id', machineId).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
         client.from('telemetry_fault_events').select('id,fault_code,severity,source,detail,started_at,last_seen_at,cleared_at').eq('machine_id', machineId).order('last_seen_at', { ascending: false }).limit(250),
         client.from('telemetry_daily_item_sales').select('id,sales_date,selection_code,product_key,sku,product_name,brand,units_sold,failed_vends,revenue_cents,last_received_at').eq('machine_id', machineId).gte('sales_date', range.previousStart).lte('sales_date', range.currentEnd).order('sales_date', { ascending: true }).limit(5000),
         modelKey ? client.rpc('get_machine_model_button_map', { p_model_key: modelKey }) : Promise.resolve({ data: [], error: null }),
@@ -245,6 +256,7 @@ export function MachineDetail({ machineId }: { machineId: string }) {
 
       if (siteQuery.error) throw siteQuery.error;
       if (customerQuery.error) throw customerQuery.error;
+      if (stateQuery.error) throw stateQuery.error;
       if (faultQuery.error) throw faultQuery.error;
       if (salesQuery.error) throw salesQuery.error;
 
@@ -265,6 +277,7 @@ export function MachineDetail({ machineId }: { machineId: string }) {
 
       setMachine(nextMachine);
       setDevice(nextDevice);
+      setMachineState(stateQuery.data as MachineState | null);
       setSite(siteQuery.data as Site | null);
       setCustomer(customerQuery.data as Customer | null);
       setFaults((faultQuery.data ?? []) as Fault[]);
@@ -286,6 +299,24 @@ export function MachineDetail({ machineId }: { machineId: string }) {
     const timer = globalThis.setInterval(() => { void load(); }, 30_000);
     return () => globalThis.clearInterval(timer);
   }, [load]);
+
+  async function setReportingMode(mode: TelemetryMode) {
+    if (!device || modeSaving || machineState?.telemetry_mode === mode) return;
+    setModeSaving(true);
+    setError(null);
+    try {
+      const { error: modeError } = await getSupabaseClient().rpc('set_telemetry_device_mode', {
+        p_device_code: device.device_code,
+        p_mode: mode,
+      });
+      if (modeError) throw modeError;
+      await load();
+    } catch (modeError) {
+      setError(modeError instanceof Error ? modeError.message : 'Could not update the device reporting mode.');
+    } finally {
+      setModeSaving(false);
+    }
+  }
 
   const range = reportWindow(period);
   const current = sales.filter((row) => row.sales_date >= range.currentStart && row.sales_date <= range.currentEnd);
@@ -367,7 +398,7 @@ export function MachineDetail({ machineId }: { machineId: string }) {
         <div className={styles.actionFacts}>
           <div><span>Device</span><strong>{device?.device_code ?? 'Not assigned'}</strong></div>
           <div><span>Network</span><strong>{device?.last_transport === 'wifi' ? 'Wi-Fi' : device?.last_transport === 'cellular' ? 'Cellular' : 'Not reported'}</strong></div>
-          <div><span>Last contact</span><strong>{age(device?.last_heartbeat_at ?? device?.last_seen_at ?? null)}</strong></div>
+          <div><span>Last contact</span><strong>{age(machineState?.last_device_contact_at ?? device?.last_heartbeat_at ?? device?.last_seen_at ?? null)}</strong></div>
           <div><span>Open faults</span><strong className={openFaults.length ? styles.actionAlert : ''}>{openFaults.length}</strong></div>
         </div>
         <div className={styles.actionLinks}>
@@ -424,7 +455,7 @@ export function MachineDetail({ machineId }: { machineId: string }) {
               <div><dt>Model</dt><dd>{machine.model ?? 'Not recorded'}</dd></div><div><dt>Manufacturer</dt><dd>{machine.manufacturer ?? 'Not recorded'}</dd></div><div><dt>QR code</dt><dd>{machine.machine_barcode ?? machine.asset_tag ?? 'Not recorded'}</dd></div><div><dt>Condition</dt><dd>{machine.condition ?? machine.status}</dd></div><div><dt>Client</dt><dd>{customer?.customer_name ?? 'Not assigned'}</dd></div><div><dt>Location</dt><dd>{site?.address ?? machine.current_custodian ?? 'Not recorded'}</dd></div>
             </dl></article>
             <article className={styles.card}><header className={styles.cardHeader}><div><span>Connectivity</span><h2>Telemetry health</h2></div></header><dl className={styles.detailList}>
-              <div><dt>Transport</dt><dd>{device?.last_transport === 'wifi' ? 'Wi-Fi' : device?.last_transport === 'cellular' ? 'Cellular' : 'Not reported'}</dd></div><div><dt>Signal</dt><dd className={styles.signalRow}>{device ? <SignalStrengthIndicator cellularCsq={device.cellular_csq} transport={device.last_transport} wifiRssi={device.wifi_rssi} /> : null}</dd></div><div><dt>Last contact</dt><dd>{age(state.contactAt ?? null)}</dd></div><div><dt>Configuration</dt><dd>{configState?.label ?? 'Not reported'}</dd></div><div><dt>Firmware</dt><dd>{device?.firmware_version ?? 'Not reported'}</dd></div><div><dt>Operator</dt><dd>{device?.cellular_operator ?? 'Not reported'}</dd></div>
+              <div><dt>Transport</dt><dd>{device?.last_transport === 'wifi' ? 'Wi-Fi' : device?.last_transport === 'cellular' ? 'Cellular' : 'Not reported'}</dd></div><div><dt>Signal</dt><dd className={styles.signalRow}>{device ? <SignalStrengthIndicator cellularCsq={device.cellular_csq} transport={device.last_transport} wifiRssi={device.wifi_rssi} /> : null}</dd></div><div><dt>Last contact</dt><dd>{age(machineState?.last_device_contact_at ?? state.contactAt ?? null)}</dd></div><div><dt>Configuration</dt><dd>{configState?.label ?? 'Not reported'}</dd></div><div><dt>Firmware</dt><dd>{device?.firmware_version ?? 'Not reported'}</dd></div><div><dt>Operator</dt><dd>{device?.cellular_operator ?? 'Not reported'}</dd></div>
             </dl></article>
             <article className={styles.card}><header className={styles.cardHeader}><div><span>SIM & data</span><h2>Connectivity usage</h2></div></header><dl className={styles.detailList}>
               <div><dt>30-day transfer</dt><dd>{bytes(usedBytes)}</dd></div><div><dt>Monthly projection</dt><dd>{bytes(projectedBytes)}</dd></div><div><dt>Prepaid remaining</dt><dd>{prepaid?.remaining_bytes != null ? bytes(prepaid.remaining_bytes) : 'Awaiting balance'}</dd></div><div><dt>Balance status</dt><dd>{prepaid?.alert_level ?? prepaid?.query_status ?? 'Not reported'}</dd></div>
@@ -449,7 +480,7 @@ export function MachineDetail({ machineId }: { machineId: string }) {
         {tab === 'device' ? <>
           <MachineIdentityProfilePanel machineId={machineId} />
           <section className={styles.gridThree}>
-            <article className={styles.card}><header className={`${styles.cardHeader} ${styles.redHeader}`}><div><span>Telemetry unit</span><h2>{device?.device_code ?? 'No device assigned'}</h2></div></header><dl className={styles.detailList}><div><dt>Hardware UID</dt><dd>{device?.hardware_uid ?? 'Not reported'}</dd></div><div><dt>Profile assignment</dt><dd>{device?.profile_id ?? 'Automatic'}</dd></div><div><dt>Reporting mode</dt><dd>{device?.telemetry_mode ? device.telemetry_mode[0].toUpperCase() + device.telemetry_mode.slice(1) : 'Not reported'}</dd></div><div><dt>Link status</dt><dd>{device?.machine_link_status ?? 'Not reported'}</dd></div><div><dt>Link method</dt><dd>{device?.machine_link_method ?? 'Not reported'}</dd></div><div><dt>Reported serial</dt><dd>{device?.reported_machine_serial ?? 'Not reported'}</dd></div></dl></article>
+            <article className={styles.card}><header className={`${styles.cardHeader} ${styles.redHeader}`}><div><span>Telemetry unit</span><h2>{device?.device_code ?? 'No device assigned'}</h2></div></header><dl className={styles.detailList}><div><dt>Hardware UID</dt><dd>{device?.hardware_uid ?? 'Not reported'}</dd></div><div><dt>Profile assignment</dt><dd>{device?.profile_id ?? 'Automatic'}</dd></div><div><dt>Reporting mode</dt><dd>{machineState?.telemetry_mode ? telemetryModes[machineState.telemetry_mode] : 'Not reported'}</dd></div><div><dt>Link status</dt><dd>{device?.machine_link_status ?? 'Not reported'}</dd></div><div><dt>Link method</dt><dd>{device?.machine_link_method ?? 'Not reported'}</dd></div><div><dt>Reported serial</dt><dd>{device?.reported_machine_serial ?? 'Not reported'}</dd></div></dl><div className={styles.actionLinks} aria-label="Device reporting mode">{(Object.keys(telemetryModes) as TelemetryMode[]).map((mode) => <button disabled={!device || modeSaving || machineState?.telemetry_mode === mode} key={mode} onClick={() => void setReportingMode(mode)} type="button">{telemetryModes[mode]}</button>)}</div></article>
             <article className={styles.card}><header className={styles.cardHeader}><div><span>Transport</span><h2>Connection state</h2></div></header><dl className={styles.detailList}><div><dt>Preference</dt><dd>{device?.transport_preference ?? 'Auto'}</dd></div><div><dt>Current path</dt><dd>{device?.last_transport ?? 'Not reported'}</dd></div><div><dt>Wi-Fi RSSI</dt><dd>{device?.wifi_rssi != null ? `${device.wifi_rssi} dBm` : '—'}</dd></div><div><dt>Cellular CSQ</dt><dd>{device?.cellular_csq != null ? `${device.cellular_csq} CSQ` : '—'}</dd></div><div><dt>Modem</dt><dd>{device?.cellular_model ?? 'Not reported'}</dd></div></dl></article>
             <article className={styles.card}><header className={styles.cardHeader}><div><span>Synchronization</span><h2>Device timestamps</h2></div></header><dl className={styles.detailList}><div><dt>Last heartbeat</dt><dd>{dateTime(device?.last_heartbeat_at ?? null)}</dd></div><div><dt>Last upload</dt><dd>{dateTime(device?.last_upload_at ?? null)}</dd></div><div><dt>Last counter</dt><dd>{dateTime(device?.last_counter_at ?? null)}</dd></div><div><dt>Config sent</dt><dd>{dateTime(device?.last_config_at ?? null)}</dd></div><div><dt>Config ack</dt><dd>{dateTime(device?.last_config_ack_at ?? null)}</dd></div></dl></article>
           </section>
