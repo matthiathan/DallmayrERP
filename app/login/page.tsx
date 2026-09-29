@@ -71,7 +71,7 @@ export default function LoginPage() {
     if (remembered) setEmail(safeLocalStorageGet(REMEMBERED_EMAIL_KEY) ?? '');
 
     if (new URLSearchParams(window.location.search).get('access') === 'inactive') {
-      setError('Your DallmayrERP account is not active. Please try signing in again or contact support if the problem continues.');
+      setError('Your account does not have active DallmayrERP access. Please sign in again or contact support if the problem continues.');
     }
   }, []);
 
@@ -151,7 +151,7 @@ export default function LoginPage() {
       const { data: activeAccess, error: activeAccessError } = await client.rpc('is_active_app_user');
       if (activeAccessError || activeAccess !== true) {
         await client.auth.signOut();
-        return setError('Your DallmayrERP account could not be activated automatically. Please try again.');
+        return setError('Your account does not have active DallmayrERP access. Please try again or contact support if the problem continues.');
       }
 
       router.replace(loginDestination());
