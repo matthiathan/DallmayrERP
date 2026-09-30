@@ -1,8 +1,10 @@
 {
   "name": "dallmayr-rfid-bridge",
+  "productName": "Dallmayr RFID Reader",
   "version": "1.0.0",
   "private": true,
   "description": "Plug-and-work Windows bridge for the Dallmayr ESP32 RFID reader",
+  "author": "Dallmayr",
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
