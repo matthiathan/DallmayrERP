@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dallmayr RFID Reader</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="page">
+    <section class="shell">
+      <header class="header">
+        <div>
+          <div class="brand">Dallmayr RFID Reader</div>
+          <h1>Card scanner</h1>
+          <p class="subtitle">Plug the reader in and present a card. No Wi-Fi or browser permissions are required.</p>
+        </div>
+        <div class="header-actions">
+          <button id="saveCsv" class="secondary" disabled>Save CSV</button>
+          <button id="clearScans" class="danger" disabled>Clear list</button>
+        </div>
+      </header>
+
+      <section class="status-card">
+        <div class="status-left">
+          <span id="statusDot" class="dot offline"></span>
+          <div>
+            <strong id="statusText">Waiting for RFID reader…</strong>
+            <span id="portText">Connect the ESP32 reader by USB.</span>
+          </div>
+        </div>
+        <span id="firmwareBadge" class="badge">Offline</span>
+      </section>
+
+      <section class="stats">
+        <article class="stat"><span>Total scans</span><strong id="totalScans">0</strong></article>
+        <article class="stat"><span>Unique cards</span><strong id="uniqueCards">0</strong></article>
+        <article class="stat"><span>Latest ID (dec)</span><strong id="latestDec" class="mono">—</strong></article>
+        <article class="stat"><span>Latest reverse DEC</span><strong id="latestReverse" class="mono">—</strong></article>
+      </section>
+
+      <section class="tools-grid">
+        <article class="panel">
+          <div>
+            <h2>Read card memory</h2>
+            <p>Reads MIFARE Classic block 4 without changing the card.</p>
+          </div>
+          <button id="readCard" class="secondary" disabled>Read card</button>
+          <div class="memory-row"><span>Stored text</span><strong id="storedText" class="mono">—</strong></div>
+          <div class="memory-row"><span>Block 4 hex</span><strong id="storedHex" class="mono small">—</strong></div>
+        </article>
+
+        <article class="panel">
+          <div>
+            <h2>Write card memory</h2>
+            <p>Writes up to 16 printable characters to MIFARE Classic block 4.</p>
+          </div>
+          <input id="writeText" maxlength="16" placeholder="Enter up to 16 characters" />
+          <div class="inline-actions">
+            <button id="writeCard" class="primary" disabled>Write card</button>
+            <button id="cancelAction" class="secondary" disabled>Cancel</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="table-card">
+        <div class="table-heading">
+          <div>
+            <h2>Scanned cards</h2>
+            <p>IDs are kept as text, so leading zeroes are preserved.</p>
+          </div>
+          <span id="message" class="message">Waiting for reader.</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Scanned</th>
+                <th>UID</th>
+                <th>ID (dec)</th>
+                <th>ID (reverse dec)</th>
+                <th>Card type</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="scanRows">
+              <tr id="emptyRow"><td colspan="7" class="empty">Present a card to begin.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer>
+        <span>The bridge starts automatically with Windows and reconnects when the reader is plugged in.</span>
+        <button id="quitApp" class="link-button">Exit bridge</button>
+      </footer>
+    </section>
+  </main>
+  <script src="renderer.js"></script>
+</body>
+</html>
