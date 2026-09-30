@@ -3,6 +3,10 @@ const path = require('path');
 const fs = require('fs');
 const { SerialPort } = require('serialport');
 
+if (require('electron-squirrel-startup')) {
+  app.quit();
+}
+
 const BAUD_RATE = 115200;
 const POLL_MS = 1800;
 const HANDSHAKE_TIMEOUT_MS = 1800;
@@ -66,7 +70,7 @@ function createWindow(showImmediately = false) {
 }
 
 function showWindow() {
-  if (!mainWindow) return;
+  if (!mainWindow || mainWindow.isDestroyed()) return;
   if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.show();
   mainWindow.focus();
@@ -164,7 +168,7 @@ function bindActivePort(port, info, readyEvent) {
     }
   });
 
-  const disconnected = async () => {
+  const disconnected = () => {
     if (activePort !== port) return;
     activePort = null;
     activePortInfo = null;
@@ -204,8 +208,8 @@ async function discoverReader() {
 
 function startDiscovery() {
   if (scanTimer) return;
-  discoverReader();
-  scanTimer = setInterval(discoverReader, POLL_MS);
+  void discoverReader();
+  scanTimer = setInterval(() => void discoverReader(), POLL_MS);
 }
 
 ipcMain.handle('rfid:get-status', () => currentStatus());
@@ -250,13 +254,15 @@ if (!gotLock) {
   });
 }
 
-app.on('window-all-closed', (event) => {
-  event.preventDefault?.();
-});
+// Keep the bridge alive after the window is hidden/closed. The operator can
+// explicitly use "Exit bridge" from the UI when a full shutdown is required.
+app.on('window-all-closed', () => {});
 
-app.on('before-quit', async () => {
+app.on('before-quit', () => {
   quitting = true;
   if (scanTimer) clearInterval(scanTimer);
   scanTimer = null;
-  await closePort(activePort);
+  if (activePort?.isOpen) {
+    try { activePort.close(); } catch {}
+  }
 });
