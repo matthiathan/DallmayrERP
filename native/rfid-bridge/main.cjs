@@ -13,6 +13,7 @@ const HANDSHAKE_TIMEOUT_MS = 1800;
 const TARGET_DEVICE = 'Dallmayr RFID Reader';
 const CP210X_VENDOR_ID = '10C4';
 const CP2102_PRODUCT_ID = 'EA60';
+const APP_PROTOCOL = 'dallmayr-rfid';
 
 let mainWindow = null;
 let activePort = null;
@@ -281,6 +282,10 @@ if (!gotLock) {
     const launchedHidden = process.argv.includes('--hidden');
     createWindow(!launchedHidden);
 
+    try {
+      app.setAsDefaultProtocolClient(APP_PROTOCOL);
+    } catch {}
+
     app.setLoginItemSettings({
       openAtLogin: true,
       args: ['--hidden']
@@ -289,6 +294,11 @@ if (!gotLock) {
     startDiscovery();
   });
 }
+
+app.on('open-url', (event) => {
+  event.preventDefault();
+  showWindow();
+});
 
 app.on('window-all-closed', () => {});
 
