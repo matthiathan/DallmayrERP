@@ -3,6 +3,7 @@ const STORAGE_KEY = 'dallmayr-rfid-bridge-scans-v1';
 
 const state = {
   connected: false,
+  paused: false,
   port: '',
   firmware: '',
   scans: loadScans()
@@ -18,6 +19,7 @@ const els = {
   latestDec: document.getElementById('latestDec'),
   latestReverse: document.getElementById('latestReverse'),
   scanRows: document.getElementById('scanRows'),
+  firmwareMode: document.getElementById('firmwareMode'),
   saveCsv: document.getElementById('saveCsv'),
   clearScans: document.getElementById('clearScans'),
   readCard: document.getElementById('readCard'),
@@ -48,15 +50,29 @@ function setMessage(text) {
   els.message.textContent = text;
 }
 
-function setConnected(connected, port = '') {
+function setConnected(connected, port = '', paused = state.paused) {
   state.connected = Boolean(connected);
+  state.paused = Boolean(paused);
   state.port = port || '';
+
   els.statusDot.classList.toggle('offline', !state.connected);
   els.statusDot.classList.toggle('online', state.connected);
-  els.statusText.textContent = state.connected ? 'RFID reader connected' : 'Waiting for RFID reader…';
-  els.portText.textContent = state.connected ? `${state.port} · 115200 baud` : 'Connect the ESP32 reader by USB.';
-  els.firmwareBadge.textContent = state.connected ? (state.firmware || 'Connected') : 'Offline';
-  [els.readCard, els.writeCard, els.cancelAction].forEach((button) => { button.disabled = !state.connected; });
+
+  if (state.paused) {
+    els.statusText.textContent = 'Firmware update mode';
+    els.portText.textContent = 'COM ports released for Arduino IDE / flashing.';
+    els.firmwareBadge.textContent = 'Paused';
+    els.firmwareMode.textContent = 'Resume reader';
+  } else {
+    els.statusText.textContent = state.connected ? 'RFID reader connected' : 'Waiting for RFID reader…';
+    els.portText.textContent = state.connected ? `${state.port} · 115200 baud` : 'Connect the ESP32 reader by USB.';
+    els.firmwareBadge.textContent = state.connected ? (state.firmware || 'Connected') : 'Offline';
+    els.firmwareMode.textContent = 'Firmware update mode';
+  }
+
+  [els.readCard, els.writeCard, els.cancelAction].forEach((button) => {
+    button.disabled = !state.connected || state.paused;
+  });
 }
 
 function addScan(event) {
@@ -157,8 +173,10 @@ async function send(command, successMessage) {
 }
 
 api.onStatus((status) => {
-  setConnected(Boolean(status.connected), status.path || '');
-  if (!status.connected) {
+  setConnected(Boolean(status.connected), status.path || '', Boolean(status.paused));
+  if (status.paused) {
+    setMessage('Firmware update mode active. You can upload to ESP32 devices now.');
+  } else if (!status.connected) {
     state.firmware = '';
     setMessage('Waiting for reader. Plug the ESP32 into USB.');
   }
@@ -204,6 +222,19 @@ api.onEvent((event) => {
   if (event.message) setMessage(String(event.message));
 });
 
+els.firmwareMode.addEventListener('click', async () => {
+  try {
+    const nextPaused = !state.paused;
+    const status = await api.setPaused(nextPaused);
+    setConnected(Boolean(status.connected), status.path || '', Boolean(status.paused));
+    setMessage(nextPaused
+      ? 'Firmware update mode active. COM ports released; upload as many devices as needed.'
+      : 'Reader mode resumed.');
+  } catch (error) {
+    setMessage(error?.message || 'Could not change firmware update mode.');
+  }
+});
+
 els.readCard.addEventListener('click', () => send('READ', 'Read requested. Present the card.'));
 els.cancelAction.addEventListener('click', () => send('CANCEL', 'Pending card action cancelled.'));
 els.writeCard.addEventListener('click', () => {
@@ -237,6 +268,6 @@ els.quitApp.addEventListener('click', () => api.quit());
 
 (async () => {
   const status = await api.getStatus();
-  setConnected(Boolean(status.connected), status.path || '');
+  setConnected(Boolean(status.connected), status.path || '', Boolean(status.paused));
   renderScans();
 })();
