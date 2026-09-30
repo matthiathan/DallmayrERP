@@ -31,17 +31,17 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Configure node-gyp for Visual Studio 2022
-        shell: pwsh
-        run: |
-          npm config set msvs_version 2022
-          npm config set python "$env:pythonLocation\python.exe"
-
       - name: Install dependencies
         run: npm install
+        env:
+          PYTHON: ${{ env.pythonLocation }}\python.exe
+          GYP_MSVS_VERSION: '2022'
 
       - name: Build installer
         run: npm run make
+        env:
+          PYTHON: ${{ env.pythonLocation }}\python.exe
+          GYP_MSVS_VERSION: '2022'
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
