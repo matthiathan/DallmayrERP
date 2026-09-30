@@ -16,6 +16,7 @@
           <p class="subtitle">Plug the reader in and present a card. No Wi-Fi or browser permissions are required.</p>
         </div>
         <div class="header-actions">
+          <button id="firmwareMode" class="secondary">Firmware update mode</button>
           <button id="saveCsv" class="secondary" disabled>Save CSV</button>
           <button id="clearScans" class="danger" disabled>Clear list</button>
         </div>
@@ -92,7 +93,7 @@
       </section>
 
       <footer>
-        <span>The bridge starts automatically with Windows and reconnects when the reader is plugged in.</span>
+        <span>Use Firmware update mode before flashing ESP32 devices. It releases all reader COM ports until resumed.</span>
         <button id="quitApp" class="link-button">Exit bridge</button>
       </footer>
     </section>
