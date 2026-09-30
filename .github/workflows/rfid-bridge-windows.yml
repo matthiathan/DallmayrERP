@@ -1,0 +1,40 @@
+name: RFID Bridge Windows Installer
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'native/rfid-bridge/**'
+      - 'hardware/rfid-reader/ESP32_RFID_USB_Serial.ino'
+      - '.github/workflows/rfid-bridge-windows.yml'
+
+jobs:
+  build-windows-installer:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: native/rfid-bridge
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: native/rfid-bridge/package.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build installer
+        run: npm run make
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dallmayr-RFID-Setup
+          path: native/rfid-bridge/out/make/squirrel.windows/x64/*.exe
+          if-no-files-found: error
