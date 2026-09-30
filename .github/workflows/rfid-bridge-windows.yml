@@ -10,7 +10,7 @@ on:
 
 jobs:
   build-windows-installer:
-    runs-on: windows-latest
+    runs-on: windows-2022
     defaults:
       run:
         working-directory: native/rfid-bridge
@@ -25,6 +25,17 @@ jobs:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: native/rfid-bridge/package.json
+
+      - name: Set up Python for native modules
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Configure node-gyp for Visual Studio 2022
+        shell: pwsh
+        run: |
+          npm config set msvs_version 2022
+          npm config set python "$env:pythonLocation\python.exe"
 
       - name: Install dependencies
         run: npm install
