@@ -1,0 +1,20 @@
+{
+  "name": "dallmayr-rfid-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plug-and-work Windows bridge for the Dallmayr ESP32 RFID reader",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
+  },
+  "dependencies": {
+    "serialport": "^13.0.0"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.11.2",
+    "@electron-forge/maker-squirrel": "^7.11.2",
+    "electron": "^43.2.0"
+  }
+}
