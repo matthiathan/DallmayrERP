@@ -403,7 +403,7 @@ export function TelevendFleetDashboard() {
   return (
     <section className={styles.dashboard} data-fleet-dashboard="televend-v3">
       <div className={styles.toolbar}>
-        <div className={styles.toolbarTitle}><i /><strong>Fleet overview</strong><span>{report.date_from ?? '—'} – {report.date_to ?? '—'}</span></div>
+        <div className={styles.toolbarTitle}><i /><div><strong>Dashboard</strong><span>Overview of your fleet performance, sales, connectivity and operational health.</span></div></div>
         <div className={styles.toolbarActions}>
           <label><span>Period</span><select value={period} onChange={(event) => setPeriod(event.target.value as Period)}>{periods.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
           <button disabled={!locations.length} onClick={exportFleetSnapshot} type="button">Export fleet CSV</button>
@@ -416,12 +416,12 @@ export function TelevendFleetDashboard() {
 
       {data ? <>
         <section className={styles.metricsStrip} aria-label="Fleet headline metrics">
-          <Metric helper={periods.find((item) => item.value === period)?.label ?? period} label="Items sold" tone="blue" value={units.toLocaleString('en-ZA')} />
-          <Metric helper={`${periodChange >= 0 ? '+' : ''}${periodChange.toFixed(1)}% vs previous`} label="Revenue" tone="gold" value={money(revenue)} />
-          <Metric helper={`${online} online · ${offline} offline`} label="Fleet availability" tone="green" value={`${availability.toFixed(1)}%`} />
-          <Metric helper={`${failed.toLocaleString('en-ZA')} failed vends`} label="Vend success" tone={success >= 98 ? 'green' : success >= 95 ? 'amber' : 'red'} value={`${success.toFixed(1)}%`} />
-          <Metric helper={`${critical} critical · ${warning} warning`} label="Active alerts" tone={active ? 'red' : 'green'} value={active.toLocaleString('en-ZA')} />
-          <Metric helper={`${reportingDevices} telemetry devices`} label="Machines reporting" tone="amber" value={n(summary.active_machines).toLocaleString('en-ZA')} />
+          <Metric helper={`${reportingDevices.toLocaleString('en-ZA')} reporting devices`} label="Total machines" tone="blue" value={machineCount.toLocaleString('en-ZA')} />
+          <Metric helper={`${availability.toFixed(0)}% of reporting fleet`} label="Online" tone="green" value={online.toLocaleString('en-ZA')} />
+          <Metric helper={`${reportingDevices ? (offline / reportingDevices * 100).toFixed(0) : '0'}% of reporting fleet`} label="Offline" tone={offline ? 'red' : 'green'} value={offline.toLocaleString('en-ZA')} />
+          <Metric helper={`${periodChange >= 0 ? '+' : ''}${periodChange.toFixed(1)}% vs previous`} label="Vends" tone="blue" value={units.toLocaleString('en-ZA')} />
+          <Metric helper={`${critical} critical · ${warning} warning`} label="Active faults" tone={active ? 'red' : 'green'} value={active.toLocaleString('en-ZA')} />
+          <Metric helper={`${modemCoverage}% modem coverage`} label="Data usage" tone="gold" value={bytes(observed)} />
         </section>
 
         <section className={styles.attentionCard} aria-label="Fleet attention queue" data-fleet-attention-queue="v1">
