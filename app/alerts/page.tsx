@@ -8,9 +8,9 @@ export default function AlertsPage() {
   return (
     <AppShell>
       <LiveDataStatus refreshIntervalMs={30_000} />
+      <AlarmCenter />
       <DeviceAttentionPanel />
       <FaultIntelligencePanel management />
-      <AlarmCenter />
     </AppShell>
   );
 }
