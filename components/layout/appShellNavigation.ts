@@ -11,6 +11,7 @@ export const telemetryNavigationSections: NavSection[] = [
     items: [
       { href: '/', label: 'Fleet Overview', code: 'FLT01', roles: 'all', description: 'Fleet health, exceptions, faults and current connectivity.' },
       { href: '/machines', label: 'Machines', code: 'FLT02', roles: 'all', description: 'Every machine and its connected telemetry device.' },
+      { href: '/customers', label: 'Customers / Sites', code: 'FLT04', roles: 'all', description: 'Customer hierarchy, sites, installed machines and service context.' },
       { href: '/alerts', label: 'Alerts', code: 'FLT03', roles: 'all', description: 'Active faults, ownership, acknowledgement and resolution workflow.' },
       { href: '/maintenance', label: 'Maintenance', code: 'OPS02', roles: 'all', description: 'Service jobs, preventive maintenance, technician workload and completion.' },
     ],
