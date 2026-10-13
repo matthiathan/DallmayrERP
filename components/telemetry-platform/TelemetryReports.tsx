@@ -162,6 +162,7 @@ export function TelemetryReports() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [updated, setUpdated] = useState<Date | null>(null);
+  const [recentExports, setRecentExports] = useState<Array<{ name: string; at: Date }>>([]);
 
   const load = useCallback(async (quiet = false) => {
     if (quiet) setRefreshing(true); else setLoading(true);
@@ -232,6 +233,9 @@ export function TelemetryReports() {
     if (tab === 'faults') downloadCsv(prefix, [['Machine', 'Device', 'Fault code', 'Severity', 'Detail', 'Started', 'Last seen', 'Cleared'], ...data.faults.map((row) => { const location = locationsByDevice.get(row.device_id); return [location?.machine_name ?? '', location?.device_code ?? row.device_id, row.fault_code, row.severity, row.detail ?? '', row.started_at, row.last_seen_at, row.cleared_at ?? '']; })]);
     if (tab === 'data') downloadCsv(prefix, [['Machine', 'Device', 'Network', 'Observed bytes', 'Projected monthly bytes', 'Requests', 'SIM remaining bytes', 'SIM alert', 'Last usage'], ...data.usage.map((row) => { const location = locationsByDevice.get(row.device_id); const balance = balancesByDevice.get(row.device_id); return [location?.machine_name ?? '', location?.device_code ?? row.device_id, location?.last_transport ?? '', usageValue(row), projectedValue(row), row.request_count, balance?.remaining_bytes ?? '', balance?.alert_level ?? '', row.last_reported_at ?? '']; })]);
     if (tab === 'connectivity') downloadCsv(prefix, [['Machine', 'Serial', 'Device', 'Branch', 'Communication', 'Minutes overdue', 'Network', 'Mapped', 'Location source', 'Location stale', 'Active faults', 'Last seen'], ...data.locations.map((row) => [row.machine_name ?? '', row.serial_number ?? '', row.device_code, row.branch, row.communication_status ?? '', row.minutes_overdue ?? '', row.last_transport ?? '', row.has_location, row.location_source ?? '', row.location_stale, row.active_fault_count, row.last_seen_at ?? ''])]);
+    if (tab === 'maintenance') downloadCsv(prefix, [['Job', 'Customer', 'Priority', 'Status', 'Due', 'Reported', 'Summary'], ...data.jobs.map((row) => [row.job_number, row.customer_name_snapshot ?? '', row.priority, row.status, row.due_at ?? '', row.reported_at, row.summary])]);
+    if (tab === 'customers') downloadCsv(prefix, [['Customer', 'Code', 'Branch', 'Sites'], ...data.customers.map((row) => [row.customer_name, row.customer_code ?? '', row.branch, data.sites.filter((site) => site.customer_id === row.id).length])]);
+    if (tab !== 'custom') setRecentExports((current) => [{ name: prefix, at: new Date() }, ...current].slice(0, 5));
   };
 
   const mapped = data?.locations.filter((row) => row.has_location).length ?? 0;
@@ -267,6 +271,13 @@ export function TelemetryReports() {
         <Metric label="Observed data" value={bytes(usageTotal)} helper={`${lowSims} SIMs need attention`} tone={lowSims ? 'amber' : 'blue'} />
       </section>
 
+      <section className={styles.reportTools} aria-label="Report tools">
+        <article><span>Report templates</span><strong>8 operational datasets</strong><small>Use the report tabs below as reusable report templates.</small></article>
+        <article><span>Scheduled reports</span><strong>Not configured</strong><small>No persistent report schedule store exists in the current production schema.</small></article>
+        <article><span>Recent exports</span><strong>{recentExports.length ? recentExports[0].name : 'No exports this session'}</strong><small>{recentExports.length ? `Last export ${recentExports[0].at.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}` : 'CSV exports created here will appear for this session.'}</small></article>
+        <button onClick={() => setTab('custom')} type="button"><span>Custom report</span><strong>Build report</strong><small>Choose a dataset, period and branch, then export.</small></button>
+      </section>
+
       <nav className={styles.tabs} aria-label="Telemetry report types" role="tablist">{tabs.map((item) => <button aria-selected={tab === item.id} className={tab === item.id ? styles.activeTab : ''} key={item.id} onClick={() => setTab(item.id)} role="tab" type="button"><strong>{item.label}</strong><span>{item.helper}</span></button>)}</nav>
 
       <article className={styles.card}>
@@ -300,13 +311,9 @@ export function TelemetryReports() {
             <article><span>Sites</span><strong>{siteCount}</strong><small>Linked operating locations</small></article>
             <article><span>Machines</span><strong>{data.locations.filter((row) => row.machine_id).length}</strong><small>Telemetry-linked assets</small></article>
           </div>
-          <div className={styles.tableWrap}><table><thead><tr><th>Customer</th><th>Code</th><th>Branch</th><th>Sites</th><th>Telemetry machines</th></tr></thead><tbody>{data.customers.map((customer) => {
+          <div className={styles.tableWrap}><table><thead><tr><th>Customer</th><th>Code</th><th>Branch</th><th>Sites</th><th>Account status</th></tr></thead><tbody>{data.customers.map((customer) => {
             const customerSites = data.sites.filter((site) => site.customer_id === customer.id);
-            const customerMachineCount = data.locations.filter((row) => {
-              const machine = data.report.top_machines?.find((item) => item.machine_id === row.machine_id);
-              return machine ? normalizedBranch(machine.branch) === normalizedBranch(customer.branch) : false;
-            }).length;
-            return <tr key={customer.id}><td><strong>{customer.customer_name}</strong></td><td>{customer.customer_code ?? '—'}</td><td>{customer.branch.toUpperCase()}</td><td>{customerSites.length}</td><td>{customerMachineCount}</td></tr>;
+            return <tr key={customer.id}><td><strong>{customer.customer_name}</strong></td><td>{customer.customer_code ?? '—'}</td><td>{customer.branch.toUpperCase()}</td><td>{customerSites.length}</td><td>{customerSites.some((site) => (site.status ?? 'active') !== 'active') ? 'Site attention' : 'Active footprint'}</td></tr>;
           })}</tbody></table>{!data.customers.length ? <div className={styles.empty}>No customers match this report scope.</div> : null}</div>
           <div className={styles.workspaceFooter}><Link href="/customers">Open Customers / Sites</Link></div>
         </div> : null}
