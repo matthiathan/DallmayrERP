@@ -148,6 +148,7 @@ export function AlarmCenter() {
   const [refreshing, setRefreshing] = useState(false);
   const [busyFaultId, setBusyFaultId] = useState<string | null>(null);
   const [resolutionTarget, setResolutionTarget] = useState<Fault | null>(null);
+  const [selectedFaultId, setSelectedFaultId] = useState<string | null>(null);
   const [resolutionNote, setResolutionNote] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -238,6 +239,11 @@ export function AlarmCenter() {
       .filter(Boolean).join(' ').toLowerCase().includes(term);
   }), [branch, currentUserId, devices, faults, machines, search, severity, source, status, timeFilter, workflowFilter, workflows]);
 
+  const selectedFault = selectedFaultId ? faults.find((fault) => fault.id === selectedFaultId) ?? null : null;
+  const selectedMachine = selectedFault?.machine_id ? machines[selectedFault.machine_id] ?? null : null;
+  const selectedDevice = selectedFault?.device_id ? devices[selectedFault.device_id] ?? null : null;
+  const selectedWorkflow = selectedFault ? workflows[selectedFault.id] : undefined;
+
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
   const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -288,14 +294,14 @@ export function AlarmCenter() {
 
   return (
     <section className={styles.center} data-alarm-center="televend-v3">
-      <header className={styles.header}><div><h1>Alerts</h1><p>Live machine faults, acknowledgement, ownership and auditable resolution workflow.</p></div><button disabled={refreshing} onClick={() => load(true)} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button></header>
+      <header className={styles.header}><div><span>Operations</span><h1>Alerts</h1><p>Prioritise machine faults, acknowledge ownership and track resolution without altering the machine-generated state.</p></div><button disabled={refreshing} onClick={() => load(true)} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button></header>
       {error ? <div className={styles.error} role="alert">Alert data unavailable: {error}</div> : null}
       {notice ? <div className={styles.notice} role="status">{notice}</div> : null}
       {loading ? <HamsterLoader label="Loading alert center" /> : null}
 
       {!loading ? <>
         <section className={styles.metrics} aria-label="Alert status summary">
-          <button className={`${styles.metric} ${styles.critical}`} onClick={() => { setStatus('active'); setWorkflowFilter('all'); }} type="button"><span>All active</span><strong>{active.length.toLocaleString('en-ZA')}</strong></button>
+          <button className={`${styles.metric} ${styles.critical}`} onClick={() => { setStatus('active'); setWorkflowFilter('all'); }} type="button"><span>Active alerts</span><strong>{active.length.toLocaleString('en-ZA')}</strong></button>
           <button className={`${styles.metric} ${styles.critical}`} onClick={() => { setStatus('active'); setSeverity('critical'); }} type="button"><span>Critical</span><strong>{critical.toLocaleString('en-ZA')}</strong></button>
           <button className={`${styles.metric} ${styles.warning}`} onClick={() => { setStatus('active'); setWorkflowFilter('unacknowledged'); }} type="button"><span>Unacknowledged</span><strong>{unacknowledged.toLocaleString('en-ZA')}</strong></button>
           <button className={`${styles.metric} ${styles.connectivity}`} onClick={() => { setStatus('active'); setWorkflowFilter('owned'); }} type="button"><span>Assigned to me</span><strong>{ownedByMe.toLocaleString('en-ZA')}</strong></button>
@@ -340,6 +346,7 @@ export function AlarmCenter() {
                 <td><span className={`${styles.workflowState} ${workflow?.workflow_status === 'resolved' ? styles.workflowResolved : workflow?.workflow_status === 'acknowledged' ? styles.workflowAcknowledged : styles.workflowOpen}`}>{workflowLabel(workflow, currentUserId)}</span>{workflow?.resolution_note ? <div className={styles.muted}>{workflow.resolution_note}</div> : null}{workflow?.workflow_status === 'resolved' && !fault.cleared_at ? <div className={styles.workflowWarning}>Machine fault still active</div> : null}</td>
                 <td>{age(fault.last_seen_at)} ago<div className={styles.muted}>{dateTime(fault.last_seen_at)}</div></td>
                 <td><div className={styles.rowActions}>
+                  <button onClick={() => setSelectedFaultId(fault.id)} type="button">Investigate</button>
                   {workflow?.workflow_status === 'resolved' ? <button disabled={busy} onClick={() => void runWorkflowAction(fault.id, 'reopen')} type="button">Reopen</button> : <>
                     <button disabled={busy} onClick={() => void runWorkflowAction(fault.id, workflow?.workflow_status === 'acknowledged' ? 'unacknowledge' : 'acknowledge')} type="button">{workflow?.workflow_status === 'acknowledged' ? 'Unack' : 'Acknowledge'}</button>
                     <button disabled={busy} onClick={() => void runWorkflowAction(fault.id, owned ? 'release' : 'take')} type="button">{owned ? 'Release' : 'Take'}</button>
@@ -364,6 +371,7 @@ export function AlarmCenter() {
                 <div className={styles.alarmSide}><span className={`${styles.workflowState} ${workflow?.workflow_status === 'resolved' ? styles.workflowResolved : workflow?.workflow_status === 'acknowledged' ? styles.workflowAcknowledged : styles.workflowOpen}`}>{workflowLabel(workflow, currentUserId)}</span><small>{fault.cleared_at ? 'Machine cleared' : `${age(fault.last_seen_at)} ago`}</small></div>
                 <div className={styles.alarmMeta}><span>{fault.severity}</span><span>·</span><span>{machine?.current_custodian ?? machine?.branch?.toUpperCase() ?? fault.source}</span>{workflow?.workflow_status === 'resolved' && !fault.cleared_at ? <b>· Machine fault still active</b> : null}</div>
                 <div className={styles.mobileActions}>
+                  <button onClick={() => setSelectedFaultId(fault.id)} type="button">Investigate</button>
                   {workflow?.workflow_status === 'resolved' ? <button disabled={busy} onClick={() => void runWorkflowAction(fault.id, 'reopen')} type="button">Reopen</button> : <><button disabled={busy} onClick={() => void runWorkflowAction(fault.id, workflow?.workflow_status === 'acknowledged' ? 'unacknowledge' : 'acknowledge')} type="button">{workflow?.workflow_status === 'acknowledged' ? 'Unack' : 'Acknowledge'}</button><button disabled={busy} onClick={() => void runWorkflowAction(fault.id, owned ? 'release' : 'take')} type="button">{owned ? 'Release' : 'Take'}</button><button disabled={busy} onClick={() => { setResolutionTarget(fault); setResolutionNote(''); }} type="button">Resolve</button></>}
                   {fault.machine_id ? <Link href={`/machines/${fault.machine_id}`}>Machine</Link> : null}
                   {device?.device_code ? <Link href={`/telemetry/test-center?device=${encodeURIComponent(device.device_code)}`}>Test Center</Link> : null}
@@ -374,6 +382,49 @@ export function AlarmCenter() {
           <footer className={styles.pagination}><span>Page {currentPage} of {pageCount}</span><div><button disabled={currentPage <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))} type="button">Previous</button><button disabled={currentPage >= pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} type="button">Next</button></div></footer>
         </section>
       </> : null}
+
+      {selectedFault ? <div className={styles.drawerBackdrop} onMouseDown={(event) => { if (event.currentTarget === event.target) setSelectedFaultId(null); }} role="presentation">
+        <aside aria-label="Alert investigation" className={styles.drawer}>
+          <header>
+            <div>
+              <span>Alert investigation</span>
+              <h2>{selectedFault.fault_code}</h2>
+              <p>{selectedMachine?.machine_name ?? selectedMachine?.serial_number ?? 'Unassigned machine'} · {selectedMachine?.current_custodian ?? selectedMachine?.branch?.toUpperCase() ?? selectedFault.source}</p>
+            </div>
+            <button aria-label="Close alert investigation" onClick={() => setSelectedFaultId(null)} type="button">×</button>
+          </header>
+          <section className={styles.drawerSummary}>
+            <span className={`${styles.severity} ${styles[`sev_${severityKey(selectedFault.severity)}`] ?? ''}`}>{selectedFault.severity}</span>
+            <span className={`${styles.machineState} ${selectedFault.cleared_at ? styles.machineCleared : styles.machineActive}`}>{selectedFault.cleared_at ? 'Machine cleared' : 'Telemetry active'}</span>
+            <span className={`${styles.workflowState} ${selectedWorkflow?.workflow_status === 'resolved' ? styles.workflowResolved : selectedWorkflow?.workflow_status === 'acknowledged' ? styles.workflowAcknowledged : styles.workflowOpen}`}>{workflowLabel(selectedWorkflow, currentUserId)}</span>
+          </section>
+          <dl className={styles.drawerFacts}>
+            <div><dt>Machine</dt><dd>{selectedMachine?.machine_name ?? selectedMachine?.serial_number ?? 'Unassigned'}</dd></div>
+            <div><dt>Serial</dt><dd>{selectedMachine?.serial_number ?? '—'}</dd></div>
+            <div><dt>Device</dt><dd>{selectedDevice?.device_code ?? '—'}</dd></div>
+            <div><dt>Branch / site</dt><dd>{selectedMachine?.current_custodian ?? selectedMachine?.branch?.toUpperCase() ?? '—'}</dd></div>
+            <div><dt>Source</dt><dd>{selectedFault.source}</dd></div>
+            <div><dt>Started</dt><dd>{dateTime(selectedFault.started_at)}</dd></div>
+            <div><dt>Last seen</dt><dd>{dateTime(selectedFault.last_seen_at)}</dd></div>
+            <div><dt>Occurrences · 30d</dt><dd>{(occurrences[occurrenceKey(selectedFault)] ?? 1).toLocaleString('en-ZA')}</dd></div>
+          </dl>
+          <section className={styles.drawerDetail}>
+            <span>Fault detail</span>
+            <p>{selectedFault.detail ?? 'No additional machine detail was supplied.'}</p>
+            {selectedWorkflow?.resolution_note ? <><span>Resolution note</span><p>{selectedWorkflow.resolution_note}</p></> : null}
+            {selectedWorkflow?.workflow_status === 'resolved' && !selectedFault.cleared_at ? <div className={styles.drawerWarning}><strong>Machine fault is still active.</strong><p>The operator workflow was resolved, but telemetry has not yet reported recovery.</p></div> : null}
+          </section>
+          <footer className={styles.drawerActions}>
+            {selectedWorkflow?.workflow_status === 'resolved' ? <button disabled={busyFaultId === selectedFault.id} onClick={() => void runWorkflowAction(selectedFault.id, 'reopen')} type="button">Reopen workflow</button> : <>
+              <button disabled={busyFaultId === selectedFault.id} onClick={() => void runWorkflowAction(selectedFault.id, selectedWorkflow?.workflow_status === 'acknowledged' ? 'unacknowledge' : 'acknowledge')} type="button">{selectedWorkflow?.workflow_status === 'acknowledged' ? 'Unacknowledge' : 'Acknowledge'}</button>
+              <button disabled={busyFaultId === selectedFault.id} onClick={() => void runWorkflowAction(selectedFault.id, selectedWorkflow?.assigned_to === currentUserId ? 'release' : 'take')} type="button">{selectedWorkflow?.assigned_to === currentUserId ? 'Release ownership' : 'Take ownership'}</button>
+              <button disabled={busyFaultId === selectedFault.id} onClick={() => { setResolutionTarget(selectedFault); setResolutionNote(''); }} type="button">Resolve workflow</button>
+            </>}
+            {selectedFault.machine_id ? <Link href={`/machines/${selectedFault.machine_id}`}>Open machine</Link> : null}
+            {selectedDevice?.device_code ? <Link href={`/telemetry/test-center?device=${encodeURIComponent(selectedDevice.device_code)}`}>Test Center</Link> : null}
+          </footer>
+        </aside>
+      </div> : null}
 
       <AccessibleDialog ariaLabel="Resolve alert" className={styles.resolveDialog} id="resolve-telemetry-alarm-dialog" onClose={() => { if (!busyFaultId) { setResolutionTarget(null); setResolutionNote(''); } }} open={Boolean(resolutionTarget)} closeOnBackdrop={!busyFaultId}>
         <header><div><h2>Resolve alert workflow</h2><p>This records an operator resolution. It does not clear the machine-generated telemetry fault.</p></div><button aria-label="Close resolve alert dialog" disabled={Boolean(busyFaultId)} onClick={() => setResolutionTarget(null)} type="button">×</button></header>
