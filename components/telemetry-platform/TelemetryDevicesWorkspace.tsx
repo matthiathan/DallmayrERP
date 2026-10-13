@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TelemetryEnrollmentWindowControl } from '@/components/features/TelemetryEnrollmentWindowControl';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
@@ -452,7 +453,15 @@ export function TelemetryDevicesWorkspace() {
   const currentMachine = machineId ? (machineResults.find((row) => row.id === machineId) ?? machines[machineId] ?? null) : null;
   const machineOptions = currentMachine && !machineResults.some((row) => row.id === currentMachine.id) ? [currentMachine, ...machineResults] : machineResults;
 
-  return <section className={styles.workspace} data-telemetry-devices="v3">
+  return <section className={styles.workspace} data-telemetry-devices="v4">
+    <header className={styles.pageHeader}>
+      <div><span>Fleet</span><h1>Telemetry Devices</h1><p>Controller identity, assignment, connectivity, signal, reporting, data usage and SIM health.</p></div>
+      <div className={styles.pageHeaderActions}>
+        <Link href="/telemetry/test-center">Open Test Center</Link>
+        <button disabled={loading} onClick={() => void load(false)} type="button">{loading ? 'Refreshing…' : 'Refresh'}</button>
+      </div>
+    </header>
+
     {error ? <div className={`${styles.banner} ${styles.bannerError}`} role="alert"><strong>Device management error</strong><span>{error}</span></div> : null}
     {message ? <div className={`${styles.banner} ${styles.bannerSuccess}`} role="status"><strong>Saved</strong><span>{message}</span></div> : null}
 
@@ -477,14 +486,14 @@ export function TelemetryDevicesWorkspace() {
     </section>
 
     {loading && !devices.length ? <HamsterLoader label="Loading telemetry devices" /> : <section className={styles.register}>
-      <div className={styles.tableWrap}><table><thead><tr><th>Device</th><th>Machine</th><th>State</th><th>Network</th><th>Signal</th><th>Reporting</th><th>30-day data</th><th>SIM remaining</th><th>Last contact</th><th /></tr></thead><tbody>
+      <div className={styles.tableWrap}><table><thead><tr><th>Device identity</th><th>Machine</th><th>State</th><th>Network</th><th>Signal</th><th>Reporting</th><th>30-day data</th><th>SIM remaining</th><th>Last contact</th><th /></tr></thead><tbody>
         {pageRows.map((device) => {
           const state = statusKey(device);
           const deviceUsage = usage[device.id];
           const balance = prepaid[device.id];
           const machine = device.machine_id ? machines[device.machine_id] : null;
           return <tr key={device.id} className={selectedId === device.id ? styles.selectedRow : undefined}>
-            <td><strong>{device.device_code}</strong><small>{device.firmware_version ?? 'Firmware unknown'}</small></td>
+            <td><strong>{device.device_code}</strong><small>{device.hardware_uid ? `UID ${device.hardware_uid}` : 'UID not reported'} · {device.firmware_version ?? 'Firmware unknown'}</small></td>
             <td><strong>{machineLabel(machine)}</strong><small>{machine?.branch?.toUpperCase() ?? (device.machine_id ? 'Loading machine…' : 'Assign from settings')}</small></td>
             <td><span className={`${styles.pill} ${styles[state]}`}><i />{state}</span></td>
             <td><strong>{device.last_transport === 'wifi' ? 'Wi-Fi' : device.last_transport === 'cellular' ? 'Cellular' : '—'}</strong><small>{device.cellular_operator ?? ''}</small></td>
@@ -493,7 +502,7 @@ export function TelemetryDevicesWorkspace() {
             <td><strong>{formatBytes(actualUsage(deviceUsage))}</strong><small>{deviceUsage ? `${Number(deviceUsage.request_count ?? 0).toLocaleString('en-ZA')} uploads` : 'No samples'}</small></td>
             <td><strong className={balance && ['low', 'critical', 'depleted'].includes(balance.alert_level) ? styles.warningText : undefined}>{balance?.remaining_bytes != null ? formatBytes(balance.remaining_bytes) : '—'}</strong><small>{balance?.alert_level ?? 'not reported'}</small></td>
             <td><strong>{age(device.last_heartbeat_at ?? device.last_seen_at)}</strong><small>{formatDate(device.last_heartbeat_at ?? device.last_seen_at)}</small></td>
-            <td><button className={styles.manage} onClick={() => { setSelectedId(device.id); setMessage(null); setError(null); }} type="button">Manage</button></td>
+            <td><button className={styles.manage} onClick={() => { setSelectedId(device.id); setMessage(null); setError(null); }} type="button">Snapshot</button></td>
           </tr>;
         })}
       </tbody></table></div>
@@ -509,7 +518,8 @@ export function TelemetryDevicesWorkspace() {
       /> : null}
     </section>}
 
-    {selected ? <aside className={styles.drawer} aria-label={`Manage ${selected.device_code}`}>
+    {selected ? <div className={styles.drawerBackdrop} onMouseDown={(event) => { if (event.currentTarget === event.target) setSelectedId(null); }} role="presentation">
+      <aside className={styles.drawer} aria-label={`Manage ${selected.device_code}`}>
       <header className={styles.drawerHeader}><div><span>Telemetry controller</span><h2>{selected.device_code}</h2><p><span className={`${styles.pill} ${styles[selectedStatus]}`}><i />{selectedHealth?.label ?? 'Offline'}</span> · {transportLabel(selected.last_transport)} · {age(selectedHealth?.contactAt ?? null)}</p></div><button aria-label="Close device settings" onClick={() => setSelectedId(null)} type="button">×</button></header>
 
       <div className={styles.drawerBody}>
@@ -518,7 +528,13 @@ export function TelemetryDevicesWorkspace() {
         </nav>
 
         {activeTab === 'overview' ? <div data-device-tab="overview">
-          <section className={styles.controlSection} data-device-health-summary="v1"><div className={styles.sectionTitle}><span>Live state</span><h3>Device health</h3></div><div className={styles.healthGrid}><div><span>Communication</span><strong>{selectedHealth?.label ?? 'Offline'}</strong><small>{selectedHealth?.key === 'online' ? 'Confirmed device contact within 30 min' : selectedHealth?.key === 'disabled' ? 'Controller is disabled' : selectedHealth?.contactAt ? 'No confirmed device contact in 30 min' : 'No telemetry contact has been recorded'}</small></div><div><span>Last contact</span><strong>{age(selectedHealth?.contactAt ?? null)}</strong><small>{formatDate(selectedHealth?.contactAt ?? null)}</small></div><div><span>Transport</span><strong>{transportLabel(selected.last_transport)}</strong><small>{transportDetail(selected)}</small></div><div><span>Signal</span><strong>{selected.last_transport ? <SignalStrengthIndicator cellularCsq={selected.cellular_csq} transport={selected.last_transport} wifiRssi={selected.wifi_rssi} /> : '—'}</strong><small>{selected.last_transport ? 'Active transport measurement' : 'Awaiting network telemetry'}</small></div><div><span>Configuration</span><strong>{selectedConfig?.label ?? 'Not reported'}</strong><small>{selectedConfig?.timestamp ? formatDate(selectedConfig.timestamp) : 'No device configuration has been queued'}</small></div><div><span>Data use · 30 days</span><strong>{formatBytes(selectedUsed)}</strong><small>{usageDetail(selectedUsage, selectedProjected)}</small></div></div></section>
+          <section className={styles.snapshotIdentity}>
+            <div><span>Hardware UID</span><strong>{selected.hardware_uid ?? 'Not reported'}</strong></div>
+            <div><span>Firmware</span><strong>{selected.firmware_version ?? 'Not reported'}</strong></div>
+            <div><span>Assigned machine</span><strong>{machineLabel(currentMachine)}</strong></div>
+            <div><span>Controller state</span><strong>{selected.status}</strong></div>
+          </section>
+          <section className={styles.controlSection} data-device-health-summary="v1"><div className={styles.sectionTitle}><span>Live state</span><h3>Device snapshot</h3></div><div className={styles.healthGrid}><div><span>Communication</span><strong>{selectedHealth?.label ?? 'Offline'}</strong><small>{selectedHealth?.key === 'online' ? 'Confirmed device contact within 30 min' : selectedHealth?.key === 'disabled' ? 'Controller is disabled' : selectedHealth?.contactAt ? 'No confirmed device contact in 30 min' : 'No telemetry contact has been recorded'}</small></div><div><span>Last contact</span><strong>{age(selectedHealth?.contactAt ?? null)}</strong><small>{formatDate(selectedHealth?.contactAt ?? null)}</small></div><div><span>Transport</span><strong>{transportLabel(selected.last_transport)}</strong><small>{transportDetail(selected)}</small></div><div><span>Signal</span><strong>{selected.last_transport ? <SignalStrengthIndicator cellularCsq={selected.cellular_csq} transport={selected.last_transport} wifiRssi={selected.wifi_rssi} /> : '—'}</strong><small>{selected.last_transport ? 'Active transport measurement' : 'Awaiting network telemetry'}</small></div><div><span>Configuration</span><strong>{selectedConfig?.label ?? 'Not reported'}</strong><small>{selectedConfig?.timestamp ? formatDate(selectedConfig.timestamp) : 'No device configuration has been queued'}</small></div><div><span>Data use · 30 days</span><strong>{formatBytes(selectedUsed)}</strong><small>{usageDetail(selectedUsage, selectedProjected)}</small></div><div><span>SIM balance</span><strong>{selectedPrepaid?.remaining_bytes != null ? formatBytes(selectedPrepaid.remaining_bytes) : 'Not reported'}</strong><small>{selectedPrepaid?.alert_level ?? 'No carrier status'}</small></div><div><span>Reporting mode</span><strong>{reportingMode}</strong><small>Telemetry aggregation cadence</small></div></div></section>
           <section className={styles.controlSection}><div className={styles.sectionTitle}><span>Aggregation</span><h3>Reporting</h3></div><label className={styles.field}><span>Counter mode</span><select value={reportingMode} onChange={(event) => setReportingMode(event.target.value as TelemetryMode)}><option value="live">Live</option><option value="daily">Daily</option><option value="monthly">Monthly</option></select></label></section>
           <TelemetryConfigSyncPanel key={`${selected.id}:${selected.updated_at}`} deviceId={selected.id} />
         </div> : null}
@@ -536,8 +552,16 @@ export function TelemetryDevicesWorkspace() {
         {activeTab === 'advanced' ? <div data-device-tab="advanced"><section className={styles.controlSection}><div className={styles.sectionTitle}><span>Administration</span><h3>Advanced device controls</h3></div><label className={styles.field}><span>Controller state</span><select value={deviceStatus} onChange={(event) => setDeviceStatus(event.target.value as DeviceStatus)}><option value="active">Active</option><option value="disabled">Disabled</option></select></label><dl className={styles.audit}><div><dt>Hardware UID</dt><dd>{selected.hardware_uid ?? 'Not reported'}</dd></div><div><dt>Profile</dt><dd>{selected.profile_id ?? 'Automatic'}</dd></div><div><dt>Config sent</dt><dd>{formatDate(selected.last_config_at)}</dd></div><div><dt>Config ACK</dt><dd>{formatDate(selected.last_config_ack_at)}</dd></div></dl><button className={styles.deleteButton} onClick={() => { setDeleteConfirmation(''); setDeleteOpen(true); }} type="button">Delete telemetry device</button></section></div> : null}
       </div>
 
-      <footer className={styles.drawerFooter}><button className={styles.cancel} disabled={saving} onClick={() => setSelectedId(null)} type="button">Close</button><button className={styles.save} disabled={saving} onClick={() => void save()} type="button">{saving ? 'Saving configuration…' : 'Save & send configuration'}</button></footer>
-    </aside> : null}
+      <footer className={styles.drawerFooter}>
+        <div className={styles.drawerLinks}>
+          {selected.machine_id ? <Link href={`/machines/${selected.machine_id}`}>Open machine</Link> : null}
+          <Link href={`/telemetry/test-center?device=${encodeURIComponent(selected.device_code)}`}>Test Center</Link>
+        </div>
+        <button className={styles.cancel} disabled={saving} onClick={() => setSelectedId(null)} type="button">Close</button>
+        <button className={styles.save} disabled={saving} onClick={() => void save()} type="button">{saving ? 'Saving configuration…' : 'Save & send configuration'}</button>
+      </footer>
+      </aside>
+    </div> : null}
 
     <AccessibleDialog ariaLabel="Confirm telemetry device deletion" closeOnBackdrop={!deleting} id="delete-telemetry-device-dialog-v2" onClose={() => { if (!deleting) setDeleteOpen(false); }} open={deleteOpen && Boolean(selected)}>
       {selected ? <div className={styles.deleteDialog}><header><div><span>Permanent action</span><h2>Delete {selected.device_code}?</h2></div><button aria-label="Close deletion dialog" disabled={deleting} onClick={() => setDeleteOpen(false)} type="button">×</button></header><p>This removes the controller and its associated telemetry history. The machine record itself is retained.</p><label><span>Type <strong>{selected.device_code}</strong> to confirm</span><input autoComplete="off" data-dialog-initial-focus value={deleteConfirmation} onChange={(event) => setDeleteConfirmation(event.target.value)} /></label><footer><button disabled={deleting} onClick={() => setDeleteOpen(false)} type="button">Cancel</button><button className={styles.deleteButton} disabled={deleting || deleteConfirmation.trim() !== selected.device_code} onClick={() => void deleteDevice()} type="button">{deleting ? 'Deleting…' : 'Permanently delete'}</button></footer></div> : null}
