@@ -11,7 +11,7 @@ import { MachineIdentityProfilePanel } from './MachineIdentityProfilePanel';
 import styles from './MachineDetail.module.css';
 
 type Period = 'day' | 'week' | 'month' | 'six_months';
-type Tab = 'overview' | 'vends' | 'events' | 'device';
+type Tab = 'overview' | 'vends' | 'device' | 'usage' | 'errors' | 'location' | 'maintenance' | 'logs' | 'settings';
 type TelemetryMode = 'live' | 'daily' | 'monthly';
 
 type Machine = {
@@ -402,7 +402,7 @@ export function MachineDetail({ machineId }: { machineId: string }) {
           <div><span>Open faults</span><strong className={openFaults.length ? styles.actionAlert : ''}>{openFaults.length}</strong></div>
         </div>
         <div className={styles.actionLinks}>
-          <button onClick={() => setTab('events')} type="button">Fault history</button>
+          <button onClick={() => setTab('errors')} type="button">Fault history</button>
           <button onClick={() => setTab('device')} type="button">Device & profile</button>
           {device?.device_code ? <Link href={`/telemetry/test-center?device=${encodeURIComponent(device.device_code)}`}>Test Center</Link> : null}
           <Link href="/telemetry/devices">Device Management</Link>
@@ -416,9 +416,19 @@ export function MachineDetail({ machineId }: { machineId: string }) {
 
       {machine ? <>
         <nav className={styles.tabs} aria-label="Machine dashboard sections">
-          {(['overview', 'vends', 'events', 'device'] as Tab[]).map((value) => (
+          {([
+            ['overview', 'Overview'],
+            ['vends', 'Vends & Products'],
+            ['device', 'Telemetry Device'],
+            ['usage', 'Data Usage'],
+            ['errors', 'Errors'],
+            ['location', 'Location'],
+            ['maintenance', 'Maintenance'],
+            ['logs', 'Logs'],
+            ['settings', 'Settings'],
+          ] as Array<[Tab, string]>).map(([value, label]) => (
             <button aria-current={tab === value ? 'page' : undefined} className={`${styles.tab} ${tab === value ? styles.tabActive : ''}`} key={value} onClick={() => setTab(value)} type="button">
-              {value === 'overview' ? 'Overview' : value === 'vends' ? 'Vends & products' : value === 'events' ? 'Events' : 'Device'}
+              {label}
             </button>
           ))}
         </nav>
@@ -475,7 +485,7 @@ export function MachineDetail({ machineId }: { machineId: string }) {
           </section>
         </> : null}
 
-        {tab === 'events' ? <section className={styles.card}><header className={`${styles.cardHeader} ${styles.redHeader}`}><div><span>Machine events</span><h2>Fault & recovery history</h2></div><strong>{faults.length}</strong></header><div className={styles.faultList}>{faults.map((fault) => <div className={styles.faultRow} key={fault.id}><strong>{fault.fault_code}</strong><b>{fault.cleared_at ? 'Resolved' : fault.severity}</b><span>{fault.detail ?? fault.source} · {dateTime(fault.last_seen_at)}</span></div>)}{!faults.length ? <div className={styles.empty}>No fault events recorded.</div> : null}</div></section> : null}
+        {tab === 'errors' ? <section className={styles.card}><header className={`${styles.cardHeader} ${styles.redHeader}`}><div><span>Machine events</span><h2>Fault & recovery history</h2></div><strong>{faults.length}</strong></header><div className={styles.faultList}>{faults.map((fault) => <div className={styles.faultRow} key={fault.id}><strong>{fault.fault_code}</strong><b>{fault.cleared_at ? 'Resolved' : fault.severity}</b><span>{fault.detail ?? fault.source} · {dateTime(fault.last_seen_at)}</span></div>)}{!faults.length ? <div className={styles.empty}>No fault events recorded.</div> : null}</div></section> : null}
 
         {tab === 'device' ? <>
           <MachineIdentityProfilePanel machineId={machineId} />
@@ -485,6 +495,137 @@ export function MachineDetail({ machineId }: { machineId: string }) {
             <article className={styles.card}><header className={styles.cardHeader}><div><span>Synchronization</span><h2>Device timestamps</h2></div></header><dl className={styles.detailList}><div><dt>Last heartbeat</dt><dd>{dateTime(device?.last_heartbeat_at ?? null)}</dd></div><div><dt>Last upload</dt><dd>{dateTime(device?.last_upload_at ?? null)}</dd></div><div><dt>Last counter</dt><dd>{dateTime(device?.last_counter_at ?? null)}</dd></div><div><dt>Config sent</dt><dd>{dateTime(device?.last_config_at ?? null)}</dd></div><div><dt>Config ack</dt><dd>{dateTime(device?.last_config_ack_at ?? null)}</dd></div></dl></article>
           </section>
         </> : null}
+
+        {tab === 'usage' ? <section className={styles.gridThree}>
+          <article className={styles.card}>
+            <header className={styles.cardHeader}><div><span>Current period</span><h2>Data transfer</h2></div><strong>{bytes(usedBytes)}</strong></header>
+            <dl className={styles.detailList}>
+              <div><dt>30-day transfer</dt><dd>{bytes(usedBytes)}</dd></div>
+              <div><dt>Monthly projection</dt><dd>{bytes(projectedBytes)}</dd></div>
+              <div><dt>Requests</dt><dd>{numberValue(usage?.request_count).toLocaleString('en-ZA')}</dd></div>
+              <div><dt>Modem samples</dt><dd>{numberValue(usage?.modem_sample_count).toLocaleString('en-ZA')}</dd></div>
+              <div><dt>App samples</dt><dd>{numberValue(usage?.device_application_sample_count).toLocaleString('en-ZA')}</dd></div>
+            </dl>
+          </article>
+          <article className={styles.card}>
+            <header className={styles.cardHeader}><div><span>SIM balance</span><h2>Prepaid remaining</h2></div><strong>{prepaid?.remaining_bytes != null ? bytes(prepaid.remaining_bytes) : 'Awaiting data'}</strong></header>
+            <div className={styles.body}><div className={styles.meter}><i style={{ width: `${prepaidPct}%` }} /></div></div>
+            <dl className={styles.detailList}>
+              <div><dt>Balance status</dt><dd>{prepaid?.alert_level ?? prepaid?.query_status ?? 'Not reported'}</dd></div>
+              <div><dt>Checked</dt><dd>{dateTime(prepaid?.checked_at ?? null)}</dd></div>
+              <div><dt>Stale reading</dt><dd>{prepaid?.is_stale ? 'Yes' : 'No'}</dd></div>
+            </dl>
+          </article>
+          <article className={styles.card}>
+            <header className={styles.cardHeader}><div><span>Transport</span><h2>Current network</h2></div></header>
+            <dl className={styles.detailList}>
+              <div><dt>Current path</dt><dd>{device?.last_transport === 'wifi' ? 'Wi-Fi' : device?.last_transport === 'cellular' ? 'Cellular' : 'Not reported'}</dd></div>
+              <div><dt>Preference</dt><dd>{device?.transport_preference ?? 'Auto'}</dd></div>
+              <div><dt>Operator</dt><dd>{device?.cellular_operator ?? 'Not reported'}</dd></div>
+              <div><dt>Signal</dt><dd className={styles.signalRow}>{device ? <SignalStrengthIndicator cellularCsq={device.cellular_csq} transport={device.last_transport} wifiRssi={device.wifi_rssi} /> : '—'}</dd></div>
+            </dl>
+          </article>
+        </section> : null}
+
+        {tab === 'location' ? <section className={styles.grid}>
+          <article className={styles.card}>
+            <header className={styles.cardHeader}><div><span>Installed location</span><h2>{site?.site_name ?? 'Location not assigned'}</h2></div></header>
+            <dl className={styles.detailList}>
+              <div><dt>Customer</dt><dd>{customer?.customer_name ?? 'Not assigned'}</dd></div>
+              <div><dt>Site</dt><dd>{site?.site_name ?? 'Not assigned'}</dd></div>
+              <div><dt>Address</dt><dd>{site?.address ?? machine.current_custodian ?? 'Not recorded'}</dd></div>
+              <div><dt>Latitude</dt><dd>{site?.latitude ?? 'Not recorded'}</dd></div>
+              <div><dt>Longitude</dt><dd>{site?.longitude ?? 'Not recorded'}</dd></div>
+              <div><dt>Region</dt><dd>{machine.branch.toUpperCase()}</dd></div>
+            </dl>
+          </article>
+          <article className={styles.card}>
+            <header className={styles.cardHeader}><div><span>Map workspace</span><h2>Fleet location</h2></div></header>
+            <div className={styles.locationPlaceholder}>
+              <strong>{site?.latitude != null && site?.longitude != null ? 'Coordinates available' : 'Coordinates required'}</strong>
+              <p>{site?.latitude != null && site?.longitude != null ? `${site.latitude}, ${site.longitude}` : 'Add coordinates to the customer site to display this machine on the fleet map.'}</p>
+              <Link href="/map">Open fleet map</Link>
+            </div>
+          </article>
+        </section> : null}
+
+        {tab === 'maintenance' ? <section className={styles.gridThree}>
+          <article className={styles.card}>
+            <header className={styles.cardHeader}><div><span>Service schedule</span><h2>Maintenance dates</h2></div></header>
+            <dl className={styles.detailList}>
+              <div><dt>Installed</dt><dd>{dateTime(machine.installed_at)}</dd></div>
+              <div><dt>Last service</dt><dd>{dateTime(machine.last_service_at)}</dd></div>
+              <div><dt>Next service</dt><dd>{dateTime(machine.next_service_at)}</dd></div>
+              <div><dt>Condition</dt><dd>{machine.condition ?? machine.status}</dd></div>
+              <div><dt>Criticality</dt><dd>{machine.criticality ?? 'Not set'}</dd></div>
+            </dl>
+          </article>
+          <article className={styles.card}>
+            <header className={styles.cardHeader}><div><span>Operational health</span><h2>Maintenance indicators</h2></div></header>
+            <dl className={styles.detailList}>
+              <div><dt>Active faults</dt><dd>{openFaults.length.toLocaleString('en-ZA')}</dd></div>
+              <div><dt>Connection</dt><dd>{state.label}</dd></div>
+              <div><dt>Configuration</dt><dd>{configState?.label ?? 'Not reported'}</dd></div>
+              <div><dt>Vend success</dt><dd>{success.toFixed(1)}%</dd></div>
+            </dl>
+          </article>
+          <article className={styles.card}>
+            <header className={styles.cardHeader}><div><span>Maintenance workspace</span><h2>Service actions</h2></div></header>
+            <div className={styles.workspaceLinks}>
+              <Link href="/maintenance">Open maintenance</Link>
+              {device?.device_code ? <Link href={`/telemetry/test-center?device=${encodeURIComponent(device.device_code)}`}>Run diagnostics</Link> : null}
+              <button onClick={() => setTab('errors')} type="button">Review machine errors</button>
+            </div>
+          </article>
+        </section> : null}
+
+        {tab === 'logs' ? <section className={styles.grid}>
+          <article className={styles.card}>
+            <header className={styles.cardHeader}><div><span>Remote diagnostics</span><h2>Telemetry logs</h2></div></header>
+            <div className={styles.logLaunch}>
+              <strong>{device?.device_code ?? 'No telemetry device assigned'}</strong>
+              <p>Open Test Center to view live serial diagnostics, MDB/DEX captures and device health messages for this machine.</p>
+              {device?.device_code ? <Link href={`/telemetry/test-center?device=${encodeURIComponent(device.device_code)}`}>Open Test Center</Link> : null}
+            </div>
+          </article>
+          <article className={styles.card}>
+            <header className={styles.cardHeader}><div><span>Recent device state</span><h2>Last communications</h2></div></header>
+            <dl className={styles.detailList}>
+              <div><dt>Heartbeat</dt><dd>{dateTime(device?.last_heartbeat_at ?? null)}</dd></div>
+              <div><dt>Upload</dt><dd>{dateTime(device?.last_upload_at ?? null)}</dd></div>
+              <div><dt>Counter</dt><dd>{dateTime(device?.last_counter_at ?? null)}</dd></div>
+              <div><dt>Config sent</dt><dd>{dateTime(device?.last_config_at ?? null)}</dd></div>
+              <div><dt>Config ack</dt><dd>{dateTime(device?.last_config_ack_at ?? null)}</dd></div>
+            </dl>
+          </article>
+        </section> : null}
+
+        {tab === 'settings' ? <section className={styles.gridThree}>
+          <article className={styles.card}>
+            <header className={styles.cardHeader}><div><span>Reporting</span><h2>Update period</h2></div></header>
+            <div className={styles.settingBody}>
+              <p>Choose how frequently this device reports and how the machine dashboard aggregates telemetry.</p>
+              <div className={styles.modeButtons}>{(Object.keys(telemetryModes) as TelemetryMode[]).map((mode) => <button aria-pressed={machineState?.telemetry_mode === mode} disabled={!device || modeSaving || machineState?.telemetry_mode === mode} key={mode} onClick={() => void setReportingMode(mode)} type="button">{telemetryModes[mode]}</button>)}</div>
+            </div>
+          </article>
+          <article className={styles.card}>
+            <header className={styles.cardHeader}><div><span>Machine identity</span><h2>Identifiers</h2></div></header>
+            <dl className={styles.detailList}>
+              <div><dt>Serial</dt><dd>{machine.serial_number ?? 'Not recorded'}</dd></div>
+              <div><dt>QR code</dt><dd>{machine.machine_barcode ?? machine.asset_tag ?? 'Not recorded'}</dd></div>
+              <div><dt>Manufacturer</dt><dd>{machine.manufacturer ?? 'Not recorded'}</dd></div>
+              <div><dt>Model</dt><dd>{machine.model ?? 'Not recorded'}</dd></div>
+            </dl>
+          </article>
+          <article className={styles.card}>
+            <header className={styles.cardHeader}><div><span>Administration</span><h2>Machine controls</h2></div></header>
+            <div className={styles.workspaceLinks}>
+              <Link href="/telemetry/devices">Manage telemetry device</Link>
+              <Link href="/products">Manage product mappings</Link>
+              <Link href="/machine-profiles">Machine profiles</Link>
+            </div>
+          </article>
+        </section> : null}
 
         <footer className={styles.footer}><span>Auto-refresh every 30 seconds</span><span>Updated {updated ? updated.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'}</span></footer>
       </> : null}
