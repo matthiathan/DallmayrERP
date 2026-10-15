@@ -30,7 +30,7 @@ export const telemetryNavigationSections: NavSection[] = [
     items: [
       { href: '/products', label: 'Products', code: 'PRD01', roles: 'all', description: 'Product catalog, machine mappings and unmapped selections.' },
       { href: '/telemetry/devices', label: 'Device Management', code: 'TEL02', roles: 'all', description: 'Device assignment, connectivity, reporting, location and SIM settings.' },
-      { href: '/users', label: 'Users & Client Access', code: 'USR01', roles: ['admin'], description: 'Create Dallmayr staff access and customer-scoped client logins.' },
+      { href: '/administration', label: 'Administration', code: 'ADM01', roles: ['admin'], description: 'Users, roles, profiles, provisioning, firmware, audit and settings.' },
     ],
   },
 ];
@@ -46,7 +46,7 @@ function sectionsForAccount(accountScope: AccountScope, role: string | null | un
       ...section,
       items: section.items.filter((item) => {
         if (accountScope === 'client') return CLIENT_ALLOWED_PATHS.has(item.href);
-        if (item.href === '/users') return role === 'admin';
+        if (item.href === '/administration') return role === 'admin';
         return true;
       }),
     }))
