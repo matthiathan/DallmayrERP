@@ -42,7 +42,7 @@ const routeContracts = [
   ['app/telemetry/page.tsx', 'TelemetryAnalytics'],
   ['app/telemetry/devices/page.tsx', 'TelemetryDevicesWorkspace'],
   ['app/telemetry/test-center/page.tsx', 'SpecialistWorkspaceFrame'],
-  ['app/map/page.tsx', 'SpecialistWorkspaceFrame'],
+  ['app/map/page.tsx', 'TelemetryLocationWorkspace'],
   ['app/products/page.tsx', 'SpecialistWorkspaceFrame'],
 ];
 
