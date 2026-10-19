@@ -48,7 +48,7 @@ test('analytics and reports explain distinct jobs', async () => {
   const navigation = await readFile(navigationPath, 'utf8');
 
   assert.match(analytics, /Explore and compare/);
-  assert.match(reports, /structured operational tables and exports/i);
+  assert.match(reports, /Operational reporting across sales, machines, connectivity, faults, maintenance, products, customers and sites/i);
   assert.match(navigation, /Explore trends, comparisons and performance signals/);
   assert.match(navigation, /Structured operational tables, audit views and exports/);
 });
