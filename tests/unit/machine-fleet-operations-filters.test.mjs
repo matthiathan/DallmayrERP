@@ -31,5 +31,6 @@ test('Machines exposes customer, site and commissioning filters without client-s
   assert.match(fleetBrowser, /Commissioning/);
   assert.match(fleetBrowser, /commissioning_status/);
   assert.match(fleetBrowser, /Ready for field test/);
-  assert.doesNotMatch(fleetBrowser, /rows\.filter\(/);
+  assert.doesNotMatch(fleetBrowser, /const filteredRows\s*=\s*rows\.filter\(/);
+  assert.match(fleetBrowser, /const selectedRows = rows\.filter\(\(machine\) => selectedIds\.has\(machine\.id\)\)/);
 });
