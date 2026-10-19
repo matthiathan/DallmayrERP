@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
-import { SignalStrengthIndicator } from '@/components/ui/SignalStrengthIndicator';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { collectSupabasePagesResult } from '@/lib/supabase/collect-pages';
 import { deviceConfigSyncState, deviceConnectionState } from '@/lib/telemetry/device-health';
