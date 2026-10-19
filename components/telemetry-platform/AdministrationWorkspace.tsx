@@ -145,6 +145,7 @@ export function AdministrationWorkspace({ initialTab = 'users' }: { initialTab?:
               <article><span>Machine identity</span><strong>Profile resolution</strong><p>Identity evidence and decoder profile rollout remain managed through the existing profile workspaces.</p><Link href="/telemetry/devices/profile-identity">Open identity settings</Link></article>
               <article><span>User access</span><strong>Roles & branch scope</strong><p>Staff access and client tenancy remain enforced through the production access-control functions.</p><button onClick={() => setTab('users')} type="button">Open users</button></article>
               <article><span>Audit</span><strong>Administrative activity</strong><p>Review recorded administrative and operational changes.</p><button onClick={() => setTab('audit')} type="button">Open audit history</button></article>
+              <article><span>Approvals</span><strong>Risk decisions</strong><p>Review current approval evidence and the prerequisites for the generic approval engine.</p><Link href="/approvals">Open approvals</Link></article>
             </div>
           </div>
         ) : null}
