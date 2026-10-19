@@ -501,7 +501,7 @@ export function MachineFleetBrowser() {
                     <span className={`${styles.statusPill} ${styles[`is_${machine.connection_status}`]}`}><i />{statusLabel(machine.connection_status)}</span>
                   </header>
                   <button className={styles.cardPreviewButton} onClick={() => setPreviewId(machine.id)} type="button">
-                    <div className={styles.cardMachineIcon}><NavigationIcon kind="machines" /></div>
+                    <div className={styles.cardMachineIcon}><NavigationIcon kind="tool" /></div>
                     <div><strong>{titleFor(machine)}</strong><span>{machine.serial_number ?? 'No serial'} · {machine.machine_barcode ?? machine.asset_tag ?? 'No QR'}</span></div>
                   </button>
                   <dl>
