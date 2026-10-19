@@ -80,7 +80,8 @@ test('Dallmayr administrators can create, invite and manage customer-scoped clie
   assert.match(clientAccess, /p_customer_id: customerId/);
   assert.match(clientAccess, /functions\.invoke\('admin-client-invite'/);
   assert.match(clientAccess, /Create & send invitation/);
-  assert.match(usersPage, /AdministrationWorkspace/);
+  assert.match(usersPage, /redirect\('\/administration'\)/);
+  assert.doesNotMatch(usersPage, /AdministrationWorkspace/);
   assert.match(administrationWorkspace, /ClientAccessControl/);
   assert.match(administrationWorkspace, /AdminUsersWorkspace/);
 });
