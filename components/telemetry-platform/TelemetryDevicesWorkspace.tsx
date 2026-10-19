@@ -457,6 +457,7 @@ export function TelemetryDevicesWorkspace() {
     <header className={styles.pageHeader}>
       <div><span>Fleet</span><h1>Telemetry Devices</h1><p>Controller identity, assignment, connectivity, signal, reporting, data usage and SIM health.</p></div>
       <div className={styles.pageHeaderActions}>
+        <Link href="/archive">View archive</Link>
         <Link href="/telemetry/test-center">Open Test Center</Link>
         <button disabled={loading} onClick={() => void load(false)} type="button">{loading ? 'Refreshing…' : 'Refresh'}</button>
       </div>
