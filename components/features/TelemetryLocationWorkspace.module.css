@@ -569,3 +569,19 @@
   .mapHost :global(.telemetry-tracker-canvas){min-height:430px}
   .mapHost :global(.fleet-table-footer){align-items:flex-start;flex-direction:column}
 }
+
+
+.mapHost :global(.fleet-table-scroll) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mapHost :global(.telemetry-location-table) {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
