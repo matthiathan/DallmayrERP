@@ -414,6 +414,7 @@ export function MachineFleetBrowser() {
       <header className={styles.header}>
         <div className={styles.headerCopy}><span>Fleet management</span><h1>Machines</h1><p>Search, filter and manage machines across customers, sites and telemetry states.</p></div>
         <div className={styles.headerActions}>
+          {!isClient ? <Link className={styles.headerButton} href="/archive">View archive</Link> : null}
           <button className={styles.headerButton} disabled={refreshing} onClick={() => loadFleet(true)} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button>
           {!isClient ? <MachineCreateImportControls onChanged={refreshAll} /> : null}
         </div>
