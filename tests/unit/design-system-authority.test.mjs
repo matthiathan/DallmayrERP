@@ -31,21 +31,27 @@ test('core telemetry routes render the rebuilt platform owners directly', async 
   }
 });
 
-test('specialist telemetry routes share the rebuilt workspace frame', async () => {
+test('specialist and promoted telemetry routes use their intended presentation owners', async () => {
   const frame = await read('components/telemetry-platform/SpecialistWorkspaceFrame.tsx');
   assert.match(frame, /data-specialist-workspace="televend-v3"/);
   assert.match(frame, /<h1>\{title\}<\/h1>/);
   assert.match(frame, /SpecialistWorkspaceFrame\.module\.css/);
 
   for (const routePath of [
-    'app/telemetry/devices/page.tsx',
     'app/telemetry/test-center/page.tsx',
-    'app/map/page.tsx',
     'app/products/page.tsx',
   ]) {
     const source = await read(routePath);
     assert.match(source, /<SpecialistWorkspaceFrame/);
   }
+
+  const devices = await read('app/telemetry/devices/page.tsx');
+  assert.match(devices, /<TelemetryDevicesWorkspace/);
+  assert.doesNotMatch(devices, /<SpecialistWorkspaceFrame/);
+
+  const map = await read('app/map/page.tsx');
+  assert.match(map, /<TelemetryLocationWorkspace/);
+  assert.doesNotMatch(map, /<SpecialistWorkspaceFrame/);
 });
 
 test('telemetry presentation is component-owned rather than legacy global surface markup', async () => {
