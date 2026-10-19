@@ -1,6 +1,5 @@
-import { AppShell } from '@/components/layout/AppShell';
-import { AdministrationWorkspace } from '@/components/telemetry-platform/AdministrationWorkspace';
+import { redirect } from 'next/navigation';
 
 export default function UsersPage() {
-  return <AppShell><AdministrationWorkspace initialTab="users" /></AppShell>;
+  redirect('/administration');
 }
