@@ -11,7 +11,7 @@ test('telemetry devices route uses the finished device workspace directly', () =
   assert.match(page, /TelemetryDevicesWorkspace/);
   assert.doesNotMatch(page, /AdminTelemetryDevices/);
   assert.doesNotMatch(page, /MdbPinOrderControl/);
-  assert.match(workspace, /data-telemetry-devices="v3"/);
+  assert.match(workspace, /data-telemetry-devices="v4"/);
 });
 
 test('MDB pin order is connected from database through device UI and config API', () => {
