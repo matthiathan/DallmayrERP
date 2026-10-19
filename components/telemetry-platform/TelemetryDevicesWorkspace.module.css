@@ -881,6 +881,28 @@
     display: none;
   }
 
+  .workspace,
+  .toolbar,
+  .register,
+  .mobileCards {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .toolbar {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+
+  .search {
+    grid-column: 1 / -1;
+  }
+
+  .toolbar select,
+  .refresh {
+    width: 100%;
+    min-width: 0;
+  }
+
   .drawer {
     width: min(520px,100%);
   }
@@ -896,6 +918,16 @@
 }
 
 @media (max-width: 560px) {
+  .toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .search,
+  .toolbar > select:nth-of-type(3),
+  .refresh {
+    grid-column: auto;
+  }
+
   .drawer {
     width: 100%;
   }
