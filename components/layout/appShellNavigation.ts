@@ -12,6 +12,7 @@ export const telemetryNavigationSections: NavSection[] = [
       { href: '/', label: 'Fleet Overview', code: 'FLT01', roles: 'all', description: 'Fleet health, exceptions, faults and current connectivity.' },
       { href: '/machines', label: 'Machines', code: 'FLT02', roles: 'all', description: 'Every machine and its connected telemetry device.' },
       { href: '/customers', label: 'Customers / Sites', code: 'FLT04', roles: 'all', description: 'Customer hierarchy, sites, installed machines and service context.' },
+      { href: '/archive', label: 'Archive', code: 'FLT05', roles: ['admin', 'operations', 'technician', 'road_technician'], description: 'Retired machines and telemetry devices with history and controlled reactivation.' },
       { href: '/alerts', label: 'Alerts', code: 'FLT03', roles: 'all', description: 'Active faults, ownership, acknowledgement and resolution workflow.' },
       { href: '/maintenance', label: 'Maintenance', code: 'OPS02', roles: 'all', description: 'Service jobs, preventive maintenance, technician workload and completion.' },
     ],
@@ -49,6 +50,7 @@ function sectionsForAccount(accountScope: AccountScope, role: string | null | un
       items: section.items.filter((item) => {
         if (accountScope === 'client') return CLIENT_ALLOWED_PATHS.has(item.href);
         if (item.href === '/administration' || item.href === '/approvals' || item.href === '/factory') return role === 'admin';
+        if (item.href === '/archive') return ['admin', 'operations', 'technician', 'road_technician'].includes(role ?? '');
         return true;
       }),
     }))
