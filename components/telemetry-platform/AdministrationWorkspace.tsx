@@ -95,6 +95,7 @@ export function AdministrationWorkspace({ initialTab = 'users' }: { initialTab?:
           <div className={styles.panel}>
             <header><div><span>Machine intelligence</span><h2>Machine Profiles</h2><p>Review machine identity evidence, decoder profile assignment and controlled profile rollout.</p></div></header>
             <div className={styles.actionGrid}>
+              <Link href="/machine-profiles"><strong>Machine Profiles</strong><span>Decoder profiles, product mappings, fault rules, assigned devices and rollout state.</span></Link>
               <Link href="/telemetry/devices/profile-identity"><strong>Profile identity evidence</strong><span>Review automatic identity evidence, confidence and profile resolution.</span></Link>
               <Link href="/telemetry/devices/profile-rollout"><strong>Profile rollout</strong><span>Review controlled profile rollout queue and deployment state.</span></Link>
               <Link href="/machines"><strong>Fleet profile status</strong><span>See configured, pending, ambiguous and unmatched machines in fleet context.</span></Link>
