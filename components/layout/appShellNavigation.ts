@@ -31,6 +31,7 @@ export const telemetryNavigationSections: NavSection[] = [
     items: [
       { href: '/products', label: 'Products', code: 'PRD01', roles: 'all', description: 'Product catalog, machine mappings and unmapped selections.' },
       { href: '/telemetry/devices', label: 'Device Management', code: 'TEL02', roles: 'all', description: 'Device assignment, connectivity, reporting, location and SIM settings.' },
+      { href: '/machine-profiles', label: 'Machine Profiles', code: 'PRF01', roles: ['admin'], description: 'Decoder profiles, product mappings, fault rules and rollout evidence.' },
       { href: '/administration', label: 'Administration', code: 'ADM01', roles: ['admin'], description: 'Users, roles, profiles, provisioning, firmware, audit and settings.' },
       { href: '/approvals', label: 'Approvals', code: 'APR01', roles: ['admin'], description: 'Approval evidence, decision history and risk-policy prerequisites.' },
       { href: '/factory', label: 'Factory', code: 'FAC01', roles: ['admin'], description: 'Factory device readiness, provisioning evidence, testing and QA prerequisites.' },
@@ -49,7 +50,7 @@ function sectionsForAccount(accountScope: AccountScope, role: string | null | un
       ...section,
       items: section.items.filter((item) => {
         if (accountScope === 'client') return CLIENT_ALLOWED_PATHS.has(item.href);
-        if (item.href === '/administration' || item.href === '/approvals' || item.href === '/factory') return role === 'admin';
+        if (item.href === '/administration' || item.href === '/approvals' || item.href === '/factory' || item.href === '/machine-profiles') return role === 'admin';
         if (item.href === '/archive') return ['admin', 'operations', 'technician', 'road_technician'].includes(role ?? '');
         return true;
       }),
