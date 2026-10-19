@@ -10,6 +10,7 @@ const clientAccess = fs.readFileSync(new URL('../../components/features/ClientAc
 const navigation = fs.readFileSync(new URL('../../components/layout/appShellNavigation.ts', import.meta.url), 'utf8');
 const shell = fs.readFileSync(new URL('../../components/layout/AppShell.tsx', import.meta.url), 'utf8');
 const usersPage = fs.readFileSync(new URL('../../app/users/page.tsx', import.meta.url), 'utf8');
+const administrationWorkspace = fs.readFileSync(new URL('../../components/telemetry-platform/AdministrationWorkspace.tsx', import.meta.url), 'utf8');
 const fleetBrowser = fs.readFileSync(new URL('../../components/telemetry-platform/MachineFleetBrowser.tsx', import.meta.url), 'utf8');
 const identityPanel = fs.readFileSync(new URL('../../components/telemetry-platform/MachineIdentityProfilePanel.tsx', import.meta.url), 'utf8');
 
@@ -79,8 +80,10 @@ test('Dallmayr administrators can create, invite and manage customer-scoped clie
   assert.match(clientAccess, /p_customer_id: customerId/);
   assert.match(clientAccess, /functions\.invoke\('admin-client-invite'/);
   assert.match(clientAccess, /Create & send invitation/);
-  assert.match(usersPage, /ClientAccessControl/);
-  assert.match(usersPage, /AdminUserAccessControl/);
+  assert.match(usersPage, /redirect\('\/administration'\)/);
+  assert.doesNotMatch(usersPage, /AdministrationWorkspace/);
+  assert.match(administrationWorkspace, /ClientAccessControl/);
+  assert.match(administrationWorkspace, /AdminUsersWorkspace/);
 });
 
 test('client invitation function authenticates Dallmayr admin and requires an active client access record', () => {
@@ -102,7 +105,7 @@ test('client shell exposes only explicitly approved read-only routes', () => {
   assert.match(navigation, /return pathname\.startsWith\('\/machines\/'\)/);
   assert.match(navigation, /if \(accountScope === 'client'\) return clientCanAccessPath\(pathname\)/);
   assert.doesNotMatch(navigation, /if \(accountScope === 'client'\)[^\n]*pathname\.startsWith/);
-  assert.match(navigation, /Users & Client Access/);
+  assert.match(navigation, /label: 'Administration'/);
   assert.match(shell, /data-account-scope=\{accountScope\}/);
   assert.match(shell, /!isClient \? <TelemetryRegionSelector/);
   assert.match(shell, /This client account can only open read-only telemetry pages for its assigned company/);

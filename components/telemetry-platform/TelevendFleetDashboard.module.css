@@ -689,3 +689,99 @@
   .attentionRow { gap: 7px; }
   .attentionActions a { padding-inline: 5px; }
 }
+
+
+/* 2026 telemetry redesign — approved dashboard visual direction */
+.dashboard { gap: 12px; color: #17314f; }
+
+.toolbar {
+  min-height: 68px;
+  padding: 4px 2px 8px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.toolbarTitle { align-items: flex-start; }
+.toolbarTitle > i { display: none; }
+.toolbarTitle > div { display: grid; gap: 3px; }
+.toolbarTitle strong {
+  color: #071a33;
+  font-size: clamp(1.55rem, 2vw, 2.15rem);
+  font-weight: 850;
+  letter-spacing: -.035em;
+  line-height: 1;
+}
+.toolbarTitle span { color: #728197; font-size: .72rem; }
+.toolbarActions label { color: #718096; }
+.toolbar select,
+.toolbar button {
+  min-height: 38px;
+  color: #173a64;
+  background: #fff;
+  border-color: #d8e2ee;
+  border-radius: 8px;
+}
+.toolbar button { color: #0758d6; font-weight: 780; }
+
+.metricsStrip { gap: 10px; }
+.metric {
+  min-height: 104px;
+  padding: 13px 14px 11px 16px;
+  border-color: #dbe4ef;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(18,43,72,.04), 0 8px 20px rgba(18,43,72,.035);
+}
+.metric::before { width: 0; }
+.metricBlue { background: linear-gradient(180deg, #fff 0%, #fbfdff 100%); }
+.metric span { color: #687b91; font-size: .63rem; letter-spacing: 0; text-transform: none; }
+.metric strong { color: #0d2d55; font-size: clamp(1.45rem, 2vw, 1.9rem); }
+.metric small { color: #8b99aa; font-size: .6rem; }
+
+.attentionCard,
+.card,
+.telemetryCard {
+  border-color: #dbe4ef;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(18,43,72,.035), 0 8px 20px rgba(18,43,72,.03);
+}
+.attentionHeader,
+.cardHeader { border-bottom-color: #e6edf5; }
+.attentionHeader h2,
+.cardHeader h2,
+.telemetryCard header strong,
+.productName,
+.productValue,
+.gaugeTitle,
+.gaugeValue strong,
+.activityRow strong,
+.cardFooter strong { color: #17314f; }
+
+.cardHeaderRed {
+  color: #17314f;
+  background: #fff;
+  border-bottom-color: #e6edf5;
+}
+.cardHeaderRed span { color: #8b99aa; }
+.cardHeaderRed h2 { color: #17314f; }
+.cardHeaderRed strong,
+.cardHeaderRed a,
+.cardHeader a { color: #0758d6; }
+
+.cardFooter { background: #f8fbff; border-top-color: #e6edf5; }
+.telemetryCard { padding: 11px; }
+.meter { background: #e8eef6; }
+.meter i { background: #0f6bff; }
+.attentionActions a,
+.attentionEmpty a,
+.attentionFooter a { color: #0758d6; }
+.activityRow > b { color: #0758d6; }
+
+@media (max-width: 1260px) {
+  .toolbar { min-height: 60px; }
+}
+@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  .toolbar { align-items: flex-start; min-height: auto; padding-block: 4px 8px; }
+  .toolbarTitle strong { font-size: 1.45rem; }
+  .toolbarTitle span { display: block; }
+}

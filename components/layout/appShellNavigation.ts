@@ -11,7 +11,11 @@ export const telemetryNavigationSections: NavSection[] = [
     items: [
       { href: '/', label: 'Fleet Overview', code: 'FLT01', roles: 'all', description: 'Fleet health, exceptions, faults and current connectivity.' },
       { href: '/machines', label: 'Machines', code: 'FLT02', roles: 'all', description: 'Every machine and its connected telemetry device.' },
+      { href: '/customers', label: 'Customers / Sites', code: 'FLT04', roles: 'all', description: 'Customer hierarchy, sites, installed machines and service context.' },
+      { href: '/archive', label: 'Archive', code: 'FLT05', roles: ['admin', 'operations', 'technician', 'road_technician'], description: 'Retired machines and telemetry devices with history and controlled reactivation.' },
       { href: '/alerts', label: 'Alerts', code: 'FLT03', roles: 'all', description: 'Active faults, ownership, acknowledgement and resolution workflow.' },
+      { href: '/maintenance', label: 'Maintenance', code: 'OPS02', roles: 'all', description: 'Service jobs, preventive maintenance, technician workload and completion.' },
+      { href: '/technician', label: 'Technician', code: 'OPS03', roles: ['admin', 'operations', 'technician', 'road_technician'], description: 'Field-focused assigned work, machine context, diagnostics and safe completion.' },
     ],
   },
   {
@@ -28,7 +32,10 @@ export const telemetryNavigationSections: NavSection[] = [
     items: [
       { href: '/products', label: 'Products', code: 'PRD01', roles: 'all', description: 'Product catalog, machine mappings and unmapped selections.' },
       { href: '/telemetry/devices', label: 'Device Management', code: 'TEL02', roles: 'all', description: 'Device assignment, connectivity, reporting, location and SIM settings.' },
-      { href: '/users', label: 'Users & Client Access', code: 'USR01', roles: ['admin'], description: 'Create Dallmayr staff access and customer-scoped client logins.' },
+      { href: '/machine-profiles', label: 'Machine Profiles', code: 'PRF01', roles: ['admin'], description: 'Decoder profiles, product mappings, fault rules and rollout evidence.' },
+      { href: '/administration', label: 'Administration', code: 'ADM01', roles: ['admin'], description: 'Users, roles, profiles, provisioning, firmware, audit and settings.' },
+      { href: '/approvals', label: 'Approvals', code: 'APR01', roles: ['admin'], description: 'Approval evidence, decision history and risk-policy prerequisites.' },
+      { href: '/factory', label: 'Factory', code: 'FAC01', roles: ['admin'], description: 'Factory device readiness, provisioning evidence, testing and QA prerequisites.' },
     ],
   },
 ];
@@ -44,7 +51,8 @@ function sectionsForAccount(accountScope: AccountScope, role: string | null | un
       ...section,
       items: section.items.filter((item) => {
         if (accountScope === 'client') return CLIENT_ALLOWED_PATHS.has(item.href);
-        if (item.href === '/users') return role === 'admin';
+        if (item.href === '/administration' || item.href === '/approvals' || item.href === '/factory' || item.href === '/machine-profiles') return role === 'admin';
+        if (item.href === '/archive' || item.href === '/technician') return ['admin', 'operations', 'technician', 'road_technician'].includes(role ?? '');
         return true;
       }),
     }))

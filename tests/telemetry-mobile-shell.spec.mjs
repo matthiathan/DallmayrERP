@@ -176,7 +176,7 @@ test('mobile telemetry shell exposes the four primary fleet routes without deskt
   await expectMobilePageTitle(page, 'Machines');
   await expect(page.locator('.telemetry-mobile-bottom-nav')).toBeVisible();
   await expect(page.locator('.telemetry-mobile-bottom-nav a[href="/machines"]')).toHaveAttribute('aria-current', 'page');
-  for (const href of ['/', '/machines', '/alerts', '/telemetry']) {
+  for (const href of ['/', '/machines', '/alerts', '/maintenance']) {
     await expect(page.locator(`.telemetry-mobile-bottom-nav a[href="${href}"]`)).toHaveCount(1);
   }
   await expect(page.locator('#mobile-account-menu-target')).toHaveCount(1);
@@ -189,7 +189,7 @@ test('rebuilt Fleet Overview and Machines remain bounded on a phone', async ({ b
   const dashboard = home.page.locator('[data-fleet-dashboard="televend-v3"]');
   await expect(dashboard).toBeVisible({ timeout: 20_000 });
   await expectMobilePageTitle(home.page, 'Fleet Overview');
-  await expect(dashboard.getByText('Items sold', { exact: true }).first()).toBeVisible();
+  await expect(dashboard.getByText('Vends', { exact: true }).first()).toBeVisible();
   await expect(dashboard.getByRole('heading', { name: 'Sales metrics' })).toBeVisible();
   await expect(dashboard.locator('[data-chart-interactive="comparison-line"]')).toBeVisible();
   await expectNoHorizontalOverflow(home.page);
@@ -222,15 +222,15 @@ test('rebuilt Analytics comparison chart supports tap-to-pin detail on mobile', 
 
 test('specialist telemetry workspaces remain usable and bounded on a phone', async ({ browser }) => {
   const routes = [
-    ['/telemetry/test-center', 'Test Center'],
-    ['/map', 'Machine Map'],
-    ['/products', 'Products'],
-    ['/telemetry/devices', 'Device Management'],
+    ['/telemetry/test-center', 'Test Center', '[data-specialist-workspace="televend-v3"]'],
+    ['/map', 'Machine Map', '[data-location-control-owner="device-management"]'],
+    ['/products', 'Products', '[data-specialist-workspace="televend-v3"]'],
+    ['/telemetry/devices', 'Device Management', '[data-telemetry-devices="v4"]'],
   ];
 
-  for (const [pathname, mobileTitle] of routes) {
+  for (const [pathname, mobileTitle, ownerSelector] of routes) {
     const { context, page } = await openResponsivePage(browser, pathname);
-    const workspace = page.locator('[data-specialist-workspace="televend-v3"]');
+    const workspace = page.locator(ownerSelector);
     await expect(workspace).toBeVisible({ timeout: 20_000 });
     await expectMobilePageTitle(page, mobileTitle);
     await expectNoHorizontalOverflow(page);

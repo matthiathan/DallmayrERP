@@ -1,39 +1,37 @@
 .brandShell {
-  /* Dallmayr South Africa app palette: gold identity, white/light surfaces and
-     charcoal copy. Red is intentionally excluded from branding; fault/error
-     components keep their own semantic danger colours. */
-  --dallmayr-gold: #b89b5e !important;
-  --dallmayr-gold-dark: #7f683b !important;
-  --dallmayr-gold-soft: #f6f1e7 !important;
-  --dallmayr-red: #b89b5e !important;
-  --dallmayr-red-dark: #7f683b !important;
-  --dallmayr-red-soft: #f6f1e7 !important;
-  --dallmayr-cream: #f5f4f1 !important;
-  --dallmayr-cream-soft: #faf9f6 !important;
-  --platform-ink: #242424 !important;
-  --platform-muted: #6d6a64 !important;
-  --platform-border: #ddd9d1 !important;
+  --dallmayr-gold: #c9a55b !important;
+  --dallmayr-gold-dark: #9f7b35 !important;
+  --dallmayr-gold-soft: #fff8e8 !important;
+  --dallmayr-red: #dc3545 !important;
+  --dallmayr-red-dark: #b42332 !important;
+  --dallmayr-red-soft: #fff1f2 !important;
+  --dallmayr-cream: #f4f7fb !important;
+  --dallmayr-cream-soft: #f8fbff !important;
+  --platform-ink: #10233e !important;
+  --platform-muted: #66768a !important;
+  --platform-border: #dbe4ef !important;
   --platform-surface: #ffffff !important;
-  --user-accent: #b89b5e !important;
-  --content-accent-text: #6f5a31 !important;
-  --content-focus: #8d7544 !important;
-  color: #242424;
-  background: #f5f4f1;
+  --user-accent: #0f6bff !important;
+  --content-accent-text: #0758d6 !important;
+  --content-focus: #0f6bff !important;
+  color: #10233e;
+  background: #f4f7fb;
 }
 
 .brandShell :global(.application-main) {
-  color: #242424 !important;
-  background: #f5f4f1 !important;
+  color: #10233e !important;
+  background: #f4f7fb !important;
 }
 
 .brandShell :global(.neo-card),
 .brandShell :global(.card),
 .brandShell :global(.hero-panel),
 .brandShell :global(.table-wrap) {
-  color: #242424 !important;
+  color: #10233e !important;
   background: #ffffff !important;
-  border-color: #ddd9d1 !important;
-  box-shadow: 0 1px 2px rgba(31, 31, 29, .05), 0 10px 28px rgba(31, 31, 29, .045) !important;
+  border-color: #dbe4ef !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 2px rgba(18, 43, 72, .04), 0 8px 24px rgba(18, 43, 72, .045) !important;
 }
 
 .brandShell :global(.neo-card::before),
@@ -50,175 +48,204 @@
 .brandShell :global(h2),
 .brandShell :global(h3),
 .brandShell :global(h4) {
-  color: #242424 !important;
+  color: #071a33 !important;
   text-shadow: none !important;
 }
 
 .brandShell :global(p),
 .brandShell :global(label) {
-  color: #6d6a64 !important;
+  color: #66768a !important;
   text-shadow: none !important;
 }
 
 .brandShell :global(.kpi-value) {
-  color: #7f683b !important;
+  color: #0f2e55 !important;
   text-shadow: none !important;
 }
 
 .brandShell :global(.button:not(.secondary):not(.danger)) {
-  color: #211d16 !important;
-  background: #b89b5e !important;
-  border-color: #9f844d !important;
-  box-shadow: 0 1px 2px rgba(31, 31, 29, .08) !important;
+  color: #ffffff !important;
+  background: #0f6bff !important;
+  border-color: #0f6bff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(15, 107, 255, .18) !important;
   text-shadow: none !important;
 }
 
 .brandShell :global(.button:not(.secondary):not(.danger):hover) {
   color: #ffffff !important;
-  background: #7f683b !important;
+  background: #0758d6 !important;
+  border-color: #0758d6 !important;
 }
 
 .brandShell :global(.button.secondary) {
-  color: #6f5a31 !important;
+  color: #173a64 !important;
   background: #ffffff !important;
-  border-color: #cec4b2 !important;
+  border-color: #d4deea !important;
+  border-radius: 8px !important;
   box-shadow: none !important;
-  text-shadow: none !important;
 }
 
 .brandShell :global(input),
 .brandShell :global(select),
 .brandShell :global(textarea) {
-  color: #242424 !important;
+  color: #10233e !important;
   background: #ffffff !important;
-  border-color: #d6d1c7 !important;
+  border-color: #d4deea !important;
+  border-radius: 8px !important;
   box-shadow: none !important;
-  text-shadow: none !important;
 }
 
 .brandShell :global(input:focus),
 .brandShell :global(select:focus),
 .brandShell :global(textarea:focus) {
-  border-color: #9f844d !important;
-  box-shadow: 0 0 0 3px rgba(184, 155, 94, .18) !important;
+  border-color: #0f6bff !important;
+  box-shadow: 0 0 0 3px rgba(15, 107, 255, .12) !important;
 }
 
 .brandShell :global(th) {
-  color: #625c51 !important;
-  background: #f8f6f1 !important;
-  border-bottom-color: #ddd9d1 !important;
+  color: #63758a !important;
+  background: #f7f9fc !important;
+  border-bottom-color: #dbe4ef !important;
   box-shadow: none !important;
   text-shadow: none !important;
 }
 
 .brandShell :global(td) {
-  color: #242424 !important;
-  border-bottom-color: #ebe7df !important;
+  color: #17314f !important;
+  border-bottom-color: #e7edf4 !important;
 }
 
 .brandShell :global(tr:hover td) {
-  background: #fbf9f4 !important;
+  background: #f8fbff !important;
 }
 
 .brandShell :global(.dallmayr-sidebar) {
-  color: #3d3a35 !important;
-  background: #ffffff !important;
-  border-right-color: #ddd9d1 !important;
+  color: #dbe8f6 !important;
+  background: #071a33 !important;
+  border-right-color: #102c4c !important;
+  box-shadow: 2px 0 10px rgba(7, 26, 51, .12) !important;
 }
 
 .brandShell :global(.dallmayr-sidebar) > div:first-child {
-  color: #242424 !important;
-  background: #ffffff !important;
-  border-bottom: 2px solid #b89b5e !important;
+  color: #ffffff !important;
+  background: #071a33 !important;
+  border-bottom: 1px solid #163657 !important;
 }
 
 .brandShell :global(.dallmayr-sidebar) > div:first-child a {
-  color: #242424 !important;
+  color: #ffffff !important;
 }
 
 .brandShell :global(.dallmayr-sidebar) > div:first-child img {
-  width: 44px !important;
-  height: 31px !important;
+  width: 48px !important;
+  height: 34px !important;
   object-fit: contain !important;
 }
 
 .brandShell :global(.dallmayr-sidebar) > div:first-child button {
-  color: #5d513b !important;
-  background: #faf8f2 !important;
-  border-color: #d8cfbd !important;
+  color: #dbe8f6 !important;
+  background: #0d2948 !important;
+  border-color: #244666 !important;
 }
 
 .brandShell :global(.dallmayr-sidebar-link) {
+  color: #d3dfec !important;
+  border-radius: 7px !important;
   transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
 }
 
 .brandShell :global(.dallmayr-sidebar-link:hover) {
-  color: #5f4c28 !important;
-  background: #faf8f2 !important;
-  border-color: #e6dfd1 !important;
+  color: #ffffff !important;
+  background: #0c2b4d !important;
+  border-color: #183d61 !important;
 }
 
 .brandShell :global(.dallmayr-sidebar-link[aria-current='page']) {
-  color: #6f5a31 !important;
-  background: #f6f1e7 !important;
-  border-color: #ded2bb !important;
+  color: #ffffff !important;
+  background: #0f5fc7 !important;
+  border-color: #1f72d8 !important;
 }
 
 .brandShell :global(.dallmayr-sidebar-link[aria-current='page'])::before {
-  background: #b89b5e !important;
+  background: #62a8ff !important;
 }
 
-.brandShell :global(.telemetry-mobile-header) {
-  color: #242424 !important;
-  background: #ffffff !important;
-  border-bottom-color: #b89b5e !important;
-  box-shadow: 0 2px 8px rgba(31, 31, 29, .08) !important;
-}
-
-.brandShell :global(.telemetry-mobile-header) > a {
-  width: 58px !important;
-  color: #242424 !important;
-  background: #ffffff !important;
-}
-
-.brandShell :global(.telemetry-mobile-header) > a img {
-  width: 52px !important;
-  height: 35px !important;
-  object-fit: contain !important;
-}
-
-.brandShell :global(.telemetry-mobile-header) strong {
-  color: #242424 !important;
-}
-
-.brandShell :global(.telemetry-mobile-header) small {
-  color: #746f66 !important;
-}
-
-.brandShell :global(.telemetry-mobile-header) svg {
-  color: #5e574b !important;
-}
-
-.brandShell :global(.telemetry-mobile-bottom-nav) {
-  background: #ffffff !important;
-  border-top-color: #ddd9d1 !important;
-}
-
-.brandShell :global(.telemetry-mobile-nav-item[aria-current='page']) {
-  color: #6f5a31 !important;
-  background: #f6f1e7 !important;
+.brandShell :global(.dallmayr-sidebar h2) {
+  color: #7790aa !important;
 }
 
 .brandShell :global(.application-header) {
+  color: #10233e !important;
   background: rgba(255, 255, 255, .98) !important;
-  border-bottom-color: #ddd9d1 !important;
+  border-bottom-color: #dbe4ef !important;
+  box-shadow: 0 1px 8px rgba(18, 43, 72, .04) !important;
 }
 
 .brandShell :global(.application-header) a:focus-visible,
 .brandShell :global(.application-header) button:focus-visible,
 .brandShell :global(.dallmayr-sidebar-link:focus-visible) {
-  outline: 2px solid #8d7544 !important;
+  outline: 2px solid #0f6bff !important;
   outline-offset: 2px;
+}
+
+.brandShell :global(.telemetry-mobile-header) {
+  color: #ffffff !important;
+  background: #071a33 !important;
+  border-bottom-color: #163657 !important;
+  box-shadow: 0 2px 8px rgba(7, 26, 51, .16) !important;
+}
+
+.brandShell :global(.telemetry-mobile-header) strong,
+.brandShell :global(.telemetry-mobile-header) small,
+.brandShell :global(.telemetry-mobile-header) svg {
+  color: #ffffff !important;
+}
+
+.brandShell :global(.telemetry-mobile-bottom-nav) {
+  background: #ffffff !important;
+  border-top-color: #dbe4ef !important;
+}
+
+.brandShell :global(.telemetry-mobile-nav-item[aria-current='page']) {
+  color: #0758d6 !important;
+  background: #edf5ff !important;
+}
+
+:global(html[data-theme-tone='dark']) .brandShell {
+  --platform-ink: #eaf2fb !important;
+  --platform-muted: #aebfd0 !important;
+  --platform-border: #24445f !important;
+  --platform-surface: #0b2039 !important;
+  --content-accent-text: #7db4ff !important;
+  color: #eaf2fb;
+  background: #061426;
+}
+
+:global(html[data-theme-tone='dark']) .brandShell :global(.application-main) {
+  color: #eaf2fb !important;
+  background: #061426 !important;
+}
+
+:global(html[data-theme-tone='dark']) .brandShell :global(.neo-card),
+:global(html[data-theme-tone='dark']) .brandShell :global(.card),
+:global(html[data-theme-tone='dark']) .brandShell :global(.hero-panel),
+:global(html[data-theme-tone='dark']) .brandShell :global(.table-wrap) {
+  color: #eaf2fb !important;
+  background: #0b2039 !important;
+  border-color: #24445f !important;
+}
+
+:global(html[data-theme-tone='dark']) .brandShell :global(h1),
+:global(html[data-theme-tone='dark']) .brandShell :global(h2),
+:global(html[data-theme-tone='dark']) .brandShell :global(h3),
+:global(html[data-theme-tone='dark']) .brandShell :global(h4) {
+  color: #ffffff !important;
+}
+
+:global(html[data-theme-tone='dark']) .brandShell :global(p),
+:global(html[data-theme-tone='dark']) .brandShell :global(label) {
+  color: #aebfd0 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

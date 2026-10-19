@@ -48,7 +48,7 @@ test('alerts page surfaces controller exceptions alongside the existing audited 
   assert.match(page, /DeviceAttentionPanel/);
   assert.match(page, /<DeviceAttentionPanel \/>/);
   assert.match(page, /<AlarmCenter \/>/);
-  assert.ok(page.indexOf('<DeviceAttentionPanel />') < page.indexOf('<AlarmCenter />'));
+  assert.ok(page.indexOf('<AlarmCenter />') < page.indexOf('<DeviceAttentionPanel />'));
 
   assert.match(panel, /buildFleetAttentionItems/);
   assert.match(panel, /\.range\(offset, offset \+ DEVICE_PAGE_SIZE - 1\)/);

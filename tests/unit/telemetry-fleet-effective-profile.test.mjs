@@ -22,7 +22,8 @@ test('profile attention distinguishes ambiguity from unmatched and pending deliv
   assert.match(fleet, /effective_profile_key: string \| null/);
   assert.match(fleet, /profile_resolution: string \| null/);
   assert.match(fleet, /Automatic · ambiguous/);
-  assert.match(fleet, /Unmatched, ambiguous or pending/);
+  assert.match(fleet, /if \(machine\.profile_status === 'pending'\) return name \? `Pending · \$\{name\}` : 'Profile pending'/);
+  assert.match(fleet, /if \(machine\.profile_status === 'unmatched'\) return `\$\{machine\.profile_assignment_method === 'manual' \? 'Manual' : 'Automatic'\} · unmatched`/);
 });
 
 test('automatic matches do not require a stored manual profile override', () => {

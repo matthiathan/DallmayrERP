@@ -94,6 +94,8 @@ type SavedFleetView = {
   commissioning: CommissioningFilter;
 };
 
+type FleetViewMode = 'table' | 'cards';
+
 const TABLE_PAGE_SIZE = 75;
 const FILTER_STORAGE_KEY = 'dallmayr-machine-fleet-view-v2';
 const EMPTY_SUMMARY: FleetSummary = {
@@ -223,6 +225,9 @@ export function MachineFleetBrowser() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [viewMode, setViewMode] = useState<FleetViewMode>('table');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [previewId, setPreviewId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -356,11 +361,60 @@ export function MachineFleetBrowser() {
     setPage(1);
   };
 
+  const previewMachine = rows.find((machine) => machine.id === previewId) ?? null;
+  const selectedRows = rows.filter((machine) => selectedIds.has(machine.id));
+  const allVisibleSelected = rows.length > 0 && rows.every((machine) => selectedIds.has(machine.id));
+
+  const toggleMachineSelection = (machineId: string) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(machineId)) next.delete(machineId);
+      else next.add(machineId);
+      return next;
+    });
+  };
+
+  const toggleVisibleSelection = () => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (allVisibleSelected) rows.forEach((machine) => next.delete(machine.id));
+      else rows.forEach((machine) => next.add(machine.id));
+      return next;
+    });
+  };
+
+  const exportSelected = () => {
+    if (!selectedRows.length) return;
+    const headers = ['Machine', 'Serial', 'QR', 'Customer', 'Site', 'Status', 'Device', 'Transport', 'Faults', 'Last contact'];
+    const csvCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const body = selectedRows.map((machine) => [
+      titleFor(machine),
+      machine.serial_number,
+      machine.machine_barcode ?? machine.asset_tag,
+      machine.customer_name,
+      machine.site_name,
+      statusLabel(machine.connection_status),
+      machine.device_code,
+      transportLabel(machine),
+      machine.fault_count,
+      machine.last_contact,
+    ]);
+    const csv = [headers, ...body].map((line) => line.map(csvCell).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'dallmayr-machines-selected.csv';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <section className={styles.workspace} data-machine-browser="televend-v3">
       <header className={styles.header}>
-        <div className={styles.headerCopy}><h1>Machines</h1><p>Live machine status, customer/site scope, commissioning readiness, faults, decoder profile and device assignment.</p></div>
+        <div className={styles.headerCopy}><span>Fleet management</span><h1>Machines</h1><p>Search, filter and manage machines across customers, sites and telemetry states.</p></div>
         <div className={styles.headerActions}>
+          {!isClient ? <Link className={styles.headerButton} href="/archive">View archive</Link> : null}
           <button className={styles.headerButton} disabled={refreshing} onClick={() => loadFleet(true)} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button>
           {!isClient ? <MachineCreateImportControls onChanged={refreshAll} /> : null}
         </div>
@@ -371,12 +425,27 @@ export function MachineFleetBrowser() {
 
       {!loading ? <>
         <section aria-label="Machine fleet status" className={styles.statusStrip}>
-          <button aria-pressed={status === 'online'} className={`${styles.statusCard} ${styles.online} ${status === 'online' ? styles.statusCardActive : ''}`} onClick={() => applyStatusFilter('online')} type="button"><span>Online</span><strong>{summary.online.toLocaleString('en-ZA')}</strong><small>Filter fleet</small></button>
-          <button aria-pressed={status === 'delayed'} className={`${styles.statusCard} ${styles.delayed} ${status === 'delayed' ? styles.statusCardActive : ''}`} onClick={() => applyStatusFilter('delayed')} type="button"><span>Delayed</span><strong>{summary.delayed.toLocaleString('en-ZA')}</strong><small>Filter fleet</small></button>
-          <button aria-pressed={status === 'offline'} className={`${styles.statusCard} ${styles.offline} ${status === 'offline' ? styles.statusCardActive : ''}`} onClick={() => applyStatusFilter('offline')} type="button"><span>Offline</span><strong>{summary.offline.toLocaleString('en-ZA')}</strong><small>Filter fleet</small></button>
-          <button aria-pressed={status === 'unconnected'} className={`${styles.statusCard} ${styles.unlinked} ${status === 'unconnected' ? styles.statusCardActive : ''}`} onClick={() => applyStatusFilter('unconnected')} type="button"><span>No device / never</span><strong>{(summary.unlinked + summary.never).toLocaleString('en-ZA')}</strong><small>Filter fleet</small></button>
-          <button aria-pressed={status === 'faults'} className={`${styles.statusCard} ${styles.faults} ${status === 'faults' ? styles.statusCardActive : ''}`} onClick={() => applyStatusFilter('faults')} type="button"><span>Active faults</span><strong>{summary.active_faults.toLocaleString('en-ZA')}</strong><small>Filter affected machines</small></button>
-          <button aria-pressed={status === 'profile_attention'} className={`${styles.statusCard} ${styles.profiles} ${status === 'profile_attention' ? styles.statusCardActive : ''}`} onClick={() => applyStatusFilter('profile_attention')} type="button"><span>Profile attention</span><strong>{summary.profile_attention.toLocaleString('en-ZA')}</strong><small>Unmatched, ambiguous or pending</small></button>
+          <button aria-pressed={status === 'all'} className={`${styles.statusCard} ${styles.total} ${status === 'all' ? styles.statusCardActive : ''}`} onClick={() => applyStatusFilter('all')} type="button"><span>Total machines</span><strong>{fleetTotal.toLocaleString('en-ZA')}</strong><small>All assets in scope</small></button>
+          <button aria-pressed={status === 'online'} className={`${styles.statusCard} ${styles.online} ${status === 'online' ? styles.statusCardActive : ''}`} onClick={() => applyStatusFilter('online')} type="button"><span>Online</span><strong>{summary.online.toLocaleString('en-ZA')}</strong><small>Reporting normally</small></button>
+          <button aria-pressed={status === 'offline'} className={`${styles.statusCard} ${styles.offline} ${status === 'offline' ? styles.statusCardActive : ''}`} onClick={() => applyStatusFilter('offline')} type="button"><span>Offline</span><strong>{summary.offline.toLocaleString('en-ZA')}</strong><small>Needs attention</small></button>
+          <button aria-pressed={status === 'faults'} className={`${styles.statusCard} ${styles.faults} ${status === 'faults' ? styles.statusCardActive : ''}`} onClick={() => applyStatusFilter('faults')} type="button"><span>With faults</span><strong>{summary.active_faults.toLocaleString('en-ZA')}</strong><small>Active machine errors</small></button>
+          <button aria-pressed={status === 'unconnected'} className={`${styles.statusCard} ${styles.unlinked} ${status === 'unconnected' ? styles.statusCardActive : ''}`} onClick={() => applyStatusFilter('unconnected')} type="button"><span>Not connected</span><strong>{(summary.unlinked + summary.never).toLocaleString('en-ZA')}</strong><small>No device or no contact</small></button>
+          <button aria-pressed={status === 'profile_attention'} className={`${styles.statusCard} ${styles.profiles} ${status === 'profile_attention' ? styles.statusCardActive : ''}`} onClick={() => applyStatusFilter('profile_attention')} type="button"><span>Profile attention</span><strong>{summary.profile_attention.toLocaleString('en-ZA')}</strong><small>Decoder needs review</small></button>
+        </section>
+
+        <section className={styles.viewBar} aria-label="Machine saved views and layout">
+          <div className={styles.savedViews}>
+            <span>Saved views</span>
+            <button className={status === 'all' && commissioning === 'all' ? styles.viewChipActive : ''} onClick={clearFilters} type="button">All machines</button>
+            <button className={status === 'online' ? styles.viewChipActive : ''} onClick={() => applyStatusFilter('online')} type="button">Online</button>
+            <button className={status === 'offline' ? styles.viewChipActive : ''} onClick={() => applyStatusFilter('offline')} type="button">Offline</button>
+            <button className={status === 'faults' ? styles.viewChipActive : ''} onClick={() => applyStatusFilter('faults')} type="button">Needs attention</button>
+            <button className={commissioning === 'ready' ? styles.viewChipActive : ''} onClick={() => { setCommissioning('ready'); setPage(1); }} type="button">Commissioning ready</button>
+          </div>
+          <div className={styles.viewMode} aria-label="Machine view">
+            <button aria-pressed={viewMode === 'table'} className={viewMode === 'table' ? styles.viewModeActive : ''} onClick={() => setViewMode('table')} type="button">Table</button>
+            <button aria-pressed={viewMode === 'cards'} className={viewMode === 'cards' ? styles.viewModeActive : ''} onClick={() => setViewMode('cards')} type="button">Cards</button>
+          </div>
         </section>
 
         <section className={styles.filters} aria-label="Machine filters">
@@ -389,15 +458,25 @@ export function MachineFleetBrowser() {
           <button className={styles.clearButton} onClick={clearFilters} type="button">Clear saved filters</button>
         </section>
 
+        {selectedIds.size ? <section className={styles.bulkBar} aria-label="Bulk machine actions">
+          <strong>{selectedIds.size.toLocaleString('en-ZA')} selected</strong>
+          <span>Bulk actions apply only to machines loaded on this page.</span>
+          <div>
+            <button onClick={exportSelected} type="button">Export selected</button>
+            <button onClick={() => setSelectedIds(new Set())} type="button">Clear selection</button>
+          </div>
+        </section> : null}
+
         <section className={styles.listCard}>
           <header className={styles.listHeader}><div><strong>Machine overview</strong><small>{summary.commissioning_ready.toLocaleString('en-ZA')} ready for field test · {summary.commissioning_attention.toLocaleString('en-ZA')} need commissioning attention.</small></div><span>{total.toLocaleString('en-ZA')} of {fleetTotal.toLocaleString('en-ZA')} machines · updated {lastUpdated ? lastUpdated.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '—'}</span></header>
 
           {total === 0 ? <div className={styles.empty}>No machines match the selected filters.</div> : <>
-            <div className={styles.tableScroll}>
+            <div className={`${styles.tableScroll} ${viewMode !== 'table' ? styles.hiddenDesktopView : ''}`}>
               <table className={styles.table}>
-                <thead><tr><th>Machine</th><th>Status</th><th>Customer / site</th><th>Telemetry device</th><th>Commissioning</th><th>Profile</th><th>Network</th><th>Signal</th><th>Faults</th><th>Last contact</th><th>Quick actions</th></tr></thead>
+                <thead><tr><th className={styles.selectColumn}><input aria-label="Select all visible machines" checked={allVisibleSelected} onChange={toggleVisibleSelection} type="checkbox" /></th><th>Machine</th><th>Status</th><th>Customer / site</th><th>Telemetry device</th><th>Commissioning</th><th>Profile</th><th>Network</th><th>Signal</th><th>Faults</th><th>Last contact</th><th>Quick actions</th></tr></thead>
                 <tbody>{rows.map((machine) => (
-                  <tr key={machine.id}>
+                  <tr className={selectedIds.has(machine.id) ? styles.selectedRow : ''} key={machine.id}>
+                    <td className={styles.selectColumn}><input aria-label={`Select ${titleFor(machine)}`} checked={selectedIds.has(machine.id)} onChange={() => toggleMachineSelection(machine.id)} type="checkbox" /></td>
                     <td className={`${styles.machineCell} ${styles[`status_${machine.connection_status}`]}`}><Link className={styles.machineLink} href={`/machines/${machine.id}`}><strong>{titleFor(machine)}</strong><span>{machine.serial_number ?? 'No serial'} · QR {machine.machine_barcode ?? machine.asset_tag ?? '—'}</span></Link></td>
                     <td><span className={`${styles.statusPill} ${styles[`is_${machine.connection_status}`]}`}><i />{statusLabel(machine.connection_status)}</span></td>
                     <td><strong>{machine.customer_name ?? 'Unassigned customer'}</strong><div className={styles.secondary}>{machine.site_name} · {machine.location}</div></td>
@@ -408,10 +487,33 @@ export function MachineFleetBrowser() {
                     <td>{machine.device_id ? <SignalStrengthIndicator cellularCsq={machine.cellular_csq} transport={machine.last_transport} wifiRssi={machine.wifi_rssi} /> : <span className={styles.secondary}>—</span>}</td>
                     <td>{machine.fault_count ? <span className={styles.faultCount}>{machine.fault_count}</span> : <span className={styles.noFaults}>Clear</span>}</td>
                     <td>{contactAge(machine.last_contact)}</td>
-                    <td><div className={styles.quickActions}><Link href={`/machines/${machine.id}`}>Dashboard</Link>{!isClient && machine.device_code ? <Link href={`/telemetry/test-center?device=${encodeURIComponent(machine.device_code)}`}>Test</Link> : null}{!isClient ? <Link href="/products">Mappings</Link> : null}</div></td>
+                    <td><div className={styles.quickActions}><button onClick={() => setPreviewId(machine.id)} type="button">Preview</button><Link href={`/machines/${machine.id}`}>Dashboard</Link>{!isClient && machine.device_code ? <Link href={`/telemetry/test-center?device=${encodeURIComponent(machine.device_code)}`}>Test</Link> : null}{!isClient ? <Link href="/products">Mappings</Link> : null}</div></td>
                   </tr>
                 ))}</tbody>
               </table>
+            </div>
+
+            <div className={`${styles.cardGrid} ${viewMode !== 'cards' ? styles.hiddenDesktopView : ''}`}>
+              {rows.map((machine) => (
+                <article className={`${styles.machineCard} ${styles[`status_${machine.connection_status}`]}`} key={machine.id}>
+                  <header>
+                    <input aria-label={`Select ${titleFor(machine)}`} checked={selectedIds.has(machine.id)} onChange={() => toggleMachineSelection(machine.id)} type="checkbox" />
+                    <span className={`${styles.statusPill} ${styles[`is_${machine.connection_status}`]}`}><i />{statusLabel(machine.connection_status)}</span>
+                  </header>
+                  <button className={styles.cardPreviewButton} onClick={() => setPreviewId(machine.id)} type="button">
+                    <div className={styles.cardMachineIcon}><NavigationIcon kind="tool" /></div>
+                    <div><strong>{titleFor(machine)}</strong><span>{machine.serial_number ?? 'No serial'} · {machine.machine_barcode ?? machine.asset_tag ?? 'No QR'}</span></div>
+                  </button>
+                  <dl>
+                    <div><dt>Customer / site</dt><dd>{machine.customer_name ?? 'Unassigned'} · {machine.site_name}</dd></div>
+                    <div><dt>Telemetry</dt><dd>{machine.device_code ?? 'No device'} · {transportLabel(machine)}</dd></div>
+                    <div><dt>Signal</dt><dd>{machine.device_id ? <SignalStrengthIndicator cellularCsq={machine.cellular_csq} transport={machine.last_transport} wifiRssi={machine.wifi_rssi} /> : '—'}</dd></div>
+                    <div><dt>Faults</dt><dd>{machine.fault_count ? `${machine.fault_count} active` : 'Clear'}</dd></div>
+                    <div><dt>Last contact</dt><dd>{contactAge(machine.last_contact)}</dd></div>
+                  </dl>
+                  <footer><button onClick={() => setPreviewId(machine.id)} type="button">Quick preview</button><Link href={`/machines/${machine.id}`}>Open machine</Link></footer>
+                </article>
+              ))}
             </div>
 
             <div className={styles.mobileList}>
@@ -432,6 +534,34 @@ export function MachineFleetBrowser() {
 
           <footer className={styles.pagination}><span>Page {currentPage} of {pageCount}</span><div className={styles.pageButtons}><button disabled={currentPage <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))} type="button">Previous</button><button disabled={currentPage >= pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} type="button">Next</button></div></footer>
         </section>
+
+        {previewMachine ? <div className={styles.previewBackdrop} onMouseDown={(event) => { if (event.currentTarget === event.target) setPreviewId(null); }} role="presentation">
+          <aside aria-label="Machine quick preview" className={styles.previewDrawer}>
+            <header>
+              <div><span>Machine preview</span><h2>{titleFor(previewMachine)}</h2><p>{previewMachine.customer_name ?? 'Unassigned customer'} · {previewMachine.site_name}</p></div>
+              <button aria-label="Close machine preview" onClick={() => setPreviewId(null)} type="button">×</button>
+            </header>
+            <section className={styles.previewStatus}>
+              <span className={`${styles.statusPill} ${styles[`is_${previewMachine.connection_status}`]}`}><i />{statusLabel(previewMachine.connection_status)}</span>
+              <strong>{previewMachine.fault_count ? `${previewMachine.fault_count} active fault${previewMachine.fault_count === 1 ? '' : 's'}` : 'No active faults'}</strong>
+            </section>
+            <dl className={styles.previewFacts}>
+              <div><dt>Serial number</dt><dd>{previewMachine.serial_number ?? '—'}</dd></div>
+              <div><dt>QR / asset tag</dt><dd>{previewMachine.machine_barcode ?? previewMachine.asset_tag ?? '—'}</dd></div>
+              <div><dt>Location</dt><dd>{previewMachine.location || '—'}</dd></div>
+              <div><dt>Telemetry device</dt><dd>{previewMachine.device_code ?? 'Not assigned'}</dd></div>
+              <div><dt>Connection</dt><dd>{transportLabel(previewMachine)}{previewMachine.cellular_operator ? ` · ${previewMachine.cellular_operator}` : ''}</dd></div>
+              <div><dt>Last contact</dt><dd>{contactAge(previewMachine.last_contact)}</dd></div>
+              <div><dt>Reporting mode</dt><dd>{previewMachine.telemetry_mode ?? 'live'}</dd></div>
+              <div><dt>Machine profile</dt><dd>{profileLabel(previewMachine)}</dd></div>
+              <div><dt>Commissioning</dt><dd>{commissioningLabel(previewMachine.commissioning_status)}</dd></div>
+            </dl>
+            <div className={styles.previewActions}>
+              <Link href={`/machines/${previewMachine.id}`}>Open machine dashboard</Link>
+              {!isClient && previewMachine.device_code ? <Link href={`/telemetry/test-center?device=${encodeURIComponent(previewMachine.device_code)}`}>Open Test Center</Link> : null}
+            </div>
+          </aside>
+        </div> : null}
       </> : null}
     </section>
   );

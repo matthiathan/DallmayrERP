@@ -18,39 +18,39 @@ const APPEARANCE_BOOT_SCRIPT = `
     var themes = {
       dark: {
         id: 'slate-modern',
-        accent: '#b89b5e',
-        accentInk: '#1f1d19',
-        accentOnLight: '#6f5a31',
-        accentOnDark: '#d8c59b',
-        theme: '#292826',
-        background: '#191918',
-        surface: '#242321',
-        raised: '#312f2c',
-        text: '#f4f1e9',
+        accent: '#0f6bff',
+        accentInk: '#ffffff',
+        accentOnLight: '#0758d6',
+        accentOnDark: '#8fc0ff',
+        theme: '#071a33',
+        background: '#061426',
+        surface: '#0b2039',
+        raised: '#102b49',
+        text: '#edf5ff',
         strong: '#ffffff',
-        muted: '#d2cdc2',
-        subtle: '#aaa398',
-        border: '#5e574b',
-        link: '#d8c59b',
-        track: '#302e2a'
+        muted: '#b9c9da',
+        subtle: '#8fa4b8',
+        border: '#24445f',
+        link: '#7db4ff',
+        track: '#17334f'
       },
       light: {
-        id: 'warm-sand',
-        accent: '#b89b5e',
-        accentInk: '#211d16',
-        accentOnLight: '#6f5a31',
-        accentOnDark: '#d8c59b',
+        id: 'telemetry-light',
+        accent: '#0f6bff',
+        accentInk: '#ffffff',
+        accentOnLight: '#0758d6',
+        accentOnDark: '#8fc0ff',
         theme: '#ffffff',
-        background: '#f5f4f1',
+        background: '#f4f7fb',
         surface: '#ffffff',
-        raised: '#faf9f6',
-        text: '#242424',
-        strong: '#191918',
-        muted: '#6d6a64',
-        subtle: '#8f8a82',
-        border: '#ddd9d1',
-        link: '#6f5a31',
-        track: '#e7e2d8'
+        raised: '#f8fbff',
+        text: '#10233e',
+        strong: '#071a33',
+        muted: '#66768a',
+        subtle: '#8a98a9',
+        border: '#dbe4ef',
+        link: '#0758d6',
+        track: '#e8eef6'
       }
     };
     var selected = themes[tone];
@@ -104,7 +104,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#b89b5e',
+  themeColor: '#071a33',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -113,7 +113,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       data-background-style="solid"
       data-contrast-guard="active"
       data-theme-tone="light"
-      data-visual-theme="warm-sand"
+      data-visual-theme="telemetry-light"
       lang="en"
       suppressHydrationWarning
     >
