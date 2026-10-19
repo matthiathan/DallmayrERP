@@ -239,7 +239,7 @@ test('professional machine layout preserves readable scale and prevents characte
     const { context, page } = await openAuthenticatedPage(browser, '/machines', viewport);
     const machineBrowser = page.locator('[data-machine-browser="televend-v3"]');
     const statusCards = machineBrowser.locator('section[aria-label="Machine fleet status"] > button');
-    const longMachineName = machineBrowser.locator('table tbody tr').first().locator('td').first().locator('strong');
+    const longMachineName = machineBrowser.locator('table tbody tr').first().locator('td').nth(1).locator('strong');
 
     await expect(statusCards).toHaveCount(6);
     await expect(longMachineName).toBeVisible();
@@ -248,7 +248,7 @@ test('professional machine layout preserves readable scale and prevents characte
       const rail = document.querySelector('[data-platform-navigation="desktop-v3"]');
       const main = document.querySelector('.application-main');
       const cards = Array.from(document.querySelectorAll('[data-machine-browser="televend-v3"] section[aria-label="Machine fleet status"] > button'));
-      const longName = document.querySelector('[data-machine-browser="televend-v3"] table tbody tr td:first-child strong');
+      const longName = document.querySelector('[data-machine-browser="televend-v3"] table tbody tr td:nth-child(2) strong');
       const filters = document.querySelector('[data-machine-browser="televend-v3"] section[aria-label="Machine filters"]');
       const search = filters?.querySelector('input');
       if (!(rail instanceof HTMLElement) || !(main instanceof HTMLElement) || !(longName instanceof HTMLElement) || !(search instanceof HTMLElement)) return null;
