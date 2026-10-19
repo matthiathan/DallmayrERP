@@ -259,6 +259,7 @@ export function MaintenanceWorkspace() {
       <header className={styles.header}>
         <div><span>Operations</span><h1>Maintenance</h1><p>Plan service work, manage technician workload and follow machines from due date through completion.</p></div>
         <div className={styles.headerActions}>
+          <Link href="/technician">Technician view</Link>
           <button disabled={refreshing} onClick={() => void load(true)} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button>
         </div>
       </header>
