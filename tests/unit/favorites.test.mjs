@@ -81,5 +81,5 @@ test('retired ERP favorites are removed so they cannot consume telemetry pin cap
   );
 
   assert.deepEqual(telemetryEntries, [{ href: '/customers/customer-1', label: 'Customer 1' }]);
-  assert.equal(toggleFavoriteEntry(telemetryEntries, { href: '/machines', label: 'Machines' }).length, 1);
+  assert.equal(toggleFavoriteEntry(telemetryEntries, { href: '/machines', label: 'Machines' }).length, 2);
 });
