@@ -158,6 +158,7 @@ test('rebuilt machine detail workspace exposes telemetry, identity, lifetime cup
   await expect(identity.getByText('Automatic selection', { exact: true })).toBeVisible();
   await expect(identity.getByText('Belluno', { exact: true }).first()).toBeVisible();
 
+  await detail.getByLabel('Reporting period').selectOption('six_months');
   const chart = detail.locator('[data-chart-interactive="comparison-line"]');
   await expect(chart).toBeVisible();
   const topPoint = chart.locator('circle[role="button"]').last();
