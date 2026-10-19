@@ -106,6 +106,7 @@ export function AdministrationWorkspace({ initialTab = 'users' }: { initialTab?:
           <div className={styles.panel}>
             <header><div><span>Controller lifecycle</span><h2>Device Provisioning</h2><p>Use the existing enrollment and device-management workflows for controller assignment, configuration and commissioning.</p></div></header>
             <div className={styles.actionGrid}>
+              <Link href="/factory"><strong>Factory readiness</strong><span>Review controller identity, firmware, communication, network and configuration evidence.</span></Link>
               <Link href="/telemetry/devices"><strong>Telemetry devices</strong><span>Enrollment, machine assignment, connectivity, data controls and advanced configuration.</span></Link>
               <Link href="/telemetry/test-center"><strong>Test Center</strong><span>Live device diagnostics and commissioning evidence.</span></Link>
               <Link href="/machines"><strong>Commissioning readiness</strong><span>Review machines that are ready, unlinked or need profile/configuration attention.</span></Link>
