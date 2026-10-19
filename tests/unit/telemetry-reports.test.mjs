@@ -18,7 +18,7 @@ test('telemetry reports is an authenticated telemetry route and owns its present
   assert.match(styles, /@media\(max-width:900px\),\(max-width:1366px\) and \(hover:none\) and \(pointer:coarse\)/);
 });
 
-test('reports use real production telemetry and expose the six operational report groups', async () => {
+test('reports use real production telemetry and expose the expanded operational report groups', async () => {
   const component = await read('components/telemetry-platform/TelemetryReports.tsx');
 
   assert.match(component, /get_telemetry_reporting/);
@@ -27,7 +27,7 @@ test('reports use real production telemetry and expose the six operational repor
   assert.match(component, /get_telemetry_prepaid_balances/);
   assert.match(component, /get_telemetry_location_map/);
   assert.match(component, /telemetry_fault_events/);
-  for (const label of ['Sales & cups', 'Products', 'Machines', 'Faults', 'Data & SIM', 'Fleet readiness']) {
+  for (const label of ['Sales / Vends', 'Machines', 'Connectivity', 'Data Usage', 'Faults', 'Maintenance', 'Products', 'Customers / Sites', 'Custom Reports']) {
     assert.ok(component.includes(label), `missing report group ${label}`);
   }
   assert.match(component, /Historical uptime is not inferred from this snapshot/);
