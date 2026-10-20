@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { collectSupabasePagesResult } from '@/lib/supabase/collect-pages';
 import styles from './ArchiveWorkspace.module.css';
 
 type ArchiveTab = 'machines' | 'devices';
@@ -54,6 +53,18 @@ type AuditEvent = {
   after_payload: Record<string, unknown> | null;
 };
 
+type ArchivePayload = {
+  rows?: Array<ArchivedMachine | ArchivedDevice>;
+  total?: number;
+  summary?: {
+    retired_machines?: number;
+    retired_devices?: number;
+    linked_retired_devices?: number;
+  };
+};
+
+const ARCHIVE_PAGE_SIZE = 50;
+
 function firstRelation<T>(value: T | T[] | null | undefined) {
   return Array.isArray(value) ? value[0] ?? null : value ?? null;
 }
@@ -79,6 +90,10 @@ export function ArchiveWorkspace() {
   const [machines, setMachines] = useState<ArchivedMachine[]>([]);
   const [devices, setDevices] = useState<ArchivedDevice[]>([]);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [summary, setSummary] = useState({ retiredMachines: 0, retiredDevices: 0, linkedRetiredDevices: 0 });
   const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
@@ -94,43 +109,50 @@ export function ArchiveWorkspace() {
     if (quiet) setRefreshing(true); else setLoading(true);
     setError(null);
 
-    const client = getSupabaseClient();
-    const [machineRows, deviceRows] = await Promise.all([
-      collectSupabasePagesResult<ArchivedMachine>(async (from, to) => {
-        const { data, error: pageError } = await client
-          .from('machines')
-          .select('id,machine_name,model,manufacturer,customer_id,site_id,serial_number,machine_barcode,status,branch,updated_at,customers(customer_name,status),customer_sites(site_name,address,status)')
-          .eq('status', 'retired')
-          .order('updated_at', { ascending: false })
-          .range(from, to);
-        return { data: (data ?? []) as ArchivedMachine[], error: pageError };
-      }),
-      collectSupabasePagesResult<ArchivedDevice>(async (from, to) => {
-        const { data, error: pageError } = await client
-          .from('telemetry_devices')
-          .select('id,device_code,hardware_uid,machine_id,site_id,status,firmware_version,last_seen_at,last_heartbeat_at,last_transport,cellular_operator,machine_link_status,updated_at')
-          .eq('status', 'retired')
-          .order('updated_at', { ascending: false })
-          .range(from, to);
-        return { data: (data ?? []) as ArchivedDevice[], error: pageError };
-      }),
-    ]);
-
-    const firstError = machineRows.error ?? deviceRows.error;
-    if (firstError) {
-      setError(firstError.message);
-    } else {
-      setMachines(machineRows.data);
-      setDevices(deviceRows.data);
-      setSelectedMachineId((current) => current && machineRows.data.some((item) => item.id === current) ? current : null);
-      setSelectedDeviceId((current) => current && deviceRows.data.some((item) => item.id === current) ? current : null);
+    try {
+      const { data, error: archiveError } = await getSupabaseClient().rpc('get_telemetry_archive', {
+        p_kind: tab,
+        p_search: debouncedSearch,
+        p_offset: page * ARCHIVE_PAGE_SIZE,
+        p_limit: ARCHIVE_PAGE_SIZE,
+      });
+      if (archiveError) throw archiveError;
+      const payload = (data ?? {}) as ArchivePayload;
+      const rows = payload.rows ?? [];
+      if (tab === 'machines') {
+        const machineRows = rows as ArchivedMachine[];
+        setMachines(machineRows);
+        setDevices([]);
+        setSelectedMachineId((current) => current && machineRows.some((item) => item.id === current) ? current : null);
+        setSelectedDeviceId(null);
+      } else {
+        const deviceRows = rows as ArchivedDevice[];
+        setDevices(deviceRows);
+        setMachines([]);
+        setSelectedDeviceId((current) => current && deviceRows.some((item) => item.id === current) ? current : null);
+        setSelectedMachineId(null);
+      }
+      setTotal(Number(payload.total ?? 0));
+      const nextSummary = payload.summary ?? {};
+      setSummary({
+        retiredMachines: Number(nextSummary.retired_machines ?? 0),
+        retiredDevices: Number(nextSummary.retired_devices ?? 0),
+        linkedRetiredDevices: Number(nextSummary.linked_retired_devices ?? 0),
+      });
       setUpdated(new Date());
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Could not load archived records.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
+  }, [debouncedSearch, page, tab]);
 
-    setLoading(false);
-    setRefreshing(false);
-  }, []);
-
+  useEffect(() => {
+    const timer = globalThis.setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => globalThis.clearTimeout(timer);
+  }, [search]);
+  useEffect(() => { setPage(0); }, [debouncedSearch, tab]);
   useEffect(() => { void load(); }, [load]);
 
   const selectedMachine = selectedMachineId ? machines.find((item) => item.id === selectedMachineId) ?? null : null;
@@ -155,32 +177,6 @@ export function ArchiveWorkspace() {
     else setAuditEvents([]);
   }, [loadAudit, selectedDevice, selectedMachine]);
 
-  const filteredMachines = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return machines;
-    return machines.filter((machine) => [
-      machineName(machine),
-      machine.model,
-      machine.manufacturer,
-      machine.serial_number,
-      machine.machine_barcode,
-      machine.branch,
-      firstRelation(machine.customers)?.customer_name,
-      firstRelation(machine.customer_sites)?.site_name,
-    ].filter(Boolean).join(' ').toLowerCase().includes(term));
-  }, [machines, search]);
-
-  const filteredDevices = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return devices;
-    return devices.filter((device) => [
-      device.device_code,
-      device.hardware_uid,
-      device.firmware_version,
-      device.cellular_operator,
-      device.machine_link_status,
-    ].filter(Boolean).join(' ').toLowerCase().includes(term));
-  }, [devices, search]);
 
   const restoreMachine = async (machine: ArchivedMachine) => {
     const customer = firstRelation(machine.customers);
@@ -234,25 +230,25 @@ export function ArchiveWorkspace() {
       {notice ? <div className={styles.notice} role="status">{notice}</div> : null}
       {loading ? <HamsterLoader label="Loading archived records" /> : <>
         <section className={styles.metrics}>
-          <article><span>Retired machines</span><strong>{machines.length}</strong><small>Machine status = retired</small></article>
-          <article><span>Retired devices</span><strong>{devices.length}</strong><small>Device status = retired</small></article>
-          <article><span>Linked retired devices</span><strong>{devices.filter((device) => device.machine_id).length}</strong><small>Still reference a machine record</small></article>
+          <article><span>Retired machines</span><strong>{summary.retiredMachines}</strong><small>Machine status = retired</small></article>
+          <article><span>Retired devices</span><strong>{summary.retiredDevices}</strong><small>Device status = retired</small></article>
+          <article><span>Linked retired devices</span><strong>{summary.linkedRetiredDevices}</strong><small>Still reference a machine record</small></article>
           <article><span>Archive model</span><strong>Status-based</strong><small>No dedicated archive table yet</small></article>
         </section>
 
         <section className={styles.controls}>
           <nav aria-label="Archive types">
-            <button aria-selected={tab === 'machines'} className={tab === 'machines' ? styles.activeTab : ''} onClick={() => { setTab('machines'); setSelectedDeviceId(null); }} type="button">Machines</button>
-            <button aria-selected={tab === 'devices'} className={tab === 'devices' ? styles.activeTab : ''} onClick={() => { setTab('devices'); setSelectedMachineId(null); }} type="button">Telemetry Devices</button>
+            <button aria-selected={tab === 'machines'} className={tab === 'machines' ? styles.activeTab : ''} onClick={() => { setTab('machines'); setPage(0); setSelectedDeviceId(null); }} type="button">Machines</button>
+            <button aria-selected={tab === 'devices'} className={tab === 'devices' ? styles.activeTab : ''} onClick={() => { setTab('devices'); setPage(0); setSelectedMachineId(null); }} type="button">Telemetry Devices</button>
           </nav>
           <label><span>Search</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={tab === 'machines' ? 'Machine, serial, QR, customer, site or branch' : 'Device, UID, firmware or operator'} /></label>
           <span>Updated {updated ? updated.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '—'}</span>
         </section>
 
         {tab === 'machines' ? <section className={styles.tableCard}>
-          <header><div><strong>Retired machines</strong><small>Reactivation is available only through the existing region-safe machine-management RPC and remains subject to its validation rules.</small></div><span>{filteredMachines.length}</span></header>
+          <header><div><strong>Retired machines</strong><small>Reactivation is available only through the existing region-safe machine-management RPC and remains subject to its validation rules.</small></div><span>{total}</span></header>
           <div className={styles.tableScroll}><table><thead><tr><th>Machine</th><th>Customer / site</th><th>Serial / QR</th><th>Branch</th><th>Last updated</th><th /></tr></thead><tbody>
-            {filteredMachines.map((machine) => <tr key={machine.id}>
+            {machines.map((machine) => <tr key={machine.id}>
               <td><strong>{machineName(machine)}</strong><small>{machine.manufacturer ?? 'Unknown brand'} · {machine.model ?? 'Unknown model'}</small></td>
               <td><strong>{firstRelation(machine.customers)?.customer_name ?? 'Not linked'}</strong><small>{firstRelation(machine.customer_sites)?.site_name ?? 'No site'}</small></td>
               <td><strong>{machine.serial_number ?? 'No serial'}</strong><small>{machine.machine_barcode ?? 'No QR code'}</small></td>
@@ -261,13 +257,13 @@ export function ArchiveWorkspace() {
               <td><button onClick={() => setSelectedMachineId(machine.id)} type="button">Open</button></td>
             </tr>)}
           </tbody></table></div>
-          {!filteredMachines.length ? <div className={styles.empty}>No retired machines match this view.</div> : null}
+          {!total ? <div className={styles.empty}>No retired machines match this view.</div> : null}
         </section> : null}
 
         {tab === 'devices' ? <section className={styles.tableCard}>
-          <header><div><strong>Retired telemetry devices</strong><small>Retired controllers remain visible for history. No safe device-reactivation RPC exists in the current production backend.</small></div><span>{filteredDevices.length}</span></header>
+          <header><div><strong>Retired telemetry devices</strong><small>Retired controllers remain visible for history. No safe device-reactivation RPC exists in the current production backend.</small></div><span>{total}</span></header>
           <div className={styles.tableScroll}><table><thead><tr><th>Device</th><th>Hardware UID</th><th>Firmware</th><th>Last network</th><th>Last contact</th><th>Last updated</th><th /></tr></thead><tbody>
-            {filteredDevices.map((device) => <tr key={device.id}>
+            {devices.map((device) => <tr key={device.id}>
               <td><strong>{device.device_code}</strong><small>{device.machine_link_status ?? 'No link state'}</small></td>
               <td>{device.hardware_uid ?? 'Not recorded'}</td>
               <td>{device.firmware_version ?? 'Unknown'}</td>
@@ -277,8 +273,14 @@ export function ArchiveWorkspace() {
               <td><button onClick={() => setSelectedDeviceId(device.id)} type="button">Open</button></td>
             </tr>)}
           </tbody></table></div>
-          {!filteredDevices.length ? <div className={styles.empty}>No retired telemetry devices match this view.</div> : null}
+          {!total ? <div className={styles.empty}>No retired telemetry devices match this view.</div> : null}
         </section> : null}
+
+        <nav className={styles.pagination} aria-label="Archive pages">
+          <button disabled={page === 0 || refreshing} onClick={() => setPage((current) => Math.max(0, current - 1))} type="button">Previous</button>
+          <span>Page {page + 1} of {Math.max(1, Math.ceil(total / ARCHIVE_PAGE_SIZE))}</span>
+          <button disabled={(page + 1) * ARCHIVE_PAGE_SIZE >= total || refreshing} onClick={() => setPage((current) => current + 1)} type="button">Next</button>
+        </nav>
 
         {(selectedMachine || selectedDevice) ? <div className={styles.drawerBackdrop} onMouseDown={(event) => { if (event.currentTarget === event.target) { setSelectedMachineId(null); setSelectedDeviceId(null); } }} role="presentation">
           <aside className={styles.drawer} aria-label="Archived record details">
