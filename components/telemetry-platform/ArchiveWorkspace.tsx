@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import styles from './ArchiveWorkspace.module.css';
