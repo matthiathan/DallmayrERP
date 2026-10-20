@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import styles from './MachineProfilesWorkspace.module.css';
@@ -15,6 +15,14 @@ type Profile = {
   button_count: number;
   created_at: string;
   updated_at: string;
+};
+
+type ProfileRow = Profile & {
+  mapping_count: number;
+  fault_count: number;
+  verified_faults: number;
+  device_count: number;
+  pending_devices: number;
 };
 
 type ButtonMapping = {
@@ -74,12 +82,37 @@ function appliedProfile(device: Device) {
   return typeof value === 'string' ? value : null;
 }
 
+type ProfileDirectoryPayload = {
+  rows?: ProfileRow[];
+  total?: number;
+  summary?: {
+    profiles?: number;
+    product_mappings?: number;
+    verified_fault_rules?: number;
+    profile_devices?: number;
+    pending_config?: number;
+  };
+};
+
+type ProfileDetailPayload = {
+  profile?: Profile;
+  mappings?: ButtonMapping[];
+  fault_rules?: FaultRule[];
+  devices?: Device[];
+};
+
+const PROFILE_PAGE_SIZE = 50;
+
 export function MachineProfilesWorkspace() {
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [mappings, setMappings] = useState<ButtonMapping[]>([]);
   const [faultRules, setFaultRules] = useState<FaultRule[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [metrics, setMetrics] = useState({ profiles: 0, productMappings: 0, verifiedFaultRules: 0, profileDevices: 0, pendingConfig: 0 });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drawerTab, setDrawerTab] = useState<DrawerTab>('config');
   const [loading, setLoading] = useState(true);
@@ -91,20 +124,32 @@ export function MachineProfilesWorkspace() {
     if (quiet) setRefreshing(true); else setLoading(true);
     setError(null);
     try {
-      const client = getSupabaseClient();
-      const [profileResult, mappingResult, faultResult, deviceResult] = await Promise.all([
-        client.from('machine_model_profiles').select('id,model_key,display_name,button_count,created_at,updated_at').order('display_name'),
-        client.from('machine_model_button_mappings').select('id,profile_id,button_number,selection_code,product_id,products(product_name,is_active)').order('button_number'),
-        client.from('machine_model_fault_rules').select('id,profile_id,interface,raw_fault_code,canonical_fault_code,title,category,severity,recommended_action,evidence_source,is_verified,is_active').order('raw_fault_code'),
-        client.from('telemetry_devices').select('id,device_code,profile_id,profile_assignment_method,reported_machine_model,reported_machine_interface,firmware_version,last_config_ack_at,applied_config').neq('status', 'retired').limit(5000),
-      ]);
-      const firstError = profileResult.error ?? mappingResult.error ?? faultResult.error ?? deviceResult.error;
-      if (firstError) throw firstError;
-      setProfiles((profileResult.data ?? []) as Profile[]);
-      setMappings((mappingResult.data ?? []) as ButtonMapping[]);
-      setFaultRules((faultResult.data ?? []) as FaultRule[]);
-      setDevices((deviceResult.data ?? []) as Device[]);
-      setSelectedId((current) => current && (profileResult.data ?? []).some((profile) => profile.id === current) ? current : null);
+      const { data, error: directoryError } = await getSupabaseClient().rpc('get_machine_profile_directory', {
+        p_search: debouncedSearch,
+        p_offset: page * PROFILE_PAGE_SIZE,
+        p_limit: PROFILE_PAGE_SIZE,
+      });
+      if (directoryError) throw directoryError;
+      const payload = (data ?? {}) as ProfileDirectoryPayload;
+      const rows = (payload.rows ?? []).map((profile) => ({
+        ...profile,
+        mapping_count: Number(profile.mapping_count ?? 0),
+        fault_count: Number(profile.fault_count ?? 0),
+        verified_faults: Number(profile.verified_faults ?? 0),
+        device_count: Number(profile.device_count ?? 0),
+        pending_devices: Number(profile.pending_devices ?? 0),
+      }));
+      setProfiles(rows);
+      setTotal(Number(payload.total ?? 0));
+      const summary = payload.summary ?? {};
+      setMetrics({
+        profiles: Number(summary.profiles ?? 0),
+        productMappings: Number(summary.product_mappings ?? 0),
+        verifiedFaultRules: Number(summary.verified_fault_rules ?? 0),
+        profileDevices: Number(summary.profile_devices ?? 0),
+        pendingConfig: Number(summary.pending_config ?? 0),
+      });
+      setSelectedId((current) => current && rows.some((profile) => profile.id === current) ? current : null);
       setUpdated(new Date());
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Could not load machine profiles.');
@@ -112,42 +157,49 @@ export function MachineProfilesWorkspace() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [debouncedSearch, page]);
 
+  useEffect(() => {
+    const timer = globalThis.setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => globalThis.clearTimeout(timer);
+  }, [search]);
+  useEffect(() => { setPage(0); }, [debouncedSearch]);
   useEffect(() => { void load(); }, [load]);
 
+  useEffect(() => {
+    if (!selectedId) {
+      setMappings([]);
+      setFaultRules([]);
+      setDevices([]);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const { data, error: detailError } = await getSupabaseClient().rpc('get_machine_profile_detail', { p_profile_id: selectedId });
+      if (cancelled) return;
+      if (detailError) {
+        setError(detailError.message);
+        return;
+      }
+      const detail = (data ?? {}) as ProfileDetailPayload;
+      setMappings(detail.mappings ?? []);
+      setFaultRules(detail.fault_rules ?? []);
+      setDevices(detail.devices ?? []);
+    })();
+    return () => { cancelled = true; };
+  }, [selectedId]);
+
   const selected = selectedId ? profiles.find((profile) => profile.id === selectedId) ?? null : null;
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return profiles;
-    return profiles.filter((profile) => [profile.display_name, profile.model_key].some((value) => value.toLowerCase().includes(term)));
-  }, [profiles, search]);
-
-  const profileStats = useMemo(() => profiles.map((profile) => {
-    const profileMappings = mappings.filter((mapping) => mapping.profile_id === profile.id);
-    const profileFaults = faultRules.filter((rule) => rule.profile_id === profile.id && rule.is_active);
-    const profileDevices = devices.filter((device) => device.profile_id === profile.model_key || appliedProfile(device) === profile.model_key);
-    const verifiedFaults = profileFaults.filter((rule) => rule.is_verified).length;
-    const pendingDevices = profileDevices.filter((device) => appliedProfile(device) !== profile.model_key).length;
-    return {
-      profile,
-      mappingCount: profileMappings.length,
-      faultCount: profileFaults.length,
-      verifiedFaults,
-      deviceCount: profileDevices.length,
-      pendingDevices,
-    };
-  }), [devices, faultRules, mappings, profiles]);
-
-  const selectedStats = selected ? profileStats.find((item) => item.profile.id === selected.id) ?? null : null;
-  const selectedMappings = selected ? mappings.filter((mapping) => mapping.profile_id === selected.id) : [];
-  const selectedFaults = selected ? faultRules.filter((rule) => rule.profile_id === selected.id) : [];
-  const selectedDevices = selected ? devices.filter((device) => device.profile_id === selected.model_key || appliedProfile(device) === selected.model_key) : [];
-
-  const totalMapped = mappings.length;
-  const verifiedFaultRules = faultRules.filter((rule) => rule.is_active && rule.is_verified).length;
-  const profileDevices = devices.filter((device) => device.profile_id || appliedProfile(device)).length;
-  const pendingConfig = devices.filter((device) => device.profile_id && appliedProfile(device) !== device.profile_id).length;
+  const selectedMappings = mappings;
+  const selectedFaults = faultRules;
+  const selectedDevices = devices;
+  const selectedStats = selected ? {
+    mappingCount: selected.mapping_count,
+    faultCount: selected.fault_count,
+    verifiedFaults: selected.verified_faults,
+    deviceCount: selected.device_count,
+    pendingDevices: selected.pending_devices,
+  } : null;
 
   return (
     <section className={styles.workspace} data-machine-profiles="v1">
@@ -163,26 +215,26 @@ export function MachineProfilesWorkspace() {
       {error ? <div className={styles.error} role="alert">{error}</div> : null}
       {loading ? <HamsterLoader label="Loading machine profiles" /> : <>
         <section className={styles.metrics}>
-          <article><span>Profiles</span><strong>{profiles.length}</strong><small>Current decoder definitions</small></article>
-          <article><span>Product mappings</span><strong>{totalMapped}</strong><small>Button / selection mappings</small></article>
-          <article><span>Verified fault rules</span><strong>{verifiedFaultRules}</strong><small>Profile-specific normalized errors</small></article>
-          <article><span>Profile devices</span><strong>{profileDevices}</strong><small>Assigned or applied profiles</small></article>
-          <article className={pendingConfig ? styles.metricWarning : ''}><span>Config pending</span><strong>{pendingConfig}</strong><small>Assigned profile not yet applied</small></article>
+          <article><span>Profiles</span><strong>{metrics.profiles}</strong><small>Current decoder definitions</small></article>
+          <article><span>Product mappings</span><strong>{metrics.productMappings}</strong><small>Button / selection mappings</small></article>
+          <article><span>Verified fault rules</span><strong>{metrics.verifiedFaultRules}</strong><small>Profile-specific normalized errors</small></article>
+          <article><span>Profile devices</span><strong>{metrics.profileDevices}</strong><small>Assigned or applied profiles</small></article>
+          <article className={metrics.pendingConfig ? styles.metricWarning : ''}><span>Config pending</span><strong>{metrics.pendingConfig}</strong><small>Assigned profile not yet applied</small></article>
         </section>
 
         <section className={styles.toolbar}>
           <label><span>Search profiles</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Model key or profile name" /></label>
           <div><span>Lifecycle</span><strong>Current schema has no Draft/Test/Approved/Production/Retired field</strong></div>
-          <small>{filtered.length} profiles · updated {updated ? updated.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '—'}</small>
+          <small>{total} matching profiles · updated {updated ? updated.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '—'}</small>
         </section>
 
         <section className={styles.tableCard}>
-          <header><div><strong>Decoder profile register</strong><small>Operational records currently stored in machine_model_profiles.</small></div><span>{filtered.length}</span></header>
+          <header><div><strong>Decoder profile register</strong><small>Operational records currently stored in machine_model_profiles.</small></div><span>{total}</span></header>
           <div className={styles.tableScroll}>
             <table>
               <thead><tr><th>Profile</th><th>Selections</th><th>Mapped products</th><th>Fault rules</th><th>Devices</th><th>Config state</th><th>Updated</th><th /></tr></thead>
-              <tbody>{filtered.map((profile) => {
-                const stat = profileStats.find((item) => item.profile.id === profile.id)!;
+              <tbody>{profiles.map((profile) => {
+                const stat = { mappingCount: profile.mapping_count, faultCount: profile.fault_count, verifiedFaults: profile.verified_faults, deviceCount: profile.device_count, pendingDevices: profile.pending_devices };
                 return <tr key={profile.id}>
                   <td><strong>{profile.display_name}</strong><small>{profile.model_key}</small></td>
                   <td>{profile.button_count}</td>
@@ -196,8 +248,14 @@ export function MachineProfilesWorkspace() {
               })}</tbody>
             </table>
           </div>
-          {!filtered.length ? <div className={styles.empty}>No machine profiles match this search.</div> : null}
+          {!profiles.length ? <div className={styles.empty}>No machine profiles match this search.</div> : null}
         </section>
+
+        <nav className={styles.pagination} aria-label="Machine profile pages">
+          <button disabled={page === 0 || refreshing} onClick={() => setPage((current) => Math.max(0, current - 1))} type="button">Previous</button>
+          <span>Page {page + 1} of {Math.max(1, Math.ceil(total / PROFILE_PAGE_SIZE))}</span>
+          <button disabled={(page + 1) * PROFILE_PAGE_SIZE >= total || refreshing} onClick={() => setPage((current) => current + 1)} type="button">Next</button>
+        </nav>
 
         {selected && selectedStats ? <div className={styles.drawerBackdrop} onMouseDown={(event) => { if (event.currentTarget === event.target) setSelectedId(null); }} role="presentation">
           <aside className={styles.drawer} aria-label="Machine profile details">
