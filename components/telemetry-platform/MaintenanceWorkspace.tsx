@@ -21,6 +21,7 @@ type Job = ServiceJobRecord & {
   customer_sites?: SiteRelation | SiteRelation[] | null;
 };
 
+const PAGE_SIZE = 50;
 const terminalStatuses: ServiceJobStatus[] = ['completed', 'verified', 'closed', 'cancelled'];
 const boardStatuses: ServiceJobStatus[] = ['new', 'assigned', 'in_progress', 'completed'];
 
@@ -93,10 +94,14 @@ function dateKey(date: Date) {
 export function MaintenanceWorkspace() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [page, setPage] = useState(0);
+  const [boardPages, setBoardPages] = useState<Record<string, number>>({});
+  const [boardRows, setBoardRows] = useState<Record<string, Job[]>>({});
+  const [boardTotals, setBoardTotals] = useState<Record<string, number>>({});
+  const [calendarRows, setCalendarRows] = useState<Job[]>([]);
+  const [calendarTotal, setCalendarTotal] = useState(0);
   const [total, setTotal] = useState(0);
   const [summary, setSummary] = useState({ active_jobs: 0, overdue: 0, due_soon: 0, unassigned: 0, in_progress: 0, completed_30d: 0, reported_30d: 0, plans_due: 0, active_plans: 0 });
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const PAGE_SIZE = 50;
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [view, setView] = useState<ViewMode>('table');
   const [status, setStatus] = useState<StatusFilter>('active');
@@ -115,26 +120,58 @@ export function MaintenanceWorkspace() {
     const timer = setTimeout(() => setDebouncedSearch(search.trim()), 250);
     return () => clearTimeout(timer);
   }, [search]);
-  useEffect(() => { setPage(0); }, [debouncedSearch, status, priority, technician]);
+  useEffect(() => { setPage(0); setBoardPages({}); }, [debouncedSearch, status, priority, technician]);
 
   const load = useCallback(async (quiet = false) => {
     if (quiet) setRefreshing(true); else setLoading(true);
     setError(null);
     try {
       const client = getSupabaseClient();
-      const [jobsResult, techniciansResult] = await Promise.all([
-        client.rpc('get_telemetry_maintenance_directory', {
-          p_search: debouncedSearch, p_status: status, p_priority: priority,
-          p_technician: technician, p_offset: page * PAGE_SIZE, p_limit: PAGE_SIZE,
-        }),
-        client.rpc('list_assignable_technicians'),
+      const filters = { p_search: debouncedSearch, p_priority: priority, p_technician: technician };
+      const jobsRequest = client.rpc('get_telemetry_maintenance_directory', {
+        ...filters, p_status: status, p_offset: page * PAGE_SIZE, p_limit: PAGE_SIZE,
+      });
+      const localToday = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit',
+      }).format(new Date());
+      const fromDate = new Date(localToday + 'T00:00:00+02:00');
+      const untilDate = new Date(fromDate.getTime() + 7 * 86400000);
+      const specialRequest = view === 'kanban'
+        ? Promise.all(boardStatuses.map((column) => client.rpc('get_telemetry_maintenance_directory', {
+          ...filters, p_status: column, p_offset: (boardPages[column] ?? 0) * PAGE_SIZE, p_limit: PAGE_SIZE,
+        })))
+        : view === 'calendar'
+          ? Promise.all([client.rpc('get_telemetry_maintenance_directory', {
+            ...filters, p_status: status, p_offset: page * PAGE_SIZE, p_limit: PAGE_SIZE,
+            p_from: fromDate.toISOString(), p_until: untilDate.toISOString(),
+          })])
+          : Promise.resolve([]);
+      const [jobsResult, techniciansResult, specialResults] = await Promise.all([
+        jobsRequest, client.rpc('list_assignable_technicians'), specialRequest,
       ]);
       if (jobsResult.error) throw jobsResult.error;
       if (techniciansResult.error) throw techniciansResult.error;
+      for (const result of specialResults) if (result.error) throw result.error;
       const result = jobsResult.data as { rows?: Job[]; total?: number; summary?: typeof summary } | null;
       setJobs(result?.rows ?? []);
       setTotal(Number(result?.total ?? 0));
       if (result?.summary) setSummary(result.summary);
+      if (view === 'kanban') {
+        const rows: Record<string, Job[]> = {};
+        const totals: Record<string, number> = {};
+        boardStatuses.forEach((column, index) => {
+          const data = specialResults[index].data as { rows?: Job[]; total?: number } | null;
+          rows[column] = data?.rows ?? [];
+          totals[column] = Number(data?.total ?? 0);
+        });
+        setBoardRows(rows);
+        setBoardTotals(totals);
+      }
+      if (view === 'calendar') {
+        const data = specialResults[0].data as { rows?: Job[]; total?: number } | null;
+        setCalendarRows(data?.rows ?? []);
+        setCalendarTotal(Number(data?.total ?? 0));
+      }
       setTechnicians((techniciansResult.data ?? []) as Technician[]);
       setUpdatedAt(new Date());
     } catch (loadError) {
@@ -143,7 +180,7 @@ export function MaintenanceWorkspace() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [debouncedSearch, status, priority, technician, page]);
+  }, [debouncedSearch, status, priority, technician, page, view, boardPages]);
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
@@ -154,9 +191,8 @@ export function MaintenanceWorkspace() {
   }, [load]);
 
   const technicianMap = useMemo(() => new Map(technicians.map((item) => [item.user_id, item])), [technicians]);
-  const selected = selectedId ? jobs.find((job) => job.id === selectedId) ?? null : null;
+  const selected = selectedId ? [...jobs, ...Object.values(boardRows).flat(), ...calendarRows].find((job) => job.id === selectedId) ?? null : null;
 
-  const firstTimeFix = summary.reported_30d ? Math.round(summary.completed_30d / summary.reported_30d * 100) : 100;
   const plansDue = summary.plans_due;
   const filtered = jobs;
 
@@ -206,9 +242,9 @@ export function MaintenanceWorkspace() {
     return {
       key,
       label: date.toLocaleDateString('en-ZA', { weekday: 'short', day: '2-digit', month: 'short' }),
-      jobs: filtered.filter((job) => localDateKey(job.due_at ?? job.reported_at) === key),
+      jobs: calendarRows.filter((job) => localDateKey(job.due_at ?? job.reported_at) === key),
     };
-  }), [filtered]);
+  }), [calendarRows]);
 
   return (
     <section className={styles.workspace} data-maintenance-workspace="telemetry-v1">
@@ -230,7 +266,7 @@ export function MaintenanceWorkspace() {
           <button className={summary.overdue ? styles.metricDanger : ''} onClick={() => { setStatus('active'); setSearch(''); }} type="button"><span>Overdue</span><strong>{summary.overdue.toLocaleString('en-ZA')}</strong><small>Past due date</small></button>
           <button className={summary.due_soon ? styles.metricWarning : ''} onClick={() => { setStatus('active'); setSearch(''); }} type="button"><span>Due today / next 24h</span><strong>{summary.due_soon.toLocaleString('en-ZA')}</strong><small>SLA attention</small></button>
           <button onClick={() => setStatus('in_progress')} type="button"><span>In progress</span><strong>{summary.in_progress.toLocaleString('en-ZA')}</strong><small>Technician working</small></button>
-          <button onClick={() => setStatus('completed')} type="button"><span>Completed · 30d</span><strong>{summary.completed_30d.toLocaleString('en-ZA')}</strong><small>{firstTimeFix}% completion ratio</small></button>
+          <button onClick={() => setStatus('completed')} type="button"><span>Completed · 30d</span><strong>{summary.completed_30d.toLocaleString('en-ZA')}</strong><small>Completed during the last 30 days</small></button>
           <button onClick={() => setView('calendar')} type="button"><span>PM plans due</span><strong>{plansDue.toLocaleString('en-ZA')}</strong><small>{summary.active_plans} active plans</small></button>
         </section>
 
@@ -271,29 +307,29 @@ export function MaintenanceWorkspace() {
           {!filtered.length ? <div className={styles.empty}>No maintenance jobs match the selected filters.</div> : null}
         </section> : null}
 
-        <nav aria-label="Maintenance pages" style={{display:'flex',justifyContent:'flex-end',alignItems:'center',gap:12}}>
+        {view !== 'kanban' ? <nav aria-label="Maintenance pages" style={{display:'flex',justifyContent:'flex-end',alignItems:'center',gap:12}}>
           <span>Page {page + 1} of {Math.max(1, Math.ceil(total / PAGE_SIZE))}</span>
           <button type="button" disabled={page === 0} onClick={() => setPage((value) => Math.max(0,value - 1))}>Previous</button>
           <button type="button" disabled={(page + 1) * PAGE_SIZE >= total} onClick={() => setPage((value) => value + 1)}>Next</button>
-        </nav>
+        </nav> : null}
 
         {view === 'kanban' ? <section className={styles.kanban}>
           {boardStatuses.map((columnStatus) => {
-            const columnJobs = filtered.filter((job) => job.status === columnStatus);
+            const columnJobs = boardRows[columnStatus] ?? [];
             return <section className={styles.kanbanColumn} key={columnStatus}>
-              <header><strong>{statusLabel(columnStatus)}</strong><span>{columnJobs.length}</span></header>
+              <header><strong>{statusLabel(columnStatus)}</strong><span>{boardTotals[columnStatus] ?? 0}</span></header>
               <div>{columnJobs.map((job) => <button className={`${styles.jobCard} ${isOverdue(job) ? styles.jobCardOverdue : ''}`} key={job.id} onClick={() => setSelectedId(job.id)} type="button">
                 <div><span className={`${styles.priority} ${styles[`priority_${job.priority}`]}`}>{priorityLabel(job.priority)}</span><small>{job.job_number}</small></div>
                 <strong>{machineName(job)}</strong>
                 <p>{job.summary}</p>
                 <footer><span>{technicianMap.get(job.assigned_to ?? '')?.display_name ?? 'Unassigned'}</span><b>{dateOnly(job.due_at)}</b></footer>
-              </button>)}</div>
+              </button>)}<div style={{display:'flex',gap:8,alignItems:'center'}}><button type="button" disabled={(boardPages[columnStatus] ?? 0) === 0} onClick={() => setBoardPages((old) => ({...old,[columnStatus]: Math.max(0,(old[columnStatus] ?? 0)-1)}))}>Previous</button><span>{(boardPages[columnStatus] ?? 0)+1} / {Math.max(1,Math.ceil((boardTotals[columnStatus] ?? 0)/PAGE_SIZE))}</span><button type="button" disabled={((boardPages[columnStatus] ?? 0)+1)*PAGE_SIZE >= (boardTotals[columnStatus] ?? 0)} onClick={() => setBoardPages((old) => ({...old,[columnStatus]:(old[columnStatus] ?? 0)+1}))}>Next</button></div></div>
             </section>;
           })}
         </section> : null}
 
         {view === 'calendar' ? <section className={styles.calendar}>
-          <header><div><strong>7-day service calendar</strong><small>Showing matching jobs from the current page; use filters to narrow.</small></div><span>{plansDue} preventive plans currently due</span></header>
+          <header><div><strong>7-day service calendar</strong><small>Showing scheduled jobs in the next seven days, independently of the table.</small></div><span>{calendarTotal} scheduled jobs · {plansDue} preventive plans due</span></header>
           <div className={styles.calendarGrid}>{calendarDays.map((day) => <section key={day.key}>
             <header><strong>{day.label}</strong><span>{day.jobs.length}</span></header>
             <div>{day.jobs.map((job) => <button key={job.id} onClick={() => setSelectedId(job.id)} type="button"><span className={`${styles.calendarDot} ${styles[`priority_${job.priority}`]}`} /><strong>{machineName(job)}</strong><small>{job.job_number} · {technicianMap.get(job.assigned_to ?? '')?.display_name ?? 'Unassigned'}</small></button>)}</div>
