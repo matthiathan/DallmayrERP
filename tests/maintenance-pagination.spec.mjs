@@ -97,7 +97,7 @@ test('Calendar queries a seven-day window and paginates independently',async ({b
   const first=calls.find(x=>x.p_from&&x.p_until);
   expect(new Date(first.p_until).getTime()-new Date(first.p_from).getTime()).toBe(7*86400000);
   await expect(page.getByText('Page 1 of 2')).toBeVisible();
-  await page.getByRole('button',{name:'Next'}).click();
+  await page.getByRole('button',{name:'Next',exact:true}).click();
   await expect.poll(()=>calls.some(x=>x.p_from&&x.p_offset===50)).toBe(true);
   await expect(page.getByText('Page 2 of 2')).toBeVisible();
   await context.close();
