@@ -18,11 +18,11 @@ function reply(data) {
 }
 function session() {
   const header = Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url');
-  const payload = Buffer.from(JSON.stringify({sub:userId,role:'authenticated',exp:Math.floor(Date.now()/1000)+7200})).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({sub:userId,email:'maintenance-test@example.com',role:'authenticated',exp:Math.floor(Date.now()/1000)+7200})).toString('base64url');
   return { access_token: header+'.'+payload+'.test-signature',refresh_token:'maintenance-test-refresh',
     token_type:'bearer',expires_in:7200,expires_at:Math.floor(Date.now()/1000)+7200,
     user:{id:userId,aud:'authenticated',role:'authenticated',email:'maintenance-test@example.com',
-      app_metadata:{provider:'email',providers:['email']},user_metadata:{}} };
+      app_metadata:{provider:'email',providers:['email']},user_metadata:{},created_at:'2026-01-01T00:00:00.000Z'} };
 }
 function job(status,index,date) {
   return { id: `90000000-0000-4000-8000-${String(index+statuses.indexOf(status)*200).padStart(12,'0')}`,
@@ -44,9 +44,9 @@ async function openPage(browser, handler) {
     if(url.pathname==='/auth/v1/user') return route.fulfill(reply(auth.user));
     if(url.pathname.startsWith('/auth/v1/token')) return route.fulfill(reply(auth));
     if(url.pathname==='/rest/v1/users') return route.fulfill(reply({
-      id:staffId,auth_user_id:userId,email:auth.user.email,is_active:true,account_scope:'dallmayr',customer_id:null}));
+      id:staffId,auth_user_id:userId,email:auth.user.email,is_active:true,account_scope:'dallmayr',customer_id:null,access_note:null,access_updated_by:null,access_updated_at:null,created_at:'2026-01-01T00:00:00.000Z',updated_at:'2026-01-01T00:00:00.000Z'}));
     if(url.pathname==='/rest/v1/user_details') return route.fulfill(reply({
-      user_id:staffId,role:'admin',branch:'national',telemetry_region:'south_africa',first_name:'Test',last_name:'Operator'}));
+      id:'details-maintenance',user_id:staffId,role:'admin',branch:'national',telemetry_region:'south_africa',first_name:'Test',last_name:'Operator',phone_number:'0110000000',birthday:'1990-01-01',emergency_contact_name:'Test',emergency_contact_phone:'0820000000',created_at:'2026-01-01T00:00:00.000Z',updated_at:'2026-01-01T00:00:00.000Z'}));
     if(url.pathname==='/rest/v1/rpc/claim_current_app_user') return route.fulfill(reply(null));
     if(url.pathname==='/rest/v1/rpc/list_assignable_technicians') return route.fulfill(reply([]));
     if(url.pathname==='/rest/v1/rpc/get_telemetry_maintenance_directory') {
