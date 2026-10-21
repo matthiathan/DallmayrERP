@@ -26,3 +26,21 @@ test('secure mutation RPCs remain unchanged and separate from read path', () => 
   assert.match(workspace, /rpc\('transition_service_job'/);
   assert.doesNotMatch(migration, /create or replace function public\.(assign_service_job|transition_service_job|complete_assigned_service_job)/);
 });
+
+test('Kanban columns and calendar have independent bounded queries', () => {
+  assert.match(workspace, /boardStatuses\.map\(\(column\) => client\.rpc/);
+  assert.match(workspace, /boardPages\[column\]/);
+  assert.match(workspace, /setBoardTotals\(totals\)/);
+  assert.match(workspace, /p_offset: calendarPage \* PAGE_SIZE/);
+  assert.match(workspace, /p_from: fromDate\.toISOString\(\)/);
+  assert.match(workspace, /p_until: untilDate\.toISOString\(\)/);
+  assert.match(workspace, /setCalendarTotal/);
+  assert.match(migration, /p_from timestamptz default null/);
+  assert.match(migration, /p_until timestamptz default null/);
+  assert.match(migration, /interval '31 days'/);
+  assert.match(migration, /drop function if exists public\.get_telemetry_maintenance_directory/);
+});
+test('completion ratio is not falsely described as first-time fix', () => {
+  assert.doesNotMatch(workspace, /firstTimeFix|completion ratio/);
+  assert.match(workspace, /Completed during the last 30 days/);
+});
