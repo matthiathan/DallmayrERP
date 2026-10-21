@@ -29,7 +29,7 @@ begin
    left join public.customers c on c.id=j.customer_id
    where (
      (m.id is not null and m.telemetry_region=v_region and public.telemetry_account_allows_machine(m.id))
-     or (s.id is not null and s.telemetry_region=v_region and
+     or (j.machine_id is null and s.id is not null and s.telemetry_region=v_region and
        exists(select 1 from public.machines sm where sm.site_id=s.id and sm.telemetry_region=v_region and public.telemetry_account_allows_machine(sm.id)))
    )
  ), filtered as (
