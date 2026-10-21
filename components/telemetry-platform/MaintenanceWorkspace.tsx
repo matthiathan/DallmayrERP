@@ -33,13 +33,13 @@ function dateTime(value: string | null | undefined) {
   if (!value) return 'Not scheduled';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'Not scheduled';
-  return date.toLocaleString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function dateOnly(value: string | null | undefined) {
   if (!value) return '—';
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' });
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('en-ZA', { timeZone: 'Africa/Johannesburg', day: '2-digit', month: 'short' });
 }
 
 function isOverdue(job: Job) {
@@ -74,21 +74,19 @@ function statusLabel(status: ServiceJobStatus) {
 }
 
 function daysFromNow(offset: number) {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  date.setDate(date.getDate() + offset);
-  return date;
+  const today = new Intl.DateTimeFormat('en-CA', {timeZone:'Africa/Johannesburg',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  return new Date(new Date(today + 'T00:00:00+02:00').getTime() + offset * 86400000);
 }
 
 function localDateKey(value: string | null | undefined) {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+  return new Intl.DateTimeFormat('en-CA', {timeZone: 'Africa/Johannesburg',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
 }
 
 function dateKey(date: Date) {
-  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+  return localDateKey(date.toISOString());
 }
 
 export function MaintenanceWorkspace() {
@@ -98,6 +96,7 @@ export function MaintenanceWorkspace() {
   const [boardRows, setBoardRows] = useState<Record<string, Job[]>>({});
   const [boardTotals, setBoardTotals] = useState<Record<string, number>>({});
   const [calendarRows, setCalendarRows] = useState<Job[]>([]);
+  const [calendarPage, setCalendarPage] = useState(0);
   const [calendarTotal, setCalendarTotal] = useState(0);
   const [total, setTotal] = useState(0);
   const [summary, setSummary] = useState({ active_jobs: 0, overdue: 0, due_soon: 0, unassigned: 0, in_progress: 0, completed_30d: 0, reported_30d: 0, plans_due: 0, active_plans: 0 });
@@ -120,7 +119,7 @@ export function MaintenanceWorkspace() {
     const timer = setTimeout(() => setDebouncedSearch(search.trim()), 250);
     return () => clearTimeout(timer);
   }, [search]);
-  useEffect(() => { setPage(0); setBoardPages({}); }, [debouncedSearch, status, priority, technician]);
+  useEffect(() => { setPage(0); setBoardPages({}); setCalendarPage(0); }, [debouncedSearch, status, priority, technician]);
 
   const load = useCallback(async (quiet = false) => {
     if (quiet) setRefreshing(true); else setLoading(true);
@@ -142,7 +141,7 @@ export function MaintenanceWorkspace() {
         })))
         : view === 'calendar'
           ? Promise.all([client.rpc('get_telemetry_maintenance_directory', {
-            ...filters, p_status: status, p_offset: page * PAGE_SIZE, p_limit: PAGE_SIZE,
+            ...filters, p_status: status, p_offset: calendarPage * PAGE_SIZE, p_limit: PAGE_SIZE,
             p_from: fromDate.toISOString(), p_until: untilDate.toISOString(),
           })])
           : Promise.resolve([]);
@@ -180,7 +179,7 @@ export function MaintenanceWorkspace() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [debouncedSearch, status, priority, technician, page, view, boardPages]);
+  }, [debouncedSearch, status, priority, technician, page, view, boardPages, calendarPage]);
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
@@ -241,7 +240,7 @@ export function MaintenanceWorkspace() {
     const key = dateKey(date);
     return {
       key,
-      label: date.toLocaleDateString('en-ZA', { weekday: 'short', day: '2-digit', month: 'short' }),
+      label: date.toLocaleDateString('en-ZA', { timeZone: 'Africa/Johannesburg', weekday: 'short', day: '2-digit', month: 'short' }),
       jobs: calendarRows.filter((job) => localDateKey(job.due_at ?? job.reported_at) === key),
     };
   }), [calendarRows]);
@@ -307,7 +306,7 @@ export function MaintenanceWorkspace() {
           {!filtered.length ? <div className={styles.empty}>No maintenance jobs match the selected filters.</div> : null}
         </section> : null}
 
-        {view !== 'kanban' ? <nav aria-label="Maintenance pages" style={{display:'flex',justifyContent:'flex-end',alignItems:'center',gap:12}}>
+        {view === 'table' ? <nav aria-label="Maintenance pages" style={{display:'flex',justifyContent:'flex-end',alignItems:'center',gap:12}}>
           <span>Page {page + 1} of {Math.max(1, Math.ceil(total / PAGE_SIZE))}</span>
           <button type="button" disabled={page === 0} onClick={() => setPage((value) => Math.max(0,value - 1))}>Previous</button>
           <button type="button" disabled={(page + 1) * PAGE_SIZE >= total} onClick={() => setPage((value) => value + 1)}>Next</button>
@@ -334,6 +333,7 @@ export function MaintenanceWorkspace() {
             <header><strong>{day.label}</strong><span>{day.jobs.length}</span></header>
             <div>{day.jobs.map((job) => <button key={job.id} onClick={() => setSelectedId(job.id)} type="button"><span className={`${styles.calendarDot} ${styles[`priority_${job.priority}`]}`} /><strong>{machineName(job)}</strong><small>{job.job_number} · {technicianMap.get(job.assigned_to ?? '')?.display_name ?? 'Unassigned'}</small></button>)}</div>
           </section>)}</div>
+          <div style={{display:'flex',justifyContent:'flex-end',alignItems:'center',gap:12,padding:12}}><button type="button" disabled={calendarPage === 0} onClick={() => setCalendarPage((v) => Math.max(0,v-1))}>Previous</button><span>Page {calendarPage+1} of {Math.max(1,Math.ceil(calendarTotal/PAGE_SIZE))}</span><button type="button" disabled={(calendarPage+1)*PAGE_SIZE>=calendarTotal} onClick={() => setCalendarPage((v) => v+1)}>Next</button></div>
         </section> : null}
 
         {selected ? <div className={styles.drawerBackdrop} onMouseDown={(event) => { if (event.currentTarget === event.target) setSelectedId(null); }} role="presentation">
