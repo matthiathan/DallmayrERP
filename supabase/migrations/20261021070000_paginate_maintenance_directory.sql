@@ -34,8 +34,8 @@ begin
    )
  ), filtered as (
    select * from scoped j
-   where (v_status='all' or (v_status='active' and j.status in ('new','assigned','in_progress')) or j.status=v_status)
-    and (v_priority='all' or j.priority=v_priority)
+   where (v_status='all' or (v_status='active' and j.status in ('new','assigned','in_progress')) or j.status::text=v_status)
+    and (v_priority='all' or j.priority::text=v_priority)
     and (v_technician='all' or (v_technician='unassigned' and j.assigned_to is null)
       or (v_technician not in ('all','unassigned') and j.assigned_to::text=v_technician))
     and (v_search='' or lower(concat_ws(' ',j.job_number,j.incident_number,j.summary,j.complaint_details,
