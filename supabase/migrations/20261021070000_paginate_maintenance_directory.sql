@@ -1,4 +1,6 @@
 -- Region-scoped, server-filtered maintenance directory; read-only.
+-- Replace legacy six-argument overload so PostgREST resolves defaulted parameters unambiguously.
+drop function if exists public.get_telemetry_maintenance_directory(text,text,text,text,integer,integer);
 create or replace function public.get_telemetry_maintenance_directory(
  p_search text default '', p_status text default 'active', p_priority text default 'all',
  p_technician text default 'all', p_offset integer default 0, p_limit integer default 50,
@@ -17,7 +19,7 @@ begin
  if not public.is_dallmayr_app_user() then
   raise exception 'Dallmayr staff access is required.' using errcode='42501';
  end if;
- if p_from is not null and p_until is not null and (p_until<=p_from or p_until>p_from+interval '31 days') then
+ if (p_from is null) <> (p_until is null) or (p_from is not null and (p_until<=p_from or p_until>p_from+interval '31 days')) then
   raise exception 'Maintenance date window must be within 31 days.' using errcode='22023';
  end if;
  if v_status not in ('all','active','new','assigned','in_progress','completed','verified','closed','cancelled')
