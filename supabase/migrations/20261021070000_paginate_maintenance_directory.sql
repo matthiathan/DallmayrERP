@@ -1,7 +1,8 @@
 -- Region-scoped, server-filtered maintenance directory; read-only.
 create or replace function public.get_telemetry_maintenance_directory(
  p_search text default '', p_status text default 'active', p_priority text default 'all',
- p_technician text default 'all', p_offset integer default 0, p_limit integer default 50
+ p_technician text default 'all', p_offset integer default 0, p_limit integer default 50,
+ p_from timestamptz default null, p_until timestamptz default null
 ) returns jsonb language plpgsql stable security definer set search_path=public,pg_temp as $$
 declare
  v_region text := public.assert_telemetry_region_selected();
@@ -15,6 +16,9 @@ declare
 begin
  if not public.is_dallmayr_app_user() then
   raise exception 'Dallmayr staff access is required.' using errcode='42501';
+ end if;
+ if p_from is not null and p_until is not null and (p_until<=p_from or p_until>p_from+interval '31 days') then
+  raise exception 'Maintenance date window must be within 31 days.' using errcode='22023';
  end if;
  if v_status not in ('all','active','new','assigned','in_progress','completed','verified','closed','cancelled')
    or v_priority not in ('all','critical','high','medium','low')
@@ -34,7 +38,9 @@ begin
    )
  ), filtered as (
    select * from scoped j
-   where (v_status='all' or (v_status='active' and j.status in ('new','assigned','in_progress')) or j.status::text=v_status)
+   where (p_from is null or coalesce(j.due_at,j.reported_at)>=p_from)
+    and (p_until is null or coalesce(j.due_at,j.reported_at)<p_until)
+    and (v_status='all' or (v_status='active' and j.status in ('new','assigned','in_progress')) or j.status::text=v_status)
     and (v_priority='all' or j.priority::text=v_priority)
     and (v_technician='all' or (v_technician='unassigned' and j.assigned_to is null)
       or (v_technician not in ('all','unassigned') and j.assigned_to::text=v_technician))
@@ -76,5 +82,5 @@ begin
  return v_result;
 end;
 $$;
-revoke all on function public.get_telemetry_maintenance_directory(text,text,text,text,integer,integer) from public,anon;
-grant execute on function public.get_telemetry_maintenance_directory(text,text,text,text,integer,integer) to authenticated;
+revoke all on function public.get_telemetry_maintenance_directory(text,text,text,text,integer,integer,timestamptz,timestamptz) from public,anon;
+grant execute on function public.get_telemetry_maintenance_directory(text,text,text,text,integer,integer,timestamptz,timestamptz) to authenticated;
