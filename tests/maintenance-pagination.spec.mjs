@@ -72,10 +72,10 @@ test('Kanban shows full totals and navigates one column independently',async ({b
     return {rows,total:count,summary};
   });
   await page.getByRole('button',{name:'Kanban',exact:true}).click();
-  const column=page.locator('section').filter({has:page.locator('header strong').getByText('New',{exact:true})}).filter({has:page.locator('button').getByText('JOB-new-0')}).last();
   await expect(page.getByText('JOB-new-0',{exact:true})).toBeVisible();
   await expect(page.getByText('JOB-new-49',{exact:true})).toBeVisible();
-  await page.locator('[data-maintenance-workspace] button').filter({hasText:'Next'}).last().click();
+  const newColumn = page.locator('section').filter({has:page.getByText('JOB-new-0',{exact:true})}).last();
+  await newColumn.getByRole('button',{name:'Next'}).click();
   await expect.poll(()=>calls.some(x=>x.p_status==='new'&&x.p_offset===50)).toBe(true);
   await expect(page.getByText('JOB-new-50',{exact:true})).toBeVisible();
   await expect(page.getByText('JOB-assigned-0',{exact:true})).toBeVisible();
