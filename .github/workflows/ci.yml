@@ -98,6 +98,7 @@ jobs:
           node --check tests/telemetry-mobile-shell.spec.mjs
           node --check tests/machine-command-center.spec.mjs
           node --check tests/maintenance-pagination.spec.mjs
+          node --check scripts/verify-telemetry-region-isolation.mjs
           python -m py_compile scripts/compare-production-screenshots.py
 
       - name: Typecheck application
