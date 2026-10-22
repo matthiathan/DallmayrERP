@@ -67,7 +67,41 @@ type CustomerSummary = {
   health: number;
 };
 
+type CustomerDirectoryRow = {
+  id: string;
+  branch: string;
+  customer_code: string | null;
+  customer_name: string;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  status: string | null;
+  site_count: number;
+  machine_count: number;
+  online_count: number;
+  offline_count: number;
+  fault_count: number;
+  open_job_count: number;
+  health: number;
+};
+
+type CustomerDirectoryPayload = {
+  rows?: CustomerDirectoryRow[];
+  total?: number;
+  summary?: {
+    customers?: number;
+    sites?: number;
+    machines?: number;
+    online?: number;
+    faults?: number;
+    open_jobs?: number;
+  };
+  limit?: number;
+  offset?: number;
+};
+
 const terminalJobs = new Set(['completed', 'verified', 'closed', 'cancelled']);
+const DIRECTORY_PAGE_SIZE = 50;
 
 function machineName(machine: FleetRow) {
   return machine.machine_name ?? machine.model ?? machine.serial_number ?? 'Unnamed machine';
@@ -93,6 +127,11 @@ export function CustomerSitesWorkspace({ customerId = null }: { customerId?: str
   const [machines, setMachines] = useState<FleetRow[]>([]);
   const [jobs, setJobs] = useState<ServiceJob[]>([]);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [directoryRows, setDirectoryRows] = useState<CustomerDirectoryRow[]>([]);
+  const [directoryTotal, setDirectoryTotal] = useState(0);
+  const [directorySummary, setDirectorySummary] = useState({ customers: 0, sites: 0, machines: 0, online: 0, faults: 0, openJobs: 0 });
+  const [directoryPage, setDirectoryPage] = useState(0);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(customerId);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,13 +144,44 @@ export function CustomerSitesWorkspace({ customerId = null }: { customerId?: str
     setError(null);
     try {
       const client = getSupabaseClient();
+
+      if (!customerId) {
+        const { data, error: directoryError } = await client.rpc('get_telemetry_customer_site_directory', {
+          p_search: debouncedSearch,
+          p_offset: directoryPage * DIRECTORY_PAGE_SIZE,
+          p_limit: DIRECTORY_PAGE_SIZE,
+        });
+        if (directoryError) throw directoryError;
+        const payload = (data ?? {}) as CustomerDirectoryPayload;
+        const rows = (payload.rows ?? []).map((row) => ({
+          ...row,
+          site_count: Number(row.site_count ?? 0),
+          machine_count: Number(row.machine_count ?? 0),
+          online_count: Number(row.online_count ?? 0),
+          offline_count: Number(row.offline_count ?? 0),
+          fault_count: Number(row.fault_count ?? 0),
+          open_job_count: Number(row.open_job_count ?? 0),
+          health: Number(row.health ?? 0),
+        }));
+        const summary = payload.summary ?? {};
+        setDirectoryRows(rows);
+        setDirectoryTotal(Number(payload.total ?? 0));
+        setDirectorySummary({
+          customers: Number(summary.customers ?? 0),
+          sites: Number(summary.sites ?? 0),
+          machines: Number(summary.machines ?? 0),
+          online: Number(summary.online ?? 0),
+          faults: Number(summary.faults ?? 0),
+          openJobs: Number(summary.open_jobs ?? 0),
+        });
+        setSelectedCustomerId((current) => current && rows.some((row) => row.id === current) ? current : null);
+        setUpdatedAt(new Date());
+        return;
+      }
+
       const [customerResult, siteResult, fleetResult, jobsResult] = await Promise.all([
-        customerId
-          ? client.from('customers').select('id,branch,customer_code,customer_name,phone,email,address,status').eq('id', customerId)
-          : client.from('customers').select('id,branch,customer_code,customer_name,phone,email,address,status').order('customer_name').limit(2000),
-        customerId
-          ? client.from('customer_sites').select('id,customer_id,site_name,address,contact_name,contact_phone,status').eq('customer_id', customerId).order('site_name').limit(500)
-          : client.from('customer_sites').select('id,customer_id,site_name,address,contact_name,contact_phone,status').order('site_name').limit(5000),
+        client.from('customers').select('id,branch,customer_code,customer_name,phone,email,address,status').eq('id', customerId),
+        client.from('customer_sites').select('id,customer_id,site_name,address,contact_name,contact_phone,status').eq('customer_id', customerId).order('site_name').limit(500),
         client.rpc('get_telemetry_machine_fleet', {
           p_search: '',
           p_branch: 'all',
@@ -120,11 +190,9 @@ export function CustomerSitesWorkspace({ customerId = null }: { customerId?: str
           p_site_id: null,
           p_commissioning: 'all',
           p_offset: 0,
-          p_limit: 5000,
+          p_limit: 250,
         }),
-        customerId
-          ? client.from('service_jobs').select('id,customer_id,site_id,machine_id,job_number,priority,status,summary,due_at').eq('customer_id', customerId).order('reported_at', { ascending: false }).limit(500)
-          : client.from('service_jobs').select('id,customer_id,site_id,machine_id,job_number,priority,status,summary,due_at').order('reported_at', { ascending: false }).limit(5000),
+        client.from('service_jobs').select('id,customer_id,site_id,machine_id,job_number,priority,status,summary,due_at').eq('customer_id', customerId).order('reported_at', { ascending: false }).limit(500),
       ]);
       const firstError = customerResult.error ?? siteResult.error ?? fleetResult.error ?? jobsResult.error;
       if (firstError) throw firstError;
@@ -139,8 +207,13 @@ export function CustomerSitesWorkspace({ customerId = null }: { customerId?: str
       setLoading(false);
       setRefreshing(false);
     }
-  }, [customerId]);
+  }, [customerId, debouncedSearch, directoryPage]);
 
+  useEffect(() => {
+    const timer = globalThis.setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => globalThis.clearTimeout(timer);
+  }, [search]);
+  useEffect(() => { setDirectoryPage(0); }, [debouncedSearch]);
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
     const timer = globalThis.setInterval(() => {
@@ -161,27 +234,19 @@ export function CustomerSitesWorkspace({ customerId = null }: { customerId?: str
     return { customer, sites: customerSites, machines: customerMachines, online, offline, faults, openJobs, health };
   }), [customers, jobs, machines, sites]);
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return summaries;
-    return summaries.filter((item) => [
-      item.customer.customer_name, item.customer.customer_code, item.customer.branch, item.customer.address,
-      ...item.sites.flatMap((site) => [site.site_name, site.address]),
-    ].filter(Boolean).join(' ').toLowerCase().includes(term));
-  }, [search, summaries]);
-
-  const selectedSummary = summaries.find((item) => item.customer.id === (customerId ?? selectedCustomerId)) ?? null;
+  const selectedSummary = summaries.find((item) => item.customer.id === customerId) ?? null;
+  const selectedDirectory = selectedCustomerId ? directoryRows.find((item) => item.id === selectedCustomerId) ?? null : null;
   const selectedSite = selectedSiteId ? sites.find((site) => site.id === selectedSiteId) ?? null : null;
   const selectedSiteMachines = selectedSite ? machines.filter((machine) => machine.site_id === selectedSite.id) : [];
 
-  const totals = useMemo(() => ({
+  const totals = useMemo(() => customerId ? ({
     customers: summaries.length,
     sites: sites.length,
     machines: machines.length,
     online: machines.filter((machine) => machine.connection_status === 'online').length,
     faults: machines.reduce((sum, machine) => sum + machine.fault_count, 0),
     openJobs: jobs.filter((job) => !terminalJobs.has(job.status)).length,
-  }), [jobs, machines, sites.length, summaries.length]);
+  }) : directorySummary, [customerId, directorySummary, jobs, machines, sites.length, summaries.length]);
 
   if (loading) return <HamsterLoader label="Loading customers and sites" />;
 
@@ -263,24 +328,30 @@ export function CustomerSitesWorkspace({ customerId = null }: { customerId?: str
       <article><span>Active faults</span><strong>{totals.faults}</strong><small>Across all customers</small></article>
       <article><span>Open maintenance</span><strong>{totals.openJobs}</strong><small>Current service work</small></article>
     </section>
-    <section className={styles.toolbar}><label><NavigationIcon kind="search" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search customer, code, site or address" /></label><span>{filtered.length} of {summaries.length} customers · updated {updatedAt ? updatedAt.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '—'}</span></section>
+    <section className={styles.toolbar}><label><NavigationIcon kind="search" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search customer, code, site or address" /></label><span>{directoryTotal} matching customers · updated {updatedAt ? updatedAt.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '—'}</span></section>
     <section className={styles.directory}>
       <header><span>Customer</span><span>Sites</span><span>Machines</span><span>Fleet health</span><span>Faults</span><span>Service</span><span /></header>
-      {filtered.map((item) => <article key={item.customer.id}>
-        <button className={styles.customerCell} onClick={() => setSelectedCustomerId(item.customer.id)} type="button"><strong>{item.customer.customer_name}</strong><small>{item.customer.customer_code ?? 'No account code'} · {item.customer.branch.toUpperCase()}</small></button>
-        <span>{item.sites.length}</span><span>{item.machines.length}<small>{item.online} online</small></span>
+      {directoryRows.map((item) => <article key={item.id}>
+        <button className={styles.customerCell} onClick={() => setSelectedCustomerId(item.id)} type="button"><strong>{item.customer_name}</strong><small>{item.customer_code ?? 'No account code'} · {item.branch.toUpperCase()}</small></button>
+        <span>{item.site_count}</span><span>{item.machine_count}<small>{item.online_count} online</small></span>
         <span className={styles.health}><i style={{ width: `${item.health}%` }} /><b>{item.health}%</b></span>
-        <span className={item.faults ? styles.attention : ''}>{item.faults}</span>
-        <span>{item.openJobs}<small>open</small></span>
-        <Link href={`/customers/${item.customer.id}`}>Open</Link>
+        <span className={item.fault_count ? styles.attention : ''}>{item.fault_count}</span>
+        <span>{item.open_job_count}<small>open</small></span>
+        <Link href={`/customers/${item.id}`}>Open</Link>
       </article>)}
+      {!directoryRows.length ? <div className={styles.empty}>No customers match this search in the selected telemetry region.</div> : null}
     </section>
-    {selectedSummary ? <div className={styles.drawerBackdrop} onMouseDown={(event) => { if (event.currentTarget === event.target) setSelectedCustomerId(null); }}>
+    <nav className={styles.pagination} aria-label="Customer directory pages">
+      <button disabled={directoryPage === 0 || refreshing} onClick={() => setDirectoryPage((page) => Math.max(0, page - 1))} type="button">Previous</button>
+      <span>Page {directoryPage + 1} of {Math.max(1, Math.ceil(directoryTotal / DIRECTORY_PAGE_SIZE))}</span>
+      <button disabled={(directoryPage + 1) * DIRECTORY_PAGE_SIZE >= directoryTotal || refreshing} onClick={() => setDirectoryPage((page) => page + 1)} type="button">Next</button>
+    </nav>
+    {selectedDirectory ? <div className={styles.drawerBackdrop} onMouseDown={(event) => { if (event.currentTarget === event.target) setSelectedCustomerId(null); }}>
       <aside className={styles.drawer} aria-label="Customer quick preview">
-        <header><div><span>Customer preview</span><h2>{selectedSummary.customer.customer_name}</h2><p>{selectedSummary.customer.customer_code ?? 'No account code'} · {selectedSummary.customer.branch.toUpperCase()}</p></div><button onClick={() => setSelectedCustomerId(null)} type="button">×</button></header>
-        <section className={styles.previewMetrics}><div><span>Sites</span><strong>{selectedSummary.sites.length}</strong></div><div><span>Machines</span><strong>{selectedSummary.machines.length}</strong></div><div><span>Health</span><strong>{selectedSummary.health}%</strong></div></section>
-        <dl className={styles.facts}><div><dt>Address</dt><dd>{selectedSummary.customer.address ?? 'Not recorded'}</dd></div><div><dt>Phone</dt><dd>{selectedSummary.customer.phone ?? 'Not recorded'}</dd></div><div><dt>Email</dt><dd>{selectedSummary.customer.email ?? 'Not recorded'}</dd></div><div><dt>Online</dt><dd>{selectedSummary.online}</dd></div><div><dt>Offline / unlinked</dt><dd>{selectedSummary.offline}</dd></div><div><dt>Active faults</dt><dd>{selectedSummary.faults}</dd></div><div><dt>Open maintenance</dt><dd>{selectedSummary.openJobs}</dd></div></dl>
-        <footer><Link href={`/customers/${selectedSummary.customer.id}`}>Open customer workspace</Link><Link href="/machines">View machines</Link></footer>
+        <header><div><span>Customer preview</span><h2>{selectedDirectory.customer_name}</h2><p>{selectedDirectory.customer_code ?? 'No account code'} · {selectedDirectory.branch.toUpperCase()}</p></div><button onClick={() => setSelectedCustomerId(null)} type="button">×</button></header>
+        <section className={styles.previewMetrics}><div><span>Sites</span><strong>{selectedDirectory.site_count}</strong></div><div><span>Machines</span><strong>{selectedDirectory.machine_count}</strong></div><div><span>Health</span><strong>{selectedDirectory.health}%</strong></div></section>
+        <dl className={styles.facts}><div><dt>Address</dt><dd>{selectedDirectory.address ?? 'Not recorded'}</dd></div><div><dt>Phone</dt><dd>{selectedDirectory.phone ?? 'Not recorded'}</dd></div><div><dt>Email</dt><dd>{selectedDirectory.email ?? 'Not recorded'}</dd></div><div><dt>Online</dt><dd>{selectedDirectory.online_count}</dd></div><div><dt>Offline / unlinked</dt><dd>{selectedDirectory.offline_count}</dd></div><div><dt>Active faults</dt><dd>{selectedDirectory.fault_count}</dd></div><div><dt>Open maintenance</dt><dd>{selectedDirectory.open_job_count}</dd></div></dl>
+        <footer><Link href={`/customers/${selectedDirectory.id}`}>Open customer workspace</Link><Link href={`/machines?customer=${selectedDirectory.id}`}>View machines</Link></footer>
       </aside>
     </div> : null}
   </section>;
