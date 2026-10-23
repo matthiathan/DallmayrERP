@@ -2,7 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.112.0';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-const MAX_BODY_BYTES = 2048;
+const MAX_BODY_BYTES = 4096;
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   throw new Error('Missing Supabase Edge Function environment variables.');
@@ -44,6 +44,11 @@ function randomSecret(bytes = 32) {
     .replaceAll('=', '');
 }
 
+function finiteNumber(value: unknown) {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders });
@@ -65,16 +70,35 @@ Deno.serve(async (request: Request) => {
   }
 
   const enrollmentToken = String(payload.enrollment_token ?? '').trim();
+  const factoryBootstrapToken = String(payload.factory_bootstrap_token ?? '').trim();
   const hardwareUid = String(payload.hardware_uid ?? '').trim().toUpperCase();
   const machineSerial = String(payload.machine_serial ?? '').trim();
   const firmware = String(payload.firmware ?? '').trim();
+  const modemImei = String(payload.modem_imei ?? '').trim();
+  const simIccid = String(payload.sim_iccid ?? '').trim();
+  const cellularOperator = String(payload.cellular_operator ?? '').trim();
+  const cellularModel = String(payload.cellular_model ?? '').trim();
+  const location = payload.location && typeof payload.location === 'object'
+    ? payload.location as Record<string, unknown>
+    : null;
 
   if (!/^[0-9A-F]{12}$/.test(hardwareUid)) {
     return jsonResponse({ accepted: false, message: 'A valid ESP32 hardware UID is required.' }, 400);
   }
+  if (modemImei && !/^\d{14,17}$/.test(modemImei)) {
+    return jsonResponse({ accepted: false, message: 'Invalid modem IMEI.' }, 400);
+  }
+  if (simIccid && !/^\d{18,22}$/.test(simIccid)) {
+    return jsonResponse({ accepted: false, message: 'Invalid SIM ICCID.' }, 400);
+  }
 
   const deviceKey = randomSecret(32);
   const credentialHash = await sha256Hex(deviceKey);
+  const enrollmentMethod = enrollmentToken
+    ? 'one_time_token'
+    : factoryBootstrapToken
+      ? 'factory_zero_touch'
+      : 'automatic_window';
 
   const enrollment = enrollmentToken
     ? await supabase.rpc('enroll_telemetry_device', {
@@ -84,12 +108,20 @@ Deno.serve(async (request: Request) => {
         p_credential_hash: credentialHash,
         p_firmware: firmware || null,
       })
-    : await supabase.rpc('enroll_telemetry_device_zero_touch', {
-        p_hardware_uid: hardwareUid,
-        p_machine_serial: machineSerial || null,
-        p_credential_hash: credentialHash,
-        p_firmware: firmware || null,
-      });
+    : factoryBootstrapToken
+      ? await supabase.rpc('enroll_telemetry_device_factory', {
+          p_hardware_uid: hardwareUid,
+          p_bootstrap_token_hash: await sha256Hex(factoryBootstrapToken),
+          p_machine_serial: machineSerial || null,
+          p_credential_hash: credentialHash,
+          p_firmware: firmware || null,
+        })
+      : await supabase.rpc('enroll_telemetry_device_zero_touch', {
+          p_hardware_uid: hardwareUid,
+          p_machine_serial: machineSerial || null,
+          p_credential_hash: credentialHash,
+          p_firmware: firmware || null,
+        });
 
   if (enrollment.error) {
     const status = enrollment.error.code === '42501'
@@ -102,20 +134,50 @@ Deno.serve(async (request: Request) => {
     return jsonResponse({
       accepted: false,
       message: status === 500 ? 'Telemetry enrollment failed.' : enrollment.error.message,
-      enrollment_method: enrollmentToken ? 'one_time_token' : 'automatic_window',
+      enrollment_method: enrollmentMethod,
     }, status);
   }
 
   const result = enrollment.data && typeof enrollment.data === 'object'
     ? enrollment.data as Record<string, unknown>
     : {};
+  const enrolledDeviceId = String(result.device_id ?? '').trim();
+
+  if (enrolledDeviceId && (modemImei || simIccid || cellularOperator || cellularModel)) {
+    const identityUpdate: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (modemImei) identityUpdate.modem_imei = modemImei;
+    if (simIccid) identityUpdate.sim_iccid = simIccid;
+    if (cellularOperator) identityUpdate.cellular_operator = cellularOperator.slice(0, 120);
+    if (cellularModel) identityUpdate.cellular_model = cellularModel.slice(0, 120);
+    await supabase.from('telemetry_devices').update(identityUpdate).eq('id', enrolledDeviceId);
+  }
+
+  let locationResult: unknown = null;
+  if (enrolledDeviceId && location) {
+    const latitude = finiteNumber(location.latitude);
+    const longitude = finiteNumber(location.longitude);
+    const accuracy = finiteNumber(location.accuracy_m);
+    const source = String(location.source ?? 'cellular').trim().toLowerCase();
+    if (latitude !== null && longitude !== null
+        && latitude >= -90 && latitude <= 90
+        && longitude >= -180 && longitude <= 180
+        && ['cellular', 'wifi', 'gnss', 'manual', 'site', 'last_known'].includes(source)) {
+      const recorded = await supabase.rpc('record_telemetry_device_location', {
+        p_device_id: enrolledDeviceId,
+        p_latitude: latitude,
+        p_longitude: longitude,
+        p_accuracy_m: accuracy,
+        p_source: source,
+      });
+      if (!recorded.error) locationResult = recorded.data;
+    }
+  }
 
   return jsonResponse({
     ...result,
     accepted: true,
-    enrollment_method: enrollmentToken
-      ? 'one_time_token'
-      : String(result.enrollment_method ?? 'automatic_window'),
+    enrollment_method: enrollmentMethod,
     device_key: deviceKey,
+    first_location: locationResult,
   });
 });
