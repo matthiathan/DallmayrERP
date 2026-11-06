@@ -8,8 +8,9 @@ function device(overrides = {}) {
   return {
     id: 'device-1',
     device_code: 'TEL-001',
-    machine_id: 'machine-1',
+    machine_id: null,
     status: 'active',
+    heartbeat_interval_minutes: 5,
     last_heartbeat_at: '2026-09-11T08:00:00.000Z',
     last_seen_at: '2026-09-11T08:00:00.000Z',
     last_upload_at: '2026-09-11T08:00:00.000Z',

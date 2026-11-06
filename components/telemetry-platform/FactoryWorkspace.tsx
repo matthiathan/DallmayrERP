@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { loadDeviceHealthPolicies, withDeviceHealthPolicies } from '@/lib/telemetry/health-policy';
 import { deviceConfigSyncState, deviceConnectionState } from '@/lib/telemetry/device-health';
 import styles from './FactoryWorkspace.module.css';
 
@@ -16,6 +17,7 @@ type Device = {
   profile_id: string | null;
   status: string;
   firmware_version: string | null;
+  heartbeat_interval_minutes?: number | null;
   last_seen_at: string | null;
   last_heartbeat_at: string | null;
   last_config_at: string | null;
@@ -106,7 +108,8 @@ export function FactoryWorkspace() {
       });
       if (directoryError) throw directoryError;
       const payload = (data ?? {}) as FactoryPayload;
-      const rows = payload.rows ?? [];
+      const policies = await loadDeviceHealthPolicies();
+      const rows = withDeviceHealthPolicies(payload.rows ?? [], policies);
       setDevices(rows);
       setTotal(Number(payload.total ?? 0));
       const summary = payload.summary ?? {};
@@ -190,7 +193,7 @@ export function FactoryWorkspace() {
             <div className={styles.tableScroll}><table><thead><tr><th>Device</th><th>UID</th><th>Firmware</th><th>Communication</th><th>Network</th><th>Config</th><th>Progress</th><th /></tr></thead><tbody>
               {devices.map((device) => {
                 const check = evidence(device);
-                const health = deviceConnectionState(device);
+                const health = deviceConnectionState(device, updated?.getTime() ?? 0);
                 const config = deviceConfigSyncState(device);
                 return <tr key={device.id}>
                   <td><strong>{device.device_code}</strong><small>{readinessLabel(device)}</small></td>

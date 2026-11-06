@@ -1,3 +1,4 @@
+import { deviceDataHealth } from './data-health';
 import { deviceConfigSyncState, deviceConnectionState } from './device-health';
 
 export type FleetAttentionDevice = {
@@ -5,6 +6,7 @@ export type FleetAttentionDevice = {
   device_code: string;
   machine_id: string | null;
   status: string | null;
+  heartbeat_interval_minutes?: number | null;
   last_heartbeat_at: string | null;
   last_seen_at: string | null;
   last_upload_at: string | null;
@@ -22,11 +24,13 @@ export type FleetAttentionBalance = {
   alert_level: string;
 };
 
-export type FleetAttentionKind = 'offline' | 'config' | 'sim_balance' | 'network';
+export type FleetAttentionKind = 'offline' | 'delayed' | 'unknown' | 'never_seen' | 'communication' | 'reporting' | 'config' | 'sim_balance' | 'network';
 export type FleetAttentionSeverity = 'critical' | 'warning';
 
 export type FleetAttentionItem = {
   id: string;
+  reason?: string;
+  title?: string;
   kind: FleetAttentionKind;
   severity: FleetAttentionSeverity;
   priority: number;
@@ -87,15 +91,26 @@ export function buildFleetAttentionItems(
       lastTransport: device.last_transport,
     };
 
-    if (connection.key === 'offline') {
+    if (connection.key !== 'online' && connection.key !== 'disabled') {
       items.push({
         ...base,
-        id: `${device.id}:offline`,
-        kind: 'offline',
-        severity: 'critical',
-        priority: 0,
+        id: `${device.id}:${connection.key}`,
+        kind: connection.key,
+        title: `Device connectivity: ${connection.label}`,
+        reason: connection.reason,
+        severity: connection.key === 'offline' ? 'critical' : 'warning',
+        priority: connection.key === 'offline' ? 0 : 3,
         occurredAt: connection.contactAt,
       });
+    }
+
+    if (device.machine_id) {
+      const health = deviceDataHealth(device.machine_id);
+      for (const [kind, state] of [['communication', health.communication], ['reporting', health.reporting]] as const) {
+        if (state.key === 'current') continue;
+        items.push({ ...base, id: `${device.id}:${kind}`, kind, severity: 'warning', priority: 5, occurredAt: null,
+          title: `${kind === 'communication' ? 'Machine communication' : 'Sales report'}: ${state.label}`, reason: state.reason });
+      }
     }
 
     if (level) {

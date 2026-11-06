@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { NavigationIcon } from '@/components/layout/NavigationIcon';
 import { buildFleetAttentionItems, type FleetAttentionBalance, type FleetAttentionDevice, type FleetAttentionItem, type FleetAttentionKind } from '@/lib/telemetry/fleet-attention';
+import { loadDeviceHealthPolicies, withDeviceHealthPolicies } from '@/lib/telemetry/health-policy';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import styles from './DeviceAttentionPanel.module.css';
 
@@ -91,6 +92,7 @@ function age(value: string | null) {
 }
 
 function title(item: FleetAttentionItem) {
+  if (item.title) return item.title;
   if (item.kind === 'offline') return item.occurredAt ? 'Controller offline' : 'Controller has never contacted DallmayrERP';
   if (item.kind === 'config') return 'Configuration awaiting device ACK';
   if (item.kind === 'sim_balance') {
@@ -102,6 +104,7 @@ function title(item: FleetAttentionItem) {
 }
 
 function detail(item: FleetAttentionItem) {
+  if (item.reason) return item.reason;
   if (item.kind === 'offline') return item.occurredAt ? `Last confirmed device contact ${age(item.occurredAt)}.` : 'No heartbeat, upload, seen event or configuration acknowledgement has been received.';
   if (item.kind === 'config') return `Configuration was sent ${age(item.occurredAt)} and has not been acknowledged.`;
   if (item.kind === 'sim_balance') return `${bytes(item.remainingBytes)} remaining. ${item.balanceAlert === 'low' ? 'Plan a top-up.' : 'Top up this SIM now.'}`;
@@ -109,6 +112,11 @@ function detail(item: FleetAttentionItem) {
 }
 
 function kindLabel(kind: FleetAttentionKind) {
+  if (kind === 'delayed') return 'Delayed';
+  if (kind === 'unknown') return 'Unknown';
+  if (kind === 'never_seen') return 'Never seen';
+  if (kind === 'communication') return 'Machine communication';
+  if (kind === 'reporting') return 'Sales report';
   if (kind === 'offline') return 'Offline';
   if (kind === 'config') return 'Config ACK';
   if (kind === 'sim_balance') return 'SIM balance';
@@ -128,11 +136,13 @@ export function DeviceAttentionPanel() {
   const [error, setError] = useState<string | null>(null);
   const [updated, setUpdated] = useState<Date | null>(null);
 
+  const loadVersion = useRef(0);
   const load = useCallback(async (quiet = false) => {
+    const version = ++loadVersion.current;
     if (quiet) setRefreshing(true); else setLoading(true);
-    setError(null);
     try {
-      const nextDevices = await loadAllDevices();
+      const [deviceRows, policies] = await Promise.all([loadAllDevices(), loadDeviceHealthPolicies()]);
+      const nextDevices = withDeviceHealthPolicies(deviceRows, policies);
       let nextBalances: FleetAttentionBalance[] = [];
       let nextBalanceUnavailable = false;
       try {
@@ -143,16 +153,17 @@ export function DeviceAttentionPanel() {
       const items = buildFleetAttentionItems(nextDevices, nextBalances);
       const machineIds = Array.from(new Set(items.map((item) => item.machineId).filter((value): value is string => Boolean(value))));
       const machineRows = await loadMachines(machineIds);
+      if (version !== loadVersion.current) return;
       setDevices(nextDevices);
-      setBalances(nextBalances);
+      setBalances((current) => nextBalanceUnavailable ? current : nextBalances);
       setMachines(Object.fromEntries(machineRows.map((machine) => [machine.id, machine])));
       setBalanceUnavailable(nextBalanceUnavailable);
       setUpdated(new Date());
+      setError(null);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Device attention could not be loaded.');
+      if (version === loadVersion.current) setError(loadError instanceof Error ? loadError.message : 'Device attention could not be loaded.');
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (version === loadVersion.current) { setLoading(false); setRefreshing(false); }
     }
   }, []);
 
@@ -162,7 +173,7 @@ export function DeviceAttentionPanel() {
     return () => window.clearInterval(timer);
   }, [load]);
 
-  const items = useMemo(() => buildFleetAttentionItems(devices, balances), [balances, devices]);
+  const items = useMemo(() => buildFleetAttentionItems(devices, balances, updated?.getTime() ?? 0), [balances, devices, updated]);
   const counts = useMemo(() => items.reduce((next, item) => {
     next[item.kind] = (next[item.kind] ?? 0) + 1;
     return next;
@@ -192,11 +203,11 @@ export function DeviceAttentionPanel() {
   return (
     <section className={styles.panel} data-device-attention-center="v1" aria-label="Device attention">
       <header className={styles.header}>
-        <div><span>Controller exceptions</span><strong>Device attention</strong><small>Live connectivity, configuration, SIM balance and network-reporting exceptions.</small></div>
+        <div><span>Controller exceptions</span><strong>Device attention</strong><small>Connectivity, machine communication, sales reporting, configuration and SIM exceptions.</small></div>
         <div className={styles.headerActions}><span>{items.length.toLocaleString('en-ZA')} open</span><button disabled={refreshing} onClick={() => void load(true)} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button></div>
       </header>
 
-      {error ? <div className={styles.error} role="alert">Device attention unavailable: {error}</div> : null}
+      {error ? <div className={styles.error} role="alert">Dashboard updates unavailable: {error}. Displayed information may be outdated. Last successful refresh: {updated ? updated.toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' }) : 'never'}</div> : null}
       {balanceUnavailable ? <div className={styles.warning} role="status">SIM balance status could not be loaded; connectivity and configuration exceptions are still current.</div> : null}
 
       {loading ? <div className={styles.loading}>Loading controller exceptions…</div> : <>
@@ -208,6 +219,9 @@ export function DeviceAttentionPanel() {
           <button className={filter === 'network' ? styles.activeMetric : ''} onClick={() => setFilter('network')} type="button"><span>Network</span><strong>{(counts.network ?? 0).toLocaleString('en-ZA')}</strong><small>Signal reporting</small></button>
         </div>
 
+        <label>Exception type <select aria-label="Filter attention type" value={filter} onChange={(event) => setFilter(event.target.value as AttentionFilter)}>
+          <option value="all">All exceptions</option><option value="offline">Offline</option><option value="delayed">Delayed</option><option value="unknown">Unknown connectivity</option><option value="never_seen">Never seen</option><option value="communication">Machine communication</option><option value="reporting">Sales reporting</option><option value="config">Configuration</option><option value="sim_balance">SIM balance</option><option value="network">Network</option>
+        </select></label>
         <div className={styles.toolbar}>
           <label><NavigationIcon kind="search" /><input aria-label="Search device attention" onChange={(event) => setSearch(event.target.value)} placeholder="Search device, machine, serial, branch or exception" value={search} /></label>
           <span>{filtered.length.toLocaleString('en-ZA')} matching · updated {updated ? updated.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '—'}</span>

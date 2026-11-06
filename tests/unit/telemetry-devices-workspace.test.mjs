@@ -36,7 +36,9 @@ test('finished device workspace retains fleet operations and safety controls', (
   assert.match(workspace, /SignalStrengthIndicator/);
   assert.match(workspace, /At least one transport must remain enabled/);
   assert.match(workspace, /data-device-health-summary="v1"/);
-  assert.match(workspace, /Confirmed device contact within 30 min/);
+  assert.match(workspace, /TelemetryHealthSummary/);
+  assert.match(workspace, /loadDeviceHealthPolicies/);
+  assert.doesNotMatch(workspace, /within 30 min/);
   assert.match(workspace, /deviceConfigSyncState/);
   assert.match(workspace, /new URLSearchParams\(window\.location\.search\)\.get\('device'\)/);
   assert.match(workspace, /device\.device_code === deviceCode/);
