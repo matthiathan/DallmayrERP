@@ -1,11 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { ComparisonLineChart, type ComparisonPoint } from './ComparisonLineChart';
+import { deviceConnectionState } from '@/lib/telemetry/device-health';
 import { formatLocalDate } from '@/lib/dates/local-date';
 import { buildFleetAttentionItems, type FleetAttentionItem, type FleetAttentionDevice } from '@/lib/telemetry/fleet-attention';
+import { loadDeviceHealthPolicies, withDeviceHealthPolicies } from '@/lib/telemetry/health-policy';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { collectSupabasePagesResult } from '@/lib/supabase/collect-pages';
 import styles from './TelevendFleetDashboard.module.css';
@@ -206,6 +208,7 @@ function Gauge({ title, value, percent, label }: { title: string; value: string;
 }
 
 function attentionTitle(item: FleetAttentionItem) {
+  if (item.title) return item.title;
   if (item.kind === 'offline') return item.occurredAt ? 'Controller offline' : 'Controller has never reported';
   if (item.kind === 'config') return 'Configuration awaiting device ACK';
   if (item.kind === 'sim_balance') return item.balanceAlert === 'depleted' ? 'SIM balance depleted' : item.balanceAlert === 'critical' ? 'SIM balance critical' : 'SIM balance low';
@@ -213,6 +216,7 @@ function attentionTitle(item: FleetAttentionItem) {
 }
 
 function attentionDetail(item: FleetAttentionItem) {
+  if (item.reason) return item.reason;
   if (item.kind === 'offline') return item.occurredAt ? `Last confirmed device contact ${timeAgo(item.occurredAt)} ago.` : 'No heartbeat, upload, seen event, or configuration acknowledgement has been received.';
   if (item.kind === 'config') return `Configuration was sent ${timeAgo(item.occurredAt)} ago and has not been acknowledged.`;
   if (item.kind === 'sim_balance') return `${bytes(item.remainingBytes)} remaining. ${item.balanceAlert === 'low' ? 'Plan a top-up.' : 'Top up this SIM now.'}`;
@@ -227,64 +231,70 @@ export function TelevendFleetDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [updated, setUpdated] = useState<Date | null>(null);
 
+  const loadVersion = useRef(0);
   const load = useCallback(async (quiet = false) => {
+    const version = ++loadVersion.current;
     if (quiet) setRefreshing(true); else setLoading(true);
-    setError(null);
-    const client = getSupabaseClient();
-    const faultFrom = new Date();
-    faultFrom.setDate(faultFrom.getDate() - 30);
-    const faultFromBusinessDate = `${formatLocalDate(faultFrom)}T00:00:00+02:00`;
+    try {
+      const client = getSupabaseClient();
+      const faultFrom = new Date();
+      faultFrom.setDate(faultFrom.getDate() - 30);
+      const faultFromBusinessDate = `${formatLocalDate(faultFrom)}T00:00:00+02:00`;
 
-    const usageRows = collectSupabasePagesResult<UsageRow>(async (from, to) => {
-      const { data, error: pageError } = await client.rpc('get_telemetry_data_usage', { p_days: 30 }).range(from, to);
-      return { data: (data ?? []) as UsageRow[], error: pageError };
-    });
-    const balanceRows = collectSupabasePagesResult<BalanceRow>(async (from, to) => {
-      const { data, error: pageError } = await client.rpc('get_telemetry_prepaid_balances').range(from, to);
-      return { data: (data ?? []) as BalanceRow[], error: pageError };
-    });
-    const locationRows = collectSupabasePagesResult<FleetLocationRow>(async (from, to) => {
-      const { data, error: pageError } = await client.rpc('get_telemetry_location_map').range(from, to);
-      return { data: (data ?? []) as FleetLocationRow[], error: pageError };
-    });
-    const attentionDeviceRows = collectSupabasePagesResult<FleetAttentionDevice>(async (from, to) => {
-      const { data, error: pageError } = await client
-        .from('telemetry_devices')
-        .select(ATTENTION_DEVICE_SELECT)
-        .order('device_code', { ascending: true })
-        .range(from, to);
-      return { data: (data ?? []) as FleetAttentionDevice[], error: pageError };
-    });
+      const usageRows = collectSupabasePagesResult<UsageRow>(async (from, to) => {
+        const { data, error: pageError } = await client.rpc('get_telemetry_data_usage', { p_days: 30 }).range(from, to);
+        return { data: (data ?? []) as UsageRow[], error: pageError };
+      });
+      const balanceRows = collectSupabasePagesResult<BalanceRow>(async (from, to) => {
+        const { data, error: pageError } = await client.rpc('get_telemetry_prepaid_balances').range(from, to);
+        return { data: (data ?? []) as BalanceRow[], error: pageError };
+      });
+      const locationRows = collectSupabasePagesResult<FleetLocationRow>(async (from, to) => {
+        const { data, error: pageError } = await client.rpc('get_telemetry_location_map').range(from, to);
+        return { data: (data ?? []) as FleetLocationRow[], error: pageError };
+      });
+      const attentionDeviceRows = collectSupabasePagesResult<FleetAttentionDevice>(async (from, to) => {
+        const { data, error: pageError } = await client
+          .from('telemetry_devices')
+          .select(ATTENTION_DEVICE_SELECT)
+          .order('device_code', { ascending: true })
+          .range(from, to);
+        return { data: (data ?? []) as FleetAttentionDevice[], error: pageError };
+      });
 
-    const [reportResult, historyResult, dashboardResult, faultResult, usageResult, balanceResult, locationResult, attentionDevicesResult, machineCountResult] = await Promise.all([
-      client.rpc('get_telemetry_reporting', { p_period: period, p_branch: 'all', p_dataset: 'production' }),
-      client.rpc('get_telemetry_reporting', { p_period: 'six_months', p_branch: 'all', p_dataset: 'production' }),
-      client.rpc('get_telemetry_dashboard', { p_period: 'today', p_branch: 'all' }),
-      client.from('telemetry_fault_events').select('id,fault_code,severity,started_at,cleared_at').gte('started_at', faultFromBusinessDate).order('started_at', { ascending: false }).limit(5000),
-      usageRows,
-      balanceRows,
-      locationRows,
-      attentionDeviceRows,
-      client.from('machines').select('id', { count: 'exact', head: true }),
-    ]);
+      const [reportResult, historyResult, dashboardResult, faultResult, usageResult, balanceResult, locationResult, attentionDevicesResult, machineCountResult, policies] = await Promise.all([
+        client.rpc('get_telemetry_reporting', { p_period: period, p_branch: 'all', p_dataset: 'production' }),
+        client.rpc('get_telemetry_reporting', { p_period: 'six_months', p_branch: 'all', p_dataset: 'production' }),
+        client.rpc('get_telemetry_dashboard', { p_period: 'today', p_branch: 'all' }),
+        client.from('telemetry_fault_events').select('id,fault_code,severity,started_at,cleared_at').gte('started_at', faultFromBusinessDate).order('started_at', { ascending: false }).limit(5000),
+        usageRows,
+        balanceRows,
+        locationRows,
+        attentionDeviceRows,
+        client.from('machines').select('id', { count: 'exact', head: true }),
+        loadDeviceHealthPolicies(),
+      ]);
 
-    const errors = [reportResult.error, historyResult.error, dashboardResult.error].filter(Boolean);
-    if (errors.length) setError(errors[0]?.message ?? 'Could not load telemetry overview.');
+      const errors = [reportResult.error, historyResult.error, dashboardResult.error, faultResult.error, usageResult.error, balanceResult.error, locationResult.error, attentionDevicesResult.error, machineCountResult.error].filter(Boolean);
+      if (errors.length) throw new Error(errors[0]?.message ?? 'Could not load telemetry overview.');
 
-    setData({
-      report: (reportResult.data ?? {}) as ReportingPayload,
-      history: (historyResult.data ?? {}) as ReportingPayload,
-      dashboard: (dashboardResult.data ?? {}) as DashboardPayload,
-      faultHistory: faultResult.error ? [] : ((faultResult.data ?? []) as FaultHistoryRow[]),
-      usage: usageResult.error ? [] : usageResult.data,
-      balances: balanceResult.error ? [] : balanceResult.data,
-      locations: locationResult.error ? [] : locationResult.data,
-      attentionDevices: attentionDevicesResult.error ? null : attentionDevicesResult.data,
-      machineCount: machineCountResult.error ? 0 : (machineCountResult.count ?? 0),
-    });
-    setUpdated(new Date());
-    setLoading(false);
-    setRefreshing(false);
+      if (version !== loadVersion.current) return;
+      setData({
+        report: (reportResult.data ?? {}) as ReportingPayload,
+        history: (historyResult.data ?? {}) as ReportingPayload,
+        dashboard: (dashboardResult.data ?? {}) as DashboardPayload,
+        faultHistory: faultResult.error ? [] : ((faultResult.data ?? []) as FaultHistoryRow[]),
+        usage: usageResult.error ? [] : usageResult.data,
+        balances: balanceResult.error ? [] : balanceResult.data,
+        locations: locationResult.error ? [] : locationResult.data,
+        attentionDevices: withDeviceHealthPolicies(attentionDevicesResult.data, policies),
+        machineCount: machineCountResult.error ? 0 : (machineCountResult.count ?? 0),
+      });
+      setUpdated(new Date());
+      setError(null);
+    } catch (loadError) {
+      if (version === loadVersion.current) setError(loadError instanceof Error ? loadError.message : 'Could not load telemetry overview.');
+    } finally { if (version === loadVersion.current) { setLoading(false); setRefreshing(false); } }
   }, [period]);
 
   useEffect(() => { load().catch((loadError) => { setError(loadError instanceof Error ? loadError.message : 'Could not load telemetry overview.'); setLoading(false); setRefreshing(false); }); }, [load]);
@@ -307,9 +317,12 @@ export function TelevendFleetDashboard() {
   const failed = n(summary.failed_vends);
   const attempts = units + failed;
   const success = attempts ? units / attempts * 100 : 100;
-  const reportingDevices = n(summary.reporting_devices);
-  const online = n(summary.online_devices);
-  const offline = n(summary.offline_devices);
+  const reportingDevices = (data?.attentionDevices ?? []).filter((device) => device.status === 'active').length;
+  const connectionStates = (data?.attentionDevices ?? []).filter((device) => device.status === 'active').map((device) => deviceConnectionState(device, updated?.getTime() ?? 0));
+  const online = connectionStates.filter((state) => state.key === 'online').length;
+  const offline = connectionStates.filter((state) => state.key === 'offline').length;
+  const delayed = connectionStates.filter((state) => state.key === 'delayed').length;
+  const unknown = connectionStates.filter((state) => state.key === 'unknown' || state.key === 'never_seen').length;
   const availability = reportingDevices ? online / reportingDevices * 100 : 0;
   const periodChange = previousUnits > 0 ? ((units - previousUnits) / previousUnits) * 100 : 0;
 
@@ -339,8 +352,8 @@ export function TelevendFleetDashboard() {
   const locations = data?.locations ?? [];
   const attentionUnavailable = Boolean(data && data.attentionDevices === null);
   const attentionItems = useMemo(
-    () => buildFleetAttentionItems(data?.attentionDevices ?? [], data?.balances ?? []),
-    [data?.attentionDevices, data?.balances],
+    () => buildFleetAttentionItems(data?.attentionDevices ?? [], data?.balances ?? [], updated?.getTime() ?? 0),
+    [data?.attentionDevices, data?.balances, updated],
   );
   const locationByDevice = useMemo(
     () => new Map((data?.locations ?? []).map((location) => [location.device_id, location])),
@@ -407,18 +420,18 @@ export function TelevendFleetDashboard() {
         <div className={styles.toolbarActions}>
           <label><span>Period</span><select value={period} onChange={(event) => setPeriod(event.target.value as Period)}>{periods.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
           <button disabled={!locations.length} onClick={exportFleetSnapshot} type="button">Export fleet CSV</button>
-          <button disabled={refreshing} onClick={() => load(true)} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button>
+          <button disabled={refreshing} onClick={() => void load(true)} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button>
         </div>
       </div>
 
-      {error ? <div className={styles.error} role="alert">{error}</div> : null}
+      {error ? <div className={styles.error} role="alert">Dashboard updates unavailable: {error} Displayed information may be outdated. Last successful refresh: {updated ? updated.toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' }) : 'never'}.</div> : null}
       {loading && !data ? <HamsterLoader label="Loading fleet overview" /> : null}
 
       {data ? <>
         <section className={styles.metricsStrip} aria-label="Fleet headline metrics">
           <Metric helper={`${reportingDevices.toLocaleString('en-ZA')} reporting devices`} label="Total machines" tone="blue" value={machineCount.toLocaleString('en-ZA')} />
-          <Metric helper={`${availability.toFixed(0)}% of reporting fleet`} label="Online" tone="green" value={online.toLocaleString('en-ZA')} />
-          <Metric helper={`${reportingDevices ? (offline / reportingDevices * 100).toFixed(0) : '0'}% of reporting fleet`} label="Offline" tone={offline ? 'red' : 'green'} value={offline.toLocaleString('en-ZA')} />
+          <Metric helper={`${availability.toFixed(0)}% of reporting fleet`} label="Devices online" tone="green" value={online.toLocaleString('en-ZA')} />
+          <Metric helper={`${delayed} delayed · ${unknown} unknown / never seen`} label="Devices offline" tone={offline ? 'red' : 'green'} value={offline.toLocaleString('en-ZA')} />
           <Metric helper={`${periodChange >= 0 ? '+' : ''}${periodChange.toFixed(1)}% vs previous`} label="Vends" tone="blue" value={units.toLocaleString('en-ZA')} />
           <Metric helper={`${critical} critical · ${warning} warning`} label="Active faults" tone={active ? 'red' : 'green'} value={active.toLocaleString('en-ZA')} />
           <Metric helper={`${modemCoverage}% modem coverage`} label="Data usage" tone="gold" value={bytes(observed)} />
@@ -446,7 +459,7 @@ export function TelevendFleetDashboard() {
                 <Link href={`/telemetry/test-center?device=${encodeURIComponent(item.deviceCode)}`}>Test Center</Link>
               </nav>
             </article>;
-          })}</div> : <div className={styles.attentionEmpty}>No active offline, pending configuration, SIM-balance, or signal-reporting exceptions.</div>}
+          })}</div> : <div className={styles.attentionEmpty}>No active connectivity, machine communication, reporting, configuration, SIM-balance or signal exceptions.</div>}
           {attentionItems.length > 8 ? <footer className={styles.attentionFooter}>Showing the first 8 of {attentionItems.length.toLocaleString('en-ZA')} items. <Link href="/telemetry/devices">Review all devices ›</Link></footer> : null}
         </section>
 

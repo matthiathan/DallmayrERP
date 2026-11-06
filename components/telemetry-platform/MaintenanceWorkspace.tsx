@@ -21,18 +21,7 @@ type Job = ServiceJobRecord & {
   customer_sites?: SiteRelation | SiteRelation[] | null;
 };
 
-type Plan = {
-  id: string;
-  plan_number: string;
-  machine_id: string;
-  title: string;
-  priority: ServicePriority;
-  next_due_at: string | null;
-  assigned_to: string | null;
-  is_active: boolean;
-};
-
-const activeStatuses: ServiceJobStatus[] = ['new', 'assigned', 'in_progress'];
+const PAGE_SIZE = 50;
 const terminalStatuses: ServiceJobStatus[] = ['completed', 'verified', 'closed', 'cancelled'];
 const boardStatuses: ServiceJobStatus[] = ['new', 'assigned', 'in_progress', 'completed'];
 
@@ -44,13 +33,13 @@ function dateTime(value: string | null | undefined) {
   if (!value) return 'Not scheduled';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'Not scheduled';
-  return date.toLocaleString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function dateOnly(value: string | null | undefined) {
   if (!value) return '—';
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' });
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('en-ZA', { timeZone: 'Africa/Johannesburg', day: '2-digit', month: 'short' });
 }
 
 function isOverdue(job: Job) {
@@ -85,26 +74,33 @@ function statusLabel(status: ServiceJobStatus) {
 }
 
 function daysFromNow(offset: number) {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  date.setDate(date.getDate() + offset);
-  return date;
+  const today = new Intl.DateTimeFormat('en-CA', {timeZone:'Africa/Johannesburg',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  return new Date(new Date(today + 'T00:00:00+02:00').getTime() + offset * 86400000);
 }
 
 function localDateKey(value: string | null | undefined) {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+  return new Intl.DateTimeFormat('en-CA', {timeZone: 'Africa/Johannesburg',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
 }
 
 function dateKey(date: Date) {
-  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+  return localDateKey(date.toISOString());
 }
 
 export function MaintenanceWorkspace() {
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [plans, setPlans] = useState<Plan[]>([]);
+  const [page, setPage] = useState(0);
+  const [boardPages, setBoardPages] = useState<Record<string, number>>({});
+  const [boardRows, setBoardRows] = useState<Record<string, Job[]>>({});
+  const [boardTotals, setBoardTotals] = useState<Record<string, number>>({});
+  const [calendarRows, setCalendarRows] = useState<Job[]>([]);
+  const [calendarPage, setCalendarPage] = useState(0);
+  const [calendarTotal, setCalendarTotal] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [summary, setSummary] = useState({ active_jobs: 0, overdue: 0, due_soon: 0, unassigned: 0, in_progress: 0, completed_30d: 0, reported_30d: 0, plans_due: 0, active_plans: 0 });
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [view, setView] = useState<ViewMode>('table');
   const [status, setStatus] = useState<StatusFilter>('active');
@@ -119,38 +115,62 @@ export function MaintenanceWorkspace() {
   const [notice, setNotice] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [search]);
+  useEffect(() => { setPage(0); setBoardPages({}); setCalendarPage(0); }, [debouncedSearch, status, priority, technician]);
+
   const load = useCallback(async (quiet = false) => {
     if (quiet) setRefreshing(true); else setLoading(true);
     setError(null);
     try {
       const client = getSupabaseClient();
-      const [jobsResult, plansResult, techniciansResult] = await Promise.all([
-        client
-          .from('service_jobs')
-          .select(`
-            id,job_number,incident_number,branch,customer_id,customer_code_snapshot,customer_name_snapshot,
-            site_id,machine_id,assigned_to,priority,status,summary,description,complaint_details,due_at,completed_at,
-            reported_at,call_logged_by,contact_name,telephone,fax,mobile,contact_email,address_snapshot,service_type,
-            service_code,site_location,call_type,call_reason,category,sub_category,group_3,work_order_number,
-            assignment_notes,closed_by,closed_at,closing_remarks,parts_extra,performance_report_required,
-            visits_chargeable,quotation_required,ticket_reference,ticket_case_number,reference_date_1,reference_date_2,
-            created_at,customers(customer_name),machines(machine_name,serial_number),customer_sites(site_name,address)
-          `)
-          .order('reported_at', { ascending: false })
-          .limit(1000),
-        client
-          .from('maintenance_plans')
-          .select('id,plan_number,machine_id,title,priority,next_due_at,assigned_to,is_active')
-          .eq('is_active', true)
-          .order('next_due_at', { ascending: true })
-          .limit(1000),
-        client.rpc('list_assignable_technicians'),
+      const filters = { p_search: debouncedSearch, p_priority: priority, p_technician: technician };
+      const jobsRequest = client.rpc('get_telemetry_maintenance_directory', {
+        ...filters, p_status: status, p_offset: page * PAGE_SIZE, p_limit: PAGE_SIZE,
+      });
+      const localToday = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit',
+      }).format(new Date());
+      const fromDate = new Date(localToday + 'T00:00:00+02:00');
+      const untilDate = new Date(fromDate.getTime() + 7 * 86400000);
+      const specialRequest = view === 'kanban'
+        ? Promise.all(boardStatuses.map((column) => client.rpc('get_telemetry_maintenance_directory', {
+          ...filters, p_status: column, p_offset: (boardPages[column] ?? 0) * PAGE_SIZE, p_limit: PAGE_SIZE,
+        })))
+        : view === 'calendar'
+          ? Promise.all([client.rpc('get_telemetry_maintenance_directory', {
+            ...filters, p_status: status, p_offset: calendarPage * PAGE_SIZE, p_limit: PAGE_SIZE,
+            p_from: fromDate.toISOString(), p_until: untilDate.toISOString(),
+          })])
+          : Promise.resolve([]);
+      const [jobsResult, techniciansResult, specialResults] = await Promise.all([
+        jobsRequest, client.rpc('list_assignable_technicians'), specialRequest,
       ]);
       if (jobsResult.error) throw jobsResult.error;
-      if (plansResult.error) throw plansResult.error;
       if (techniciansResult.error) throw techniciansResult.error;
-      setJobs((jobsResult.data ?? []) as Job[]);
-      setPlans((plansResult.data ?? []) as Plan[]);
+      for (const result of specialResults) if (result.error) throw result.error;
+      const result = jobsResult.data as { rows?: Job[]; total?: number; summary?: typeof summary } | null;
+      setJobs(result?.rows ?? []);
+      setTotal(Number(result?.total ?? 0));
+      if (result?.summary) setSummary(result.summary);
+      if (view === 'kanban') {
+        const rows: Record<string, Job[]> = {};
+        const totals: Record<string, number> = {};
+        boardStatuses.forEach((column, index) => {
+          const data = specialResults[index].data as { rows?: Job[]; total?: number } | null;
+          rows[column] = data?.rows ?? [];
+          totals[column] = Number(data?.total ?? 0);
+        });
+        setBoardRows(rows);
+        setBoardTotals(totals);
+      }
+      if (view === 'calendar') {
+        const data = specialResults[0].data as { rows?: Job[]; total?: number } | null;
+        setCalendarRows(data?.rows ?? []);
+        setCalendarTotal(Number(data?.total ?? 0));
+      }
       setTechnicians((techniciansResult.data ?? []) as Technician[]);
       setUpdatedAt(new Date());
     } catch (loadError) {
@@ -159,7 +179,7 @@ export function MaintenanceWorkspace() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [debouncedSearch, status, priority, technician, page, view, boardPages, calendarPage]);
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
@@ -170,39 +190,10 @@ export function MaintenanceWorkspace() {
   }, [load]);
 
   const technicianMap = useMemo(() => new Map(technicians.map((item) => [item.user_id, item])), [technicians]);
-  const selected = selectedId ? jobs.find((job) => job.id === selectedId) ?? null : null;
+  const selected = selectedId ? [...jobs, ...Object.values(boardRows).flat(), ...calendarRows].find((job) => job.id === selectedId) ?? null : null;
 
-  const activeJobs = useMemo(() => jobs.filter((job) => activeStatuses.includes(job.status)), [jobs]);
-  const overdue = useMemo(() => activeJobs.filter(isOverdue), [activeJobs]);
-  const dueSoon = useMemo(() => activeJobs.filter(isDueSoon), [activeJobs]);
-  const unassigned = useMemo(() => activeJobs.filter((job) => !job.assigned_to), [activeJobs]);
-  const inProgress = useMemo(() => activeJobs.filter((job) => job.status === 'in_progress'), [activeJobs]);
-  const completed30d = useMemo(() => jobs.filter((job) => {
-    if (!['completed', 'verified', 'closed'].includes(job.status)) return false;
-    const stamp = new Date(job.completed_at ?? job.closed_at ?? job.reported_at).getTime();
-    return stamp >= Date.now() - 30 * 24 * 60 * 60 * 1000;
-  }), [jobs]);
-  const completionBase = jobs.filter((job) => new Date(job.reported_at).getTime() >= Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const firstTimeFix = completionBase.length ? Math.round((completed30d.length / completionBase.length) * 100) : 100;
-  const plansDue = plans.filter((plan) => plan.next_due_at && new Date(plan.next_due_at).getTime() <= Date.now()).length;
-
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    return jobs.filter((job) => {
-      if (status === 'active' && !activeStatuses.includes(job.status)) return false;
-      if (status !== 'all' && status !== 'active' && job.status !== status) return false;
-      if (priority !== 'all' && job.priority !== priority) return false;
-      if (technician === 'unassigned' && job.assigned_to) return false;
-      if (technician !== 'all' && technician !== 'unassigned' && job.assigned_to !== technician) return false;
-      if (!term) return true;
-      const assigned = job.assigned_to ? technicianMap.get(job.assigned_to)?.display_name ?? '' : '';
-      return [
-        job.job_number, job.incident_number, job.summary, job.complaint_details, job.category,
-        job.sub_category, job.service_type, customerName(job), machineName(job), siteName(job),
-        job.branch, assigned, job.work_order_number, job.ticket_reference, job.ticket_case_number,
-      ].filter(Boolean).join(' ').toLowerCase().includes(term);
-    });
-  }, [jobs, priority, search, status, technician, technicianMap]);
+  const plansDue = summary.plans_due;
+  const filtered = jobs;
 
   const updateStatus = async (job: Job, nextStatus: ServiceJobStatus) => {
     if (job.status === nextStatus) return;
@@ -249,10 +240,10 @@ export function MaintenanceWorkspace() {
     const key = dateKey(date);
     return {
       key,
-      label: date.toLocaleDateString('en-ZA', { weekday: 'short', day: '2-digit', month: 'short' }),
-      jobs: filtered.filter((job) => localDateKey(job.due_at ?? job.reported_at) === key),
+      label: date.toLocaleDateString('en-ZA', { timeZone: 'Africa/Johannesburg', weekday: 'short', day: '2-digit', month: 'short' }),
+      jobs: calendarRows.filter((job) => localDateKey(job.due_at ?? job.reported_at) === key),
     };
-  }), [filtered]);
+  }), [calendarRows]);
 
   return (
     <section className={styles.workspace} data-maintenance-workspace="telemetry-v1">
@@ -270,12 +261,12 @@ export function MaintenanceWorkspace() {
 
       {!loading ? <>
         <section className={styles.metrics} aria-label="Maintenance summary">
-          <button onClick={() => { setStatus('active'); setSearch(''); }} type="button"><span>Open jobs</span><strong>{activeJobs.length.toLocaleString('en-ZA')}</strong><small>{unassigned.length} unassigned</small></button>
-          <button className={overdue.length ? styles.metricDanger : ''} onClick={() => { setStatus('active'); setSearch(''); }} type="button"><span>Overdue</span><strong>{overdue.length.toLocaleString('en-ZA')}</strong><small>Past due date</small></button>
-          <button className={dueSoon.length ? styles.metricWarning : ''} onClick={() => { setStatus('active'); setSearch(''); }} type="button"><span>Due today / next 24h</span><strong>{dueSoon.length.toLocaleString('en-ZA')}</strong><small>SLA attention</small></button>
-          <button onClick={() => setStatus('in_progress')} type="button"><span>In progress</span><strong>{inProgress.length.toLocaleString('en-ZA')}</strong><small>Technician working</small></button>
-          <button onClick={() => setStatus('completed')} type="button"><span>Completed · 30d</span><strong>{completed30d.length.toLocaleString('en-ZA')}</strong><small>{firstTimeFix}% completion ratio</small></button>
-          <button onClick={() => setView('calendar')} type="button"><span>PM plans due</span><strong>{plansDue.toLocaleString('en-ZA')}</strong><small>{plans.length} active plans</small></button>
+          <button onClick={() => { setStatus('active'); setSearch(''); }} type="button"><span>Open jobs</span><strong>{summary.active_jobs.toLocaleString('en-ZA')}</strong><small>{summary.unassigned} unassigned</small></button>
+          <button className={summary.overdue ? styles.metricDanger : ''} onClick={() => { setStatus('active'); setSearch(''); }} type="button"><span>Overdue</span><strong>{summary.overdue.toLocaleString('en-ZA')}</strong><small>Past due date</small></button>
+          <button className={summary.due_soon ? styles.metricWarning : ''} onClick={() => { setStatus('active'); setSearch(''); }} type="button"><span>Due today / next 24h</span><strong>{summary.due_soon.toLocaleString('en-ZA')}</strong><small>SLA attention</small></button>
+          <button onClick={() => setStatus('in_progress')} type="button"><span>In progress</span><strong>{summary.in_progress.toLocaleString('en-ZA')}</strong><small>Technician working</small></button>
+          <button onClick={() => setStatus('completed')} type="button"><span>Completed · 30d</span><strong>{summary.completed_30d.toLocaleString('en-ZA')}</strong><small>Completed during the last 30 days</small></button>
+          <button onClick={() => setView('calendar')} type="button"><span>PM plans due</span><strong>{plansDue.toLocaleString('en-ZA')}</strong><small>{summary.active_plans} active plans</small></button>
         </section>
 
         <section className={styles.viewBar}>
@@ -284,7 +275,7 @@ export function MaintenanceWorkspace() {
             <button aria-pressed={view === 'kanban'} className={view === 'kanban' ? styles.activeView : ''} onClick={() => setView('kanban')} type="button">Kanban</button>
             <button aria-pressed={view === 'calendar'} className={view === 'calendar' ? styles.activeView : ''} onClick={() => setView('calendar')} type="button">Calendar</button>
           </div>
-          <span>{filtered.length.toLocaleString('en-ZA')} jobs · updated {updatedAt ? updatedAt.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '—'}</span>
+          <span>{total.toLocaleString('en-ZA')} jobs · updated {updatedAt ? updatedAt.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '—'}</span>
         </section>
 
         <section className={styles.filters} aria-label="Maintenance filters">
@@ -296,7 +287,7 @@ export function MaintenanceWorkspace() {
         </section>
 
         {view === 'table' ? <section className={styles.tableCard}>
-          <header><div><strong>Maintenance work queue</strong><small>Open any job for machine, SLA and technician context.</small></div><span>{filtered.length.toLocaleString('en-ZA')} matching</span></header>
+          <header><div><strong>Maintenance work queue</strong><small>Open any job for machine, SLA and technician context.</small></div><span>{total.toLocaleString('en-ZA')} matching</span></header>
           <div className={styles.tableScroll}>
             <table>
               <thead><tr><th>Priority</th><th>Job / incident</th><th>Machine</th><th>Customer / site</th><th>Status</th><th>Technician</th><th>Due</th><th /></tr></thead>
@@ -315,27 +306,34 @@ export function MaintenanceWorkspace() {
           {!filtered.length ? <div className={styles.empty}>No maintenance jobs match the selected filters.</div> : null}
         </section> : null}
 
+        {view === 'table' ? <nav aria-label="Maintenance pages" style={{display:'flex',justifyContent:'flex-end',alignItems:'center',gap:12}}>
+          <span>Page {page + 1} of {Math.max(1, Math.ceil(total / PAGE_SIZE))}</span>
+          <button type="button" disabled={page === 0} onClick={() => setPage((value) => Math.max(0,value - 1))}>Previous</button>
+          <button type="button" disabled={(page + 1) * PAGE_SIZE >= total} onClick={() => setPage((value) => value + 1)}>Next</button>
+        </nav> : null}
+
         {view === 'kanban' ? <section className={styles.kanban}>
           {boardStatuses.map((columnStatus) => {
-            const columnJobs = filtered.filter((job) => job.status === columnStatus);
+            const columnJobs = boardRows[columnStatus] ?? [];
             return <section className={styles.kanbanColumn} key={columnStatus}>
-              <header><strong>{statusLabel(columnStatus)}</strong><span>{columnJobs.length}</span></header>
+              <header><strong>{statusLabel(columnStatus)}</strong><span>{boardTotals[columnStatus] ?? 0}</span></header>
               <div>{columnJobs.map((job) => <button className={`${styles.jobCard} ${isOverdue(job) ? styles.jobCardOverdue : ''}`} key={job.id} onClick={() => setSelectedId(job.id)} type="button">
                 <div><span className={`${styles.priority} ${styles[`priority_${job.priority}`]}`}>{priorityLabel(job.priority)}</span><small>{job.job_number}</small></div>
                 <strong>{machineName(job)}</strong>
                 <p>{job.summary}</p>
                 <footer><span>{technicianMap.get(job.assigned_to ?? '')?.display_name ?? 'Unassigned'}</span><b>{dateOnly(job.due_at)}</b></footer>
-              </button>)}</div>
+              </button>)}<div style={{display:'flex',gap:8,alignItems:'center'}}><button type="button" disabled={(boardPages[columnStatus] ?? 0) === 0} onClick={() => setBoardPages((old) => ({...old,[columnStatus]: Math.max(0,(old[columnStatus] ?? 0)-1)}))}>Previous</button><span>{(boardPages[columnStatus] ?? 0)+1} / {Math.max(1,Math.ceil((boardTotals[columnStatus] ?? 0)/PAGE_SIZE))}</span><button type="button" disabled={((boardPages[columnStatus] ?? 0)+1)*PAGE_SIZE >= (boardTotals[columnStatus] ?? 0)} onClick={() => setBoardPages((old) => ({...old,[columnStatus]:(old[columnStatus] ?? 0)+1}))}>Next</button></div></div>
             </section>;
           })}
         </section> : null}
 
         {view === 'calendar' ? <section className={styles.calendar}>
-          <header><div><strong>7-day service calendar</strong><small>Scheduled maintenance jobs from today forward.</small></div><span>{plansDue} preventive plans currently due</span></header>
+          <header><div><strong>7-day service calendar</strong><small>Showing scheduled jobs in the next seven days, independently of the table.</small></div><span>{calendarTotal} scheduled jobs · {plansDue} preventive plans due</span></header>
           <div className={styles.calendarGrid}>{calendarDays.map((day) => <section key={day.key}>
             <header><strong>{day.label}</strong><span>{day.jobs.length}</span></header>
             <div>{day.jobs.map((job) => <button key={job.id} onClick={() => setSelectedId(job.id)} type="button"><span className={`${styles.calendarDot} ${styles[`priority_${job.priority}`]}`} /><strong>{machineName(job)}</strong><small>{job.job_number} · {technicianMap.get(job.assigned_to ?? '')?.display_name ?? 'Unassigned'}</small></button>)}</div>
           </section>)}</div>
+          <div style={{display:'flex',justifyContent:'flex-end',alignItems:'center',gap:12,padding:12}}><button type="button" disabled={calendarPage === 0} onClick={() => setCalendarPage((v) => Math.max(0,v-1))}>Previous</button><span>Page {calendarPage+1} of {Math.max(1,Math.ceil(calendarTotal/PAGE_SIZE))}</span><button type="button" disabled={(calendarPage+1)*PAGE_SIZE>=calendarTotal} onClick={() => setCalendarPage((v) => v+1)}>Next</button></div>
         </section> : null}
 
         {selected ? <div className={styles.drawerBackdrop} onMouseDown={(event) => { if (event.currentTarget === event.target) setSelectedId(null); }} role="presentation">

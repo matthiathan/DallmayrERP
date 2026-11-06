@@ -1,5 +1,3 @@
-export const DEVICE_ONLINE_WINDOW_MS = 30 * 60 * 1000;
-
 type DeviceContactFields = {
   status?: string | null;
   last_heartbeat_at?: string | null;
@@ -15,8 +13,9 @@ type DeviceConfigFields = {
 };
 
 export type DeviceConnectionState = {
-  key: 'online' | 'offline' | 'disabled';
-  label: 'Online' | 'Offline' | 'Disabled' | 'Never connected';
+  key: 'online' | 'delayed' | 'offline' | 'disabled' | 'unknown' | 'never_seen';
+  label: 'Online' | 'Delayed' | 'Offline' | 'Disabled' | 'Unknown' | 'Never seen';
+  reason: string;
   contactAt: string | null;
 };
 
@@ -30,14 +29,6 @@ function timeFor(value: string | null | undefined) {
   if (!value) return null;
   const timestamp = new Date(value).getTime();
   return Number.isFinite(timestamp) ? timestamp : null;
-}
-
-function onlineWindowMs(device: DeviceContactFields) {
-  const heartbeatMinutes = Number(device.heartbeat_interval_minutes);
-  if (Number.isFinite(heartbeatMinutes) && heartbeatMinutes > 0) {
-    return heartbeatMinutes * 2 * 60 * 1000;
-  }
-  return DEVICE_ONLINE_WINDOW_MS;
 }
 
 export function deviceContactAt(device: DeviceContactFields) {
@@ -57,12 +48,19 @@ export function deviceContactAt(device: DeviceContactFields) {
 }
 
 export function deviceConnectionState(device: DeviceContactFields, now = Date.now()): DeviceConnectionState {
-  if (device.status !== 'active') return { key: 'disabled', label: 'Disabled', contactAt: deviceContactAt(device) };
   const contactAt = deviceContactAt(device);
+  if (device.status !== 'active') return { key: 'disabled', label: 'Disabled', contactAt, reason: 'Controller is disabled.' };
   const timestamp = timeFor(contactAt);
-  if (timestamp === null) return { key: 'offline', label: 'Never connected', contactAt: null };
-  if (Math.max(0, now - timestamp) <= onlineWindowMs(device)) return { key: 'online', label: 'Online', contactAt };
-  return { key: 'offline', label: 'Offline', contactAt };
+  if (timestamp === null) return { key: 'never_seen', label: 'Never seen', contactAt: null, reason: 'No device contact has been recorded.' };
+  const interval = device.heartbeat_interval_minutes;
+  if (typeof interval !== 'number' || !Number.isFinite(interval) || interval <= 0) {
+    return { key: 'unknown', label: 'Unknown', contactAt, reason: 'Heartbeat interval not configured or unavailable.' };
+  }
+  if (timestamp > now) return { key: 'unknown', label: 'Unknown', contactAt, reason: 'Device contact timestamp is in the future.' };
+  const elapsed = now - timestamp;
+  if (elapsed <= interval * 2 * 60_000) return { key: 'online', label: 'Online', contactAt, reason: 'Confirmed device contact within two expected heartbeat intervals.' };
+  if (elapsed <= interval * 5 * 60_000) return { key: 'delayed', label: 'Delayed', contactAt, reason: 'Device contact is more than two expected heartbeat intervals old.' };
+  return { key: 'offline', label: 'Offline', contactAt, reason: 'No device contact for more than five expected heartbeat intervals.' };
 }
 
 export function deviceConfigSyncState(device: DeviceConfigFields): DeviceConfigSyncState {

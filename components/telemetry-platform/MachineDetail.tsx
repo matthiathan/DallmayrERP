@@ -1,11 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SignalStrengthIndicator } from '@/components/ui/SignalStrengthIndicator';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { deviceConfigSyncState, deviceConnectionState } from '@/lib/telemetry/device-health';
+import { loadDeviceHealthPolicies, withDeviceHealthPolicies } from '@/lib/telemetry/health-policy';
+import { TelemetryHealthSummary } from './TelemetryHealthSummary';
 import { ComparisonLineChart, type ComparisonPoint } from './ComparisonLineChart';
 import { MachineIdentityProfilePanel } from './MachineIdentityProfilePanel';
 import styles from './MachineDetail.module.css';
@@ -49,6 +51,7 @@ type Device = {
   cellular_model: string | null;
   last_transport: 'wifi' | 'cellular' | null;
   transport_preference: 'auto' | 'wifi' | 'cellular';
+  heartbeat_interval_minutes?: number | null;
   last_seen_at: string | null;
   last_upload_at: string | null;
   last_counter_at: string | null;
@@ -163,9 +166,9 @@ function age(value: string | null) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-function connectionState(device: Device | null): ReturnType<typeof deviceConnectionState> | { key: 'offline'; label: 'No telemetry device'; contactAt: null } {
-  if (!device) return { key: 'offline', label: 'No telemetry device', contactAt: null };
-  return deviceConnectionState(device);
+function connectionState(device: Device | null, now: number): ReturnType<typeof deviceConnectionState> | { key: 'unknown'; label: 'No telemetry device'; contactAt: null } {
+  if (!device) return { key: 'unknown', label: 'No telemetry device', contactAt: null };
+  return deviceConnectionState(device, now);
 }
 
 function actualUsage(usage: Usage | null) {
@@ -209,9 +212,10 @@ export function MachineDetail({ machineId }: { machineId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [updated, setUpdated] = useState<Date | null>(null);
 
+  const loadVersion = useRef(0);
   const load = useCallback(async () => {
+    const version = ++loadVersion.current;
     setLoading(true);
-    setError(null);
     try {
       const client = getSupabaseClient();
       const { data: machineData, error: machineError } = await client
@@ -233,7 +237,8 @@ export function MachineDetail({ machineId }: { machineId: string }) {
         .maybeSingle();
       if (deviceError) throw deviceError;
 
-      const nextDevice = deviceData as Device | null;
+      const policies = await loadDeviceHealthPolicies();
+      const nextDevice = deviceData ? withDeviceHealthPolicies([deviceData as Device], policies)[0] : null;
       const range = reportWindow(period);
       const { data: identityData } = await client.rpc('get_telemetry_machine_identity', { p_machine_id: machineId });
       const effectiveProfileKey = identityData && typeof identityData === 'object' && !Array.isArray(identityData)
@@ -271,10 +276,13 @@ export function MachineDetail({ machineId }: { machineId: string }) {
         ]);
         if (counterQuery.error) throw counterQuery.error;
         counterRows = (counterQuery.data ?? []) as Counter[];
-        usageRow = usageQuery.error ? null : (usageQuery.data as Usage | null);
-        prepaidRow = prepaidQuery.error ? null : (prepaidQuery.data as Prepaid | null);
+        if (usageQuery.error) throw usageQuery.error;
+        if (prepaidQuery.error) throw prepaidQuery.error;
+        usageRow = usageQuery.data as Usage | null;
+        prepaidRow = prepaidQuery.data as Prepaid | null;
       }
 
+      if (version !== loadVersion.current) return;
       setMachine(nextMachine);
       setDevice(nextDevice);
       setMachineState(stateQuery.data as MachineState | null);
@@ -287,10 +295,11 @@ export function MachineDetail({ machineId }: { machineId: string }) {
       setUsage(usageRow);
       setPrepaid(prepaidRow);
       setUpdated(new Date());
+      setError(null);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Could not load machine telemetry.');
+      if (version === loadVersion.current) setError(loadError instanceof Error ? loadError.message : 'Could not load machine telemetry.');
     } finally {
-      setLoading(false);
+      if (version === loadVersion.current) setLoading(false);
     }
   }, [machineId, period]);
 
@@ -328,7 +337,7 @@ export function MachineDetail({ machineId }: { machineId: string }) {
   const success = attempts ? (units / attempts) * 100 : 100;
   const lifeUnits = counters.reduce((sum, row) => sum + row.sold_total, 0);
   const openFaults = faults.filter((fault) => !fault.cleared_at);
-  const state = connectionState(device);
+  const state = connectionState(device, updated?.getTime() ?? 0);
   const configState = device ? deviceConfigSyncState(device) : null;
 
   const aggregateProducts = useCallback((rows: Sale[]) => {
@@ -387,7 +396,7 @@ export function MachineDetail({ machineId }: { machineId: string }) {
           <p>{site?.site_name ?? customer?.customer_name ?? machine?.current_custodian ?? machine?.branch?.toUpperCase() ?? 'Location not assigned'} · {machine?.serial_number ?? 'No serial'}</p>
         </div>
         <div className={styles.heroRight}>
-          <span className={`${styles.status} ${styles[state.key] ?? ''}`}><i />{state.label}</span>
+          <span className={`${styles.status} ${styles[state.key] ?? ''}`}><i />Device connectivity: {state.label}</span>
           <select aria-label="Reporting period" className={styles.period} value={period} onChange={(event) => setPeriod(event.target.value as Period)}>
             {(Object.keys(periods) as Period[]).map((value) => <option key={value} value={value}>{periods[value]}</option>)}
           </select>
@@ -411,10 +420,11 @@ export function MachineDetail({ machineId }: { machineId: string }) {
         </div>
       </section> : null}
 
-      {error ? <div className={styles.error} role="alert">{error}</div> : null}
+      {error ? <div className={styles.error} role="alert">Dashboard updates unavailable: {error} Displayed information may be outdated. Last successful refresh: {updated ? updated.toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' }) : 'never'}.</div> : null}
       {loading && !machine ? <HamsterLoader label="Loading machine dashboard" /> : null}
 
       {machine ? <>
+        <TelemetryHealthSummary className={styles.actionFacts} device={device ? { ...device, machine_id: machineId } : null} now={updated?.getTime() ?? 0} />
         <nav className={styles.tabs} aria-label="Machine dashboard sections">
           {([
             ['overview', 'Overview'],

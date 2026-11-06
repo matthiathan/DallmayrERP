@@ -10,8 +10,9 @@ function activeDevice(overrides = {}) {
   return {
     id: 'device-1',
     device_code: 'DALL-TEL-001',
-    machine_id: 'machine-1',
+    machine_id: null,
     status: 'active',
+    heartbeat_interval_minutes: 5,
     last_heartbeat_at: new Date(NOW - (5 * 60 * 1000)).toISOString(),
     last_seen_at: null,
     last_upload_at: null,
@@ -71,4 +72,19 @@ test('the fleet dashboard exposes the actionable attention queue across the full
   assert.match(dashboard, /href=\{`\/machines\/\$\{machineId\}`\}/);
   assert.match(dashboard, /href=\{`\/telemetry\/devices\?device=\$\{encodeURIComponent\(item\.deviceCode\)\}`\}/);
   assert.match(dashboard, /href=\{`\/telemetry\/test-center\?device=\$\{encodeURIComponent\(item\.deviceCode\)\}`\}/);
+});
+
+test('fleet attention keeps unknown machine and report evidence separate from healthy device connectivity', () => {
+  const items = buildFleetAttentionItems([activeDevice({ machine_id: 'machine-1' })], [], NOW);
+  assert.deepEqual(items.map((item) => item.kind), ['communication', 'reporting']);
+  assert.ok(items.every((item) => item.title.endsWith('Unknown') && item.reason));
+});
+
+test('missing policies and never-seen devices are not misclassified as offline', () => {
+  const items = buildFleetAttentionItems([
+    activeDevice({ id: 'unknown', heartbeat_interval_minutes: null }),
+    activeDevice({ id: 'never', last_heartbeat_at: null }),
+    activeDevice({ id: 'delayed', last_heartbeat_at: new Date(NOW - 11 * 60_000).toISOString() }),
+  ], [], NOW);
+  assert.deepEqual(new Set(items.map((item) => item.kind)), new Set(['unknown', 'never_seen', 'delayed']));
 });
