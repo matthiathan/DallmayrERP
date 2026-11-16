@@ -1,6 +1,6 @@
 .workspace {
   display: grid;
-  gap: 8px;
+  gap: 16px;
   width: 100%;
   min-width: 0;
 }
@@ -9,19 +9,19 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
+  gap: 20px;
   min-height: 48px;
   padding: 7px 9px;
   color: #fff;
   background: #c9151e;
   border: 1px solid #a90f17;
-  border-radius: 5px;
-  box-shadow: 0 2px 7px rgba(80, 12, 17, .12);
+  border-radius: 12px;
+  box-shadow: none;
 }
 
 .headerCopy { min-width: 0; }
 .headerCopy h1 { margin: 0; color: #fff; font-size: .95rem; font-weight: 800; }
-.headerCopy p { margin: 2px 0 0; color: rgba(255,255,255,.74); font-size: .6rem; }
+.headerCopy p { margin: 2px 0 0; color: rgba(255,255,255,.74); font-size: 0.75rem; }
 .headerActions { display: flex; align-items: center; gap: 6px; }
 
 .headerButton,
@@ -31,7 +31,7 @@
   background: rgba(255,255,255,.1) !important;
   border: 1px solid rgba(255,255,255,.3) !important;
   border-radius: 4px !important;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 
 .statusStrip {
@@ -52,14 +52,14 @@
   font: inherit;
   background: #fff;
   border: 1px solid #deded9;
-  border-radius: 5px;
+  border-radius: 12px;
   cursor: pointer;
   transition: border-color .14s ease, box-shadow .14s ease, transform .14s ease;
 }
 
-.statusCard:hover { border-color: #c8c8c2; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+.statusCard:hover { border-color: #c8c8c2; box-shadow: none; }
 .statusCard:focus-visible { outline: 2px solid #c9151e; outline-offset: 2px; }
-.statusCardActive { border-color: #c9151e; box-shadow: 0 0 0 1px rgba(201,21,30,.12); transform: translateY(-1px); }
+.statusCardActive { border-color: #c9151e; box-shadow: none; transform: translateY(-1px); }
 
 .statusCard::before {
   content: '';
@@ -76,9 +76,9 @@
 .faults::before { background: #c9151e; }
 .profiles::before { background: #7b5fc7; }
 
-.statusCard span { color: #969691; font-size: .54rem; font-weight: 800; text-transform: uppercase; }
+.statusCard span { color: #969691; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
 .statusCard strong { align-self: end; color: #31312e; font-size: 1.3rem; line-height: 1; }
-.statusCard small { color: #aaa9a4; font-size: .48rem; font-weight: 650; }
+.statusCard small { color: #aaa9a4; font-size: 0.75rem; font-weight: 650; }
 
 .filters {
   display: grid;
@@ -87,7 +87,7 @@
   padding: 7px;
   background: #fff;
   border: 1px solid #deded9;
-  border-radius: 5px;
+  border-radius: 12px;
 }
 
 .search {
@@ -115,11 +115,11 @@
   border: 0;
   outline: 0;
   font: inherit;
-  font-size: .68rem;
+  font-size: 0.75rem;
 }
 
 .filterLabel { display: grid; gap: 2px; min-width: 0; }
-.filterLabel span { color: #979792; font-size: .53rem; font-weight: 800; text-transform: uppercase; }
+.filterLabel span { color: #979792; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
 .filterLabel select,
 .clearButton {
   min-width: 0;
@@ -129,7 +129,7 @@
   border: 1px solid #d8d8d3;
   border-radius: 4px;
   font: inherit;
-  font-size: .66rem;
+  font-size: 0.75rem;
 }
 .filterLabel select { padding: 0 25px 0 7px; }
 .clearButton { align-self: end; padding: 0 10px; font-weight: 750; cursor: pointer; }
@@ -139,32 +139,32 @@
   overflow: hidden;
   background: #fff;
   border: 1px solid #deded9;
-  border-radius: 5px;
-  box-shadow: 0 2px 7px rgba(0,0,0,.03);
+  border-radius: 12px;
+  box-shadow: none;
 }
 
 .listHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 20px;
   min-height: 40px;
   padding: 6px 9px;
   color: #656560;
   background: #fafaf8;
   border-bottom: 1px solid #e7e7e3;
-  font-size: .6rem;
+  font-size: 0.75rem;
 }
 .listHeader > div { display: grid; gap: 1px; min-width: 0; }
-.listHeader strong { color: #373733; font-size: .7rem; }
-.listHeader small { color: #9a9a95; font-size: .5rem; }
+.listHeader strong { color: #373733; font-size: 0.75rem; }
+.listHeader small { color: #9a9a95; font-size: 0.75rem; }
 
 .tableScroll { width: 100%; overflow-x: auto; }
 .table { width: 100%; min-width: 1260px; border-collapse: collapse; }
 .table th,
 .table td { padding: 7px 8px; text-align: left; border-bottom: 1px solid #eeeeeb; vertical-align: middle; }
-.table th { color: #92928d; background: #fff; font-size: .52rem; font-weight: 850; letter-spacing: .035em; text-transform: uppercase; }
-.table td { color: #53534f; font-size: .6rem; }
+.table th { color: #92928d; background: #fff; font-size: 0.75rem; font-weight: 850; letter-spacing: .035em; text-transform: uppercase; }
+.table td { color: #53534f; font-size: 0.75rem; }
 .table tbody tr:hover { background: #fcfcfa; }
 
 .machineCell { position: relative; min-width: 210px; padding-left: 12px !important; }
@@ -176,9 +176,9 @@
 .machineCell.status_unlinked::before { background: #b7b7b2; }
 
 .machineLink { display: grid; min-width: 0; gap: 1px; color: #9a161d; text-decoration: none; }
-.machineLink strong { overflow: hidden; color: #a1171e; font-size: .69rem; font-weight: 760; text-overflow: ellipsis; white-space: nowrap; }
+.machineLink strong { overflow: hidden; color: #a1171e; font-size: 0.75rem; font-weight: 760; text-overflow: ellipsis; white-space: nowrap; }
 .machineLink span,
-.secondary { overflow: hidden; color: #8c8c87; font-size: .54rem; text-overflow: ellipsis; white-space: nowrap; }
+.secondary { overflow: hidden; color: #8c8c87; font-size: 0.75rem; text-overflow: ellipsis; white-space: nowrap; }
 
 .statusPill,
 .profilePill {
@@ -193,7 +193,7 @@
   background: #f7f7f4;
   border: 1px solid #deded9;
   border-radius: 999px;
-  font-size: .54rem;
+  font-size: 0.75rem;
   font-weight: 750;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -211,7 +211,7 @@
 .profile_unlinked { color: #777772; background: #f5f5f2; border-color: #deded9; }
 
 .network { display: grid; gap: 1px; }
-.network strong { color: #444440; font-size: .62rem; }
+.network strong { color: #444440; font-size: 0.75rem; }
 
 .faultCount { display: inline-grid; place-items: center; min-width: 26px; height: 24px; padding: 0 6px; color: #fff; background: #c9151e; border-radius: 4px; font-weight: 850; }
 .noFaults { color: #58a953; font-weight: 750; }
@@ -227,7 +227,7 @@
   background: #fff;
   border: 1px solid #dfdeda;
   border-radius: 4px;
-  font-size: .53rem;
+  font-size: 0.75rem;
   font-weight: 800;
   text-decoration: none;
   white-space: nowrap;
@@ -241,20 +241,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 16px;
   min-height: 40px;
   padding: 6px 8px;
   color: #858580;
   background: #fafaf8;
   border-top: 1px solid #e7e7e3;
-  font-size: .58rem;
+  font-size: 0.75rem;
 }
 .pageButtons { display: flex; align-items: center; gap: 5px; }
-.pageButtons button { min-height: 28px; padding: 0 8px; color: #52524e; background: #fff; border: 1px solid #d8d8d3; border-radius: 4px; font: inherit; font-size: .58rem; font-weight: 750; cursor: pointer; }
+.pageButtons button { min-height: 28px; padding: 0 8px; color: #52524e; background: #fff; border: 1px solid #d8d8d3; border-radius: 4px; font: inherit; font-size: 0.75rem; font-weight: 750; cursor: pointer; }
 .pageButtons button:disabled { opacity: .45; cursor: default; }
 
-.error { padding: 8px 9px; color: #8b171c; background: #fff0f0; border: 1px solid #efcacc; border-radius: 5px; font-size: .65rem; }
-.empty { display: grid; place-items: center; min-height: 180px; padding: 20px; color: #92928d; font-size: .66rem; text-align: center; }
+.error { padding: 8px 9px; color: #8b171c; background: #fff0f0; border: 1px solid #efcacc; border-radius: 12px; font-size: 0.75rem; }
+.empty { display: grid; place-items: center; min-height: 180px; padding: 20px; color: #92928d; font-size: 0.75rem; text-align: center; }
 
 @media (max-width: 1280px) {
   .statusStrip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -297,18 +297,18 @@
     text-decoration: none;
   }
   .mobileMain { display:grid; min-width:0; gap:2px; }
-  .mobileMain strong { overflow:hidden; color:#9a161d; font-size:.82rem; text-overflow:ellipsis; white-space:nowrap; }
-  .mobileMain span { overflow:hidden; color:#4f4f4b; font-size:.65rem; text-overflow:ellipsis; white-space:nowrap; }
-  .mobileMain small { overflow:hidden; color:#8d8d88; font-size:.59rem; text-overflow:ellipsis; white-space:nowrap; }
+  .mobileMain strong { overflow:hidden; color:#9a161d; font-size: .82rem; text-overflow:ellipsis; white-space:nowrap; }
+  .mobileMain span { overflow:hidden; color:#4f4f4b; font-size: 0.75rem; text-overflow:ellipsis; white-space:nowrap; }
+  .mobileMain small { overflow:hidden; color:#8d8d88; font-size: 0.75rem; text-overflow:ellipsis; white-space:nowrap; }
   .mobileSide { display:grid; align-content:start; justify-items:end; gap:4px; }
-  .mobileSide b { color:#b5121b; font-size:.72rem; }
-  .mobileMeta { grid-column:1/-1; display:flex; align-items:center; gap:8px; min-width:0; color:#8c8c87; font-size:.56rem; }
+  .mobileSide b { color:#b5121b; font-size: 0.75rem; }
+  .mobileMeta { grid-column:1/-1; display:flex; align-items:center; gap:8px; min-width:0; color:#8c8c87; font-size: 0.75rem; }
   .mobileMeta span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .mobileProfile { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; }
-  .mobileProfile small { overflow:hidden; color:#969691; font-size:.52rem; text-overflow:ellipsis; white-space:nowrap; }
+  .mobileProfile small { overflow:hidden; color:#969691; font-size: 0.75rem; text-overflow:ellipsis; white-space:nowrap; }
   .mobileActions { display:flex; gap:5px; overflow-x:auto; padding:6px 9px 8px 15px; background:#fafaf8; border-top:1px solid #f0f0ed; scrollbar-width:none; }
   .mobileActions::-webkit-scrollbar { display:none; }
-  .mobileActions a { min-height:28px; font-size:.56rem; }
+  .mobileActions a { min-height:28px; font-size: 0.75rem; }
   .pagination { padding:5px 7px; }
 }
 
@@ -343,7 +343,7 @@
 
 .headerCopy > span {
   color: #7d8da0;
-  font-size: .58rem;
+  font-size: 0.75rem;
   font-weight: 850;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -358,7 +358,7 @@
 
 .headerCopy p {
   color: #718096;
-  font-size: .72rem;
+  font-size: 0.75rem;
 }
 
 .headerButton,
@@ -368,11 +368,11 @@
   background: #fff !important;
   border: 1px solid #d8e2ee !important;
   border-radius: 8px !important;
-  box-shadow: 0 1px 2px rgba(18,43,72,.03) !important;
+  box-shadow: none;
 }
 
 .statusStrip {
-  gap: 10px;
+  gap: 20px;
 }
 
 .statusCard {
@@ -381,12 +381,12 @@
   background: #fff;
   border-color: #dbe4ef;
   border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(18,43,72,.04), 0 8px 20px rgba(18,43,72,.03);
+  box-shadow: none;
 }
 
 .statusCard:hover {
   border-color: #bfcfe0;
-  box-shadow: 0 8px 24px rgba(18,43,72,.07);
+  box-shadow: none;
 }
 
 .statusCard:focus-visible {
@@ -395,7 +395,7 @@
 
 .statusCardActive {
   border-color: #78aef4;
-  box-shadow: 0 0 0 2px rgba(15,107,255,.1);
+  box-shadow: none;
 }
 
 .statusCard::before {
@@ -412,7 +412,7 @@
 
 .statusCard span {
   color: #697c92;
-  font-size: .63rem;
+  font-size: 0.75rem;
   text-transform: none;
 }
 
@@ -423,7 +423,7 @@
 
 .statusCard small {
   color: #91a0b1;
-  font-size: .56rem;
+  font-size: 0.75rem;
 }
 
 .viewBar {
@@ -449,7 +449,7 @@
   flex: 0 0 auto;
   margin-right: 2px;
   color: #7d8da0;
-  font-size: .58rem;
+  font-size: 0.75rem;
   font-weight: 850;
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -464,7 +464,7 @@
   border: 1px solid #dbe4ef;
   border-radius: 8px;
   font: inherit;
-  font-size: .6rem;
+  font-size: 0.75rem;
   font-weight: 750;
   cursor: pointer;
   white-space: nowrap;
@@ -499,11 +499,11 @@
 
 .filters {
   grid-template-columns: minmax(270px, 1.25fr) repeat(5, minmax(125px, .45fr)) auto;
-  gap: 8px;
+  gap: 16px;
   padding: 10px;
   border-color: #dbe4ef;
   border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(18,43,72,.03);
+  box-shadow: none;
 }
 
 .search {
@@ -517,12 +517,12 @@
 .search input {
   min-height: 38px;
   color: #17314f;
-  font-size: .66rem;
+  font-size: 0.75rem;
 }
 
 .filterLabel span {
   color: #7d8da0;
-  font-size: .53rem;
+  font-size: 0.75rem;
   letter-spacing: .025em;
 }
 
@@ -554,12 +554,12 @@
 
 .bulkBar strong {
   color: #0758d6;
-  font-size: .68rem;
+  font-size: 0.75rem;
 }
 
 .bulkBar span {
   color: #718096;
-  font-size: .58rem;
+  font-size: 0.75rem;
 }
 
 .bulkBar > div {
@@ -576,7 +576,7 @@
   border: 1px solid #c9def8;
   border-radius: 7px;
   font: inherit;
-  font-size: .58rem;
+  font-size: 0.75rem;
   font-weight: 780;
   cursor: pointer;
 }
@@ -584,7 +584,7 @@
 .listCard {
   border-color: #dbe4ef;
   border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(18,43,72,.035), 0 8px 20px rgba(18,43,72,.025);
+  box-shadow: none;
 }
 
 .listHeader {
@@ -597,7 +597,7 @@
 
 .listHeader strong {
   color: #17314f;
-  font-size: .72rem;
+  font-size: 0.75rem;
 }
 
 .table th,
@@ -678,7 +678,7 @@
   border: 1px solid #dbe4ef;
   border-radius: 6px;
   font: inherit;
-  font-size: .53rem;
+  font-size: 0.75rem;
   font-weight: 800;
   text-decoration: none;
   white-space: nowrap;
@@ -695,7 +695,7 @@
 .cardGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 20px;
   padding: 10px;
   background: #f8fbff;
 }
@@ -707,13 +707,13 @@
 .machineCard {
   position: relative;
   display: grid;
-  gap: 10px;
+  gap: 20px;
   min-width: 0;
   padding: 12px;
   background: #fff;
   border: 1px solid #dbe4ef;
   border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(18,43,72,.03);
+  box-shadow: none;
 }
 
 .machineCard::before {
@@ -739,7 +739,7 @@
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
+  gap: 20px;
   min-width: 0;
   padding: 0;
   text-align: left;
@@ -773,7 +773,7 @@
 .cardPreviewButton strong {
   overflow: hidden;
   color: #0b5ac9;
-  font-size: .74rem;
+  font-size: 0.75rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -781,7 +781,7 @@
 .cardPreviewButton span {
   overflow: hidden;
   color: #8291a3;
-  font-size: .56rem;
+  font-size: 0.75rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -795,14 +795,14 @@
 .machineCard dl > div {
   display: grid;
   grid-template-columns: 105px minmax(0, 1fr);
-  gap: 8px;
+  gap: 16px;
   padding: 5px 0;
   border-top: 1px solid #edf1f5;
 }
 
 .machineCard dt {
   color: #8291a3;
-  font-size: .54rem;
+  font-size: 0.75rem;
 }
 
 .machineCard dd {
@@ -810,7 +810,7 @@
   margin: 0;
   overflow: hidden;
   color: #405872;
-  font-size: .57rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -833,7 +833,7 @@
   border: 1px solid #dbe4ef;
   border-radius: 7px;
   font: inherit;
-  font-size: .55rem;
+  font-size: 0.75rem;
   font-weight: 800;
   text-decoration: none;
   cursor: pointer;
@@ -864,7 +864,7 @@
   color: #17314f;
   background: #fff;
   border-left: 1px solid #dbe4ef;
-  box-shadow: -18px 0 40px rgba(7,26,51,.16);
+  box-shadow: none;
 }
 
 .previewDrawer > header {
@@ -882,7 +882,7 @@
 
 .previewDrawer > header span {
   color: #7d8da0;
-  font-size: .56rem;
+  font-size: 0.75rem;
   font-weight: 850;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -898,7 +898,7 @@
 .previewDrawer p {
   margin: 0;
   color: #718096;
-  font-size: .64rem;
+  font-size: 0.75rem;
 }
 
 .previewDrawer > header > button {
@@ -917,7 +917,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 20px;
   padding: 12px 20px;
   background: #f8fbff;
   border-bottom: 1px solid #e6edf5;
@@ -925,7 +925,7 @@
 
 .previewStatus strong {
   color: #405872;
-  font-size: .61rem;
+  font-size: 0.75rem;
 }
 
 .previewFacts {
@@ -945,13 +945,13 @@
 
 .previewFacts dt {
   color: #8291a3;
-  font-size: .58rem;
+  font-size: 0.75rem;
 }
 
 .previewFacts dd {
   margin: 0;
   color: #17314f;
-  font-size: .62rem;
+  font-size: 0.75rem;
   font-weight: 750;
   text-align: right;
 }
@@ -973,7 +973,7 @@
   background: #0f6bff;
   border: 1px solid #0f6bff;
   border-radius: 8px;
-  font-size: .62rem;
+  font-size: 0.75rem;
   font-weight: 820;
   text-decoration: none;
 }
@@ -1063,3 +1063,9 @@
     width: 100%;
   }
 }
+
+.header { color: #132238; background: transparent; border: 0; box-shadow: none; padding: 0 0 8px; gap: 20px; }
+.header h1 { color: #071a33; font-size: clamp(1.5rem, 2vw, 1.875rem); font-weight: 650; line-height: 1.2; }
+.header p { color: #53627a; font-size: .875rem; margin-top: 7px; }
+.headerButton, .header :global(button) { min-height: 44px; color: #243b59 !important; background: #fff !important; border: 1px solid #7b8da5 !important; border-radius: 8px !important; }
+.workspace { gap: 22px; }

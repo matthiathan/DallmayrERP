@@ -97,11 +97,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
         <div className={styles.topbarActions}>
           {!isClient ? <TelemetryRegionSelector /> : null}
-          <div className={styles.headerChip}><i aria-hidden="true" />{isClient ? 'Company telemetry' : 'Live telemetry'}</div>
+          <div className={styles.headerChip}><i aria-hidden="true" />{isClient ? 'Company telemetry' : 'Fleet workspace'}</div>
           {!isClient ? (
             <Link aria-label="Open active alerts" className={styles.headerIcon} href="/alerts">
               <NavigationIcon kind="bell" />
-              <span aria-hidden="true" className={styles.alertDot} />
             </Link>
           ) : null}
           <div className="desktop-account-menu-target" id="desktop-account-menu-target" />

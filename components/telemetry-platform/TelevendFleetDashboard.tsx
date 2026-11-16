@@ -1,15 +1,18 @@
 'use client';
 
 import Link from 'next/link';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { ComparisonLineChart, type ComparisonPoint } from './ComparisonLineChart';
 import { deviceConnectionState } from '@/lib/telemetry/device-health';
 import { formatLocalDate } from '@/lib/dates/local-date';
-import { buildFleetAttentionItems, type FleetAttentionItem, type FleetAttentionDevice } from '@/lib/telemetry/fleet-attention';
+import type { FleetAttentionDevice } from '@/lib/telemetry/fleet-attention';
 import { loadDeviceHealthPolicies, withDeviceHealthPolicies } from '@/lib/telemetry/health-policy';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { collectSupabasePagesResult } from '@/lib/supabase/collect-pages';
+import { buildOverviewAttention, selectOverviewAttention, type OverviewFault, type OverviewAttentionItem, type OverviewMachine, type OverviewAttentionCategory } from '@/lib/telemetry/overview-attention';
+import { telemetryRegionLabel } from './TelemetryRegionSelector';
 import styles from './TelevendFleetDashboard.module.css';
 
 type Period = 'day' | 'week' | 'month' | 'six_months';
@@ -100,6 +103,8 @@ type ViewData = {
   locations: FleetLocationRow[];
   attentionDevices: FleetAttentionDevice[] | null;
   machineCount: number;
+  machines: OverviewMachine[];
+  openFaults: OverviewFault[];
 };
 
 const periods: Array<{ value: Period; label: string }> = [
@@ -207,7 +212,7 @@ function Gauge({ title, value, percent, label }: { title: string; value: string;
   );
 }
 
-function attentionTitle(item: FleetAttentionItem) {
+function attentionTitle(item: OverviewAttentionItem) {
   if (item.title) return item.title;
   if (item.kind === 'offline') return item.occurredAt ? 'Controller offline' : 'Controller has never reported';
   if (item.kind === 'config') return 'Configuration awaiting device ACK';
@@ -215,15 +220,23 @@ function attentionTitle(item: FleetAttentionItem) {
   return item.lastTransport ? `${item.lastTransport === 'wifi' ? 'Wi-Fi' : 'Cellular'} signal not reported` : 'Network transport not reported';
 }
 
-function attentionDetail(item: FleetAttentionItem) {
+function attentionDetail(item: OverviewAttentionItem) {
   if (item.reason) return item.reason;
   if (item.kind === 'offline') return item.occurredAt ? `Last confirmed device contact ${timeAgo(item.occurredAt)} ago.` : 'No heartbeat, upload, seen event, or configuration acknowledgement has been received.';
   if (item.kind === 'config') return `Configuration was sent ${timeAgo(item.occurredAt)} ago and has not been acknowledged.`;
-  if (item.kind === 'sim_balance') return `${bytes(item.remainingBytes)} remaining. ${item.balanceAlert === 'low' ? 'Plan a top-up.' : 'Top up this SIM now.'}`;
+  if (item.kind === 'sim_balance') return `${item.remainingBytes === null ? 'Balance not reported.' : bytes(item.remainingBytes) + ' remaining.'} ${item.balanceAlert === 'low' ? 'Plan a top-up.' : 'Top up this SIM now.'}`;
   return 'The controller is online, but its active network or signal strength has not been reported.';
 }
 
 export function TelevendFleetDashboard() {
+  const { businessProfile, userDetails } = useAuth();
+  const isClient = businessProfile?.user.account_scope === 'client';
+  const [customerId, setCustomerId] = useState('');
+  const [siteId, setSiteId] = useState('');
+  const [machineType, setMachineType] = useState('');
+  const [category, setCategory] = useState<OverviewAttentionCategory>('all');
+  const [attentionPage, setAttentionPage] = useState(1);
+  const [verificationPage, setVerificationPage] = useState(1);
   const [period, setPeriod] = useState<Period>('week');
   const [data, setData] = useState<ViewData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -232,6 +245,7 @@ export function TelevendFleetDashboard() {
   const [updated, setUpdated] = useState<Date | null>(null);
 
   const loadVersion = useRef(0);
+  const machineTypeColumnAvailable = useRef(true);
   const load = useCallback(async (quiet = false) => {
     const version = ++loadVersion.current;
     if (quiet) setRefreshing(true); else setLoading(true);
@@ -262,7 +276,27 @@ export function TelevendFleetDashboard() {
         return { data: (data ?? []) as FleetAttentionDevice[], error: pageError };
       });
 
-      const [reportResult, historyResult, dashboardResult, faultResult, usageResult, balanceResult, locationResult, attentionDevicesResult, machineCountResult, policies] = await Promise.all([
+      const machinesRows = collectSupabasePagesResult<OverviewMachine>(async (from, to) => {
+        const contextFields = 'id,machine_name,customer_id,site_id,customers(customer_name),customer_sites(site_name)';
+        let result = await client.from('machines')
+          .select(machineTypeColumnAvailable.current ? `${contextFields},machine_type` : contextFields)
+          .neq('status', 'retired').order('id').range(from, to).returns<OverviewMachine[]>();
+        // Older deployments do not yet have the optional type column. Do not
+        // infer a type from model names or suppress unrelated access failures.
+        if (result.error?.code === '42703' && result.error.message.includes('machine_type')) {
+          machineTypeColumnAvailable.current = false;
+          result = await client.from('machines').select(contextFields).neq('status', 'retired').order('id').range(from, to).returns<OverviewMachine[]>();
+        }
+        return { data: (result.data ?? []).map((row) => ({ ...row, machine_type: row.machine_type ?? null })), error: result.error };
+      });
+      const openFaultRows = collectSupabasePagesResult<OverviewFault>(async (from, to) => {
+        const { data, error: pageError } = await client.from('telemetry_fault_events')
+          .select('id,device_id,machine_id,fault_code,severity,started_at,normalization_status,canonical_title,recommended_action').is('cleared_at', null)
+          .order('id').range(from, to);
+        return { data: (data ?? []) as OverviewFault[], error: pageError };
+      });
+
+      const [reportResult, historyResult, dashboardResult, faultResult, usageResult, balanceResult, locationResult, attentionDevicesResult, machineCountResult, policies, machinesResult, openFaultResult] = await Promise.all([
         client.rpc('get_telemetry_reporting', { p_period: period, p_branch: 'all', p_dataset: 'production' }),
         client.rpc('get_telemetry_reporting', { p_period: 'six_months', p_branch: 'all', p_dataset: 'production' }),
         client.rpc('get_telemetry_dashboard', { p_period: 'today', p_branch: 'all' }),
@@ -273,9 +307,11 @@ export function TelevendFleetDashboard() {
         attentionDeviceRows,
         client.from('machines').select('id', { count: 'exact', head: true }),
         loadDeviceHealthPolicies(),
+        machinesRows,
+        openFaultRows,
       ]);
 
-      const errors = [reportResult.error, historyResult.error, dashboardResult.error, faultResult.error, usageResult.error, balanceResult.error, locationResult.error, attentionDevicesResult.error, machineCountResult.error].filter(Boolean);
+      const errors = [reportResult.error, historyResult.error, dashboardResult.error, faultResult.error, usageResult.error, balanceResult.error, locationResult.error, attentionDevicesResult.error, machineCountResult.error, machinesResult.error, openFaultResult.error].filter(Boolean);
       if (errors.length) throw new Error(errors[0]?.message ?? 'Could not load telemetry overview.');
 
       if (version !== loadVersion.current) return;
@@ -288,6 +324,8 @@ export function TelevendFleetDashboard() {
         balances: balanceResult.error ? [] : balanceResult.data,
         locations: locationResult.error ? [] : locationResult.data,
         attentionDevices: withDeviceHealthPolicies(attentionDevicesResult.data, policies),
+        machines: machinesResult.data,
+        openFaults: openFaultResult.data,
         machineCount: machineCountResult.error ? 0 : (machineCountResult.count ?? 0),
       });
       setUpdated(new Date());
@@ -351,10 +389,23 @@ export function TelevendFleetDashboard() {
 
   const locations = data?.locations ?? [];
   const attentionUnavailable = Boolean(data && data.attentionDevices === null);
-  const attentionItems = useMemo(
-    () => buildFleetAttentionItems(data?.attentionDevices ?? [], data?.balances ?? [], updated?.getTime() ?? 0),
-    [data?.attentionDevices, data?.balances, updated],
-  );
+  const attentionItems = useMemo(() => buildOverviewAttention(
+    data?.attentionDevices ?? [], data?.balances ?? [], data?.machines ?? [], data?.openFaults ?? [], updated?.getTime() ?? 0,
+  ), [data?.attentionDevices, data?.balances, data?.machines, data?.openFaults, updated]);
+  const machines = data?.machines ?? [];
+  const selectedAttention = selectOverviewAttention(attentionItems, machines, { customerId, siteId, machineType, category });
+  const machineById = new Map(machines.map((machine) => [machine.id, machine]));
+  const relation = <T,>(value: T | T[] | null | undefined) => Array.isArray(value) ? value[0] : value;
+  const customerOptions = [...new Map(machines.filter((machine) => machine.customer_id).map((machine) => [machine.customer_id!, relation(machine.customers)?.customer_name ?? 'Customer name not reported'])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  const siteOptions = [...new Map(machines.filter((machine) => machine.site_id && (!customerId || machine.customer_id === customerId)).map((machine) => [machine.site_id!, relation(machine.customer_sites)?.site_name ?? 'Site name not reported'])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  const typeOptions = [...new Set(machines.flatMap((machine) => machine.machine_type ? [machine.machine_type] : []))].sort();
+  const resetPages = () => { setAttentionPage(1); setVerificationPage(1); };
+  const actionablePages = Math.max(1, Math.ceil(selectedAttention.actionable.length / 8));
+  const verificationPages = Math.max(1, Math.ceil(selectedAttention.verification.length / 8));
+  const currentAttentionPage = Math.min(attentionPage, actionablePages);
+  const currentVerificationPage = Math.min(verificationPage, verificationPages);
+  useEffect(() => { setAttentionPage((page) => Math.min(page, actionablePages)); }, [actionablePages]);
+  useEffect(() => { setVerificationPage((page) => Math.min(page, verificationPages)); }, [verificationPages]);
   const locationByDevice = useMemo(
     () => new Map((data?.locations ?? []).map((location) => [location.device_id, location])),
     [data?.locations],
@@ -413,60 +464,109 @@ export function TelevendFleetDashboard() {
     URL.revokeObjectURL(url);
   };
 
+  function renderQueuePagination(label: string, page: number, pages: number, setPage: (value: number) => void) {
+    return <nav className={styles.queuePagination} aria-label={`${label} pages`}>
+      <button className="button secondary" type="button" disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</button>
+      <span>{label} · Page {page} of {pages}</span>
+      <button className="button secondary" type="button" disabled={page === pages} onClick={() => setPage(page + 1)}>Next</button>
+    </nav>;
+  }
+
+  function renderAttentionItem(item: OverviewAttentionItem) {
+    const location = locationByDevice.get(item.deviceId);
+    const machineId = item.machineId ?? (['fault', 'raw_fault', 'diagnostic'].includes(item.kind) ? null : location?.machine_id) ?? null;
+    const machine = machineId ? machineById.get(machineId) : undefined;
+    const machineName = machine?.machine_name ?? location?.machine_name ?? location?.serial_number ?? (machineId ? 'Linked machine' : 'Unassigned device');
+    return <article className={styles.attentionRow} key={item.id}>
+      <i className={item.severity === 'critical' ? styles.attentionCritical : styles.attentionWarning} aria-hidden="true" />
+      <div className={styles.attentionBody}>
+        <div><strong>{attentionTitle(item)}</strong><span>{machineName} · {item.deviceCode}</span></div>
+        <p>{attentionDetail(item)}</p>
+        <small>{relation(machine?.customers)?.customer_name ?? 'Customer not reported'} · {relation(machine?.customer_sites)?.site_name ?? 'Site not reported'}</small>
+        <small>Evidence time: {item.occurredAt ? new Date(item.occurredAt).toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' }) + ' SAST' : 'Not reported'}</small>
+      </div>
+      <nav className={styles.attentionActions} aria-label={`${item.deviceCode} actions`}>
+        {machineId ? <Link href={`/machines/${machineId}`}>Open machine</Link> : null}
+        {!isClient && item.deviceId && item.deviceCode !== 'Device identifier unavailable' ? <>
+          <Link href={`/telemetry/devices?device=${encodeURIComponent(item.deviceCode)}`}>Device</Link>
+          <Link href={`/telemetry/test-center?device=${encodeURIComponent(item.deviceCode)}`}>Test Center</Link>
+        </> : null}
+      </nav>
+    </article>;
+  }
+
   return (
     <section className={styles.dashboard} data-fleet-dashboard="televend-v3">
       <div className={styles.toolbar}>
-        <div className={styles.toolbarTitle}><i /><div><strong>Dashboard</strong><span>Overview of your fleet performance, sales, connectivity and operational health.</span></div></div>
+        <div className={styles.toolbarTitle}><i /><div><strong>Fleet overview</strong><span>Start with the machines and work that need your attention.</span></div></div>
         <div className={styles.toolbarActions}>
-          <label><span>Period</span><select value={period} onChange={(event) => setPeriod(event.target.value as Period)}>{periods.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+          <label><span>Sales period</span><select value={period} onChange={(event) => setPeriod(event.target.value as Period)}>{periods.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
           <button disabled={!locations.length} onClick={exportFleetSnapshot} type="button">Export fleet CSV</button>
           <button disabled={refreshing} onClick={() => void load(true)} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button>
         </div>
       </div>
 
+      <p className={styles.scopeNote}>Region: {telemetryRegionLabel(userDetails?.telemetry_region)} · Production telemetry · Last successful update: {updated ? updated.toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' }) + ' SAST' : 'Not yet loaded'}</p>
       {error ? <div className={styles.error} role="alert">Dashboard updates unavailable: {error} Displayed information may be outdated. Last successful refresh: {updated ? updated.toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' }) : 'never'}.</div> : null}
       {loading && !data ? <HamsterLoader label="Loading fleet overview" /> : null}
 
       {data ? <>
+
+
+        <div className={styles.overviewGrid}>
+        <section className={styles.attentionCard} aria-label="Fleet attention queue" data-fleet-attention-queue="v1">
+          <header className={styles.attentionHeader}>
+            <div><span>Fleet attention queue</span><h2>Needs attention</h2></div>
+            <strong>{selectedAttention.machineCount} machines · {selectedAttention.unassignedDeviceCount} unassigned devices</strong>
+          </header>
+          <div className={styles.attentionFilters}>
+            <label>Customer<select value={customerId} onChange={(event) => { setCustomerId(event.target.value); setSiteId(''); resetPages(); }}><option value="">All customers</option>{customerOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
+            <label>Site<select value={siteId} onChange={(event) => { setSiteId(event.target.value); resetPages(); }}><option value="">All sites</option>{siteOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
+            <label>Machine type<select value={machineType} onChange={(event) => { setMachineType(event.target.value); resetPages(); }}><option value="">All types</option><option value="__not_reported__">Not reported</option>{typeOptions.map((type) => <option key={type}>{type}</option>)}</select></label>
+            <label>Attention category<select value={category} onChange={(event) => { setCategory(event.target.value as OverviewAttentionCategory); resetPages(); }}><option value="all">All attention</option><option value="fault">Reported faults</option><option value="connectivity">Offline / delayed devices</option><option value="verification">Needs verification</option><option value="device">Device / SIM settings</option></select></label>
+            <button className="button secondary" type="button" onClick={() => { setCustomerId(''); setSiteId(''); setMachineType(''); setCategory('all'); resetPages(); }}>Clear filters</button>
+          </div>
+          <p className={styles.scopeNote} role="status">Attention list: {telemetryRegionLabel(userDetails?.telemetry_region)} · {customerId ? customerOptions.find(([id]) => id === customerId)?.[1] ?? 'Selected customer unavailable' : 'All customers'} · {siteId ? siteOptions.find(([id]) => id === siteId)?.[1] ?? 'Selected site unavailable' : 'All sites'} · {machineType === '__not_reported__' ? 'Machine type not reported' : machineType || 'All machine types'}. Filters apply to this list; charts below describe the full regional fleet.</p>
+          {!typeOptions.length ? <p className={styles.scopeNote}>Machine type is not reported for this fleet. Types are not inferred from machine names.</p> : null}
+          {attentionUnavailable ? <div className={styles.attentionEmpty}>Current device attention could not be loaded.</div> : <>
+            <h3 className={styles.actionableTitle}>Actionable issues · {selectedAttention.actionable.length}</h3>
+            <div className={styles.attentionList}>{selectedAttention.actionable.slice((currentAttentionPage - 1) * 8, currentAttentionPage * 8).map(renderAttentionItem)}</div>
+            {!selectedAttention.actionable.length ? <div className={styles.attentionEmpty}>No actionable issues match these filters. Check Needs verification for missing evidence.</div> : null}
+            {actionablePages > 1 ? renderQueuePagination('Actionable issues', currentAttentionPage, actionablePages, setAttentionPage) : null}
+            <details className={styles.verification}>
+              <summary>Needs verification · {selectedAttention.verification.length} evidence gaps</summary>
+              <p>Unknown does not mean faulty. These machines or devices need evidence before their condition can be established.</p>
+              <div className={styles.attentionList}>{selectedAttention.verification.slice((currentVerificationPage - 1) * 8, currentVerificationPage * 8).map(renderAttentionItem)}</div>
+              {!selectedAttention.verification.length ? <div className={styles.attentionEmpty}>No evidence gaps match these filters.</div> : null}
+              {verificationPages > 1 ? renderQueuePagination('Evidence gaps', currentVerificationPage, verificationPages, setVerificationPage) : null}
+            </details>
+          </>}
+        </section>
+          <aside className={styles.quickAccess} aria-label="Common fleet tasks">
+            <h2>Keep the fleet moving</h2>
+            <p>Open assigned work or find the machine you need.</p>
+            {!isClient ? <Link className="button" href="/maintenance">Manage maintenance <span aria-hidden="true">→</span></Link> : null}
+            <Link className="button secondary" href="/machines">Find a machine <span aria-hidden="true">→</span></Link>
+            <Link className="button secondary" href="/telemetry/reports">Sales &amp; reports <span aria-hidden="true">→</span></Link>
+            <small>Device contact, machine communication and sales completeness are independent indicators.</small>
+          </aside>
+        </div>
+
+        <h2 className={styles.fleetTotalsTitle}>Regional fleet totals</h2>
+        <p className={styles.scopeNote}>Sales totals reflect received counters. Sales-report completeness remains Unknown until period coverage is verified.</p>
         <section className={styles.metricsStrip} aria-label="Fleet headline metrics">
           <Metric helper={`${reportingDevices.toLocaleString('en-ZA')} reporting devices`} label="Total machines" tone="blue" value={machineCount.toLocaleString('en-ZA')} />
           <Metric helper={`${availability.toFixed(0)}% of reporting fleet`} label="Devices online" tone="green" value={online.toLocaleString('en-ZA')} />
           <Metric helper={`${delayed} delayed · ${unknown} unknown / never seen`} label="Devices offline" tone={offline ? 'red' : 'green'} value={offline.toLocaleString('en-ZA')} />
           <Metric helper={`${periodChange >= 0 ? '+' : ''}${periodChange.toFixed(1)}% vs previous`} label="Vends" tone="blue" value={units.toLocaleString('en-ZA')} />
-          <Metric helper={`${critical} critical · ${warning} warning`} label="Active faults" tone={active ? 'red' : 'green'} value={active.toLocaleString('en-ZA')} />
-          <Metric helper={`${modemCoverage}% modem coverage`} label="Data usage" tone="gold" value={bytes(observed)} />
-        </section>
-
-        <section className={styles.attentionCard} aria-label="Fleet attention queue" data-fleet-attention-queue="v1">
-          <header className={styles.attentionHeader}>
-            <div><span>Fleet attention queue</span><h2>Operational exceptions</h2></div>
-            <strong>{attentionUnavailable ? 'Unavailable' : `${attentionItems.length.toLocaleString('en-ZA')} ${attentionItems.length === 1 ? 'item' : 'items'}`}</strong>
-          </header>
-          {attentionUnavailable ? <div className={styles.attentionEmpty}>Current device attention could not be loaded. <Link href="/telemetry/devices">Open device management ›</Link></div> : attentionItems.length ? <div className={styles.attentionList}>{attentionItems.slice(0, 8).map((item) => {
-            const location = locationByDevice.get(item.deviceId);
-            const machineId = item.machineId ?? location?.machine_id ?? null;
-            const machineName = location?.machine_name ?? location?.serial_number ?? (machineId ? 'Linked machine' : 'Unassigned device');
-            const toneClass = item.severity === 'critical' ? styles.attentionCritical : styles.attentionWarning;
-            return <article className={styles.attentionRow} key={item.id}>
-              <i className={toneClass} aria-hidden="true" />
-              <div className={styles.attentionBody}>
-                <div><strong>{attentionTitle(item)}</strong><span>{item.deviceCode} · {machineName}</span></div>
-                <p>{attentionDetail(item)}</p>
-              </div>
-              <nav className={styles.attentionActions} aria-label={`${item.deviceCode} actions`}>
-                {machineId ? <Link href={`/machines/${machineId}`}>Machine</Link> : null}
-                <Link href={`/telemetry/devices?device=${encodeURIComponent(item.deviceCode)}`}>Device</Link>
-                <Link href={`/telemetry/test-center?device=${encodeURIComponent(item.deviceCode)}`}>Test Center</Link>
-              </nav>
-            </article>;
-          })}</div> : <div className={styles.attentionEmpty}>No active connectivity, machine communication, reporting, configuration, SIM-balance or signal exceptions.</div>}
-          {attentionItems.length > 8 ? <footer className={styles.attentionFooter}>Showing the first 8 of {attentionItems.length.toLocaleString('en-ZA')} items. <Link href="/telemetry/devices">Review all devices ›</Link></footer> : null}
+          <Metric helper="Raw codes and telemetry diagnostics are listed separately" label="Verified machine faults" tone={data.openFaults.some((fault) => fault.normalization_status === 'verified_rule') ? 'red' : 'green'} value={data.openFaults.filter((fault) => fault.normalization_status === 'verified_rule').length.toLocaleString('en-ZA')} />
+          <Metric helper={`${modemCoverage}% modem coverage`} label="Data usage" tone="gold" value={usage.length ? bytes(observed) : 'Not reported'} />
         </section>
 
         <section className={styles.telemetryRow} aria-label="Fleet operational readiness">
           <article className={styles.telemetryCard}><header><span>Machine-device linking</span><strong>{assignedDevices.toLocaleString('en-ZA')} / {machineCount.toLocaleString('en-ZA')}</strong></header><div className={styles.meter}><i style={{ width: `${assignmentCoverage}%` }} /></div><small>{n(summary.unassigned_devices).toLocaleString('en-ZA')} active devices unassigned · <Link href="/telemetry/devices">Device management ›</Link></small></article>
           <article className={styles.telemetryCard}><header><span>Map coverage</span><strong>{locationCoverage.toFixed(0)}%</strong></header><div className={styles.meter}><i style={{ width: `${locationCoverage}%` }} /></div><small>{mappedDevices.toLocaleString('en-ZA')} devices located · {staleLocations.toLocaleString('en-ZA')} stale · <Link href="/map">Fleet map ›</Link></small></article>
-          <article className={styles.telemetryCard}><header><span>Communication deadlines</span><strong>{communicationErrors.toLocaleString('en-ZA')} overdue</strong></header><div className={styles.meter}><i style={{ width: `${communicationHealth}%` }} /></div><small>Uses each device reporting schedule · <Link href="/machines">Investigate machines ›</Link></small></article>
+          <article className={styles.telemetryCard}><header><span>Device reporting deadlines</span><strong>{communicationErrors.toLocaleString('en-ZA')} overdue</strong></header><div className={styles.meter}><i style={{ width: `${communicationHealth}%` }} /></div><small>Uses each device reporting schedule · <Link href="/machines">Investigate machines ›</Link></small></article>
           <article className={styles.telemetryCard}><header><span>Network visibility</span><strong>{networkCoverage.toFixed(0)}%</strong></header><div className={styles.meter}><i style={{ width: `${networkCoverage}%` }} /></div><small>{wifi} Wi-Fi · {cellular} cellular · {unknownNetwork} unknown</small></article>
         </section>
 
@@ -500,7 +600,7 @@ export function TelevendFleetDashboard() {
 
           <div className={styles.gaugeStack}>
             <Gauge label={`${online} of ${Math.max(reportingDevices, 1)} devices`} percent={availability} title="Fleet availability" value={`${availability.toFixed(0)}%`} />
-            <Gauge label={`${units.toLocaleString('en-ZA')} successful vends`} percent={success} title="Vend success performance" value={`${success.toFixed(0)}%`} />
+            <Gauge label={`${units.toLocaleString('en-ZA')} successful vends`} percent={success} title="Vend success performance" value={attempts ? `${success.toFixed(0)}%` : 'Not reported'} />
           </div>
         </section>
 

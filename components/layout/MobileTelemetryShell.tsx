@@ -48,7 +48,7 @@ export function MobileTelemetryShell({
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const allItems = useMemo(() => navigationSections.flatMap((section) => section.items), [navigationSections]);
-  const primaryItems = useMemo(() => [homePath, '/machines', '/alerts', '/maintenance']
+  const primaryItems = useMemo(() => [homePath, '/machines', '/telemetry/reports', '/map']
     .map((href) => allItems.find((item) => item.href === href))
     .filter((item): item is NonNullable<typeof item> => Boolean(item)), [allItems, homePath]);
   const primaryHrefs = useMemo(() => new Set(primaryItems.map((item) => item.href)), [primaryItems]);
@@ -117,7 +117,7 @@ export function MobileTelemetryShell({
               key={item.href}
             >
               <NavigationIcon kind={navigationIconKind(item.label, item.href)} />
-              <span>{item.href === '/' ? 'Overview' : item.label}</span>
+              <span>{item.href === '/' ? 'Overview' : item.href === '/telemetry/reports' ? 'Sales' : item.label}</span>
             </Link>
           );
         })}

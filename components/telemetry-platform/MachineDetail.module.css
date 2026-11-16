@@ -59,7 +59,7 @@
 .heroRight {
   display: grid;
   justify-items: end;
-  gap: 8px;
+  gap: 16px;
 }
 
 .status {
@@ -107,7 +107,7 @@
   background: var(--content-surface, #20272f);
   border: 1px solid var(--content-border, #71808e);
   border-radius: var(--ds-radius-md, 12px);
-  box-shadow: var(--ds-shadow-sm, 0 1px 2px rgb(0 0 0 / 18%));
+  box-shadow: none;
 }
 
 .actionFacts {
@@ -212,7 +212,7 @@
 .tabActive {
   color: #fff;
   background: color-mix(in srgb, #c9151e 28%, var(--content-surface, #20272f));
-  box-shadow: inset 0 -3px 0 #c9151e;
+  box-shadow: none;
 }
 
 .metrics {
@@ -285,14 +285,14 @@
   background: var(--content-surface, #20272f);
   border: 1px solid var(--content-border, #71808e);
   border-radius: var(--ds-radius-md, 12px);
-  box-shadow: var(--ds-shadow-sm, 0 1px 2px rgb(0 0 0 / 18%));
+  box-shadow: none;
 }
 
 .cardHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 16px;
   min-height: 46px;
   padding: 9px 12px;
   border-bottom: 1px solid var(--content-border, #71808e);
@@ -382,7 +382,7 @@
 .detailList div {
   display: grid;
   grid-template-columns: minmax(110px, 0.65fr) minmax(0, 1.35fr);
-  gap: 10px;
+  gap: 20px;
   padding: 9px 0;
   border-bottom: 1px solid color-mix(in srgb, var(--content-border, #71808e) 54%, transparent);
 }
@@ -403,7 +403,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 16px;
 }
 
 .meter {
@@ -490,7 +490,7 @@
 .footer {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: 16px;
   padding: 8px 10px;
   color: var(--content-subtle, #a8b3bf);
   background: var(--content-surface-raised, #2b343d);
@@ -668,7 +668,7 @@
   background: rgba(255,255,255,.98);
   border: 1px solid #dbe4ef;
   border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(18,43,72,.06);
+  box-shadow: none;
   backdrop-filter: blur(10px);
 }
 
@@ -688,7 +688,7 @@
 
 .hero p {
   color: #718096;
-  font-size: .68rem;
+  font-size: 0.75rem;
 }
 
 .heroRight {
@@ -737,7 +737,7 @@
   background: #fff;
   border-color: #dbe4ef;
   border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(18,43,72,.035);
+  box-shadow: none;
 }
 
 .actionFacts > div {
@@ -746,13 +746,13 @@
 
 .actionFacts span {
   color: #8190a2;
-  font-size: .56rem;
+  font-size: 0.75rem;
   letter-spacing: .03em;
 }
 
 .actionFacts strong {
   color: #17314f;
-  font-size: .7rem;
+  font-size: 0.75rem;
 }
 
 .actionLinks a,
@@ -779,7 +779,7 @@
   background: #fff;
   border-color: #dbe4ef;
   border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(18,43,72,.03);
+  box-shadow: none;
 }
 
 .tab {
@@ -803,7 +803,7 @@
 }
 
 .metrics {
-  gap: 10px;
+  gap: 20px;
 }
 
 .metric {
@@ -812,7 +812,7 @@
   background: #fff;
   border-color: #dbe4ef;
   border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(18,43,72,.035), 0 8px 20px rgba(18,43,72,.025);
+  box-shadow: none;
 }
 
 .metric::before {
@@ -821,7 +821,7 @@
 
 .metric span {
   color: #6f8094;
-  font-size: .6rem;
+  font-size: 0.75rem;
   text-transform: none;
 }
 
@@ -831,19 +831,19 @@
 
 .metric small {
   color: #8b99aa;
-  font-size: .58rem;
+  font-size: 0.75rem;
 }
 
 .grid,
 .gridThree {
-  gap: 10px;
+  gap: 20px;
 }
 
 .card {
   background: #fff;
   border-color: #dbe4ef;
   border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(18,43,72,.035), 0 8px 20px rgba(18,43,72,.025);
+  box-shadow: none;
 }
 
 .cardHeader {
@@ -865,7 +865,7 @@
 .cardHeader span,
 .redHeader span {
   color: #8190a2;
-  font-size: .56rem;
+  font-size: 0.75rem;
 }
 
 .cardHeader strong,
@@ -898,12 +898,12 @@
 
 .detailList dt {
   color: #8190a2;
-  font-size: .58rem;
+  font-size: 0.75rem;
 }
 
 .detailList dd {
   color: #17314f;
-  font-size: .62rem;
+  font-size: 0.75rem;
 }
 
 .meter {
@@ -968,7 +968,7 @@
 .logLaunch,
 .settingBody {
   display: grid;
-  gap: 10px;
+  gap: 20px;
   min-height: 210px;
   align-content: center;
   justify-items: start;
@@ -990,7 +990,7 @@
   max-width: 52ch;
   margin: 0;
   color: #718096;
-  font-size: .64rem;
+  font-size: 0.75rem;
   line-height: 1.55;
 }
 
@@ -1008,7 +1008,7 @@
   border: 1px solid #c9def8;
   border-radius: 8px;
   font: inherit;
-  font-size: .6rem;
+  font-size: 0.75rem;
   font-weight: 800;
   text-decoration: none;
   cursor: pointer;
@@ -1016,7 +1016,7 @@
 
 .workspaceLinks {
   display: grid;
-  gap: 8px;
+  gap: 16px;
   padding: 14px;
 }
 
@@ -1029,7 +1029,7 @@
 .modeButtons {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 16px;
 }
 
 .modeButtons button {
@@ -1040,7 +1040,7 @@
   border: 1px solid #c9def8;
   border-radius: 8px;
   font: inherit;
-  font-size: .62rem;
+  font-size: 0.75rem;
   font-weight: 820;
   cursor: pointer;
 }
@@ -1108,3 +1108,19 @@
     padding-inline: 11px;
   }
 }
+
+.hero { color: #132238; background: transparent; border: 0; box-shadow: none; padding: 0 0 8px; gap: 20px; }
+.hero h1 { color: #071a33; font-size: clamp(1.5rem, 2vw, 1.875rem); font-weight: 650; line-height: 1.2; }
+.hero p { color: #53627a; font-size: .875rem; margin-top: 7px; }
+.back, .back:hover { color: #0758d6; min-height: 44px; }
+.page { gap: 20px; }
+
+.healthSummary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ds-space-4, 16px); }
+.healthSummary > div { display: grid; align-content: start; gap: 12px; padding: 20px; background: #fff; border: 1px solid #d8dfe8; border-radius: var(--ds-radius-md, 12px); }
+.healthSummary span { color: #42536a; font-size: .8125rem; font-weight: 600; }
+.healthSummary strong { color: #132238; font-size: .875rem; }
+.healthSummary small { color: #53627a; font-size: .75rem; line-height: 1.6; }
+.hero { position: relative; top: auto; backdrop-filter: none; }
+.tabs { top: 72px; }
+@media (max-width: 760px) { .healthSummary { grid-template-columns: 1fr; } }
+@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) { .tabs { top: 54px; } }

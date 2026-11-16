@@ -12,7 +12,7 @@ test('telemetry reports is an authenticated telemetry route and owns its present
     read('components/telemetry-platform/TelemetryReports.module.css'),
   ]);
 
-  assert.match(navigation, /href: '\/telemetry\/reports', label: 'Reports & Exports'/);
+  assert.match(navigation, /href: '\/telemetry\/reports', label: 'Sales & Reports'/);
   assert.match(page, /<TelemetryReports \/>/);
   assert.match(component, /import styles from '\.\/TelemetryReports\.module\.css';/);
   assert.match(styles, /@media\(max-width:900px\),\(max-width:1366px\) and \(hover:none\) and \(pointer:coarse\)/);

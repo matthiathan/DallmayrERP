@@ -1,26 +1,26 @@
 .brandShell {
-  --dallmayr-gold: #c9a55b !important;
+  --dallmayr-gold: #b39960 !important;
   --dallmayr-gold-dark: #9f7b35 !important;
   --dallmayr-gold-soft: #fff8e8 !important;
   --dallmayr-red: #dc3545 !important;
   --dallmayr-red-dark: #b42332 !important;
   --dallmayr-red-soft: #fff1f2 !important;
-  --dallmayr-cream: #f4f7fb !important;
+  --dallmayr-cream: #f5f7fa !important;
   --dallmayr-cream-soft: #f8fbff !important;
   --platform-ink: #10233e !important;
-  --platform-muted: #66768a !important;
+  --platform-muted: #53627a !important;
   --platform-border: #dbe4ef !important;
   --platform-surface: #ffffff !important;
-  --user-accent: #0f6bff !important;
+  --user-accent: #071a33 !important;
   --content-accent-text: #0758d6 !important;
-  --content-focus: #0f6bff !important;
+  --content-focus: #071a33 !important;
   color: #10233e;
-  background: #f4f7fb;
+  background: #f5f7fa;
 }
 
 .brandShell :global(.application-main) {
   color: #10233e !important;
-  background: #f4f7fb !important;
+  background: #f5f7fa !important;
 }
 
 .brandShell :global(.neo-card),
@@ -31,7 +31,7 @@
   background: #ffffff !important;
   border-color: #dbe4ef !important;
   border-radius: 10px !important;
-  box-shadow: 0 1px 2px rgba(18, 43, 72, .04), 0 8px 24px rgba(18, 43, 72, .045) !important;
+  box-shadow: none !important;
 }
 
 .brandShell :global(.neo-card::before),
@@ -54,7 +54,7 @@
 
 .brandShell :global(p),
 .brandShell :global(label) {
-  color: #66768a !important;
+  color: #53627a !important;
   text-shadow: none !important;
 }
 
@@ -65,10 +65,10 @@
 
 .brandShell :global(.button:not(.secondary):not(.danger)) {
   color: #ffffff !important;
-  background: #0f6bff !important;
-  border-color: #0f6bff !important;
+  background: #071a33 !important;
+  border-color: #071a33 !important;
   border-radius: 8px !important;
-  box-shadow: 0 1px 2px rgba(15, 107, 255, .18) !important;
+  box-shadow: none !important;
   text-shadow: none !important;
 }
 
@@ -81,7 +81,7 @@
 .brandShell :global(.button.secondary) {
   color: #173a64 !important;
   background: #ffffff !important;
-  border-color: #d4deea !important;
+  border-color: #7b8da5 !important;
   border-radius: 8px !important;
   box-shadow: none !important;
 }
@@ -91,7 +91,7 @@
 .brandShell :global(textarea) {
   color: #10233e !important;
   background: #ffffff !important;
-  border-color: #d4deea !important;
+  border-color: #7b8da5 !important;
   border-radius: 8px !important;
   box-shadow: none !important;
 }
@@ -99,8 +99,8 @@
 .brandShell :global(input:focus),
 .brandShell :global(select:focus),
 .brandShell :global(textarea:focus) {
-  border-color: #0f6bff !important;
-  box-shadow: 0 0 0 3px rgba(15, 107, 255, .12) !important;
+  border-color: #071a33 !important;
+  box-shadow: none !important;
 }
 
 .brandShell :global(th) {
@@ -124,7 +124,7 @@
   color: #dbe8f6 !important;
   background: #071a33 !important;
   border-right-color: #102c4c !important;
-  box-shadow: 2px 0 10px rgba(7, 26, 51, .12) !important;
+  box-shadow: none !important;
 }
 
 .brandShell :global(.dallmayr-sidebar) > div:first-child {
@@ -163,12 +163,13 @@
 
 .brandShell :global(.dallmayr-sidebar-link[aria-current='page']) {
   color: #ffffff !important;
-  background: #0f5fc7 !important;
-  border-color: #1f72d8 !important;
+  background: #203b5c !important;
+  border-color: #203b5c !important;
+  box-shadow: inset 3px 0 #b39960 !important;
 }
 
 .brandShell :global(.dallmayr-sidebar-link[aria-current='page'])::before {
-  background: #62a8ff !important;
+  background: #b39960 !important;
 }
 
 .brandShell :global(.dallmayr-sidebar h2) {
@@ -179,13 +180,12 @@
   color: #10233e !important;
   background: rgba(255, 255, 255, .98) !important;
   border-bottom-color: #dbe4ef !important;
-  box-shadow: 0 1px 8px rgba(18, 43, 72, .04) !important;
+  box-shadow: none !important;
 }
 
 .brandShell :global(.application-header) a:focus-visible,
-.brandShell :global(.application-header) button:focus-visible,
-.brandShell :global(.dallmayr-sidebar-link:focus-visible) {
-  outline: 2px solid #0f6bff !important;
+.brandShell :global(.application-header) button:focus-visible {
+  outline: 2px solid #071a33 !important;
   outline-offset: 2px;
 }
 
@@ -193,7 +193,7 @@
   color: #ffffff !important;
   background: #071a33 !important;
   border-bottom-color: #163657 !important;
-  box-shadow: 0 2px 8px rgba(7, 26, 51, .16) !important;
+  box-shadow: none !important;
 }
 
 .brandShell :global(.telemetry-mobile-header) strong,
@@ -252,4 +252,34 @@
   .brandShell :global(.dallmayr-sidebar-link) {
     transition: none;
   }
+}
+
+/* Reset legacy icon-box rules that also matched the new navigation text span. */
+.brandShell :global(.dallmayr-sidebar-link) {
+  min-height: var(--ds-touch-target, 44px) !important;
+  grid-template-columns: 30px minmax(0, 1fr) !important;
+}
+.brandShell :global(.dallmayr-sidebar-link) > span {
+  color: inherit !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+.brandShell :global(.dallmayr-sidebar-link) > span:last-child:not(:first-child) {
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0;
+  font-size: var(--ds-font-sm, .875rem) !important;
+  font-weight: 500 !important;
+  line-height: var(--ds-line-normal, 1.5);
+}
+.brandShell :global(.desktop-rail-collapsed .dallmayr-sidebar-link),
+.brandShell:global(.desktop-rail-collapsed) :global(.dallmayr-sidebar-link) {
+  grid-template-columns: 1fr !important;
+}
+.brandShell :global(#desktop-sidebar-account-menu-target:empty) { display: none !important; }
+
+.brandShell :global(.dallmayr-sidebar-link:focus-visible) {
+  outline: 3px solid #b39960 !important;
+  outline-offset: -3px;
 }
