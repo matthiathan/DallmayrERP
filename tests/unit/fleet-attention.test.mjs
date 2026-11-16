@@ -63,7 +63,7 @@ test('fleet attention identifies pending configuration, critical SIM balance, an
 
 test('the fleet dashboard exposes the actionable attention queue across the full device fleet', () => {
   assert.match(dashboard, /data-fleet-attention-queue="v1"/);
-  assert.match(dashboard, /buildFleetAttentionItems/);
+  assert.match(dashboard, /buildOverviewAttention/);
   assert.match(dashboard, /const ATTENTION_DEVICE_SELECT = 'id,device_code,machine_id,status,last_heartbeat_at,last_seen_at,last_upload_at,last_config_at,last_config_ack_at,last_transport,wifi_rssi,cellular_csq,cellular_operator'/);
   assert.match(dashboard, /collectSupabasePagesResult<FleetAttentionDevice>/);
   assert.match(dashboard, /\.from\('telemetry_devices'\)/);

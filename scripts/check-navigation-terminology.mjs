@@ -24,7 +24,7 @@ requireText('terminology', terminology, "FLEET_OVERVIEW_LABEL = 'Fleet Overview'
 requireText('shell navigation', shellNavigation, "{ href: '/', label: 'Fleet Overview'", 'Fleet Overview must be the telemetry home route.');
 requireText('shell navigation', shellNavigation, "{ href: '/machines', label: 'Machines'", 'Machines must remain a primary telemetry route.');
 requireText('shell navigation', shellNavigation, "{ href: '/alerts', label: 'Alerts'", 'Alerts must remain a primary telemetry route.');
-requireText('shell navigation', shellNavigation, "{ href: '/telemetry', label: 'Analytics'", 'Analytics must remain a primary telemetry route.');
+requireText('shell navigation', shellNavigation, "{ href: '/telemetry', label: 'Analytics'", 'Analytics must remain an accessible telemetry route.');
 forbid('shell navigation', shellNavigation, "href: '/workspace'", 'obsolete ERP workspace navigation must not return.');
 forbid('shell navigation', shellNavigation, "href: '/work'", 'obsolete ERP work navigation must not return.');
 

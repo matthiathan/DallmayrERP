@@ -4,8 +4,8 @@ import { canAccessShellPath, deriveAppShellNavigation } from '../../components/l
 
 test('daily work stays primary while reports and specialist tools remain discoverable', () => {
   const { navigationSections } = deriveAppShellNavigation('/', 'dallmayr', 'admin');
-  assert.deepEqual(navigationSections[0].items.map(({ href }) => href), ['/', '/machines', '/maintenance', '/alerts']);
-  assert.deepEqual(navigationSections.find(({ heading }) => heading === 'Sales & Reports').items.map(({ href }) => href), ['/telemetry', '/telemetry/reports', '/products']);
+  assert.deepEqual(navigationSections[0].items.map(({ href }) => href), ['/', '/machines', '/telemetry/reports', '/map', '/telemetry/devices']);
+  assert.ok(navigationSections.find(({ heading }) => heading === 'Administration').items.some(({ href }) => href === '/maintenance'));
   const paths = navigationSections.flatMap(({ items }) => items.map(({ href }) => href));
   assert.equal(new Set(paths).size, 17);
   for (const href of ['/customers', '/archive', '/telemetry/test-center', '/map', '/telemetry/devices', '/machine-profiles', '/administration', '/approvals', '/factory', '/technician']) {
@@ -16,9 +16,9 @@ test('daily work stays primary while reports and specialist tools remain discove
 test('a nested specialist destination opens the correct navigation group', () => {
   const result = deriveAppShellNavigation('/telemetry/devices/settings', 'dallmayr', 'admin');
   assert.equal(result.activeHref, '/telemetry/devices');
-  assert.equal(result.activeSection.heading, 'Administration');
+  assert.equal(result.activeSection.heading, 'Workspace');
   assert.equal(result.allowedPath, true);
-  assert.equal(deriveAppShellNavigation('/telemetry/reports', 'dallmayr', 'admin').activeSection.heading, 'Sales & Reports');
+  assert.equal(deriveAppShellNavigation('/telemetry/reports', 'dallmayr', 'admin').activeSection.heading, 'Workspace');
 });
 
 test('simplified groups retain customer and staff access boundaries', () => {

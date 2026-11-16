@@ -819,3 +819,36 @@
 
 .quickAccess a { color: #243b59 !important; }
 .quickAccess a:first-of-type { color: #fff !important; }
+
+.attentionFilters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: var(--ds-space-3, 12px);
+  padding: var(--ds-space-5, 20px);
+}
+.attentionFilters label { display: grid; gap: var(--ds-space-2, 8px); font-size: var(--ds-font-xs, .75rem); font-weight: 600; }
+.attentionFilters select { width: 100%; min-width: 0; min-height: var(--ds-touch-target, 44px); padding: 8px; border: 1px solid #7b8da5; border-radius: var(--ds-radius-sm, 8px); font: inherit; }
+.scopeNote { margin: 0; padding: 0 var(--ds-space-5, 20px) var(--ds-space-4, 16px); color: #53627a; font-size: var(--ds-font-xs, .75rem); line-height: var(--ds-line-relaxed, 1.65); }
+.attentionHeader { flex-wrap: wrap; gap: var(--ds-space-3, 12px); }
+.attentionBody small { display: block; margin-top: var(--ds-space-1, 4px); color: #53627a; font-size: var(--ds-font-xs, .75rem); }
+.verification { border-top: 1px solid #d8dfe8; }
+.verification > summary { min-height: var(--ds-touch-target, 44px); padding: var(--ds-space-4, 16px) var(--ds-space-5, 20px); color: #42536a; font-size: var(--ds-font-sm, .875rem); font-weight: 600; cursor: pointer; }
+.verification > p { padding: 0 var(--ds-space-5, 20px); color: #53627a; font-size: var(--ds-font-xs, .75rem); line-height: var(--ds-line-relaxed, 1.65); }
+.verification > summary:focus-visible, .attentionFilters select:focus-visible { outline: 3px solid #0758d6; outline-offset: -3px; }
+.queuePagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--ds-space-2, 8px); padding: var(--ds-space-4, 16px); font-size: var(--ds-font-xs, .75rem); }
+.fleetTotalsTitle { margin: 0; color: #132238; font-size: var(--ds-font-lg, 1.125rem); font-weight: 600; }
+@media (max-width: 520px) { .attentionFilters { grid-template-columns: 1fr; } }
+.actionableTitle { margin: 0; padding: var(--ds-space-4, 16px) var(--ds-space-5, 20px); color: #132238; font-size: var(--ds-font-sm, .875rem); font-weight: 600; border-top: 1px solid #d8dfe8; }
+
+/* Reasons and evidence must remain readable at the attention-card width. */
+.attentionRow { grid-template-columns: 4px minmax(0, 1fr); }
+.attentionBody > div { display: grid; gap: var(--ds-space-1, 4px); }
+.attentionBody strong, .attentionBody span, .attentionBody p {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.attentionActions { grid-column: 2; justify-content: flex-start; }
+.attentionHeader strong { color: #42536a; }

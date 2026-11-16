@@ -29,6 +29,7 @@ export type FleetAttentionSeverity = 'critical' | 'warning';
 
 export type FleetAttentionItem = {
   id: string;
+  evidenceState?: 'current' | 'stale' | 'overdue' | 'unknown';
   reason?: string;
   title?: string;
   kind: FleetAttentionKind;
@@ -109,7 +110,7 @@ export function buildFleetAttentionItems(
       for (const [kind, state] of [['communication', health.communication], ['reporting', health.reporting]] as const) {
         if (state.key === 'current') continue;
         items.push({ ...base, id: `${device.id}:${kind}`, kind, severity: 'warning', priority: 5, occurredAt: null,
-          title: `${kind === 'communication' ? 'Machine communication' : 'Sales report'}: ${state.label}`, reason: state.reason });
+          title: `${kind === 'communication' ? 'Machine communication' : 'Sales report'}: ${state.label}`, reason: state.reason, evidenceState: state.key });
       }
     }
 
