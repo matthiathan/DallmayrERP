@@ -71,7 +71,7 @@ const shellStyles = await read(shellModulePath);
 for (const requiredRule of [
   '--dallmayr-red: #c9151e;',
   '--dallmayr-red-dark: #a90f17;',
-  'grid-template-columns: 226px minmax(0, 1fr)',
+  'grid-template-columns: 228px minmax(0, 1fr)',
   '.desktopCollapsed',
   'grid-template-columns: 72px minmax(0, 1fr)',
   '@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse)',

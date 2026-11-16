@@ -5,8 +5,8 @@ import { LiveDataStatus } from '@/components/ui/LiveDataStatus';
 export default function DashboardPage() {
   return (
     <AppShell>
-      <LiveDataStatus refreshIntervalMs={30_000} />
       <TelevendFleetDashboard />
+      <LiveDataStatus refreshIntervalMs={30_000} />
     </AppShell>
   );
 }

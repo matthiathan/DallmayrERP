@@ -66,7 +66,7 @@ export function PageTemplateFrame() {
 
     function synchronizeTemplate() {
       const root = document.querySelector<HTMLElement>('.application-main');
-      if (root) applyTemplate(root, routeTemplate);
+      if (root && !root.closest('[data-platform-shell="telemetry-v3"]')) applyTemplate(root, routeTemplate);
     }
 
     synchronizeTemplate();
