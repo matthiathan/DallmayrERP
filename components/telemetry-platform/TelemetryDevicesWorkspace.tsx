@@ -10,6 +10,9 @@ import { SignalStrengthIndicator } from '@/components/ui/SignalStrengthIndicator
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { collectSupabasePagesResult } from '@/lib/supabase/collect-pages';
 import { deviceConfigSyncState, deviceConnectionState } from '@/lib/telemetry/device-health';
+import { deviceDataHealth } from '@/lib/telemetry/data-health';
+import { loadDeviceHealthPolicies, withDeviceHealthPolicies } from '@/lib/telemetry/health-policy';
+import { TelemetryHealthSummary } from './TelemetryHealthSummary';
 import { DeviceRegisterPagination } from './DeviceRegisterPagination';
 import { TelemetryConfigSyncPanel } from './TelemetryConfigSyncPanel';
 import tabStyles from './DeviceWorkspaceTabs.module.css';
@@ -30,6 +33,7 @@ type Device = {
   profile_id: string | null;
   status: string;
   firmware_version: string | null;
+  heartbeat_interval_minutes?: number | null;
   last_seen_at: string | null;
   last_upload_at: string | null;
   last_counter_at: string | null;
@@ -111,7 +115,7 @@ function formatBytes(value: number | null | undefined) {
 }
 
 function formatDate(value: string | null) {
-  return value ? new Date(value).toLocaleString('en-ZA', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Never';
+  return value ? new Date(value).toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Never';
 }
 
 function age(value: string | null) {
@@ -145,8 +149,8 @@ function machineLabel(machine: Machine | null | undefined) {
   return `${primary}${machine.serial_number ? ` · ${machine.serial_number}` : ''}`;
 }
 
-function statusKey(device: Device) {
-  return deviceConnectionState(device).key;
+function statusKey(device: Device, now: number) {
+  return deviceConnectionState(device, now).key;
 }
 
 function transportLabel(transport: Device['last_transport']) {
@@ -225,79 +229,79 @@ export function TelemetryDevicesWorkspace() {
   const selectedUsage = selected ? usage[selected.id] ?? null : null;
   const selectedPrepaid = selected ? prepaid[selected.id] ?? null : null;
 
+  const loadVersion = useRef(0);
   const load = useCallback(async (showLoader = true) => {
+    const version = ++loadVersion.current;
     if (showLoader) setLoading(true);
-    setError(null);
-    const client = getSupabaseClient();
+    try {
+      const client = getSupabaseClient();
 
-    const deviceRows = collectSupabasePagesResult<Device>(async (from, to) => {
-      const { data, error: pageError } = await client
-        .from('telemetry_devices')
-        .select(DEVICE_SELECT)
-        .order('device_code', { ascending: true })
-        .range(from, to);
-      return { data: (data ?? []) as Device[], error: pageError };
-    });
-    const usageRows = collectSupabasePagesResult<Usage>(async (from, to) => {
-      const { data, error: pageError } = await client.rpc('get_telemetry_data_usage', { p_days: 30 }).range(from, to);
-      return { data: (data ?? []) as Usage[], error: pageError };
-    });
-    const prepaidRows = collectSupabasePagesResult<Prepaid>(async (from, to) => {
-      const { data, error: pageError } = await client.rpc('get_telemetry_prepaid_balances').range(from, to);
-      return { data: (data ?? []) as Prepaid[], error: pageError };
-    });
+      const deviceRows = collectSupabasePagesResult<Device>(async (from, to) => {
+        const { data, error: pageError } = await client
+          .from('telemetry_devices')
+          .select(DEVICE_SELECT)
+          .order('device_code', { ascending: true })
+          .range(from, to);
+        return { data: (data ?? []) as Device[], error: pageError };
+      });
+      const usageRows = collectSupabasePagesResult<Usage>(async (from, to) => {
+        const { data, error: pageError } = await client.rpc('get_telemetry_data_usage', { p_days: 30 }).range(from, to);
+        return { data: (data ?? []) as Usage[], error: pageError };
+      });
+      const prepaidRows = collectSupabasePagesResult<Prepaid>(async (from, to) => {
+        const { data, error: pageError } = await client.rpc('get_telemetry_prepaid_balances').range(from, to);
+        return { data: (data ?? []) as Prepaid[], error: pageError };
+      });
 
-    const [deviceQuery, dashboardQuery, usageQuery, prepaidQuery] = await Promise.all([
-      deviceRows,
-      client.rpc('get_telemetry_dashboard', { p_period: 'today', p_branch: 'all' }),
-      usageRows,
-      prepaidRows,
-    ]);
+      const [deviceQuery, dashboardQuery, usageQuery, prepaidQuery, policies] = await Promise.all([
+        deviceRows,
+        client.rpc('get_telemetry_dashboard', { p_period: 'today', p_branch: 'all' }),
+        usageRows,
+        prepaidRows,
+        loadDeviceHealthPolicies(),
+      ]);
 
-    if (deviceQuery.error) {
-      setError(deviceQuery.error.message);
-      setLoading(false);
-      return;
-    }
-
-    const rows = deviceQuery.data;
-    setDevices(rows);
-    setSelectedId((current) => current && rows.some((row) => row.id === current) ? current : null);
-
-    const dashboard = (dashboardQuery.data ?? {}) as { device_states?: Array<{ device_id: string; telemetry_mode?: TelemetryMode }> };
-    setModes(Object.fromEntries((dashboard.device_states ?? []).map((row) => [row.device_id, row.telemetry_mode ?? 'live'])));
-    setUsage(Object.fromEntries((usageQuery.error ? [] : usageQuery.data).map((row) => [row.device_id, row])));
-    setPrepaid(Object.fromEntries((prepaidQuery.error ? [] : prepaidQuery.data).map((row) => [row.device_id, row])));
-
-    const auxiliaryErrors = [dashboardQuery.error, usageQuery.error, prepaidQuery.error].filter(Boolean);
-    if (auxiliaryErrors.length) {
-      setError(auxiliaryErrors[0]?.message ?? 'Some telemetry device details could not be loaded.');
-    }
-
-    const machineIds = [...new Set(rows.map((row) => row.machine_id).filter((value): value is string => Boolean(value)))];
-    if (machineIds.length) {
-      const machineBatches: string[][] = [];
-      for (let start = 0; start < machineIds.length; start += MACHINE_LOOKUP_BATCH_SIZE) {
-        machineBatches.push(machineIds.slice(start, start + MACHINE_LOOKUP_BATCH_SIZE));
-      }
-      const machineResults = await Promise.all(machineBatches.map(async (ids) => {
-        const { data, error: machineError } = await client.from('machines').select(MACHINE_SELECT).in('id', ids);
-        return { data: (data ?? []) as Machine[], error: machineError };
-      }));
-      const firstMachineError = machineResults.find((result) => result.error)?.error;
-      if (firstMachineError) {
-        setMachines({});
-        setError(firstMachineError.message ?? 'Machine assignment details could not be loaded.');
+      if (deviceQuery.error) throw deviceQuery.error;
+      if (dashboardQuery.error) throw dashboardQuery.error;
+      if (usageQuery.error) throw usageQuery.error;
+      if (prepaidQuery.error) throw prepaidQuery.error;
+      const rows = withDeviceHealthPolicies(deviceQuery.data, policies);
+      const machineIds = [...new Set(rows.map((row) => row.machine_id).filter((value): value is string => Boolean(value)))];
+      if (machineIds.length) {
+        const machineBatches: string[][] = [];
+        for (let start = 0; start < machineIds.length; start += MACHINE_LOOKUP_BATCH_SIZE) {
+          machineBatches.push(machineIds.slice(start, start + MACHINE_LOOKUP_BATCH_SIZE));
+        }
+        const machineResults = await Promise.all(machineBatches.map(async (ids) => {
+          const { data, error: machineError } = await client.from('machines').select(MACHINE_SELECT).in('id', ids);
+          return { data: (data ?? []) as Machine[], error: machineError };
+        }));
+        if (version !== loadVersion.current) return;
+        const firstMachineError = machineResults.find((result) => result.error)?.error;
+        if (firstMachineError) {
+          throw firstMachineError;
+        } else {
+          const machineRows = machineResults.flatMap((result) => result.data);
+          setMachines(Object.fromEntries(machineRows.map((row) => [row.id, row])));
+        }
       } else {
-        const machineRows = machineResults.flatMap((result) => result.data);
-        setMachines(Object.fromEntries(machineRows.map((row) => [row.id, row])));
+        setMachines({});
       }
-    } else {
-      setMachines({});
-    }
 
-    setLastUpdated(new Date());
-    setLoading(false);
+      if (version !== loadVersion.current) return;
+      setDevices(rows);
+      setSelectedId((current) => current && rows.some((row) => row.id === current) ? current : null);
+
+      const dashboard = (dashboardQuery.data ?? {}) as { device_states?: Array<{ device_id: string; telemetry_mode?: TelemetryMode }> };
+      setModes(Object.fromEntries((dashboard.device_states ?? []).map((row) => [row.device_id, row.telemetry_mode ?? 'live'])));
+      setUsage(Object.fromEntries((usageQuery.error ? [] : usageQuery.data).map((row) => [row.device_id, row])));
+      setPrepaid(Object.fromEntries((prepaidQuery.error ? [] : prepaidQuery.data).map((row) => [row.device_id, row])));
+
+      setLastUpdated(new Date());
+      setError(null);
+    } catch (loadError) {
+      if (version === loadVersion.current) setError(loadError instanceof Error ? loadError.message : 'Could not refresh device information.');
+    } finally { if (version === loadVersion.current) setLoading(false); }
   }, []);
 
   useEffect(() => { void load(); }, [load]);
@@ -343,17 +347,18 @@ export function TelemetryDevicesWorkspace() {
     setMachineResults([]);
   }, [modes, prepaid, selected]);
 
+  const statusNow = lastUpdated?.getTime() ?? 0;
   const metrics = useMemo(() => {
     const active = devices.filter((device) => device.status === 'active');
-    const online = active.filter((device) => deviceConnectionState(device).key === 'online').length;
+    const online = active.filter((device) => deviceConnectionState(device, statusNow).key === 'online').length;
     const cellular = active.filter((device) => device.last_transport === 'cellular').length;
     const lowData = Object.values(prepaid).filter((row) => ['low', 'critical', 'depleted'].includes(row.alert_level)).length;
     const totalUsage = Object.values(usage).reduce((sum, row) => sum + actualUsage(row), 0);
-    return { active: active.length, online, offline: Math.max(0, active.length - online), unassigned: devices.filter((device) => !device.machine_id).length, cellular, lowData, totalUsage };
-  }, [devices, prepaid, usage]);
+    return { active: active.length, online, offline: active.filter((device) => deviceConnectionState(device, statusNow).key === 'offline').length, delayed: active.filter((device) => deviceConnectionState(device, statusNow).key === 'delayed').length, unknown: active.filter((device) => ['unknown', 'never_seen'].includes(deviceConnectionState(device, statusNow).key)).length, unassigned: devices.filter((device) => !device.machine_id).length, cellular, lowData, totalUsage };
+  }, [devices, prepaid, usage, statusNow]);
 
   const filtered = useMemo(() => devices.filter((device) => {
-    const status = statusKey(device);
+    const status = statusKey(device, statusNow);
     if (statusFilter !== 'all' && status !== statusFilter && !(statusFilter === 'unassigned' && !device.machine_id)) return false;
     if (statusFilter === 'unassigned' && device.machine_id) return false;
     if (transportFilter !== 'all' && device.last_transport !== transportFilter) return false;
@@ -362,7 +367,7 @@ export function TelemetryDevicesWorkspace() {
     if (!term) return true;
     const machine = device.machine_id ? machines[device.machine_id] : null;
     return [device.device_code, device.hardware_uid, device.firmware_version, device.cellular_operator, device.profile_id, machineLabel(machine)].join(' ').toLowerCase().includes(term);
-  }), [devices, machines, modeFilter, modes, search, statusFilter, transportFilter]);
+  }), [devices, machines, modeFilter, modes, search, statusFilter, transportFilter, statusNow]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const pageRows = useMemo(() => {
@@ -447,7 +452,7 @@ export function TelemetryDevicesWorkspace() {
 
   const selectedUsed = actualUsage(selectedUsage);
   const selectedProjected = projectedUsage(selectedUsage);
-  const selectedHealth = selected ? deviceConnectionState(selected) : null;
+  const selectedHealth = selected ? deviceConnectionState(selected, statusNow) : null;
   const selectedConfig = selected ? deviceConfigSyncState(selected) : null;
   const selectedStatus = selectedHealth?.key ?? 'offline';
   const currentMachine = machineId ? (machineResults.find((row) => row.id === machineId) ?? machines[machineId] ?? null) : null;
@@ -463,15 +468,15 @@ export function TelemetryDevicesWorkspace() {
       </div>
     </header>
 
-    {error ? <div className={`${styles.banner} ${styles.bannerError}`} role="alert"><strong>Device management error</strong><span>{error}</span></div> : null}
+    {error ? <div className={`${styles.banner} ${styles.bannerError}`} role="alert"><strong>Dashboard updates unavailable</strong><span>{error} Displayed information may be outdated. Last successful refresh: {lastUpdated ? formatDate(lastUpdated.toISOString()) : 'never'}.</span></div> : null}
     {message ? <div className={`${styles.banner} ${styles.bannerSuccess}`} role="status"><strong>Saved</strong><span>{message}</span></div> : null}
 
     <TelemetryEnrollmentWindowControl onDeviceEnrolled={() => load(false)} />
 
     <section className={styles.stats} aria-label="Telemetry device summary">
       <Stat detail="Provisioned controllers" label="Active devices" tone="blue" value={metrics.active.toLocaleString('en-ZA')} />
-      <Stat detail="Heartbeat within 30 min" label="Online" tone="green" value={metrics.online.toLocaleString('en-ZA')} />
-      <Stat detail="Needs attention" label="Offline" tone={metrics.offline ? 'red' : 'green'} value={metrics.offline.toLocaleString('en-ZA')} />
+      <Stat detail="Within two expected heartbeat intervals" label="Online" tone="green" value={metrics.online.toLocaleString('en-ZA')} />
+      <Stat detail={`${metrics.delayed} delayed · ${metrics.unknown} unknown / never seen`} label="Offline" tone={metrics.offline ? 'red' : 'green'} value={metrics.offline.toLocaleString('en-ZA')} />
       <Stat detail="Needs machine link" label="Unassigned" tone={metrics.unassigned ? 'amber' : 'green'} value={metrics.unassigned.toLocaleString('en-ZA')} />
       <Stat detail="Current transport" label="On cellular" value={metrics.cellular.toLocaleString('en-ZA')} />
       <Stat detail="Fleet · last 30 days" label="Data used" tone="amber" value={formatBytes(metrics.totalUsage)} />
@@ -479,7 +484,7 @@ export function TelemetryDevicesWorkspace() {
 
     <section className={styles.toolbar}>
       <label className={styles.search}><NavigationIcon kind="search" /><input aria-label="Search telemetry devices" placeholder="Search device, firmware, machine or operator" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
-      <select aria-label="Filter device status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">All status</option><option value="online">Online</option><option value="offline">Offline</option><option value="unassigned">Unassigned</option><option value="disabled">Disabled</option></select>
+      <select aria-label="Filter device status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">All status</option><option value="online">Online</option><option value="offline">Offline</option><option value="delayed">Delayed</option><option value="unknown">Unknown</option><option value="never_seen">Never seen</option><option value="unassigned">Unassigned</option><option value="disabled">Disabled</option></select>
       <select aria-label="Filter transport" value={transportFilter} onChange={(event) => setTransportFilter(event.target.value)}><option value="all">All networks</option><option value="wifi">Wi-Fi</option><option value="cellular">Cellular</option></select>
       <select aria-label="Filter reporting mode" value={modeFilter} onChange={(event) => setModeFilter(event.target.value)}><option value="all">All modes</option><option value="live">Live</option><option value="daily">Daily</option><option value="monthly">Monthly</option></select>
       <button className={styles.refresh} disabled={loading} onClick={() => void load(false)} type="button"><NavigationIcon kind="telemetry" />Refresh</button>
@@ -489,25 +494,25 @@ export function TelemetryDevicesWorkspace() {
     {loading && !devices.length ? <HamsterLoader label="Loading telemetry devices" /> : <section className={styles.register}>
       <div className={styles.tableWrap}><table><thead><tr><th>Device identity</th><th>Machine</th><th>State</th><th>Network</th><th>Signal</th><th>Reporting</th><th>30-day data</th><th>SIM remaining</th><th>Last contact</th><th /></tr></thead><tbody>
         {pageRows.map((device) => {
-          const state = statusKey(device);
+          const state = statusKey(device, statusNow);
           const deviceUsage = usage[device.id];
           const balance = prepaid[device.id];
           const machine = device.machine_id ? machines[device.machine_id] : null;
           return <tr key={device.id} className={selectedId === device.id ? styles.selectedRow : undefined}>
             <td><strong>{device.device_code}</strong><small>{device.hardware_uid ? `UID ${device.hardware_uid}` : 'UID not reported'} · {device.firmware_version ?? 'Firmware unknown'}</small></td>
             <td><strong>{machineLabel(machine)}</strong><small>{machine?.branch?.toUpperCase() ?? (device.machine_id ? 'Loading machine…' : 'Assign from settings')}</small></td>
-            <td><span className={`${styles.pill} ${styles[state]}`}><i />{state}</span></td>
+            <td><span className={`${styles.pill} ${styles[state]}`} title={deviceConnectionState(device, statusNow).reason}><i />{deviceConnectionState(device, statusNow).label}</span><small title={deviceDataHealth(device.machine_id).communication.reason}>Machine communication: {deviceDataHealth(device.machine_id).communication.label}</small><small title={deviceDataHealth(device.machine_id).reporting.reason}>Sales report: {deviceDataHealth(device.machine_id).reporting.label}</small></td>
             <td><strong>{device.last_transport === 'wifi' ? 'Wi-Fi' : device.last_transport === 'cellular' ? 'Cellular' : '—'}</strong><small>{device.cellular_operator ?? ''}</small></td>
             <td>{device.last_transport ? <SignalStrengthIndicator cellularCsq={device.cellular_csq} transport={device.last_transport} wifiRssi={device.wifi_rssi} /> : '—'}</td>
             <td><span className={styles.mode}>{modes[device.id] ?? 'live'}</span></td>
             <td><strong>{formatBytes(actualUsage(deviceUsage))}</strong><small>{deviceUsage ? `${Number(deviceUsage.request_count ?? 0).toLocaleString('en-ZA')} uploads` : 'No samples'}</small></td>
             <td><strong className={balance && ['low', 'critical', 'depleted'].includes(balance.alert_level) ? styles.warningText : undefined}>{balance?.remaining_bytes != null ? formatBytes(balance.remaining_bytes) : '—'}</strong><small>{balance?.alert_level ?? 'not reported'}</small></td>
             <td><strong>{age(device.last_heartbeat_at ?? device.last_seen_at)}</strong><small>{formatDate(device.last_heartbeat_at ?? device.last_seen_at)}</small></td>
-            <td><button className={styles.manage} onClick={() => { setSelectedId(device.id); setMessage(null); setError(null); }} type="button">Snapshot</button></td>
+            <td><button className={styles.manage} onClick={() => { setSelectedId(device.id); setMessage(null); }} type="button">Snapshot</button></td>
           </tr>;
         })}
       </tbody></table></div>
-      <div className={styles.mobileCards}>{pageRows.map((device) => { const state = statusKey(device); const deviceUsage = usage[device.id]; const balance = prepaid[device.id]; const machine = device.machine_id ? machines[device.machine_id] : null; return <button className={styles.deviceCard} key={device.id} onClick={() => setSelectedId(device.id)} type="button"><div><strong>{device.device_code}</strong><span className={`${styles.pill} ${styles[state]}`}><i />{state}</span></div><span>{machineLabel(machine)}</span><dl><div><dt>Network</dt><dd>{device.last_transport ?? '—'}</dd></div><div><dt>Data</dt><dd>{formatBytes(actualUsage(deviceUsage))}</dd></div><div><dt>SIM</dt><dd>{balance?.remaining_bytes != null ? formatBytes(balance.remaining_bytes) : '—'}</dd></div><div><dt>Seen</dt><dd>{age(device.last_heartbeat_at ?? device.last_seen_at)}</dd></div></dl></button>; })}</div>
+      <div className={styles.mobileCards}>{pageRows.map((device) => { const state = statusKey(device, statusNow); const deviceUsage = usage[device.id]; const balance = prepaid[device.id]; const machine = device.machine_id ? machines[device.machine_id] : null; return <button className={styles.deviceCard} key={device.id} onClick={() => setSelectedId(device.id)} type="button"><div><strong>{device.device_code}</strong><span className={`${styles.pill} ${styles[state]}`}><i />{deviceConnectionState(device, statusNow).label}</span></div><span>{machineLabel(machine)}</span><dl><div><dt>Network</dt><dd>{device.last_transport ?? '—'}</dd></div><div><dt>Data</dt><dd>{formatBytes(actualUsage(deviceUsage))}</dd></div><div><dt>SIM</dt><dd>{balance?.remaining_bytes != null ? formatBytes(balance.remaining_bytes) : '—'}</dd></div><div><dt>Last device contact</dt><dd>{age(device.last_heartbeat_at ?? device.last_seen_at)}</dd></div><div><dt>Machine communication</dt><dd title={deviceDataHealth(device.machine_id).communication.reason}>{deviceDataHealth(device.machine_id).communication.label}</dd></div><div><dt>Sales report</dt><dd title={deviceDataHealth(device.machine_id).reporting.reason}>{deviceDataHealth(device.machine_id).reporting.label}</dd></div></dl></button>; })}</div>
       {!filtered.length ? <div className={styles.empty}>No telemetry devices match these filters.</div> : null}
       {filtered.length ? <DeviceRegisterPagination
         onPageChange={setPage}
@@ -535,8 +540,9 @@ export function TelemetryDevicesWorkspace() {
             <div><span>Assigned machine</span><strong>{machineLabel(currentMachine)}</strong></div>
             <div><span>Controller state</span><strong>{selected.status}</strong></div>
           </section>
-          <section className={styles.controlSection} data-device-health-summary="v1"><div className={styles.sectionTitle}><span>Live state</span><h3>Device snapshot</h3></div><div className={styles.healthGrid}><div><span>Communication</span><strong>{selectedHealth?.label ?? 'Offline'}</strong><small>{selectedHealth?.key === 'online' ? 'Confirmed device contact within 30 min' : selectedHealth?.key === 'disabled' ? 'Controller is disabled' : selectedHealth?.contactAt ? 'No confirmed device contact in 30 min' : 'No telemetry contact has been recorded'}</small></div><div><span>Last contact</span><strong>{age(selectedHealth?.contactAt ?? null)}</strong><small>{formatDate(selectedHealth?.contactAt ?? null)}</small></div><div><span>Transport</span><strong>{transportLabel(selected.last_transport)}</strong><small>{transportDetail(selected)}</small></div><div><span>Signal</span><strong>{selected.last_transport ? <SignalStrengthIndicator cellularCsq={selected.cellular_csq} transport={selected.last_transport} wifiRssi={selected.wifi_rssi} /> : '—'}</strong><small>{selected.last_transport ? 'Active transport measurement' : 'Awaiting network telemetry'}</small></div><div><span>Configuration</span><strong>{selectedConfig?.label ?? 'Not reported'}</strong><small>{selectedConfig?.timestamp ? formatDate(selectedConfig.timestamp) : 'No device configuration has been queued'}</small></div><div><span>Data use · 30 days</span><strong>{formatBytes(selectedUsed)}</strong><small>{usageDetail(selectedUsage, selectedProjected)}</small></div><div><span>SIM balance</span><strong>{selectedPrepaid?.remaining_bytes != null ? formatBytes(selectedPrepaid.remaining_bytes) : 'Not reported'}</strong><small>{selectedPrepaid?.alert_level ?? 'No carrier status'}</small></div><div><span>Reporting mode</span><strong>{reportingMode}</strong><small>Telemetry aggregation cadence</small></div></div></section>
+          <section className={styles.controlSection} data-device-health-summary="v1"><div className={styles.sectionTitle}><span>Live state</span><h3>Device snapshot</h3></div><div className={styles.healthGrid}><div><span>Device connectivity</span><strong>{selectedHealth?.label ?? 'Unknown'}</strong><small>{selectedHealth?.reason}</small></div><div><span>Last contact</span><strong>{age(selectedHealth?.contactAt ?? null)}</strong><small>{formatDate(selectedHealth?.contactAt ?? null)}</small></div><div><span>Transport</span><strong>{transportLabel(selected.last_transport)}</strong><small>{transportDetail(selected)}</small></div><div><span>Signal</span><strong>{selected.last_transport ? <SignalStrengthIndicator cellularCsq={selected.cellular_csq} transport={selected.last_transport} wifiRssi={selected.wifi_rssi} /> : '—'}</strong><small>{selected.last_transport ? 'Active transport measurement' : 'Awaiting network telemetry'}</small></div><div><span>Configuration</span><strong>{selectedConfig?.label ?? 'Not reported'}</strong><small>{selectedConfig?.timestamp ? formatDate(selectedConfig.timestamp) : 'No device configuration has been queued'}</small></div><div><span>Data use · 30 days</span><strong>{formatBytes(selectedUsed)}</strong><small>{usageDetail(selectedUsage, selectedProjected)}</small></div><div><span>SIM balance</span><strong>{selectedPrepaid?.remaining_bytes != null ? formatBytes(selectedPrepaid.remaining_bytes) : 'Not reported'}</strong><small>{selectedPrepaid?.alert_level ?? 'No carrier status'}</small></div><div><span>Reporting mode</span><strong>{reportingMode}</strong><small>Telemetry aggregation cadence</small></div></div></section>
           <section className={styles.controlSection}><div className={styles.sectionTitle}><span>Aggregation</span><h3>Reporting</h3></div><label className={styles.field}><span>Counter mode</span><select value={reportingMode} onChange={(event) => setReportingMode(event.target.value as TelemetryMode)}><option value="live">Live</option><option value="daily">Daily</option><option value="monthly">Monthly</option></select></label></section>
+          <TelemetryHealthSummary className={styles.healthGrid} device={selected} now={statusNow} />
           <TelemetryConfigSyncPanel key={`${selected.id}:${selected.updated_at}`} deviceId={selected.id} />
         </div> : null}
 

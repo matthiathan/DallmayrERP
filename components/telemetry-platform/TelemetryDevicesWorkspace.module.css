@@ -941,3 +941,15 @@
     grid-template-columns: repeat(2,minmax(0,1fr));
   }
 }
+
+.delayed {
+  color: var(--platform-ink);
+  background: var(--dallmayr-cream);
+  border: 1px solid var(--platform-border);
+}
+
+.unknown,
+.never_seen {
+  color: var(--platform-ink);
+  background: var(--dallmayr-cream);
+}
