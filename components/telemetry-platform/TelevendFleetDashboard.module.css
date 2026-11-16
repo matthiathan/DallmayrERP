@@ -1,6 +1,6 @@
 .dashboard {
   display: grid;
-  gap: 10px;
+  gap: 20px;
   width: 100%;
   min-width: 0;
   color: #32322f;
@@ -10,19 +10,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 20px;
   min-height: 44px;
   padding: 0 10px;
   background: #fff;
   border: 1px solid #ddddda;
-  border-radius: 5px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, .025);
+  border-radius: 12px;
+  box-shadow: none;
 }
 
 .toolbarTitle {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
   min-width: 0;
 }
 
@@ -36,14 +36,14 @@
 .toolbarTitle strong {
   overflow: hidden;
   color: #2a2a27;
-  font-size: .78rem;
+  font-size: 0.8125rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .toolbarTitle span {
   color: #8a8a85;
-  font-size: .62rem;
+  font-size: 0.75rem;
 }
 
 .toolbarActions {
@@ -57,7 +57,7 @@
   align-items: center;
   gap: 5px;
   color: #858580;
-  font-size: .6rem;
+  font-size: 0.75rem;
   font-weight: 700;
 }
 
@@ -69,7 +69,7 @@
   border: 1px solid #d7d7d2;
   border-radius: 4px;
   font: inherit;
-  font-size: .64rem;
+  font-size: 0.75rem;
 }
 
 .toolbar select { padding: 0 24px 0 8px; }
@@ -91,8 +91,8 @@
   overflow: hidden;
   background: #fff;
   border: 1px solid #deded9;
-  border-radius: 5px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, .025);
+  border-radius: 12px;
+  box-shadow: none;
 }
 
 .metric::before {
@@ -111,7 +111,7 @@
 
 .metric span {
   color: #8b8b86;
-  font-size: .57rem;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: .025em;
   text-transform: uppercase;
@@ -127,7 +127,7 @@
 
 .metric small {
   color: #9a9a95;
-  font-size: .56rem;
+  font-size: 0.75rem;
   line-height: 1.2;
 }
 
@@ -135,15 +135,15 @@
   overflow: hidden;
   background: #fff;
   border: 1px solid #deded9;
-  border-radius: 5px;
-  box-shadow: 0 2px 7px rgba(0, 0, 0, .035);
+  border-radius: 12px;
+  box-shadow: none;
 }
 
 .attentionHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 20px;
   min-height: 42px;
   padding: 7px 10px;
   border-bottom: 1px solid #ecece8;
@@ -156,7 +156,7 @@
 
 .attentionHeader span {
   color: #999994;
-  font-size: .56rem;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -165,14 +165,14 @@
 .attentionHeader h2 {
   margin: 0;
   color: #2e2e2b;
-  font-size: .8rem;
+  font-size: 0.8125rem;
   font-weight: 780;
 }
 
 .attentionHeader strong {
   flex: 0 0 auto;
   color: #b5121b;
-  font-size: .68rem;
+  font-size: 0.75rem;
   font-weight: 800;
 }
 
@@ -211,7 +211,7 @@
 .attentionBody strong {
   overflow: hidden;
   color: #3c3c38;
-  font-size: .65rem;
+  font-size: 0.75rem;
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -222,7 +222,7 @@
   overflow: hidden;
   margin: 0;
   color: #94948f;
-  font-size: .56rem;
+  font-size: 0.75rem;
   line-height: 1.3;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -243,7 +243,7 @@
   background: #fff;
   border: 1px solid #dfdeda;
   border-radius: 3px;
-  font-size: .56rem;
+  font-size: 0.75rem;
   font-weight: 800;
   text-decoration: none;
   white-space: nowrap;
@@ -253,7 +253,7 @@
   min-height: 58px;
   padding: 17px 10px;
   color: #92928d;
-  font-size: .62rem;
+  font-size: 0.75rem;
   text-align: center;
 }
 
@@ -269,7 +269,7 @@
   color: #92928d;
   background: #fbfbf9;
   border-top: 1px solid #ecece8;
-  font-size: .57rem;
+  font-size: 0.75rem;
   text-align: center;
 }
 
@@ -285,15 +285,15 @@
   overflow: hidden;
   background: #fff;
   border: 1px solid #deded9;
-  border-radius: 5px;
-  box-shadow: 0 2px 7px rgba(0, 0, 0, .035);
+  border-radius: 12px;
+  box-shadow: none;
 }
 
 .cardHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 20px;
   min-height: 38px;
   padding: 6px 9px;
   border-bottom: 1px solid #ecece8;
@@ -313,7 +313,7 @@
 
 .cardHeader span {
   color: #999994;
-  font-size: .56rem;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -324,7 +324,7 @@
 .cardHeader h2 {
   margin: 0;
   color: #2e2e2b;
-  font-size: .78rem;
+  font-size: 0.8125rem;
   font-weight: 780;
 }
 
@@ -334,7 +334,7 @@
 .cardHeader a {
   flex: 0 0 auto;
   color: #b5121b;
-  font-size: .66rem;
+  font-size: 0.75rem;
   font-weight: 800;
   text-decoration: none;
 }
@@ -367,7 +367,7 @@
 .productHeader {
   min-height: 31px;
   color: #989893;
-  font-size: .55rem;
+  font-size: 0.75rem;
   font-weight: 800;
   border-bottom: 1px solid #ecece8;
 }
@@ -376,33 +376,33 @@
   min-height: 31px;
   color: #52524e;
   border-bottom: 1px solid #f0f0ed;
-  font-size: .62rem;
+  font-size: 0.75rem;
 }
 
 .productRow:last-child { border-bottom: 0; }
 .productRow > * { min-width: 0; }
-.productRow b { color: #92928d; font-size: .57rem; }
+.productRow b { color: #92928d; font-size: 0.75rem; }
 .productName { overflow: hidden; color: #40403c; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .productValue { text-align: right; font-weight: 800; color: #333330; }
-.productTrend { text-align: right; color: #58a953; font-size: .59rem; font-weight: 750; }
+.productTrend { text-align: right; color: #58a953; font-size: 0.75rem; font-weight: 750; }
 .productTrendDown { color: #c9151e; }
 
 .cardFooter {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 16px;
   min-height: 30px;
   padding: 5px 8px;
   color: #969691;
   background: #fbfbf9;
   border-top: 1px solid #ecece8;
-  font-size: .56rem;
+  font-size: 0.75rem;
 }
 
 .cardFooter strong {
   color: #3c3c39;
-  font-size: .62rem;
+  font-size: 0.75rem;
 }
 
 .cardFooter em {
@@ -414,7 +414,7 @@
 .alarmGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 16px;
   padding: 12px 10px 11px;
 }
 
@@ -458,7 +458,7 @@
 
 .ringCenter span {
   color: #989893;
-  font-size: .55rem;
+  font-size: 0.75rem;
 }
 
 .ringCenter strong {
@@ -475,7 +475,7 @@
   gap: 3px;
   width: 100%;
   color: #8a8a85;
-  font-size: .54rem;
+  font-size: 0.75rem;
 }
 
 .ringLegend span {
@@ -501,14 +501,14 @@
 
 .gaugeCard {
   display: grid;
-  gap: 8px;
+  gap: 16px;
   min-height: 115px;
   padding: 10px;
 }
 
 .gaugeTitle {
   color: #484844;
-  font-size: .68rem;
+  font-size: 0.75rem;
   font-weight: 750;
 }
 
@@ -554,13 +554,13 @@
 
 .gaugeValue span {
   color: #9a9a95;
-  font-size: .53rem;
+  font-size: 0.75rem;
 }
 
 .telemetryRow {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: 16px;
 }
 
 .telemetryCard {
@@ -570,26 +570,26 @@
   padding: 9px;
   background: #fff;
   border: 1px solid #deded9;
-  border-radius: 5px;
+  border-radius: 12px;
 }
 
 .telemetryCard header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 16px;
 }
 
 .telemetryCard header span {
   color: #90908b;
-  font-size: .57rem;
+  font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
 }
 
 .telemetryCard header strong {
   color: #373733;
-  font-size: .68rem;
+  font-size: 0.75rem;
 }
 
 .meter {
@@ -609,7 +609,7 @@
 .telemetryCard small {
   overflow: hidden;
   color: #989893;
-  font-size: .55rem;
+  font-size: 0.75rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -623,7 +623,7 @@
   display: grid;
   grid-template-columns: 5px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
   min-height: 34px;
   padding: 4px 2px;
   border-bottom: 1px solid #f0f0ed;
@@ -633,17 +633,17 @@
 .activityRow > i { width: 5px; height: 24px; background: #58b957; border-radius: 2px; }
 .activityRow > div { display: grid; min-width: 0; gap: 1px; }
 .activityRow strong,.activityRow span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.activityRow strong { color: #444440; font-size: .62rem; }
-.activityRow span { color: #93938e; font-size: .54rem; }
-.activityRow > b { color: #b5121b; font-size: .66rem; }
+.activityRow strong { color: #444440; font-size: 0.75rem; }
+.activityRow span { color: #93938e; font-size: 0.75rem; }
+.activityRow > b { color: #b5121b; font-size: 0.75rem; }
 
 .error {
   padding: 9px 10px;
   color: #8c171c;
   background: #fff0f0;
   border: 1px solid #edc9cb;
-  border-radius: 5px;
-  font-size: .68rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
 }
 
 .empty {
@@ -652,7 +652,7 @@
   min-height: 160px;
   padding: 18px;
   color: #999994;
-  font-size: .65rem;
+  font-size: 0.75rem;
   text-align: center;
 }
 
@@ -662,7 +662,7 @@
 }
 
 @media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {
-  .dashboard { gap: 8px; }
+  .dashboard { gap: 16px; }
   .toolbar { min-height: 40px; padding: 5px 7px; }
   .toolbarTitle span { display: none; }
   .toolbarActions label > span { display: none; }
@@ -677,10 +677,10 @@
 }
 
 @media (max-width: 430px) {
-  .toolbarTitle strong { font-size: .7rem; }
+  .toolbarTitle strong { font-size: 0.75rem; }
   .toolbarActions button { padding-inline: 7px; }
   .productHeader,.productRow { grid-template-columns: 18px minmax(0, 1fr) 58px 48px; gap: 4px; }
-  .productTrend { font-size: .53rem; }
+  .productTrend { font-size: 0.75rem; }
   .alarmGrid { gap: 4px; padding-inline: 6px; }
   .ring { width: 108px; }
   .ring::after { inset: 12px; }
@@ -712,7 +712,7 @@
   letter-spacing: -.035em;
   line-height: 1;
 }
-.toolbarTitle span { color: #728197; font-size: .72rem; }
+.toolbarTitle span { color: #728197; font-size: 0.75rem; }
 .toolbarActions label { color: #718096; }
 .toolbar select,
 .toolbar button {
@@ -724,26 +724,26 @@
 }
 .toolbar button { color: #0758d6; font-weight: 780; }
 
-.metricsStrip { gap: 10px; }
+.metricsStrip { gap: 20px; }
 .metric {
   min-height: 104px;
   padding: 13px 14px 11px 16px;
   border-color: #dbe4ef;
   border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(18,43,72,.04), 0 8px 20px rgba(18,43,72,.035);
+  box-shadow: none;
 }
 .metric::before { width: 0; }
 .metricBlue { background: linear-gradient(180deg, #fff 0%, #fbfdff 100%); }
-.metric span { color: #687b91; font-size: .63rem; letter-spacing: 0; text-transform: none; }
+.metric span { color: #687b91; font-size: 0.75rem; letter-spacing: 0; text-transform: none; }
 .metric strong { color: #0d2d55; font-size: clamp(1.45rem, 2vw, 1.9rem); }
-.metric small { color: #8b99aa; font-size: .6rem; }
+.metric small { color: #8b99aa; font-size: 0.75rem; }
 
 .attentionCard,
 .card,
 .telemetryCard {
   border-color: #dbe4ef;
   border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(18,43,72,.035), 0 8px 20px rgba(18,43,72,.03);
+  box-shadow: none;
 }
 .attentionHeader,
 .cardHeader { border-bottom-color: #e6edf5; }
@@ -785,3 +785,37 @@
   .toolbarTitle strong { font-size: 1.45rem; }
   .toolbarTitle span { display: block; }
 }
+
+.overviewGrid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr); gap: 20px; align-items: start; }
+.quickAccess { display: grid; gap: 14px; padding: 22px; background: #fff; border: 1px solid #d8dfe8; border-radius: 12px; }
+.quickAccess h2 { margin: 0; font-size: 1.125rem; font-weight: 650; }
+.quickAccess p, .quickAccess small { margin: 0; color: #53627a; font-size: .8125rem; line-height: 1.6; }
+.quickAccess a { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 10px 14px; color: #243b59; border: 1px solid #7b8da5; border-radius: 8px; font-size: .8125rem; font-weight: 600; text-decoration: none; }
+.quickAccess a:first-of-type { color: #fff; background: #071a33; border-color: #071a33; }
+.quickAccess a:hover { box-shadow: inset 0 0 0 1px currentColor; }
+.quickAccess a:focus-visible { outline: 3px solid #0758d6; outline-offset: 3px; }
+.dashboard { gap: 24px; }
+.toolbar { gap: 20px; flex-wrap: wrap; }
+.toolbarTitle strong { font-weight: 650; line-height: 1.2; }
+.toolbarTitle span { font-size: .875rem; color: #53627a; }
+.toolbarActions { flex-wrap: wrap; }
+.toolbar button, .toolbar select { min-height: 44px; font-size: .8125rem; }
+.attentionHeader, .cardHeader { padding: 20px 22px; }
+.attentionHeader h2, .cardHeader h2 { font-size: 1.125rem; font-weight: 650; }
+.attentionRow { padding: 18px 22px; gap: 12px; }
+.attentionBody strong { font-size: .875rem; }
+.attentionActions { flex-wrap: wrap; }
+.attentionActions a { min-height: 36px; display: inline-flex; align-items: center; }
+.metricsStrip { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.metric { padding: 20px; min-height: 112px; }
+.metric strong { font-size: 1.875rem; font-weight: 650; }
+@media (max-width: 1150px) { .overviewGrid { grid-template-columns: 1fr; } }
+@media (max-width: 760px) {
+  .metricsStrip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .toolbarTitle span { max-width: 38ch; }
+  .attentionRow { flex-wrap: wrap; padding-inline: 16px; }
+  .attentionActions { width: 100%; }
+}
+
+.quickAccess a { color: #243b59 !important; }
+.quickAccess a:first-of-type { color: #fff !important; }

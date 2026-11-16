@@ -56,8 +56,8 @@ export function DesktopNavigationRail({
           </span>
           {!collapsed ? (
             <span className={styles.brandCopy}>
-              <strong>Dallmayr South Africa</strong>
-              <small>Machine telemetry</small>
+              <strong>Dallmayr</strong>
+              <small>Fleet workspace</small>
             </span>
           ) : null}
         </Link>
@@ -74,28 +74,37 @@ export function DesktopNavigationRail({
       </div>
 
       <nav aria-label="Machine telemetry navigation" className={styles.sidebarNav}>
-        {sections.map((section) => (
-          <section className={styles.navGroup} key={section.heading}>
-            {!collapsed ? <h2 className={styles.navHeading}>{section.heading}</h2> : null}
-            {section.items.map((item) => {
-              const active = activeHref === item.href;
-              return (
-                <Link
-                  aria-current={active ? 'page' : undefined}
-                  className={`${styles.navLink} dallmayr-sidebar-link ${active ? styles.navLinkActive : ''}`}
-                  href={item.href}
-                  key={item.href}
-                  title={item.label}
-                >
-                  <span aria-hidden="true" className={styles.navIcon}>
-                    <NavigationIcon kind={navigationIconKind(item.label, item.href)} />
-                  </span>
-                  {!collapsed ? <span className={styles.navLabel}>{item.label}</span> : null}
-                </Link>
-              );
-            })}
-          </section>
-        ))}
+        {sections.map((section) => {
+          const links = section.items.map((item) => {
+            const active = activeHref === item.href;
+            return (
+              <Link
+                aria-current={active ? 'page' : undefined}
+                className={`${styles.navLink} dallmayr-sidebar-link ${active ? styles.navLinkActive : ''}`}
+                href={item.href}
+                key={item.href}
+                title={item.label}
+              >
+                <span aria-hidden="true" className={styles.navIcon}>
+                  <NavigationIcon kind={navigationIconKind(item.label, item.href)} />
+                </span>
+                {!collapsed ? <span className={styles.navLabel}>{item.label}</span> : null}
+              </Link>
+            );
+          });
+          const primary = section.heading === 'Workspace' || section.heading === 'Field experience';
+          return primary || collapsed ? (
+            <section className={styles.navGroup} key={section.heading}>
+              {!collapsed ? <h2 className={styles.navHeading}>{section.heading}</h2> : null}
+              {links}
+            </section>
+          ) : (
+            <details className={styles.navGroup} key={section.heading} open={section.items.some((item) => item.href === activeHref)}>
+              <summary className={styles.navDisclosure}>{section.heading}</summary>
+              {links}
+            </details>
+          );
+        })}
 
         {pinnedItems.length > 0 ? (
           <section className={styles.navGroup}>

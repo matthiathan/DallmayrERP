@@ -424,7 +424,7 @@ export function MachineDetail({ machineId }: { machineId: string }) {
       {loading && !machine ? <HamsterLoader label="Loading machine dashboard" /> : null}
 
       {machine ? <>
-        <TelemetryHealthSummary className={styles.actionFacts} device={device ? { ...device, machine_id: machineId } : null} now={updated?.getTime() ?? 0} />
+        <TelemetryHealthSummary className={styles.healthSummary} device={device ? { ...device, machine_id: machineId } : null} now={updated?.getTime() ?? 0} />
         <nav className={styles.tabs} aria-label="Machine dashboard sections">
           {([
             ['overview', 'Overview'],

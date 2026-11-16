@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { HamsterLoader } from '@/components/ui/HamsterLoader';
 import { ComparisonLineChart, type ComparisonPoint } from './ComparisonLineChart';
@@ -224,6 +225,8 @@ function attentionDetail(item: FleetAttentionItem) {
 }
 
 export function TelevendFleetDashboard() {
+  const { businessProfile } = useAuth();
+  const isClient = businessProfile?.user.account_scope === 'client';
   const [period, setPeriod] = useState<Period>('week');
   const [data, setData] = useState<ViewData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -416,7 +419,7 @@ export function TelevendFleetDashboard() {
   return (
     <section className={styles.dashboard} data-fleet-dashboard="televend-v3">
       <div className={styles.toolbar}>
-        <div className={styles.toolbarTitle}><i /><div><strong>Dashboard</strong><span>Overview of your fleet performance, sales, connectivity and operational health.</span></div></div>
+        <div className={styles.toolbarTitle}><i /><div><strong>Fleet overview</strong><span>Start with the machines and work that need your attention.</span></div></div>
         <div className={styles.toolbarActions}>
           <label><span>Period</span><select value={period} onChange={(event) => setPeriod(event.target.value as Period)}>{periods.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
           <button disabled={!locations.length} onClick={exportFleetSnapshot} type="button">Export fleet CSV</button>
@@ -428,18 +431,12 @@ export function TelevendFleetDashboard() {
       {loading && !data ? <HamsterLoader label="Loading fleet overview" /> : null}
 
       {data ? <>
-        <section className={styles.metricsStrip} aria-label="Fleet headline metrics">
-          <Metric helper={`${reportingDevices.toLocaleString('en-ZA')} reporting devices`} label="Total machines" tone="blue" value={machineCount.toLocaleString('en-ZA')} />
-          <Metric helper={`${availability.toFixed(0)}% of reporting fleet`} label="Devices online" tone="green" value={online.toLocaleString('en-ZA')} />
-          <Metric helper={`${delayed} delayed · ${unknown} unknown / never seen`} label="Devices offline" tone={offline ? 'red' : 'green'} value={offline.toLocaleString('en-ZA')} />
-          <Metric helper={`${periodChange >= 0 ? '+' : ''}${periodChange.toFixed(1)}% vs previous`} label="Vends" tone="blue" value={units.toLocaleString('en-ZA')} />
-          <Metric helper={`${critical} critical · ${warning} warning`} label="Active faults" tone={active ? 'red' : 'green'} value={active.toLocaleString('en-ZA')} />
-          <Metric helper={`${modemCoverage}% modem coverage`} label="Data usage" tone="gold" value={bytes(observed)} />
-        </section>
 
+
+        <div className={styles.overviewGrid}>
         <section className={styles.attentionCard} aria-label="Fleet attention queue" data-fleet-attention-queue="v1">
           <header className={styles.attentionHeader}>
-            <div><span>Fleet attention queue</span><h2>Operational exceptions</h2></div>
+            <div><span>Fleet attention queue</span><h2>Needs attention</h2></div>
             <strong>{attentionUnavailable ? 'Unavailable' : `${attentionItems.length.toLocaleString('en-ZA')} ${attentionItems.length === 1 ? 'item' : 'items'}`}</strong>
           </header>
           {attentionUnavailable ? <div className={styles.attentionEmpty}>Current device attention could not be loaded. <Link href="/telemetry/devices">Open device management ›</Link></div> : attentionItems.length ? <div className={styles.attentionList}>{attentionItems.slice(0, 8).map((item) => {
@@ -461,6 +458,24 @@ export function TelevendFleetDashboard() {
             </article>;
           })}</div> : <div className={styles.attentionEmpty}>No active connectivity, machine communication, reporting, configuration, SIM-balance or signal exceptions.</div>}
           {attentionItems.length > 8 ? <footer className={styles.attentionFooter}>Showing the first 8 of {attentionItems.length.toLocaleString('en-ZA')} items. <Link href="/telemetry/devices">Review all devices ›</Link></footer> : null}
+        </section>
+          <aside className={styles.quickAccess} aria-label="Common fleet tasks">
+            <h2>Keep the fleet moving</h2>
+            <p>Open assigned work or find the machine you need.</p>
+            {!isClient ? <Link className="button" href="/maintenance">Manage maintenance <span aria-hidden="true">→</span></Link> : null}
+            <Link className="button secondary" href="/machines">Find a machine <span aria-hidden="true">→</span></Link>
+            <Link className="button secondary" href="/telemetry/reports">Sales &amp; reports <span aria-hidden="true">→</span></Link>
+            <small>Device contact, machine communication and sales completeness are independent indicators.</small>
+          </aside>
+        </div>
+
+        <section className={styles.metricsStrip} aria-label="Fleet headline metrics">
+          <Metric helper={`${reportingDevices.toLocaleString('en-ZA')} reporting devices`} label="Total machines" tone="blue" value={machineCount.toLocaleString('en-ZA')} />
+          <Metric helper={`${availability.toFixed(0)}% of reporting fleet`} label="Devices online" tone="green" value={online.toLocaleString('en-ZA')} />
+          <Metric helper={`${delayed} delayed · ${unknown} unknown / never seen`} label="Devices offline" tone={offline ? 'red' : 'green'} value={offline.toLocaleString('en-ZA')} />
+          <Metric helper={`${periodChange >= 0 ? '+' : ''}${periodChange.toFixed(1)}% vs previous`} label="Vends" tone="blue" value={units.toLocaleString('en-ZA')} />
+          <Metric helper={`${critical} critical · ${warning} warning`} label="Active faults" tone={active ? 'red' : 'green'} value={active.toLocaleString('en-ZA')} />
+          <Metric helper={`${modemCoverage}% modem coverage`} label="Data usage" tone="gold" value={bytes(observed)} />
         </section>
 
         <section className={styles.telemetryRow} aria-label="Fleet operational readiness">

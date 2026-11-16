@@ -757,3 +757,40 @@
     background: #f3f3f0 !important;
   }
 }
+
+/* Fleet workspace: the desktop rail stays quiet while daily tasks remain visible. */
+.navDisclosure {
+  padding: 12px 10px;
+  color: #d0dae7;
+  font-size: .8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.navDisclosure:focus-visible { outline: 3px solid #b39960; outline-offset: -3px; }
+.navDisclosure:hover { background: #132b49; border-radius: 8px; }
+.navGroup[open] > .navDisclosure { color: #fff; }
+.navHeading { color: #aab8cb; font-size: .6875rem; letter-spacing: .1em; }
+.navGroup + .navGroup { border-top-color: #354358; }
+.navLink { min-height: 46px; padding-block: 9px; }
+.navLabel { font-size: .875rem; font-weight: 500; }
+.navLinkActive .navLabel { font-weight: 600; }
+.sidebarNav { padding: 20px 12px; }
+.sidebarBrand { min-height: 72px; }
+.sidebar { grid-template-rows: 72px minmax(0, 1fr) auto !important; }
+.brandMark { width: 48px; height: 42px; flex-basis: 48px; background: transparent; }
+.brandCopy strong { font-size: .75rem; }
+.brandCopy small { font-size: .6875rem; color: #c5cfde; }
+.sidebarFooter { background: #071a33; border-top-color: #354358; }
+.countryChip { color: #c5cfde; background: transparent; border-color: #354358; font-size: .75rem; }
+.pageContext span { font-size: .6875rem; color: #53627a; }
+.pageContext strong { font-size: .875rem; font-weight: 600; }
+.headerChip { font-size: .75rem; }
+.headerChip i { display: none; }
+.desktopShell { grid-template-rows: 72px minmax(0, 1fr) !important; }
+.topbar { height: 72px !important; padding-inline: 24px !important; }
+.main { padding: 30px 32px 40px !important; }
+@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  .desktopShell { grid-template-rows: auto !important; }
+  .sidebar { display: none !important; }
+  .main { padding: 24px 16px calc(84px + env(safe-area-inset-bottom)) !important; }
+}

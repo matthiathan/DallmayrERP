@@ -7,35 +7,40 @@ const CLIENT_ALLOWED_PATHS = new Set(['/', '/machines', '/telemetry', '/telemetr
 
 export const telemetryNavigationSections: NavSection[] = [
   {
-    heading: 'Monitoring',
+    heading: 'Workspace',
     items: [
       { href: '/', label: 'Fleet Overview', code: 'FLT01', roles: 'all', description: 'Fleet health, exceptions, faults and current connectivity.' },
       { href: '/machines', label: 'Machines', code: 'FLT02', roles: 'all', description: 'Every machine and its connected telemetry device.' },
-      { href: '/customers', label: 'Customers / Sites', code: 'FLT04', roles: 'all', description: 'Customer hierarchy, sites, installed machines and service context.' },
-      { href: '/archive', label: 'Archive', code: 'FLT05', roles: ['admin', 'operations', 'technician', 'road_technician'], description: 'Retired machines and telemetry devices with history and controlled reactivation.' },
-      { href: '/alerts', label: 'Alerts', code: 'FLT03', roles: 'all', description: 'Active faults, ownership, acknowledgement and resolution workflow.' },
       { href: '/maintenance', label: 'Maintenance', code: 'OPS02', roles: 'all', description: 'Service jobs, preventive maintenance, technician workload and completion.' },
-      { href: '/technician', label: 'Technician', code: 'OPS03', roles: ['admin', 'operations', 'technician', 'road_technician'], description: 'Field-focused assigned work, machine context, diagnostics and safe completion.' },
+      { href: '/alerts', label: 'Alerts', code: 'FLT03', roles: 'all', description: 'Active faults, ownership, acknowledgement and resolution workflow.' },
     ],
   },
   {
-    heading: 'Telemetry',
+    heading: 'Sales & Reports',
     items: [
       { href: '/telemetry', label: 'Analytics', code: 'TEL01', roles: 'all', description: 'Explore trends, comparisons and performance signals.' },
       { href: '/telemetry/reports', label: 'Reports & Exports', code: 'TEL05', roles: 'all', description: 'Structured operational tables, audit views and exports.' },
-      { href: '/telemetry/test-center', label: 'Test Center', code: 'TEL04', roles: 'all', description: 'Temporary remote console and commissioning diagnostics.' },
-      { href: '/map', label: 'Machine Map', code: 'TEL03', roles: 'all', description: 'Last known device locations, health and movement.' },
+      { href: '/products', label: 'Products', code: 'PRD01', roles: 'all', description: 'Product catalog, machine mappings and unmapped selections.' },
     ],
   },
   {
-    heading: 'Management',
+    heading: 'Administration',
     items: [
-      { href: '/products', label: 'Products', code: 'PRD01', roles: 'all', description: 'Product catalog, machine mappings and unmapped selections.' },
+      { href: '/customers', label: 'Customers / Sites', code: 'FLT04', roles: 'all', description: 'Customer hierarchy, sites, installed machines and service context.' },
       { href: '/telemetry/devices', label: 'Device Management', code: 'TEL02', roles: 'all', description: 'Device assignment, connectivity, reporting, location and SIM settings.' },
       { href: '/machine-profiles', label: 'Machine Profiles', code: 'PRF01', roles: ['admin'], description: 'Decoder profiles, product mappings, fault rules and rollout evidence.' },
+      { href: '/map', label: 'Machine Map', code: 'TEL03', roles: 'all', description: 'Last known device locations, health and movement.' },
+      { href: '/telemetry/test-center', label: 'Test Center', code: 'TEL04', roles: 'all', description: 'Temporary remote console and commissioning diagnostics.' },
+      { href: '/archive', label: 'Archive', code: 'FLT05', roles: ['admin', 'operations', 'technician', 'road_technician'], description: 'Retired machines and telemetry devices with history and controlled reactivation.' },
       { href: '/administration', label: 'Administration', code: 'ADM01', roles: ['admin'], description: 'Users, roles, profiles, provisioning, firmware, audit and settings.' },
       { href: '/approvals', label: 'Approvals', code: 'APR01', roles: ['admin'], description: 'Approval evidence, decision history and risk-policy prerequisites.' },
       { href: '/factory', label: 'Factory', code: 'FAC01', roles: ['admin'], description: 'Factory device readiness, provisioning evidence, testing and QA prerequisites.' },
+    ],
+  },
+  {
+    heading: 'Field experience',
+    items: [
+      { href: '/technician', label: 'Technician', code: 'OPS03', roles: ['admin', 'operations', 'technician', 'road_technician'], description: 'Field-focused assigned work, machine context, diagnostics and safe completion.' },
     ],
   },
 ];
