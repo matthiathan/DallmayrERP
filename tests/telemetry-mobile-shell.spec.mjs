@@ -225,7 +225,7 @@ test('specialist telemetry workspaces remain usable and bounded on a phone', asy
     ['/telemetry/test-center', 'Test Center', '[data-specialist-workspace="televend-v3"]'],
     ['/map', 'Map', '[data-location-control-owner="device-management"]'],
     ['/products', 'Products', '[data-specialist-workspace="televend-v3"]'],
-    ['/telemetry/devices', 'Device Management', '[data-telemetry-devices="v4"]'],
+    ['/telemetry/devices', 'Devices', '[data-telemetry-devices="v4"]'],
   ];
 
   for (const [pathname, mobileTitle, ownerSelector] of routes) {
