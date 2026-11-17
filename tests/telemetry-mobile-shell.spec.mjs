@@ -176,7 +176,7 @@ test('mobile telemetry shell exposes the four primary fleet routes without deskt
   await expectMobilePageTitle(page, 'Machines');
   await expect(page.locator('.telemetry-mobile-bottom-nav')).toBeVisible();
   await expect(page.locator('.telemetry-mobile-bottom-nav a[href="/machines"]')).toHaveAttribute('aria-current', 'page');
-  for (const href of ['/', '/machines', '/alerts', '/maintenance']) {
+  for (const href of ['/', '/machines', '/telemetry/reports', '/map']) {
     await expect(page.locator(`.telemetry-mobile-bottom-nav a[href="${href}"]`)).toHaveCount(1);
   }
   await expect(page.locator('#mobile-account-menu-target')).toHaveCount(1);
@@ -223,7 +223,7 @@ test('rebuilt Analytics comparison chart supports tap-to-pin detail on mobile', 
 test('specialist telemetry workspaces remain usable and bounded on a phone', async ({ browser }) => {
   const routes = [
     ['/telemetry/test-center', 'Test Center', '[data-specialist-workspace="televend-v3"]'],
-    ['/map', 'Machine Map', '[data-location-control-owner="device-management"]'],
+    ['/map', 'Map', '[data-location-control-owner="device-management"]'],
     ['/products', 'Products', '[data-specialist-workspace="televend-v3"]'],
     ['/telemetry/devices', 'Device Management', '[data-telemetry-devices="v4"]'],
   ];
