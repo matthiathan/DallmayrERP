@@ -52,7 +52,9 @@
     "mobile:bundle:android": "node scripts/build-android-release.mjs",
     "mobile:install:android:release": "node scripts/install-android-release.mjs",
     "mobile:acceptance:android:record": "node scripts/create-android-acceptance-record.mjs",
-    "native:check": "node --check scripts/check-android-release-preflight.mjs && node --check scripts/build-android-release.mjs && node --check scripts/install-android-release.mjs && node --check scripts/create-android-acceptance-record.mjs && node scripts/check-native-readiness.mjs"
+    "native:check": "node --check scripts/check-android-release-preflight.mjs && node --check scripts/build-android-release.mjs && node --check scripts/install-android-release.mjs && node --check scripts/create-android-acceptance-record.mjs && node scripts/check-native-readiness.mjs",
+    "firmware:generate:v653": "node scripts/generate-telemetry-v6-8-53.mjs",
+    "firmware:test:transport": "g++ -std=c++17 tests/firmware/cellular-first.cpp -o /tmp/dallmayr-cellular-first-test && /tmp/dallmayr-cellular-first-test && g++ -std=c++17 tests/firmware/ota-boot.cpp -o /tmp/dallmayr-ota-boot-test && /tmp/dallmayr-ota-boot-test"
   },
   "dependencies": {
     "@capacitor/android": "8.5.0",
@@ -68,6 +70,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "8.5.0",
+    "@electric-sql/pglite": "0.5.16",
     "@electron-forge/cli": "7.11.2",
     "@electron-forge/maker-dmg": "7.11.2",
     "@electron-forge/maker-squirrel": "7.11.2",

@@ -10,6 +10,7 @@ on:
       - 'scripts/generate-telemetry-v6-8-50-release.mjs'
       - 'scripts/generate-telemetry-v6-8-51.mjs'
       - 'scripts/generate-telemetry-v6-8-52.mjs'
+      - 'scripts/generate-telemetry-v6-8-53.mjs'
       - '.github/workflows/telemetry-firmware.yml'
   pull_request:
     paths:
@@ -20,6 +21,7 @@ on:
       - 'scripts/generate-telemetry-v6-8-50-release.mjs'
       - 'scripts/generate-telemetry-v6-8-51.mjs'
       - 'scripts/generate-telemetry-v6-8-52.mjs'
+      - 'scripts/generate-telemetry-v6-8-53.mjs'
       - '.github/workflows/telemetry-firmware.yml'
   workflow_dispatch:
 
@@ -39,8 +41,8 @@ jobs:
         with:
           node-version: 22
 
-      - name: Generate V6.8.52 firmware
-        run: node scripts/generate-telemetry-v6-8-52.mjs
+      - name: Generate V6.8.53 firmware
+        run: node scripts/generate-telemetry-v6-8-53.mjs
 
       - name: Install Arduino CLI
         uses: arduino/setup-arduino-cli@v2
@@ -48,15 +50,15 @@ jobs:
       - name: Install ESP32 core and ArduinoJson
         run: |
           arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
-          arduino-cli core install esp32:esp32 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
-          arduino-cli lib install ArduinoJson
+          arduino-cli core install esp32:esp32@3.3.12 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli lib install ArduinoJson@7.3.2
 
       - name: Compile ESP32-S3 telemetry firmware
         run: >-
           arduino-cli compile
           --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=opi
           --warnings all
-          firmware/DallmayrTelemetryV6_8_52
+          firmware/DallmayrTelemetryV6_8_53
 
       - name: Compile Air780EU cellular diagnostic
         run: >-

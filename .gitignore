@@ -23,3 +23,14 @@ android/.gradle/
 android/**/build/
 ios/**/build/
 ios/DerivedData/
+
+# Reproducible firmware output and local tools
+/bin/
+/supabase/.temp/
+/firmware/DallmayrTelemetryV6_8_53/
+/firmware/ota/main/generated/
+/firmware/ota/build/
+/firmware/ota/managed_components/
+/firmware/ota/sdkconfig
+/firmware/ota/sdkconfig.old
+/firmware/ota/dependencies.lock
