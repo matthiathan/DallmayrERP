@@ -208,6 +208,20 @@ Deno.serve(async (request: Request) => {
     return jsonResponse(responseBody);
   }
 
+  // The device authenticates above before it can acknowledge its own update.
+  if (payload.type === 'firmware_update_status') {
+    const report = payload.firmware_update;
+    if (!report || typeof report !== 'object' || Array.isArray(report)) return jsonResponse({accepted:false,message:'Firmware status is required.'},400);
+    const { data, error } = await supabase.rpc('record_telemetry_firmware_status',{p_device_id:device.id,p_report:report});
+    if (error) return jsonResponse({accepted:false,message:'Firmware status was not accepted.'},400);
+    return jsonResponse(data);
+  }
+  let firmwareStatusWarning: string | null = null;
+  if (payload.type === 'heartbeat' && payload.firmware_update && typeof payload.firmware_update === 'object') {
+    const { error } = await supabase.rpc('record_telemetry_firmware_status',{p_device_id:device.id,p_report:payload.firmware_update});
+    if (error) firmwareStatusWarning = 'Firmware status was not accepted; device contact is still recorded.';
+  }
+
   let machineLink: unknown = null;
   const machineSerial = typeof payload.machine_serial === 'string' ? payload.machine_serial.trim().slice(0, 160) : '';
   if (machineSerial && !device.machine_id && normalizedSerial(machineSerial) !== normalizedSerial(device.reported_machine_serial)) {
@@ -372,6 +386,7 @@ Deno.serve(async (request: Request) => {
 
   return jsonResponse({
     ...responseBody,
+    firmware_update_warning: firmwareStatusWarning,
     data_usage: usageError
       ? { recorded: false, message: 'Data-usage recording is temporarily unavailable.' }
       : usageResult,

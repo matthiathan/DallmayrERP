@@ -211,7 +211,7 @@ export function TelemetryDevicesWorkspace() {
   const [machineId, setMachineId] = useState('');
   const [machineSearch, setMachineSearch] = useState('');
   const [deviceStatus, setDeviceStatus] = useState<DeviceStatus>('active');
-  const [transport, setTransport] = useState<TransportPreference>('auto');
+  const [transport, setTransport] = useState<TransportPreference>('cellular');
   const [wifiEnabled, setWifiEnabled] = useState(true);
   const [cellularEnabled, setCellularEnabled] = useState(true);
   const [reportingMode, setReportingMode] = useState<TelemetryMode>('live');
@@ -329,9 +329,9 @@ export function TelemetryDevicesWorkspace() {
     if (!selected) return;
     setMachineId(selected.machine_id ?? '');
     setDeviceStatus(selected.status === 'disabled' ? 'disabled' : 'active');
-    setTransport(selected.transport_preference ?? 'auto');
+    setTransport('cellular');
     setWifiEnabled(selected.wifi_enabled ?? true);
-    setCellularEnabled(selected.cellular_enabled ?? true);
+    setCellularEnabled(true);
     setReportingMode(modes[selected.id] ?? 'live');
     setMasterPolarity(selected.mdb_master_polarity ?? 'auto');
     setSlavePolarity(selected.mdb_slave_polarity ?? 'auto');
@@ -548,7 +548,7 @@ export function TelemetryDevicesWorkspace() {
 
         {activeTab === 'assignment' ? <div data-device-tab="assignment"><section className={styles.controlSection}><div className={styles.sectionTitle}><span>Assignment</span><h3>Machine link</h3></div><div className={styles.currentMachine}>{machineLabel(currentMachine)}</div><form className={styles.machineSearch} onSubmit={searchMachines}><input placeholder="Machine name, serial or asset tag" value={machineSearch} onChange={(event) => setMachineSearch(event.target.value)} /><button disabled={searchingMachines} type="submit">{searchingMachines ? 'Searching…' : 'Find'}</button></form>{machineOptions.length ? <select value={machineId} onChange={(event) => setMachineId(event.target.value)}><option value="">Unassign device</option>{machineOptions.map((machine) => <option key={machine.id} value={machine.id}>{machineLabel(machine)}</option>)}</select> : <button className={styles.unassign} onClick={() => setMachineId('')} type="button">Clear assignment</button>}</section></div> : null}
 
-        {activeTab === 'connectivity' ? <div data-device-tab="connectivity"><section className={styles.controlSection}><div className={styles.sectionTitle}><span>Connectivity</span><h3>Transport control</h3></div><label className={styles.field}><span>Preferred network</span><select value={transport} onChange={(event) => setTransport(event.target.value as TransportPreference)}><option value="auto">Auto · Wi-Fi first</option><option value="wifi">Wi-Fi preferred</option><option value="cellular">Cellular preferred</option></select></label><div className={styles.switchRow}><label><input checked={wifiEnabled} onChange={(event) => setWifiEnabled(event.target.checked)} type="checkbox" /><span>Wi-Fi enabled</span></label><label><input checked={cellularEnabled} onChange={(event) => setCellularEnabled(event.target.checked)} type="checkbox" /><span>Cellular enabled</span></label></div></section></div> : null}
+        {activeTab === 'connectivity' ? <div data-device-tab="connectivity"><section className={styles.controlSection}><div className={styles.sectionTitle}><span>Connectivity</span><h3>Transport control</h3></div><label className={styles.field}><span>Preferred network</span><select value="cellular" disabled><option value="cellular">Cellular first · Wi-Fi fallback</option></select></label><div className={styles.switchRow}><label><input checked={wifiEnabled} onChange={(event) => setWifiEnabled(event.target.checked)} type="checkbox" /><span>Wi-Fi enabled</span></label><label><input checked disabled type="checkbox" /><span>Cellular always enabled</span></label></div></section></div> : null}
 
         {activeTab === 'mdb' ? <div data-device-tab="mdb"><section className={styles.controlSection} data-mdb-pin-control="true"><div className={styles.sectionTitle}><span>Passive MDB</span><h3>Signal & pin order</h3></div><div className={styles.pinDiagram}><div className={!pinSwap ? styles.pinActive : undefined}><b>GPIO4</b><span>{pinSwap ? 'Master-RX' : 'Master-TX'}</span><small>{pinSwap ? 'Yellow / MDB pin 4' : 'Green / MDB pin 5'}</small></div><div className={pinSwap ? styles.pinActive : undefined}><b>GPIO5</b><span>{pinSwap ? 'Master-TX' : 'Master-RX'}</span><small>{pinSwap ? 'Green / MDB pin 5' : 'Yellow / MDB pin 4'}</small></div></div><div className={styles.segmented} role="group" aria-label="MDB passive pin order"><button aria-pressed={!pinSwap} className={!pinSwap ? styles.segmentActive : undefined} onClick={() => setPinSwap(false)} type="button">Standard</button><button aria-pressed={pinSwap} className={pinSwap ? styles.segmentActive : undefined} onClick={() => setPinSwap(true)} type="button">Swapped</button></div><div className={styles.twoFields}><label className={styles.field}><span>Master-TX polarity</span><select value={masterPolarity} onChange={(event) => setMasterPolarity(event.target.value as MdbPolarity)}><option value="auto">Auto detect</option><option value="normal">Normal</option><option value="inverted">Inverted</option></select></label><label className={styles.field}><span>Master-RX polarity</span><select value={slavePolarity} onChange={(event) => setSlavePolarity(event.target.value as MdbPolarity)}><option value="auto">Auto detect</option><option value="normal">Normal</option><option value="inverted">Inverted</option></select></label></div><p className={styles.safety}>GPIO4 and GPIO5 remain input-only. Changing pin order only changes which passive RMT input is decoded as Master-TX or Master-RX.</p></section></div> : null}
 

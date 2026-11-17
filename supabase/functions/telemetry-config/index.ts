@@ -103,7 +103,7 @@ Deno.serve(async (request: Request) => {
 
   const mode = String(policy.mode ?? 'live');
   const counterIntervalMinutes = Number(policy.counter_interval_minutes ?? 5);
-  const heartbeatIntervalMinutes = Number(policy.heartbeat_interval_minutes ?? 10);
+  const heartbeatIntervalMinutes = 1;
   const configRefreshMinutes = Number(policy.config_refresh_minutes ?? 5);
   const locationIntervalMinutes = Math.max(1, Number(device.location_interval_minutes ?? 15));
 
@@ -162,9 +162,26 @@ Deno.serve(async (request: Request) => {
 
   await supabase.from('telemetry_devices').update({ last_config_at: nowIso }).eq('id', device.id);
 
+  let firmwareUpdate: Record<string, unknown> | null = null;
+  const { data: firmwareJob, error: firmwareJobError } = await supabase
+    .from('telemetry_firmware_jobs').select('id,release_id')
+    .eq('device_id',device.id).eq('status','pending').gt('expires_at',new Date().toISOString())
+    .order('requested_at',{ascending:false}).limit(1).maybeSingle();
+  if (firmwareJobError) return jsonResponse({accepted:false,message:'Firmware update state is temporarily unavailable.'},503);
+  if (firmwareJob) {
+    const { data: release, error: releaseError } = await supabase.from('telemetry_firmware_releases')
+      .select('target,version,generation,image_size,sha256,signature,storage_path').eq('id',firmwareJob.release_id).single();
+    if (releaseError || !release) return jsonResponse({accepted:false,message:'Firmware release is unavailable.'},503);
+    const { data: signed, error: urlError } = await supabase.storage.from('telemetry-firmware').createSignedUrl(release.storage_path,3600);
+    if (urlError || !signed) return jsonResponse({accepted:false,message:'Firmware download is unavailable.'},503);
+    firmwareUpdate={job_id:firmwareJob.id,target:release.target,version:release.version,generation:release.generation,
+      size:release.image_size,sha256:release.sha256,signature:release.signature,url:signed.signedUrl};
+  }
+
   return jsonResponse({
     accepted: true,
     schema: 3,
+    firmware_update: firmwareUpdate,
     server_time: new Date().toISOString(),
     device_id: device.device_code,
     assignment: {
@@ -189,9 +206,9 @@ Deno.serve(async (request: Request) => {
       updated_at: policy.updated_at,
     },
     control: {
-      transport_preference: device.transport_preference ?? 'auto',
+      transport_preference: 'cellular',
       wifi_enabled: Boolean(device.wifi_enabled),
-      cellular_enabled: Boolean(device.cellular_enabled),
+      cellular_enabled: true,
       mdb: {
         master_tx_polarity: device.mdb_master_polarity ?? 'auto',
         slave_rx_polarity: device.mdb_slave_polarity ?? 'auto',

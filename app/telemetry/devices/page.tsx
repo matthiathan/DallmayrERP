@@ -1,3 +1,4 @@
+import { TelemetryFirmwarePanel } from '@/components/telemetry-platform/TelemetryFirmwarePanel';
 import { BulkTelemetryEnrollmentControl } from '@/components/features/BulkTelemetryEnrollmentControl';
 import { TelemetryCommissioningQueue } from '@/components/features/TelemetryCommissioningQueue';
 import { TelemetryDeviceContextLinks } from '@/components/features/TelemetryDeviceContextLinks';
@@ -15,6 +16,7 @@ export default function TelemetryDevicesPage() {
       <BulkTelemetryEnrollmentControl />
       <TelemetryCommissioningQueue />
       <TelemetryNetworkUsagePanel />
+      <TelemetryFirmwarePanel />
     </AppShell>
   );
 }
