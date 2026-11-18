@@ -12,6 +12,7 @@ import { loadDeviceHealthPolicies, withDeviceHealthPolicies } from '@/lib/teleme
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { collectSupabasePagesResult } from '@/lib/supabase/collect-pages';
 import { buildOverviewAttention, selectOverviewAttention, type OverviewFault, type OverviewAttentionItem, type OverviewMachine, type OverviewAttentionCategory } from '@/lib/telemetry/overview-attention';
+import { maintenanceDayRange } from '@/lib/telemetry/overview-maintenance';
 import { telemetryRegionLabel } from './TelemetryRegionSelector';
 import styles from './TelevendFleetDashboard.module.css';
 
@@ -93,6 +94,12 @@ type FleetLocationRow = {
   minutes_overdue: number | null;
 };
 
+type MaintenancePreview = {
+  rows?: Array<{ id: string; job_number: string; summary: string | null; status: string; due_at: string | null; assigned_to: string | null; machines?: { machine_name: string | null } | null }>;
+  total?: number;
+  summary?: { active_jobs?: number; in_progress?: number };
+};
+
 type ViewData = {
   report: ReportingPayload;
   history: ReportingPayload;
@@ -105,6 +112,8 @@ type ViewData = {
   machineCount: number;
   machines: OverviewMachine[];
   openFaults: OverviewFault[];
+  maintenance: MaintenancePreview | null;
+  maintenanceError: string | null;
 };
 
 const periods: Array<{ value: Period; label: string }> = [
@@ -296,7 +305,12 @@ export function TelevendFleetDashboard() {
         return { data: (data ?? []) as OverviewFault[], error: pageError };
       });
 
-      const [reportResult, historyResult, dashboardResult, faultResult, usageResult, balanceResult, locationResult, attentionDevicesResult, machineCountResult, policies, machinesResult, openFaultResult] = await Promise.all([
+      const day = maintenanceDayRange();
+      const maintenanceRequest = isClient ? Promise.resolve({ data: null, error: null }) : client.rpc('get_telemetry_maintenance_directory', {
+        p_search: '', p_status: 'active', p_priority: 'all', p_technician: 'all', p_offset: 0, p_limit: 3,
+        p_from: day.from, p_until: day.until,
+      });
+      const [reportResult, historyResult, dashboardResult, faultResult, usageResult, balanceResult, locationResult, attentionDevicesResult, machineCountResult, policies, machinesResult, openFaultResult, maintenanceResult] = await Promise.all([
         client.rpc('get_telemetry_reporting', { p_period: period, p_branch: 'all', p_dataset: 'production' }),
         client.rpc('get_telemetry_reporting', { p_period: 'six_months', p_branch: 'all', p_dataset: 'production' }),
         client.rpc('get_telemetry_dashboard', { p_period: 'today', p_branch: 'all' }),
@@ -309,6 +323,7 @@ export function TelevendFleetDashboard() {
         loadDeviceHealthPolicies(),
         machinesRows,
         openFaultRows,
+        maintenanceRequest,
       ]);
 
       const errors = [reportResult.error, historyResult.error, dashboardResult.error, faultResult.error, usageResult.error, balanceResult.error, locationResult.error, attentionDevicesResult.error, machineCountResult.error, machinesResult.error, openFaultResult.error].filter(Boolean);
@@ -324,6 +339,8 @@ export function TelevendFleetDashboard() {
         balances: balanceResult.error ? [] : balanceResult.data,
         locations: locationResult.error ? [] : locationResult.data,
         attentionDevices: withDeviceHealthPolicies(attentionDevicesResult.data, policies),
+        maintenance: maintenanceResult.error ? null : maintenanceResult.data as MaintenancePreview | null,
+        maintenanceError: maintenanceResult.error?.message ?? null,
         machines: machinesResult.data,
         openFaults: openFaultResult.data,
         machineCount: machineCountResult.error ? 0 : (machineCountResult.count ?? 0),
@@ -333,7 +350,7 @@ export function TelevendFleetDashboard() {
     } catch (loadError) {
       if (version === loadVersion.current) setError(loadError instanceof Error ? loadError.message : 'Could not load telemetry overview.');
     } finally { if (version === loadVersion.current) { setLoading(false); setRefreshing(false); } }
-  }, [period]);
+  }, [period, isClient]);
 
   useEffect(() => { load().catch((loadError) => { setError(loadError instanceof Error ? loadError.message : 'Could not load telemetry overview.'); setLoading(false); setRefreshing(false); }); }, [load]);
   useEffect(() => {
@@ -478,7 +495,7 @@ export function TelevendFleetDashboard() {
     const machine = machineId ? machineById.get(machineId) : undefined;
     const machineName = machine?.machine_name ?? location?.machine_name ?? location?.serial_number ?? (machineId ? 'Linked machine' : 'Unassigned device');
     return <article className={styles.attentionRow} key={item.id}>
-      <i className={item.severity === 'critical' ? styles.attentionCritical : styles.attentionWarning} aria-hidden="true" />
+      <span className={`${styles.attentionIcon} ${item.severity === 'critical' ? styles.attentionCritical : styles.attentionWarning}`} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{item.kind === 'delayed' ? <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></> : <><path d="m12 3 10 18H2L12 3Z"/><path d="M12 9v4m0 4h.01"/></>}</svg></span>
       <div className={styles.attentionBody}>
         <div><strong>{attentionTitle(item)}</strong><span>{machineName} · {item.deviceCode}</span></div>
         <p>{attentionDetail(item)}</p>
@@ -487,10 +504,10 @@ export function TelevendFleetDashboard() {
       </div>
       <nav className={styles.attentionActions} aria-label={`${item.deviceCode} actions`}>
         {machineId ? <Link href={`/machines/${machineId}`}>Open machine</Link> : null}
-        {!isClient && item.deviceId && item.deviceCode !== 'Device identifier unavailable' ? <>
+        {!isClient && item.deviceId && item.deviceCode !== 'Device identifier unavailable' ? <details className={styles.attentionTools}><summary>Device tools</summary>
           <Link href={`/telemetry/devices?device=${encodeURIComponent(item.deviceCode)}`}>Device</Link>
           <Link href={`/telemetry/test-center?device=${encodeURIComponent(item.deviceCode)}`}>Test Center</Link>
-        </> : null}
+        </details> : null}
       </nav>
     </article>;
   }
@@ -498,15 +515,13 @@ export function TelevendFleetDashboard() {
   return (
     <section className={styles.dashboard} data-fleet-dashboard="televend-v3">
       <div className={styles.toolbar}>
-        <div className={styles.toolbarTitle}><i /><div><strong>Fleet overview</strong><span>Start with the machines and work that need your attention.</span></div></div>
+        <div className={styles.toolbarTitle}><i /><div><h1>Fleet overview</h1><span>Start with the machines and work that need your attention.</span></div></div>
         <div className={styles.toolbarActions}>
-          <label><span>Sales period</span><select value={period} onChange={(event) => setPeriod(event.target.value as Period)}>{periods.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
-          <button disabled={!locations.length} onClick={exportFleetSnapshot} type="button">Export fleet CSV</button>
-          <button disabled={refreshing} onClick={() => void load(true)} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button>
+          <button className="button secondary" disabled={refreshing} onClick={() => void load(true)} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button>
+          {!isClient ? <Link className="button" href="/maintenance">Open maintenance</Link> : null}
         </div>
       </div>
 
-      <p className={styles.scopeNote}>Region: {telemetryRegionLabel(userDetails?.telemetry_region)} · Production telemetry · Last successful update: {updated ? updated.toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' }) + ' SAST' : 'Not yet loaded'}</p>
       {error ? <div className={styles.error} role="alert">Dashboard updates unavailable: {error} Displayed information may be outdated. Last successful refresh: {updated ? updated.toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' }) : 'never'}.</div> : null}
       {loading && !data ? <HamsterLoader label="Loading fleet overview" /> : null}
 
@@ -516,9 +531,10 @@ export function TelevendFleetDashboard() {
         <div className={styles.overviewGrid}>
         <section className={styles.attentionCard} aria-label="Fleet attention queue" data-fleet-attention-queue="v1">
           <header className={styles.attentionHeader}>
-            <div><span>Fleet attention queue</span><h2>Needs attention</h2></div>
-            <strong>{selectedAttention.machineCount} machines · {selectedAttention.unassignedDeviceCount} unassigned devices</strong>
+            <div><h2>Needs attention</h2><p>Confirmed faults and device contact issues</p></div>
+            <strong className={styles.attentionCount}>{selectedAttention.actionable.length} {selectedAttention.actionable.length === 1 ? 'issue' : 'issues'}</strong>
           </header>
+          <details className={styles.filterDisclosure}><summary>Filter machines needing attention</summary>
           <div className={styles.attentionFilters}>
             <label>Customer<select value={customerId} onChange={(event) => { setCustomerId(event.target.value); setSiteId(''); resetPages(); }}><option value="">All customers</option>{customerOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
             <label>Site<select value={siteId} onChange={(event) => { setSiteId(event.target.value); resetPages(); }}><option value="">All sites</option>{siteOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
@@ -526,10 +542,10 @@ export function TelevendFleetDashboard() {
             <label>Attention category<select value={category} onChange={(event) => { setCategory(event.target.value as OverviewAttentionCategory); resetPages(); }}><option value="all">All attention</option><option value="fault">Reported faults</option><option value="connectivity">Offline / delayed devices</option><option value="verification">Needs verification</option><option value="device">Device / SIM settings</option></select></label>
             <button className="button secondary" type="button" onClick={() => { setCustomerId(''); setSiteId(''); setMachineType(''); setCategory('all'); resetPages(); }}>Clear filters</button>
           </div>
-          <p className={styles.scopeNote} role="status">Attention list: {telemetryRegionLabel(userDetails?.telemetry_region)} · {customerId ? customerOptions.find(([id]) => id === customerId)?.[1] ?? 'Selected customer unavailable' : 'All customers'} · {siteId ? siteOptions.find(([id]) => id === siteId)?.[1] ?? 'Selected site unavailable' : 'All sites'} · {machineType === '__not_reported__' ? 'Machine type not reported' : machineType || 'All machine types'}. Filters apply to this list; charts below describe the full regional fleet.</p>
           {!typeOptions.length ? <p className={styles.scopeNote}>Machine type is not reported for this fleet. Types are not inferred from machine names.</p> : null}
+          </details>
+          {customerId || siteId || machineType || category !== 'all' ? <p className={styles.scopeNote} role="status">Attention list: {telemetryRegionLabel(userDetails?.telemetry_region)} · {customerId ? customerOptions.find(([id]) => id === customerId)?.[1] ?? 'Selected customer unavailable' : 'All customers'} · {siteId ? siteOptions.find(([id]) => id === siteId)?.[1] ?? 'Selected site unavailable' : 'All sites'} · {machineType === '__not_reported__' ? 'Machine type not reported' : machineType || 'All machine types'}. Filters apply to this list; charts below describe the full regional fleet.</p> : null}
           {attentionUnavailable ? <div className={styles.attentionEmpty}>Current device attention could not be loaded.</div> : <>
-            <h3 className={styles.actionableTitle}>Actionable issues · {selectedAttention.actionable.length}</h3>
             <div className={styles.attentionList}>{selectedAttention.actionable.slice((currentAttentionPage - 1) * 8, currentAttentionPage * 8).map(renderAttentionItem)}</div>
             {!selectedAttention.actionable.length ? <div className={styles.attentionEmpty}>No actionable issues match these filters. Check Needs verification for missing evidence.</div> : null}
             {actionablePages > 1 ? renderQueuePagination('Actionable issues', currentAttentionPage, actionablePages, setAttentionPage) : null}
@@ -542,27 +558,46 @@ export function TelevendFleetDashboard() {
             </details>
           </>}
         </section>
+          {!isClient ? <aside className={styles.maintenancePreview} aria-label="Today’s maintenance">
+            <header><div><h2>Today’s maintenance</h2><p>Due or reported today</p></div>{typeof data.maintenance?.total === 'number' ? <small>{data.maintenance.total.toLocaleString('en-ZA')} jobs</small> : null}</header>
+            {data.maintenanceError || !data.maintenance ? <p className={styles.maintenanceEmpty}>Maintenance summary unavailable. Open Maintenance to retry.</p> : data.maintenance?.rows?.length ? data.maintenance.rows.map((job) => <div className={styles.maintenanceJob} key={job.id}>
+              <div><strong>{job.machines?.machine_name || job.job_number}</strong><p>{job.summary || 'Maintenance visit'}</p><small>{job.assigned_to ? 'Assigned technician' : 'Unassigned'} · {job.due_at ? new Date(job.due_at).toLocaleTimeString('en-ZA', {timeZone:'Africa/Johannesburg',hour:'2-digit',minute:'2-digit'}) : 'Not scheduled'}</small></div>
+              <span>{job.status.replaceAll('_', ' ')}</span>
+            </div>) : <p className={styles.maintenanceEmpty}>No active jobs due or reported today.</p>}
+            {data.maintenance && n(data.maintenance.total) > (data.maintenance.rows?.length ?? 0) ? <p className={styles.scopeNote}>Showing {data.maintenance.rows?.length ?? 0} of {n(data.maintenance.total)} jobs. Open Maintenance for the full list.</p> : null}
+            <Link href="/maintenance">Open Maintenance →</Link>
+          </aside> : <aside className={styles.quickAccess}><h2>Quick access</h2><p>Open your machines and reports.</p><Link className="button secondary" href="/machines">Find a machine →</Link><Link className="button secondary" href="/telemetry/reports">Sales &amp; Reports →</Link></aside>}
+        </div>
+
+        <section className={styles.metricsStrip} aria-label="Regional fleet headline metrics">
+          <Metric helper="Across the selected region" label="Machines" tone="blue" value={machineCount.toLocaleString('en-ZA')} />
+          <Metric helper={`${delayed} delayed · ${offline} offline · ${unknown} unknown / never seen`} label="Devices online" tone="green" value={online.toLocaleString('en-ZA')} />
+          <Metric helper={data.maintenance ? `${n(data.maintenance.summary?.in_progress)} in progress` : 'Summary unavailable'} label="Open maintenance jobs" tone="gold" value={data.maintenance ? n(data.maintenance.summary?.active_jobs).toLocaleString('en-ZA') : 'Not reported'} />
+          <Metric helper={`${periods.find((item) => item.value === period)?.label} · completeness Unknown`} label="Products recorded" tone="blue" value={units.toLocaleString('en-ZA')} />
+        </section>
+
+        <section className={styles.overviewGrid}>
+          <article className={`${styles.card} ${styles.primarySales}`}>
+            <header className={styles.cardHeader}><div><h2>{period === 'week' ? 'Sales over seven days' : 'Recorded product sales'}</h2><span>{units.toLocaleString('en-ZA')} products · {periods.find((item) => item.value === period)?.label}</span></div><Link href="/telemetry/reports">Sales &amp; Reports →</Link></header>
+            {currentTrend.length ? <div className={styles.salesBars} role="img" aria-label={`Recorded products per day: ${currentTrend.map((point) => `${point.label}: ${point.value}`).join(', ')}`}>{currentTrend.map((point) => <div className={styles.salesBarColumn} key={point.key}><strong>{point.value.toLocaleString('en-ZA')}</strong><i style={{height: `${point.value / Math.max(1, ...currentTrend.map((row) => row.value)) * 100}px`}} /><span>{point.label}</span></div>)}</div> : <p className={styles.maintenanceEmpty}>No recorded sales counters for this period. Report completeness is Unknown.</p>}
+            <p className={styles.scopeNote}>Products recorded per day · received counters do not establish a complete report.</p>
+          </article>
           <aside className={styles.quickAccess} aria-label="Common fleet tasks">
-            <h2>Keep the fleet moving</h2>
-            <p>Open assigned work or find the machine you need.</p>
-            {!isClient ? <Link className="button" href="/maintenance">Manage maintenance <span aria-hidden="true">→</span></Link> : null}
+            <h2>Quick access</h2>
+            <p>Common tasks, without the detour.</p>
+            {!isClient ? <Link className="button secondary" href="/maintenance">Manage maintenance <span aria-hidden="true">→</span></Link> : null}
             <Link className="button secondary" href="/machines">Find a machine <span aria-hidden="true">→</span></Link>
             <Link className="button secondary" href="/telemetry/reports">Sales &amp; reports <span aria-hidden="true">→</span></Link>
             <small>Device contact, machine communication and sales completeness are independent indicators.</small>
           </aside>
-        </div>
-
-        <h2 className={styles.fleetTotalsTitle}>Regional fleet totals</h2>
-        <p className={styles.scopeNote}>Sales totals reflect received counters. Sales-report completeness remains Unknown until period coverage is verified.</p>
-        <section className={styles.metricsStrip} aria-label="Fleet headline metrics">
-          <Metric helper={`${reportingDevices.toLocaleString('en-ZA')} reporting devices`} label="Total machines" tone="blue" value={machineCount.toLocaleString('en-ZA')} />
-          <Metric helper={`${availability.toFixed(0)}% of reporting fleet`} label="Devices online" tone="green" value={online.toLocaleString('en-ZA')} />
-          <Metric helper={`${delayed} delayed · ${unknown} unknown / never seen`} label="Devices offline" tone={offline ? 'red' : 'green'} value={offline.toLocaleString('en-ZA')} />
-          <Metric helper={`${periodChange >= 0 ? '+' : ''}${periodChange.toFixed(1)}% vs previous`} label="Vends" tone="blue" value={units.toLocaleString('en-ZA')} />
-          <Metric helper="Raw codes and telemetry diagnostics are listed separately" label="Verified machine faults" tone={data.openFaults.some((fault) => fault.normalization_status === 'verified_rule') ? 'red' : 'green'} value={data.openFaults.filter((fault) => fault.normalization_status === 'verified_rule').length.toLocaleString('en-ZA')} />
-          <Metric helper={`${modemCoverage}% modem coverage`} label="Data usage" tone="gold" value={usage.length ? bytes(observed) : 'Not reported'} />
         </section>
-
+        <details className={styles.advancedDetails}>
+          <summary>More fleet details &amp; report controls</summary>
+        <div className={styles.toolbarActions}>
+          <label><span>Sales period</span><select value={period} onChange={(event) => setPeriod(event.target.value as Period)}>{periods.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+          <button disabled={!locations.length} onClick={exportFleetSnapshot} type="button">Export fleet CSV</button>
+          <button disabled={refreshing} onClick={() => void load(true)} type="button">{refreshing ? 'Refreshing…' : 'Refresh'}</button>
+        </div>
         <section className={styles.telemetryRow} aria-label="Fleet operational readiness">
           <article className={styles.telemetryCard}><header><span>Machine-device linking</span><strong>{assignedDevices.toLocaleString('en-ZA')} / {machineCount.toLocaleString('en-ZA')}</strong></header><div className={styles.meter}><i style={{ width: `${assignmentCoverage}%` }} /></div><small>{n(summary.unassigned_devices).toLocaleString('en-ZA')} active devices unassigned · <Link href="/telemetry/devices">Device management ›</Link></small></article>
           <article className={styles.telemetryCard}><header><span>Map coverage</span><strong>{locationCoverage.toFixed(0)}%</strong></header><div className={styles.meter}><i style={{ width: `${locationCoverage}%` }} /></div><small>{mappedDevices.toLocaleString('en-ZA')} devices located · {staleLocations.toLocaleString('en-ZA')} stale · <Link href="/map">Fleet map ›</Link></small></article>
@@ -622,6 +657,8 @@ export function TelevendFleetDashboard() {
             <footer className={styles.cardFooter}><span>Updated</span><strong>{updated ? updated.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'}</strong></footer>
           </article>
         </section>
+        </details>
+      <p className={styles.scopeNote}>Region: {telemetryRegionLabel(userDetails?.telemetry_region)} · Production telemetry · Last successful update: {updated ? updated.toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' }) + ' SAST' : 'Not yet loaded'}</p>
       </> : null}
     </section>
   );

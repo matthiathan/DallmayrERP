@@ -71,7 +71,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div
-      className={`${styles.shell} ${brandStyles.brandShell} ${styles.desktopShell} application-shell-v2 app-shell ${railCollapsed ? `${styles.desktopCollapsed} desktop-rail-collapsed` : ''}`}
+      className={`${styles.shell} ${brandStyles.brandShell} ${styles.desktopShell} ${railCollapsed ? `${styles.desktopCollapsed} ` : ''}`}
       data-account-scope={accountScope}
       data-platform-shell="telemetry-v3"
     >
@@ -93,7 +93,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <strong>{activeTitle}</strong>
         </div>
         <div className={styles.searchSlot}>
-          <GlobalSearch triggerLabel="Search machine, device or page" />
+          <GlobalSearch showShortcut={false} triggerLabel="Search machine, device or page" />
         </div>
         <div className={styles.topbarActions}>
           {!isClient ? <TelemetryRegionSelector /> : null}
@@ -116,7 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         userName={userName}
       />
 
-      <main className={`${styles.main} application-main main top-main`} id="main-content" tabIndex={-1}>
+      <main className={`${styles.main} application-main`} id="main-content" tabIndex={-1}>
         {!allowedPath ? (
           <ErpStateBanner
             action={<Link className="button" href={homePath}>Open Fleet Overview</Link>}

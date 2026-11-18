@@ -1,285 +1,60 @@
+/* Visual authority for the approved telemetry reference. Legacy ERP hooks are
+   deliberately absent from the shell; functional IDs and access checks remain. */
 .brandShell {
-  --dallmayr-gold: #b39960 !important;
-  --dallmayr-gold-dark: #9f7b35 !important;
-  --dallmayr-gold-soft: #fff8e8 !important;
-  --dallmayr-red: #dc3545 !important;
-  --dallmayr-red-dark: #b42332 !important;
-  --dallmayr-red-soft: #fff1f2 !important;
-  --dallmayr-cream: #f5f7fa !important;
-  --dallmayr-cream-soft: #f8fbff !important;
-  --platform-ink: #10233e !important;
-  --platform-muted: #53627a !important;
-  --platform-border: #dbe4ef !important;
-  --platform-surface: #ffffff !important;
-  --user-accent: #071a33 !important;
-  --content-accent-text: #0758d6 !important;
-  --content-focus: #071a33 !important;
-  color: #10233e;
+  --dallmayr-gold: #b39960;
+  --platform-ink: #132238;
+  --platform-muted: #53627a;
+  --platform-border: #d8dfe8;
+  --platform-surface: #fff;
+  --content-accent-text: #0758d6;
+  --content-focus: #0758d6;
+  color: #132238;
   background: #f5f7fa;
 }
-
-.brandShell :global(.application-main) {
-  color: #10233e !important;
-  background: #f5f7fa !important;
+.brandShell.brandShell :global(.application-main) {
+  width: auto !important; max-width: none !important; min-width: 0 !important;
+  margin: 0 !important; padding: 30px 32px 40px !important;
+  color: #132238 !important; background: #f5f7fa !important;
+  overflow-x: clip;
 }
-
-.brandShell :global(.neo-card),
-.brandShell :global(.card),
-.brandShell :global(.hero-panel),
-.brandShell :global(.table-wrap) {
-  color: #10233e !important;
-  background: #ffffff !important;
-  border-color: #dbe4ef !important;
-  border-radius: 10px !important;
-  box-shadow: none !important;
+.brandShell.brandShell :global(.application-header) {
+  grid-column: 2 !important; grid-row: 1 !important; width: auto !important;
+  height: 72px !important; min-height: 72px !important; padding: 0 32px !important;
+  background: #fff !important; border: 0 !important; border-bottom: 1px solid #d8dfe8 !important;
+  box-shadow: none !important; backdrop-filter: none !important;
 }
-
-.brandShell :global(.neo-card::before),
-.brandShell :global(.card::before),
-.brandShell :global(.hero-panel::before),
-.brandShell :global(.table-wrap::before),
-.brandShell :global(.neo-card::after),
-.brandShell :global(.card::after),
-.brandShell :global(.hero-panel::after) {
-  display: none !important;
+.brandShell.brandShell :global(.application-main) h1 { margin: 0; color: #071a33 !important; font-size: 30px !important; font-weight: 650 !important; line-height: 1.2 !important; letter-spacing: -.035em; text-shadow: none !important; }
+.brandShell.brandShell :global(.application-main) h2 { color: #132238 !important; font-size: 18px !important; font-weight: 650 !important; line-height: 1.3; text-shadow: none !important; }
+.brandShell.brandShell :global(.application-main) h3 { font-size: 15px !important; font-weight: 650 !important; }
+.brandShell.brandShell :global(.application-main) p { color: #53627a; line-height: 1.5; text-shadow: none !important; }
+.brandShell.brandShell :global(.application-main) :is(button, .button) { min-height: 44px; padding: 10px 15px; border-radius: 8px; font-size: 13px; font-weight: 600; text-shadow: none; }
+.brandShell.brandShell :global(.application-main) :global(.button:not(.secondary):not(.danger)) { color: #fff !important; background: #071a33 !important; border: 1px solid #071a33 !important; box-shadow: none !important; }
+.brandShell.brandShell :global(.application-main) :global(.button.secondary) { color: #243b59 !important; background: #fff !important; border: 1px solid #7b8da5 !important; box-shadow: none !important; }
+.brandShell.brandShell :global(.application-main) :global(.button:not(.secondary):not(.danger):hover) { background: #163554 !important; }
+.brandShell.brandShell :global(.application-main) :is(input, select, textarea) { min-height: 44px; padding: 10px 12px; color: #132238 !important; background: #fff !important; border: 1px solid #7b8da5 !important; border-radius: 8px !important; font-size: 14px !important; box-shadow: none !important; }
+.brandShell.brandShell :global(.application-main) :is(button, a, input, select, textarea):focus-visible { outline: 3px solid #0758d6 !important; outline-offset: 3px; }
+.brandShell.brandShell :global(.application-main) table { font-size: 13px !important; border-collapse: collapse; }
+.brandShell.brandShell :global(.application-main) th { padding: 14px 13px !important; color: #53627a !important; background: #f7f9fc !important; font-size: 11px !important; font-weight: 600 !important; letter-spacing: .035em; border-bottom: 1px solid #d8dfe8 !important; text-shadow: none !important; }
+.brandShell.brandShell :global(.application-main) td { padding: 18px 13px !important; font-size: 13px !important; color: #132238 !important; border-bottom: 1px solid #e6ebf1 !important; }
+.brandShell.brandShell :global(.application-main) td small { font-size: 12px !important; color: #53627a !important; }
+.brandShell.brandShell :global(.application-main) :is(.neo-card, .card, .hero-panel, .table-wrap) { background: #fff !important; border: 1px solid #d8dfe8 !important; border-radius: 12px !important; box-shadow: none !important; }
+.brandShell.brandShell :global(.application-main) :is(.neo-card, .card, .hero-panel)::before,
+.brandShell.brandShell :global(.application-main) :is(.neo-card, .card, .hero-panel)::after { display: none !important; }
+.brandShell :global(#desktop-sidebar-account-menu-target:empty) { display: none; }
+@media (max-width: 1150px) { .brandShell.brandShell :global(.application-main) { padding: 24px !important; } }
+@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  .brandShell.brandShell :global(.application-header) { display: none !important; }
+  .brandShell.brandShell :global(.application-main) { padding: 24px 16px calc(84px + env(safe-area-inset-bottom)) !important; }
+  .brandShell.brandShell :global(.application-main) h1 { font-size: 27px !important; }
+  .brandShell.brandShell :global(.telemetry-mobile-header) { color: #fff !important; background: #071a33 !important; }
+  .brandShell.brandShell :global(.telemetry-mobile-bottom-nav) { background: #fff !important; border-top: 1px solid #d8dfe8 !important; }
 }
-
-.brandShell :global(h1),
-.brandShell :global(h2),
-.brandShell :global(h3),
-.brandShell :global(h4) {
-  color: #071a33 !important;
-  text-shadow: none !important;
+.brandShell.brandShell :global(.application-header) { display: flex !important; align-items: center !important; justify-content: space-between !important; position: sticky !important; top: 0 !important; }
+.brandShell.brandShell :global(.application-main) p { color: #53627a !important; }
+.brandShell.brandShell :global(.application-main) button { box-shadow: none !important; text-shadow: none !important; }
+.brandShell.brandShell :global(.application-main) button[aria-current='page'] { color: #071a33 !important; border-color: #071a33 !important; box-shadow: none !important; }
+@media (max-width: 900px), (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  .brandShell.brandShell :global(.application-header) { display: none !important; }
 }
-
-.brandShell :global(p),
-.brandShell :global(label) {
-  color: #53627a !important;
-  text-shadow: none !important;
-}
-
-.brandShell :global(.kpi-value) {
-  color: #0f2e55 !important;
-  text-shadow: none !important;
-}
-
-.brandShell :global(.button:not(.secondary):not(.danger)) {
-  color: #ffffff !important;
-  background: #071a33 !important;
-  border-color: #071a33 !important;
-  border-radius: 8px !important;
-  box-shadow: none !important;
-  text-shadow: none !important;
-}
-
-.brandShell :global(.button:not(.secondary):not(.danger):hover) {
-  color: #ffffff !important;
-  background: #0758d6 !important;
-  border-color: #0758d6 !important;
-}
-
-.brandShell :global(.button.secondary) {
-  color: #173a64 !important;
-  background: #ffffff !important;
-  border-color: #7b8da5 !important;
-  border-radius: 8px !important;
-  box-shadow: none !important;
-}
-
-.brandShell :global(input),
-.brandShell :global(select),
-.brandShell :global(textarea) {
-  color: #10233e !important;
-  background: #ffffff !important;
-  border-color: #7b8da5 !important;
-  border-radius: 8px !important;
-  box-shadow: none !important;
-}
-
-.brandShell :global(input:focus),
-.brandShell :global(select:focus),
-.brandShell :global(textarea:focus) {
-  border-color: #071a33 !important;
-  box-shadow: none !important;
-}
-
-.brandShell :global(th) {
-  color: #63758a !important;
-  background: #f7f9fc !important;
-  border-bottom-color: #dbe4ef !important;
-  box-shadow: none !important;
-  text-shadow: none !important;
-}
-
-.brandShell :global(td) {
-  color: #17314f !important;
-  border-bottom-color: #e7edf4 !important;
-}
-
-.brandShell :global(tr:hover td) {
-  background: #f8fbff !important;
-}
-
-.brandShell :global(.dallmayr-sidebar) {
-  color: #dbe8f6 !important;
-  background: #071a33 !important;
-  border-right-color: #102c4c !important;
-  box-shadow: none !important;
-}
-
-.brandShell :global(.dallmayr-sidebar) > div:first-child {
-  color: #ffffff !important;
-  background: #071a33 !important;
-  border-bottom: 1px solid #163657 !important;
-}
-
-.brandShell :global(.dallmayr-sidebar) > div:first-child a {
-  color: #ffffff !important;
-}
-
-.brandShell :global(.dallmayr-sidebar) > div:first-child img {
-  width: 48px !important;
-  height: 34px !important;
-  object-fit: contain !important;
-}
-
-.brandShell :global(.dallmayr-sidebar) > div:first-child button {
-  color: #dbe8f6 !important;
-  background: #0d2948 !important;
-  border-color: #244666 !important;
-}
-
-.brandShell :global(.dallmayr-sidebar-link) {
-  color: #d3dfec !important;
-  border-radius: 7px !important;
-  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
-}
-
-.brandShell :global(.dallmayr-sidebar-link:hover) {
-  color: #ffffff !important;
-  background: #0c2b4d !important;
-  border-color: #183d61 !important;
-}
-
-.brandShell :global(.dallmayr-sidebar-link[aria-current='page']) {
-  color: #ffffff !important;
-  background: #203b5c !important;
-  border-color: #203b5c !important;
-  box-shadow: inset 3px 0 #b39960 !important;
-}
-
-.brandShell :global(.dallmayr-sidebar-link[aria-current='page'])::before {
-  background: #b39960 !important;
-}
-
-.brandShell :global(.dallmayr-sidebar h2) {
-  color: #7790aa !important;
-}
-
-.brandShell :global(.application-header) {
-  color: #10233e !important;
-  background: rgba(255, 255, 255, .98) !important;
-  border-bottom-color: #dbe4ef !important;
-  box-shadow: none !important;
-}
-
-.brandShell :global(.application-header) a:focus-visible,
-.brandShell :global(.application-header) button:focus-visible {
-  outline: 2px solid #071a33 !important;
-  outline-offset: 2px;
-}
-
-.brandShell :global(.telemetry-mobile-header) {
-  color: #ffffff !important;
-  background: #071a33 !important;
-  border-bottom-color: #163657 !important;
-  box-shadow: none !important;
-}
-
-.brandShell :global(.telemetry-mobile-header) strong,
-.brandShell :global(.telemetry-mobile-header) small,
-.brandShell :global(.telemetry-mobile-header) svg {
-  color: #ffffff !important;
-}
-
-.brandShell :global(.telemetry-mobile-bottom-nav) {
-  background: #ffffff !important;
-  border-top-color: #dbe4ef !important;
-}
-
-.brandShell :global(.telemetry-mobile-nav-item[aria-current='page']) {
-  color: #0758d6 !important;
-  background: #edf5ff !important;
-}
-
-:global(html[data-theme-tone='dark']) .brandShell {
-  --platform-ink: #eaf2fb !important;
-  --platform-muted: #aebfd0 !important;
-  --platform-border: #24445f !important;
-  --platform-surface: #0b2039 !important;
-  --content-accent-text: #7db4ff !important;
-  color: #eaf2fb;
-  background: #061426;
-}
-
-:global(html[data-theme-tone='dark']) .brandShell :global(.application-main) {
-  color: #eaf2fb !important;
-  background: #061426 !important;
-}
-
-:global(html[data-theme-tone='dark']) .brandShell :global(.neo-card),
-:global(html[data-theme-tone='dark']) .brandShell :global(.card),
-:global(html[data-theme-tone='dark']) .brandShell :global(.hero-panel),
-:global(html[data-theme-tone='dark']) .brandShell :global(.table-wrap) {
-  color: #eaf2fb !important;
-  background: #0b2039 !important;
-  border-color: #24445f !important;
-}
-
-:global(html[data-theme-tone='dark']) .brandShell :global(h1),
-:global(html[data-theme-tone='dark']) .brandShell :global(h2),
-:global(html[data-theme-tone='dark']) .brandShell :global(h3),
-:global(html[data-theme-tone='dark']) .brandShell :global(h4) {
-  color: #ffffff !important;
-}
-
-:global(html[data-theme-tone='dark']) .brandShell :global(p),
-:global(html[data-theme-tone='dark']) .brandShell :global(label) {
-  color: #aebfd0 !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .brandShell :global(.dallmayr-sidebar-link) {
-    transition: none;
-  }
-}
-
-/* Reset legacy icon-box rules that also matched the new navigation text span. */
-.brandShell :global(.dallmayr-sidebar-link) {
-  min-height: var(--ds-touch-target, 44px) !important;
-  grid-template-columns: 30px minmax(0, 1fr) !important;
-}
-.brandShell :global(.dallmayr-sidebar-link) > span {
-  color: inherit !important;
-  background: transparent !important;
-  border: 0 !important;
-}
-.brandShell :global(.dallmayr-sidebar-link) > span:last-child:not(:first-child) {
-  display: block !important;
-  width: auto !important;
-  height: auto !important;
-  min-width: 0;
-  font-size: var(--ds-font-sm, .875rem) !important;
-  font-weight: 500 !important;
-  line-height: var(--ds-line-normal, 1.5);
-}
-.brandShell :global(.desktop-rail-collapsed .dallmayr-sidebar-link),
-.brandShell:global(.desktop-rail-collapsed) :global(.dallmayr-sidebar-link) {
-  grid-template-columns: 1fr !important;
-}
-.brandShell :global(#desktop-sidebar-account-menu-target:empty) { display: none !important; }
-
-.brandShell :global(.dallmayr-sidebar-link:focus-visible) {
-  outline: 3px solid #b39960 !important;
-  outline-offset: -3px;
-}
+.brandShell { --accent-text: #0758d6; --accent-bright: #0758d6; }
+.brandShell.brandShell :global(.application-main) a:not(:global(.button)) { color: #0758d6 !important; box-shadow: none !important; }

@@ -46,7 +46,7 @@ export function DesktopNavigationRail({
   return (
     <aside
       aria-label="Application navigation"
-      className={`${styles.sidebar} dallmayr-sidebar ${collapsed ? 'is-collapsed' : ''}`}
+      className={`${styles.sidebar} ${collapsed ? 'is-collapsed' : ''}`}
       data-platform-navigation="desktop-v3"
     >
       <div className={styles.sidebarBrand}>
@@ -61,16 +61,14 @@ export function DesktopNavigationRail({
             </span>
           ) : null}
         </Link>
-        {!collapsed ? (
-          <button
-            aria-label="Collapse navigation"
-            className={styles.collapseButton}
-            onClick={onToggleCollapse}
-            type="button"
-          >
-            <NavigationIcon kind="chevron-left" />
-          </button>
-        ) : null}
+        <button
+          aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+          className={styles.collapseButton}
+          onClick={onToggleCollapse}
+          type="button"
+        >
+          <NavigationIcon kind={collapsed ? 'chevron-right' : 'chevron-left'} />
+        </button>
       </div>
 
       <nav aria-label="Machine telemetry navigation" className={styles.sidebarNav}>
@@ -80,7 +78,7 @@ export function DesktopNavigationRail({
             return (
               <Link
                 aria-current={active ? 'page' : undefined}
-                className={`${styles.navLink} dallmayr-sidebar-link ${active ? styles.navLinkActive : ''}`}
+                className={`${styles.navLink} ${active ? styles.navLinkActive : ''}`}
                 href={item.href}
                 key={item.href}
                 title={item.label}
@@ -115,7 +113,7 @@ export function DesktopNavigationRail({
               return (
                 <Link
                   aria-current={active ? 'page' : undefined}
-                  className={`${styles.navLink} dallmayr-sidebar-link ${active ? styles.navLinkActive : ''}`}
+                  className={`${styles.navLink} ${active ? styles.navLinkActive : ''}`}
                   href={item.href}
                   key={item.href}
                   title={item.label}

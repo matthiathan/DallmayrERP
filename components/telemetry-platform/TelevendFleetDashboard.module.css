@@ -852,3 +852,84 @@
 }
 .attentionActions { grid-column: 2; justify-content: flex-start; }
 .attentionHeader strong { color: #42536a; }
+
+/* Approved Sites reference: quiet headings, two-column cards and four metrics. */
+.dashboard { gap: 20px; color: #132238; }
+.toolbar { display: flex; align-items: center; justify-content: space-between; min-height: 0; padding: 0; margin-bottom: 2px; background: transparent; border: 0; box-shadow: none; }
+.toolbarTitle > div { gap: 7px; }
+.toolbarTitle h1 { margin: 0; }
+.toolbarTitle span { font-size: 14px; color: #53627a; }
+.toolbarActions { gap: 10px; }
+.overviewGrid { grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr); gap: 20px; align-items: start; }
+.attentionCard, .card, .quickAccess, .maintenancePreview { padding: 22px; background: #fff; border: 1px solid #d8dfe8; border-radius: 12px; box-shadow: none; }
+.attentionHeader, .cardHeader { min-height: 0; padding: 0 0 18px; border: 0; }
+.attentionHeader h2, .cardHeader h2 { margin: 0; }
+.attentionHeader p, .maintenancePreview header p { margin: 4px 0 0; font-size: 13px; color: #53627a; }
+.attentionHeader strong { font-size: 12px; font-weight: 500; color: #53627a; }
+.attentionList { gap: 0; }
+.attentionRow { padding: 18px 0; border-top: 1px solid #e6ebf1; }
+.attentionBody strong { font-size: 14px; font-weight: 600; }
+.attentionBody span, .attentionBody p { font-size: 13px; color: #53627a; }
+.attentionBody small { font-size: 12px; }
+.attentionEmpty { min-height: 0; padding: 18px 0; font-size: 13px; line-height: 1.5; color: #53627a; }
+.verification { margin-top: 10px; padding-top: 14px; border-top: 1px solid #e6ebf1; }
+.verification > summary { min-height: 28px; padding: 0; font-size: 13px; font-weight: 400; }
+.verification > p { padding: 0; }
+.filterDisclosure { margin: 0 0 12px; font-size: 12px; color: #53627a; }
+.filterDisclosure > summary { min-height: 28px; cursor: pointer; }
+.filterDisclosure:focus-within { outline-color: #0758d6; }
+.attentionFilters { padding: 12px 0; }
+.metricsStrip { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 0; }
+.metric { min-height: 118px; padding: 20px; background: #fff; border: 1px solid #d8dfe8; border-radius: 12px; box-shadow: none; gap: 7px; }
+.metric span { font-size: 13px; font-weight: 400; color: #3f5066; }
+.metric strong { font-size: 30px; line-height: 1.2; font-weight: 650; color: #132238; }
+.metric small { font-size: 12px; color: #53627a; }
+.maintenancePreview header h2 { margin: 0; }
+.maintenanceJob { display: flex; align-items: start; justify-content: space-between; gap: 12px; padding: 16px 0; border-top: 1px solid #e6ebf1; }
+.maintenanceJob:first-of-type { margin-top: 18px; }
+.maintenanceJob strong { display: block; font-size: 13px; font-weight: 600; }
+.maintenanceJob p { margin: 4px 0; font-size: 13px; }
+.maintenanceJob small { font-size: 12px; color: #53627a; }
+.maintenanceJob > span { padding: 6px 8px; font-size: 12px; color: #815314; background: #fff5df; border-radius: 6px; text-transform: capitalize; }
+.maintenancePreview > a { display: inline-block; min-height: 36px; padding-top: 12px; color: #0758d6; font-size: 13px; font-weight: 600; text-decoration: none; }
+.maintenanceEmpty { margin: 0; padding: 20px 0; color: #53627a; font-size: 13px; }
+.salesBars { display: flex; align-items: flex-end; justify-content: space-around; gap: 16px; min-height: 160px; padding: 10px 0 16px; overflow-x: auto; }
+.salesBarColumn { display: grid; justify-items: center; align-content: end; gap: 8px; flex: 1; min-width: 35px; color: #53627a; font-size: 11px; }
+.salesBarColumn strong { font-size: 11px; font-weight: 400; }
+.salesBarColumn i { display: block; width: 100%; max-width: 55px; background: #d7e2ee; border-radius: 4px 4px 0 0; }
+.salesBarColumn:last-child i { background: #344f70; }
+.primarySales .scopeNote { padding: 16px 0 0; font-size: 12px; }
+.quickAccess { gap: 10px; }
+.quickAccess h2 { margin: 0; }
+.quickAccess p { font-size: 13px; margin: 0 0 10px; }
+.quickAccess a { min-height: 44px; color: #243b59; background: #fff; border-color: #7b8da5; }
+.advancedDetails { border-top: 1px solid #d8dfe8; padding-top: 16px; }
+.advancedDetails > summary { min-height: 44px; color: #53627a; font-size: 13px; cursor: pointer; }
+.advancedDetails > .toolbarActions { margin: 12px 0 20px; }
+.advancedDetails > section + section { margin-top: 20px; }
+@media (max-width: 1150px) { .overviewGrid { grid-template-columns: minmax(0, 1.3fr) minmax(260px, 1fr); } }
+@media (max-width: 760px) {
+  .overviewGrid { grid-template-columns: 1fr; }
+  .metricsStrip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .toolbar { align-items: flex-start; }
+  .attentionCard, .card, .quickAccess, .maintenancePreview { padding: 18px; }
+  .metric { padding: 16px; }
+}
+.toolbar { padding: 0 !important; background: transparent !important; border: 0 !important; box-shadow: none !important; }
+.dashboard.dashboard > .toolbar { min-height: 0 !important; padding: 0 !important; background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+.overviewGrid { align-items: stretch; }
+.attentionRow { grid-template-columns: 36px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.attentionIcon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 9px; }
+.attentionIcon svg { width: 19px; height: 19px; }
+.attentionIcon.attentionCritical { color: #a92835; background: #fff0f1; }
+.attentionIcon.attentionWarning { color: #815314; background: #fff5df; }
+.attentionActions { display: grid; grid-column: auto; gap: 6px; min-width: 110px; }
+.attentionActions > a { justify-content: center; min-height: 36px; padding: 6px 11px; border: 1px solid #7b8da5; border-radius: 8px; color: #243b59; font-size: 12px; text-decoration: none; }
+.attentionTools { font-size: 12px; color: #53627a; }
+.attentionTools summary { min-height: 28px; cursor: pointer; }
+.attentionTools a { display: block; min-height: 36px; color: #0758d6; }
+.attentionHeader .attentionCount { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; background: #eef1f5; color: #53627a; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.maintenanceJob > span { color: #53627a; background: #eef1f5; white-space: nowrap; }
+@media (max-width: 1150px) { .attentionRow { grid-template-columns: 36px minmax(0, 1fr); } .attentionActions { grid-column: 2; justify-self: start; } }
+.maintenancePreview > header { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.maintenancePreview > header > small { font-size: 12px; color: #53627a; white-space: nowrap; }
